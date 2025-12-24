@@ -1,0 +1,15 @@
+export { default as GoogleIcon } from "./GoogleIcon";
+export { default as CloseIcon } from "./CloseIcon";
+export { default as FacebookIcon } from "./FacebookIcon";
+export { default as AppleIcon } from "./AppleIcon";
+export { default as DashboardIcon } from "./DashboardIcon";
+export { default as ClassesIcon } from "./ClassesIcon";
+export { default as NotificationIcon } from "./NotificationIcon";
+export { default as WaitlistIcon } from "./WaitlistIcon";
+export { default as SettingsIcon } from "./SettingsIcon";
+export { default as SupportIcon } from "./SupportIcon";
+export { default as MoreIcon } from "./MoreIcon";
+export { default as ChevronIcon } from "./ChevronIcon";
+export { default as PlusIcon } from "./PlusIcon";
+export { default as ArrowLeftIcon } from "./ArrowLeftIcon";
+export { default as ArrowRightIcon } from "./ArrowRightIcon";
