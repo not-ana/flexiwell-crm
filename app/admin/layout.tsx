@@ -2,14 +2,14 @@
 
 import { Sidebar } from "@/components/layout";
 
-export default function DashboardLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar notificationCount={8} />
+      <Sidebar variant="admin" notificationCount={5} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
