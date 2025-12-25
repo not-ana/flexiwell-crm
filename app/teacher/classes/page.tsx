@@ -33,13 +33,13 @@ interface Class {
 const mockClasses: Class[] = [
   {
     id: "1",
-    name: "Pilates Intermediário",
+    name: "Intermediate Pilates",
     type: "Pilates",
-    date: "Hoje",
+    date: "Today",
     time: "14:00",
     duration: "50 min",
     unit: "FlexiWell Centro",
-    room: "Sala 1",
+    room: "Room 1",
     capacity: 8,
     enrolled: 6,
     status: "scheduled",
@@ -54,13 +54,13 @@ const mockClasses: Class[] = [
   },
   {
     id: "2",
-    name: "Yoga Iniciante",
+    name: "Beginner Yoga",
     type: "Yoga",
-    date: "Hoje",
+    date: "Today",
     time: "16:00",
     duration: "60 min",
     unit: "FlexiWell Centro",
-    room: "Sala 2",
+    room: "Room 2",
     capacity: 10,
     enrolled: 8,
     status: "scheduled",
@@ -77,13 +77,13 @@ const mockClasses: Class[] = [
   },
   {
     id: "3",
-    name: "Pilates Avançado",
+    name: "Advanced Pilates",
     type: "Pilates",
-    date: "Amanhã",
+    date: "Tomorrow",
     time: "09:00",
     duration: "50 min",
     unit: "FlexiWell Jardins",
-    room: "Sala 1",
+    room: "Room 1",
     capacity: 6,
     enrolled: 6,
     status: "scheduled",
@@ -98,13 +98,13 @@ const mockClasses: Class[] = [
   },
   {
     id: "4",
-    name: "Funcional",
-    type: "Funcional",
-    date: "Amanhã",
+    name: "Functional Training",
+    type: "Functional",
+    date: "Tomorrow",
     time: "11:00",
     duration: "45 min",
     unit: "FlexiWell Jardins",
-    room: "Sala 3",
+    room: "Room 3",
     capacity: 12,
     enrolled: 9,
     status: "scheduled",
@@ -122,13 +122,13 @@ const mockClasses: Class[] = [
   },
   {
     id: "5",
-    name: "Yoga Intermediário",
+    name: "Intermediate Yoga",
     type: "Yoga",
-    date: "Ontem",
+    date: "Yesterday",
     time: "10:00",
     duration: "60 min",
     unit: "FlexiWell Centro",
-    room: "Sala 2",
+    room: "Room 2",
     capacity: 10,
     enrolled: 7,
     status: "completed",
@@ -145,10 +145,10 @@ const mockClasses: Class[] = [
 ];
 
 const statusStyles: Record<ClassStatus, { bg: string; text: string; label: string }> = {
-  scheduled: { bg: "bg-blue-50", text: "text-blue-700", label: "Agendada" },
-  "in-progress": { bg: "bg-green-50", text: "text-green-700", label: "Em andamento" },
-  completed: { bg: "bg-gray-50", text: "text-gray-700", label: "Concluída" },
-  canceled: { bg: "bg-red-50", text: "text-red-700", label: "Cancelada" },
+  scheduled: { bg: "bg-blue-50", text: "text-blue-700", label: "Scheduled" },
+  "in-progress": { bg: "bg-green-50", text: "text-green-700", label: "In Progress" },
+  completed: { bg: "bg-gray-50", text: "text-gray-700", label: "Completed" },
+  canceled: { bg: "bg-red-50", text: "text-red-700", label: "Canceled" },
 };
 
 function StatusBadge({ status }: { status: ClassStatus }) {
@@ -175,7 +175,7 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
               <StatusBadge status={classItem.status} />
               {isFull && (
                 <span className="px-2 py-0.5 bg-orange-50 text-orange-700 text-xs font-medium rounded-full">
-                  Lotada
+                  Full
                 </span>
               )}
             </div>
@@ -220,7 +220,7 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span>{classItem.enrolled}/{classItem.capacity} alunos</span>
+            <span>{classItem.enrolled}/{classItem.capacity} students</span>
           </div>
         </div>
 
@@ -230,7 +230,7 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
           >
-            <span>Ver alunos ({classItem.enrolled})</span>
+            <span>View students ({classItem.enrolled})</span>
             <ChevronIcon className="w-4 h-4" direction={isExpanded ? "up" : "down"} />
           </button>
           {classItem.status === "scheduled" && (
@@ -238,7 +238,7 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
               onClick={onTakeAttendance}
               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Iniciar aula
+              Start class
             </button>
           )}
           {classItem.status === "in-progress" && (
@@ -246,12 +246,12 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
               onClick={onTakeAttendance}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              Registrar presença
+              Take attendance
             </button>
           )}
           {classItem.status === "completed" && (
             <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-              Ver relatório
+              View report
             </button>
           )}
         </div>
@@ -260,7 +260,7 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
       {/* Students List */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Alunos inscritos</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Enrolled students</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {classItem.students.map((student) => (
               <div
@@ -325,9 +325,9 @@ export default function TeacherClassesPage() {
     return acc;
   }, {} as Record<string, Class[]>);
 
-  const todayClasses = mockClasses.filter((c) => c.date === "Hoje").length;
+  const todayClasses = mockClasses.filter((c) => c.date === "Today").length;
   const totalStudentsToday = mockClasses
-    .filter((c) => c.date === "Hoje")
+    .filter((c) => c.date === "Today")
     .reduce((acc, c) => acc + c.enrolled, 0);
 
   return (
@@ -335,8 +335,8 @@ export default function TeacherClassesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Minhas Aulas</h1>
-          <p className="text-gray-600 mt-1">Gerencie suas aulas e registre presenças</p>
+          <h1 className="text-2xl font-bold text-gray-900">My Classes</h1>
+          <p className="text-gray-600 mt-1">Manage your classes and track attendance</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -373,19 +373,19 @@ export default function TeacherClassesPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Aulas Hoje</p>
+          <p className="text-sm text-gray-600">Classes Today</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{todayClasses}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Alunos Hoje</p>
+          <p className="text-sm text-gray-600">Students Today</p>
           <p className="text-2xl font-bold text-primary-600 mt-1">{totalStudentsToday}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Esta Semana</p>
+          <p className="text-sm text-gray-600">This Week</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{mockClasses.length}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Taxa de Presença</p>
+          <p className="text-sm text-gray-600">Attendance Rate</p>
           <p className="text-2xl font-bold text-green-600 mt-1">92%</p>
         </div>
       </div>
@@ -397,7 +397,7 @@ export default function TeacherClassesPage() {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar aula..."
+            placeholder="Search class..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
@@ -410,7 +410,7 @@ export default function TeacherClassesPage() {
           onChange={(e) => setUnitFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
-          <option value="all">Todas as unidades</option>
+          <option value="all">All locations</option>
           {units.map((unit) => (
             <option key={unit} value={unit}>
               {unit}
@@ -426,11 +426,11 @@ export default function TeacherClassesPage() {
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="all">Todos os status</option>
-            <option value="scheduled">Agendadas</option>
-            <option value="in-progress">Em andamento</option>
-            <option value="completed">Concluídas</option>
-            <option value="canceled">Canceladas</option>
+            <option value="all">All statuses</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="canceled">Canceled</option>
           </select>
         </div>
       </div>
@@ -460,8 +460,8 @@ export default function TeacherClassesPage() {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma aula encontrada</h3>
-            <p className="text-gray-500">Tente ajustar os filtros de busca</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No classes found</h3>
+            <p className="text-gray-500">Try adjusting your search filters</p>
           </div>
         )}
       </div>

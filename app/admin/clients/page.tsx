@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
+import { useState, useRef } from "react";
+import { SearchIcon, FilterIcon, ChevronIcon, UploadIcon } from "@/components/icons";
 
 interface Client {
   id: string;
@@ -42,13 +42,13 @@ const mockUnits: Unit[] = [
         email: "olivia@email.com",
         phone: "(11) 99999-1234",
         initials: "OR",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 5,
         classesTotal: 8,
         instructor: "Maria Santos",
         status: "active",
         joinedDate: "Jan 2024",
-        lastActivity: "Hoje",
+        lastActivity: "Today",
         revenue: 299,
       },
       {
@@ -57,13 +57,13 @@ const mockUnits: Unit[] = [
         email: "phoenix@email.com",
         phone: "(11) 99999-5678",
         initials: "PB",
-        plan: "Trimestral - 24 aulas",
+        plan: "Quarterly - 24 classes",
         classesRemaining: 18,
         classesTotal: 24,
         instructor: "Maria Santos",
         status: "active",
         joinedDate: "Nov 2023",
-        lastActivity: "Ontem",
+        lastActivity: "Yesterday",
         revenue: 799,
       },
       {
@@ -72,13 +72,13 @@ const mockUnits: Unit[] = [
         email: "lana@email.com",
         phone: "(11) 99999-9012",
         initials: "LS",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 0,
         classesTotal: 8,
         instructor: "João Silva",
         status: "expired",
-        joinedDate: "Dez 2023",
-        lastActivity: "15 dias atrás",
+        joinedDate: "Dec 2023",
+        lastActivity: "15 days ago",
         revenue: 299,
       },
       {
@@ -87,13 +87,13 @@ const mockUnits: Unit[] = [
         email: "demi@email.com",
         phone: "(11) 99999-3456",
         initials: "DW",
-        plan: "Mensal - 12 aulas",
+        plan: "Monthly - 12 classes",
         classesRemaining: 12,
         classesTotal: 12,
         instructor: "Maria Santos",
         status: "paused",
-        joinedDate: "Fev 2024",
-        lastActivity: "7 dias atrás",
+        joinedDate: "Feb 2024",
+        lastActivity: "7 days ago",
         revenue: 399,
       },
       {
@@ -102,13 +102,13 @@ const mockUnits: Unit[] = [
         email: "ana.costa@email.com",
         phone: "(11) 99999-8888",
         initials: "AC",
-        plan: "Aguardando aprovação",
+        plan: "Awaiting approval",
         classesRemaining: 0,
         classesTotal: 0,
         instructor: "-",
         status: "pending",
-        joinedDate: "Hoje",
-        lastActivity: "Hoje",
+        joinedDate: "Today",
+        lastActivity: "Today",
         revenue: 0,
       },
     ],
@@ -125,13 +125,13 @@ const mockUnits: Unit[] = [
         email: "candice@email.com",
         phone: "(11) 99999-7890",
         initials: "CW",
-        plan: "Semestral - 48 aulas",
+        plan: "Semi-annual - 48 classes",
         classesRemaining: 32,
         classesTotal: 48,
         instructor: "Carlos Mendes",
         status: "active",
-        joinedDate: "Set 2023",
-        lastActivity: "Hoje",
+        joinedDate: "Sep 2023",
+        lastActivity: "Today",
         revenue: 1499,
       },
       {
@@ -140,13 +140,13 @@ const mockUnits: Unit[] = [
         email: "natali@email.com",
         phone: "(11) 99999-2345",
         initials: "NC",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 3,
         classesTotal: 8,
         instructor: "Carlos Mendes",
         status: "active",
         joinedDate: "Jan 2024",
-        lastActivity: "2 dias atrás",
+        lastActivity: "2 days ago",
         revenue: 299,
       },
       {
@@ -155,13 +155,13 @@ const mockUnits: Unit[] = [
         email: "orlando@email.com",
         phone: "(11) 99999-4321",
         initials: "OD",
-        plan: "Anual - 96 aulas",
+        plan: "Annual - 96 classes",
         classesRemaining: 80,
         classesTotal: 96,
         instructor: "Ana Paula",
         status: "active",
-        joinedDate: "Out 2023",
-        lastActivity: "Ontem",
+        joinedDate: "Oct 2023",
+        lastActivity: "Yesterday",
         revenue: 2499,
       },
     ],
@@ -178,13 +178,13 @@ const mockUnits: Unit[] = [
         email: "drew@email.com",
         phone: "(11) 99999-6789",
         initials: "DC",
-        plan: "Trimestral - 24 aulas",
+        plan: "Quarterly - 24 classes",
         classesRemaining: 20,
         classesTotal: 24,
         instructor: "Fernanda Lima",
         status: "active",
-        joinedDate: "Dez 2023",
-        lastActivity: "Hoje",
+        joinedDate: "Dec 2023",
+        lastActivity: "Today",
         revenue: 799,
       },
       {
@@ -193,13 +193,13 @@ const mockUnits: Unit[] = [
         email: "kate@email.com",
         phone: "(11) 99999-1111",
         initials: "KM",
-        plan: "Mensal - 12 aulas",
+        plan: "Monthly - 12 classes",
         classesRemaining: 8,
         classesTotal: 12,
         instructor: "Fernanda Lima",
         status: "active",
         joinedDate: "Jan 2024",
-        lastActivity: "3 dias atrás",
+        lastActivity: "3 days ago",
         revenue: 399,
       },
     ],
@@ -207,10 +207,10 @@ const mockUnits: Unit[] = [
 ];
 
 const statusStyles = {
-  active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Ativo" },
-  paused: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Pausado" },
-  expired: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Expirado" },
-  pending: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Pendente" },
+  active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Active" },
+  paused: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Paused" },
+  expired: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Expired" },
+  pending: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Pending" },
 };
 
 function StatusBadge({ status }: { status: Client["status"] }) {
@@ -224,7 +224,7 @@ function StatusBadge({ status }: { status: Client["status"] }) {
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 }
 
 function ClientRow({ client, onApprove, onReject }: { client: Client; onApprove?: () => void; onReject?: () => void }) {
@@ -282,13 +282,13 @@ function ClientRow({ client, onApprove, onReject }: { client: Client; onApprove?
               onClick={onApprove}
               className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
             >
-              Aprovar
+              Approve
             </button>
             <button
               onClick={onReject}
               className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Rejeitar
+              Reject
             </button>
           </div>
         ) : (
@@ -340,7 +340,7 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
             <h2 className="font-semibold text-gray-900">{unit.name}</h2>
             {pendingCount > 0 && (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                {pendingCount} pendente{pendingCount > 1 ? "s" : ""}
+                {pendingCount} pending
               </span>
             )}
           </div>
@@ -348,12 +348,12 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
         </div>
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">{unit.clients.length} clientes</p>
-            <p className="text-xs text-gray-500">{activeCount} ativos</p>
+            <p className="text-sm font-medium text-gray-900">{unit.clients.length} clients</p>
+            <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
           <div className="text-right">
             <p className="text-sm font-medium text-green-600">{formatCurrency(unit.totalRevenue)}</p>
-            <p className="text-xs text-gray-500">receita total</p>
+            <p className="text-xs text-gray-500">total revenue</p>
           </div>
           <ChevronIcon
             className="w-5 h-5 text-gray-400 transition-transform"
@@ -369,25 +369,25 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
+                  Client
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Plano
+                  Plan
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Instrutor
+                  Instructor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Última Atividade
+                  Last Activity
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Receita
+                  Revenue
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -408,11 +408,261 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
   );
 }
 
+// Import Modal Component
+function ImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [dragActive, setDragActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = () => {
+    if (!file) return;
+    setImporting(true);
+    // Simulate import process
+    setTimeout(() => {
+      setImporting(false);
+      setImportResult({ success: 45, failed: 2 });
+    }, 2000);
+  };
+
+  const resetModal = () => {
+    setFile(null);
+    setImportResult(null);
+    onClose();
+  };
+
+  const downloadTemplate = () => {
+    // CSV template content with headers and sample data
+    const csvContent = `Name,Email,Phone,Plan,Location,Instructor
+John Smith,john.smith@email.com,(555) 123-4567,Monthly - 8 classes,FlexiWell Centro,Maria Santos
+Jane Doe,jane.doe@email.com,(555) 234-5678,Quarterly - 24 classes,FlexiWell Jardins,Pedro Costa
+Michael Johnson,michael.j@email.com,(555) 345-6789,Monthly - 12 classes,FlexiWell Moema,Julia Oliveira
+Sarah Williams,sarah.w@email.com,(555) 456-7890,Semi-annual - 48 classes,FlexiWell Centro,Maria Santos
+Robert Brown,robert.b@email.com,(555) 567-8901,Annual - 96 classes,FlexiWell Jardins,Carlos Mendes`;
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "client_import_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Import Clients</h2>
+            <button onClick={resetModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {!importResult ? (
+            <>
+              {/* File Upload Area */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                  dragActive ? "border-primary-500 bg-primary-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                {file ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <polyline points="16 13 12 17 8 13" />
+                        <line x1="12" y1="17" x2="12" y2="11" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-gray-900">{file.name}</p>
+                      <p className="text-sm text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <button
+                      onClick={() => setFile(null)}
+                      className="p-1 text-gray-400 hover:text-red-500"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                      <UploadIcon className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 mb-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-primary-600 font-medium hover:text-primary-700"
+                      >
+                        Click to upload
+                      </button>
+                      {" "}or drag and drop
+                    </p>
+                    <p className="text-sm text-gray-500">CSV or Excel file (max 10MB)</p>
+                  </>
+                )}
+              </div>
+
+              {/* Template Download */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Download template</p>
+                      <p className="text-xs text-gray-500">Use our template for best results</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={downloadTemplate}
+                    className="text-sm text-primary-600 font-medium hover:text-primary-700"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+
+              {/* Expected Columns Info */}
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Expected columns:</p>
+                <div className="flex flex-wrap gap-2">
+                  {["Name", "Email", "Phone", "Plan", "Location", "Instructor"].map((col) => (
+                    <span key={col} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                      {col}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Import Results */
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Import Complete!</h3>
+              <div className="flex items-center justify-center gap-6 mb-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">{importResult.success}</p>
+                  <p className="text-sm text-gray-500">Imported</p>
+                </div>
+                {importResult.failed > 0 && (
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
+                    <p className="text-sm text-gray-500">Failed</p>
+                  </div>
+                )}
+              </div>
+              {importResult.failed > 0 && (
+                <button className="text-sm text-primary-600 font-medium hover:text-primary-700">
+                  Download error report
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={resetModal}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            {importResult ? "Close" : "Cancel"}
+          </button>
+          {!importResult && (
+            <button
+              onClick={handleImport}
+              disabled={!file || importing}
+              className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 flex items-center justify-center gap-2"
+            >
+              {importing ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+                  </svg>
+                  Importing...
+                </>
+              ) : (
+                "Import Clients"
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Client["status"]>("all");
   const [unitFilter, setUnitFilter] = useState<string>("all");
   const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) =>
@@ -452,47 +702,56 @@ export default function AdminClientsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
           <p className="text-gray-600 mt-1">
-            Gerencie todos os clientes de todas as unidades
+            Manage all clients across all locations
           </p>
         </div>
-        <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Adicionar Cliente
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <UploadIcon className="w-5 h-5" />
+            Import
+          </button>
+          <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Client
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total de Clientes</p>
+          <p className="text-sm text-gray-600">Total Clients</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{totalClients}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Clientes Ativos</p>
+          <p className="text-sm text-gray-600">Active Clients</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{activeClients}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Pendentes</p>
+          <p className="text-sm text-gray-600">Pending</p>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-2xl font-bold text-blue-600">{pendingClients}</p>
             {pendingClients > 0 && (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-pulse">
-                Ação necessária
+                Action required
               </span>
             )}
           </div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Unidades</p>
+          <p className="text-sm text-gray-600">Locations</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Receita Total</p>
+          <p className="text-sm text-gray-600">Total Revenue</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalRevenue)}</p>
         </div>
       </div>
@@ -504,7 +763,7 @@ export default function AdminClientsPage() {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar cliente por nome, email ou instrutor..."
+            placeholder="Search client by name, email or instructor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
@@ -517,7 +776,7 @@ export default function AdminClientsPage() {
           onChange={(e) => setUnitFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
-          <option value="all">Todas as unidades</option>
+          <option value="all">All locations</option>
           {mockUnits.map((unit) => (
             <option key={unit.id} value={unit.id}>
               {unit.name}
@@ -533,11 +792,11 @@ export default function AdminClientsPage() {
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="all">Todos os status</option>
-            <option value="active">Ativos</option>
-            <option value="paused">Pausados</option>
-            <option value="expired">Expirados</option>
-            <option value="pending">Pendentes</option>
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="expired">Expired</option>
+            <option value="pending">Pending</option>
           </select>
         </div>
 
@@ -548,7 +807,7 @@ export default function AdminClientsPage() {
           }
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
         >
-          {expandedUnits.length === mockUnits.length ? "Recolher tudo" : "Expandir tudo"}
+          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
         </button>
       </div>
 
@@ -571,11 +830,14 @@ export default function AdminClientsPage() {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhum cliente encontrado</h3>
-            <p className="text-gray-500">Tente ajustar os filtros de busca</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No clients found</h3>
+            <p className="text-gray-500">Try adjusting your search filters</p>
           </div>
         )}
       </div>
+
+      {/* Import Modal */}
+      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
     </div>
   );
 }

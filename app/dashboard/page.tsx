@@ -47,21 +47,6 @@ const mockProgressData = {
   total: 20,
 };
 
-const mockYearlyData = [
-  { month: "J", value: 65 },
-  { month: "F", value: 80 },
-  { month: "M", value: 90 },
-  { month: "A", value: 75 },
-  { month: "M", value: 85 },
-  { month: "J", value: 70 },
-  { month: "J", value: 95 },
-  { month: "A", value: 88 },
-  { month: "S", value: 92 },
-  { month: "O", value: 78 },
-  { month: "N", value: 82 },
-  { month: "D", value: 0 },
-];
-
 // TODO: Get user name from auth context
 const userName = "Olivia";
 
@@ -85,7 +70,7 @@ export default function DashboardPage() {
         {/* Right Column */}
         <div className="space-y-6">
           <CalendarCard />
-          <YearlyBarChart year={2024} data={mockYearlyData} />
+          <YearlyBarChart />
         </div>
       </div>
     </div>

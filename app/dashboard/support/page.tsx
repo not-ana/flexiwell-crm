@@ -17,46 +17,46 @@ interface Message {
 const mockMessages: Message[] = [
   {
     id: "1",
-    content: "Olá! Bem-vindo ao suporte FlexiWell. Como podemos ajudar você hoje?",
+    content: "Hello! Welcome to FlexiWell support. How can we help you today?",
     sender: "support",
-    timestamp: "Ontem 14:30",
+    timestamp: "Yesterday 2:30 PM",
     type: "text",
   },
   {
     id: "2",
-    content: "Oi! Estou com dúvidas sobre como agendar uma aula.",
+    content: "Hi! I have questions about how to book a class.",
     sender: "user",
-    timestamp: "Ontem 14:32",
+    timestamp: "Yesterday 2:32 PM",
     type: "text",
   },
   {
     id: "3",
-    content: "Claro! Para agendar uma aula, basta ir na aba 'Classes' e escolher o horário disponível. Você verá todas as aulas abertas para inscrição.",
+    content: "Of course! To book a class, just go to the 'Classes' tab and choose an available time slot. You'll see all classes open for enrollment.",
     sender: "support",
-    timestamp: "Ontem 14:35",
+    timestamp: "Yesterday 2:35 PM",
     type: "text",
   },
   {
     id: "4",
-    content: "Preparamos um guia rápido para você:",
+    content: "We've prepared a quick guide for you:",
     sender: "support",
-    timestamp: "Ontem 14:36",
+    timestamp: "Yesterday 2:36 PM",
     type: "text",
   },
   {
     id: "5",
     content: "",
     sender: "support",
-    timestamp: "Ontem 14:36",
+    timestamp: "Yesterday 2:36 PM",
     type: "file",
-    fileName: "Guia_Agendamento_Aulas.pdf",
+    fileName: "Class_Booking_Guide.pdf",
     fileSize: "856 KB",
   },
   {
     id: "6",
-    content: "Muito obrigada! Vou dar uma olhada.",
+    content: "Thank you so much! I'll take a look.",
     sender: "user",
-    timestamp: "Ontem 14:40",
+    timestamp: "Yesterday 2:40 PM",
     type: "text",
     isRead: true,
   },
@@ -120,7 +120,7 @@ export default function SupportPage() {
       id: String(Date.now()),
       content: newMessage,
       sender: "user",
-      timestamp: "Agora",
+      timestamp: "Just now",
       type: "text",
       isRead: false,
     };
@@ -134,9 +134,9 @@ export default function SupportPage() {
       setIsTyping(false);
       const supportResponse: Message = {
         id: String(Date.now() + 1),
-        content: "Obrigado pela sua mensagem! Nossa equipe responderá em breve.",
+        content: "Thank you for your message! Our team will respond shortly.",
         sender: "support",
-        timestamp: "Agora",
+        timestamp: "Just now",
         type: "text",
       };
       setMessages((prev) => [...prev, supportResponse]);
@@ -162,13 +162,13 @@ export default function SupportPage() {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-gray-900">Suporte FlexiWell</h1>
+            <h1 className="text-lg font-semibold text-gray-900">FlexiWell Support</h1>
             <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
               Online
             </span>
           </div>
-          <p className="text-sm text-gray-500">Normalmente responde em poucos minutos</p>
+          <p className="text-sm text-gray-500">Typically responds in a few minutes</p>
         </div>
       </div>
 
@@ -181,9 +181,9 @@ export default function SupportPage() {
               <span className="text-white font-bold text-xl">F</span>
             </div>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Como podemos ajudar?</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">How can we help?</h2>
           <p className="text-sm text-gray-500">
-            Envie sua mensagem e nossa equipe responderá o mais rápido possível.
+            Send your message and our team will respond as soon as possible.
           </p>
         </div>
 
@@ -269,7 +269,7 @@ export default function SupportPage() {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Digite sua mensagem..."
+              placeholder="Type your message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}

@@ -29,19 +29,19 @@ interface Unit {
 const mockUnits: Unit[] = [
   {
     id: "1",
-    name: "FlexiWell Centro",
-    address: "Rua das Flores, 123 - Centro",
+    name: "FlexiWell Downtown",
+    address: "123 Main Street - Downtown",
     students: [
       {
         id: "1",
         name: "Olivia Rhye",
         email: "olivia@email.com",
-        phone: "(11) 99999-1234",
+        phone: "(555) 123-4567",
         initials: "OR",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 5,
         classesTotal: 8,
-        nextClass: "Hoje, 14:00 - Pilates",
+        nextClass: "Today, 2:00 PM - Pilates",
         status: "active",
         joinedDate: "Jan 2024",
       },
@@ -49,12 +49,12 @@ const mockUnits: Unit[] = [
         id: "2",
         name: "Phoenix Baker",
         email: "phoenix@email.com",
-        phone: "(11) 99999-5678",
+        phone: "(555) 234-5678",
         initials: "PB",
-        plan: "Trimestral - 24 aulas",
+        plan: "Quarterly - 24 classes",
         classesRemaining: 18,
         classesTotal: 24,
-        nextClass: "Amanhã, 10:00 - Yoga",
+        nextClass: "Tomorrow, 10:00 AM - Yoga",
         status: "active",
         joinedDate: "Nov 2023",
       },
@@ -62,56 +62,56 @@ const mockUnits: Unit[] = [
         id: "3",
         name: "Lana Steiner",
         email: "lana@email.com",
-        phone: "(11) 99999-9012",
+        phone: "(555) 345-6789",
         initials: "LS",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 0,
         classesTotal: 8,
         status: "expired",
-        joinedDate: "Dez 2023",
+        joinedDate: "Dec 2023",
       },
       {
         id: "4",
         name: "Demi Wilkinson",
         email: "demi@email.com",
-        phone: "(11) 99999-3456",
+        phone: "(555) 456-7890",
         initials: "DW",
-        plan: "Mensal - 12 aulas",
+        plan: "Monthly - 12 classes",
         classesRemaining: 12,
         classesTotal: 12,
         status: "paused",
-        joinedDate: "Fev 2024",
+        joinedDate: "Feb 2024",
       },
     ],
   },
   {
     id: "2",
-    name: "FlexiWell Jardins",
-    address: "Av. Paulista, 456 - Jardins",
+    name: "FlexiWell Westside",
+    address: "456 Park Avenue - Westside",
     students: [
       {
         id: "5",
         name: "Candice Wu",
         email: "candice@email.com",
-        phone: "(11) 99999-7890",
+        phone: "(555) 567-8901",
         initials: "CW",
-        plan: "Semestral - 48 aulas",
+        plan: "Semi-annual - 48 classes",
         classesRemaining: 32,
         classesTotal: 48,
-        nextClass: "Hoje, 16:00 - Funcional",
+        nextClass: "Today, 4:00 PM - Functional",
         status: "active",
-        joinedDate: "Set 2023",
+        joinedDate: "Sep 2023",
       },
       {
         id: "6",
         name: "Natali Craig",
         email: "natali@email.com",
-        phone: "(11) 99999-2345",
+        phone: "(555) 678-9012",
         initials: "NC",
-        plan: "Mensal - 8 aulas",
+        plan: "Monthly - 8 classes",
         classesRemaining: 3,
         classesTotal: 8,
-        nextClass: "Qui, 09:00 - Pilates",
+        nextClass: "Thu, 9:00 AM - Pilates",
         status: "active",
         joinedDate: "Jan 2024",
       },
@@ -119,30 +119,30 @@ const mockUnits: Unit[] = [
   },
   {
     id: "3",
-    name: "FlexiWell Moema",
-    address: "Rua Normandia, 789 - Moema",
+    name: "FlexiWell Eastside",
+    address: "789 Oak Boulevard - Eastside",
     students: [
       {
         id: "7",
         name: "Drew Cano",
         email: "drew@email.com",
-        phone: "(11) 99999-6789",
+        phone: "(555) 789-0123",
         initials: "DC",
-        plan: "Trimestral - 24 aulas",
+        plan: "Quarterly - 24 classes",
         classesRemaining: 20,
         classesTotal: 24,
-        nextClass: "Sex, 11:00 - Yoga",
+        nextClass: "Fri, 11:00 AM - Yoga",
         status: "active",
-        joinedDate: "Dez 2023",
+        joinedDate: "Dec 2023",
       },
     ],
   },
 ];
 
 const statusStyles = {
-  active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Ativo" },
-  paused: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Pausado" },
-  expired: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Expirado" },
+  active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Active" },
+  paused: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Paused" },
+  expired: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Expired" },
 };
 
 function StatusBadge({ status }: { status: Student["status"] }) {
@@ -185,7 +185,7 @@ function StudentCard({ student }: { student: Student }) {
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">{student.plan}</span>
           <span className="font-medium text-gray-900">
-            {student.classesRemaining}/{student.classesTotal} aulas
+            {student.classesRemaining}/{student.classesTotal} classes
           </span>
         </div>
 
@@ -208,7 +208,7 @@ function StudentCard({ student }: { student: Student }) {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span className="text-gray-600">Próxima aula:</span>
+            <span className="text-gray-600">Next class:</span>
             <span className="font-medium text-primary-600">{student.nextClass}</span>
           </div>
         )}
@@ -217,10 +217,10 @@ function StudentCard({ student }: { student: Student }) {
       {/* Actions */}
       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2">
         <button className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-          Ver perfil
+          View profile
         </button>
         <button className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
-          Enviar mensagem
+          Send message
         </button>
       </div>
     </div>
@@ -249,8 +249,8 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">{unit.students.length} alunos</p>
-            <p className="text-xs text-gray-500">{activeCount} ativos</p>
+            <p className="text-sm font-medium text-gray-900">{unit.students.length} students</p>
+            <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
           <ChevronIcon
             className="w-5 h-5 text-gray-400 transition-transform"
@@ -306,28 +306,28 @@ export default function TeacherStudentsPage() {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Meus Alunos</h1>
+        <h1 className="text-2xl font-bold text-gray-900">My Students</h1>
         <p className="text-gray-600 mt-1">
-          Gerencie seus alunos em todas as unidades que você atende
+          Manage your students across all locations you teach at
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total de Alunos</p>
+          <p className="text-sm text-gray-600">Total Students</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Alunos Ativos</p>
+          <p className="text-sm text-gray-600">Active Students</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{activeStudents}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Unidades</p>
+          <p className="text-sm text-gray-600">Locations</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Aulas Hoje</p>
+          <p className="text-sm text-gray-600">Classes Today</p>
           <p className="text-2xl font-bold text-primary-600 mt-1">4</p>
         </div>
       </div>
@@ -339,7 +339,7 @@ export default function TeacherStudentsPage() {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar aluno por nome ou email..."
+            placeholder="Search student by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
@@ -354,10 +354,10 @@ export default function TeacherStudentsPage() {
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
             className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="all">Todos os status</option>
-            <option value="active">Ativos</option>
-            <option value="paused">Pausados</option>
-            <option value="expired">Expirados</option>
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="expired">Expired</option>
           </select>
         </div>
 
@@ -368,7 +368,7 @@ export default function TeacherStudentsPage() {
           }
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          {expandedUnits.length === mockUnits.length ? "Recolher tudo" : "Expandir tudo"}
+          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
         </button>
       </div>
 
@@ -391,8 +391,8 @@ export default function TeacherStudentsPage() {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhum aluno encontrado</h3>
-            <p className="text-gray-500">Tente ajustar os filtros de busca</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No students found</h3>
+            <p className="text-gray-500">Try adjusting your search filters</p>
           </div>
         )}
       </div>

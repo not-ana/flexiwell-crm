@@ -16,6 +16,7 @@ import {
   DocumentIcon,
   LogoutIcon,
   SwitchIcon,
+  IntegrationsIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -64,9 +65,9 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
   admin: {
     main: [
       { name: "Dashboard", href: "/admin", icon: DashboardIcon },
-      { name: "Classes", href: "/admin/classes", icon: ClassesIcon },
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon },
       { name: "Staff", href: "/admin/staff", icon: UserIcon },
+      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon },
       { name: "Notifications", href: "/admin/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
@@ -264,7 +265,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
             {/* Menu Items */}
             <div className="py-1 border-b border-gray-100">
               <Link
-                href="/dashboard/profile"
+                href={variant === "admin" ? "/admin/profile" : variant === "teacher" ? "/teacher/profile" : "/dashboard/profile"}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => setIsProfileMenuOpen(false)}
               >

@@ -34,3 +34,5 @@ export { default as ClockIcon } from "./ClockIcon";
 export { default as MapPinIcon } from "./MapPinIcon";
 export { default as MailIcon } from "./MailIcon";
 export { default as PhoneIcon } from "./PhoneIcon";
+export { default as ToggleIcon } from "./ToggleIcon";
+export { default as IntegrationsIcon } from "./IntegrationsIcon";
