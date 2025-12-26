@@ -17,6 +17,8 @@ import {
   LogoutIcon,
   SwitchIcon,
   IntegrationsIcon,
+  ChatIcon,
+  ReportIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -45,6 +47,7 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   hasBadge?: boolean;
   status?: string;
+  requiresFeature?: string; // Feature key from PlanFeatures
 }
 
 export interface SidebarProps {
@@ -67,7 +70,9 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Dashboard", href: "/admin", icon: DashboardIcon },
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon },
       { name: "Staff", href: "/admin/staff", icon: UserIcon },
-      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon },
+      { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
+      { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
+      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, requiresFeature: "apiAccess" },
       { name: "Notifications", href: "/admin/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
@@ -319,7 +324,10 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
               ))}
               <button
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                onClick={() => setIsProfileMenuOpen(false)}
+                onClick={() => {
+                  setIsProfileMenuOpen(false);
+                  router.push("/login");
+                }}
               >
                 <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
                   <span className="text-gray-400 text-lg">+</span>
@@ -344,6 +352,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
             </div>
           </div>
         )}
+
       </div>
     </aside>
   );

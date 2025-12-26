@@ -2,20 +2,15 @@
 
 import { useState } from "react";
 import {
-  PlusIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ChevronIcon,
   CalendarIcon,
   UserIcon,
-  TrashIcon,
-  EditIcon,
-  ExpandIcon,
   CloseIcon,
   CheckCircleIcon,
 } from "@/components/icons";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 
 // Types
 interface Attendee {
@@ -23,17 +18,6 @@ interface Attendee {
   name: string;
   avatar?: string;
   status: "yes" | "no" | "awaiting";
-}
-
-interface WaitlistItem {
-  id: string;
-  name: string;
-  avatar?: string;
-  action: string;
-  actionLink?: string;
-  actionLinkText?: string;
-  time: string;
-  isOnline?: boolean;
 }
 
 interface ClassEvent {
@@ -44,95 +28,46 @@ interface ClassEvent {
   end: Date;
   color: "purple" | "gray" | "pink" | "orange" | "green" | "blue" | "red";
   attendees?: Attendee[];
-  waitlist?: WaitlistItem[];
+  status: "scheduled" | "completed" | "cancelled";
 }
 
-// Mock data
+// Mock data - client's enrolled classes
 const mockEvents: ClassEvent[] = [
   {
     id: "1",
-    title: "Friday standup",
+    title: "Morning Yoga",
+    instructor: "Ana",
     start: new Date(2025, 0, 10, 9, 0),
-    end: new Date(2025, 0, 10, 9, 30),
-    color: "gray",
+    end: new Date(2025, 0, 10, 10, 0),
+    color: "purple",
+    status: "scheduled",
+    attendees: [
+      { id: "1", name: "Olivia", status: "yes" },
+    ],
   },
   {
     id: "2",
-    title: "Olivia x Riley",
-    start: new Date(2025, 0, 10, 10, 0),
-    end: new Date(2025, 0, 10, 11, 0),
+    title: "Pilates",
+    instructor: "Maria",
+    start: new Date(2025, 0, 10, 14, 0),
+    end: new Date(2025, 0, 10, 15, 0),
     color: "purple",
+    status: "scheduled",
+    attendees: [
+      { id: "1", name: "Olivia", status: "yes" },
+    ],
   },
   {
     id: "3",
-    title: "Pilates",
-    instructor: "Ines",
-    start: new Date(2025, 0, 10, 13, 30),
-    end: new Date(2025, 0, 10, 15, 30),
-    color: "purple",
-    attendees: [
-      { id: "1", name: "Ana", status: "yes" },
-      { id: "2", name: "Olivia", status: "yes" },
-      { id: "3", name: "Riley", status: "no" },
-      { id: "4", name: "Jordan", status: "awaiting" },
-    ],
-    waitlist: [
-      {
-        id: "1",
-        name: "Lana Steiner",
-        action: "Invited",
-        actionLinkText: "Alisa Hester",
-        actionLink: "#",
-        time: "2 mins ago",
-        isOnline: true,
-      },
-      {
-        id: "2",
-        name: "Demi Wikinson",
-        action: "Invited",
-        actionLinkText: "Alisa Hester",
-        actionLink: "#",
-        time: "2 mins ago",
-        isOnline: true,
-      },
-      {
-        id: "3",
-        name: "Candice Wu",
-        action: "Commented in",
-        actionLinkText: "Marketing site redesign",
-        actionLink: "#",
-        time: "3 hours ago",
-        isOnline: true,
-      },
-      {
-        id: "4",
-        name: "Candice Wu",
-        action: "Was added to",
-        actionLinkText: "Marketing site redesign",
-        actionLink: "#",
-        time: "3 hours ago",
-        isOnline: false,
-      },
-      {
-        id: "5",
-        name: "Natali Craig",
-        action: "Added 3 labels to the project",
-        actionLinkText: "Marketing site redesign",
-        actionLink: "#",
-        time: "6 hours ago",
-        isOnline: false,
-      },
-    ],
-  },
-  {
-    id: "4",
-    title: "Pilates",
+    title: "Evening Stretch",
     instructor: "Ana",
-    start: new Date(2025, 0, 10, 13, 30),
-    end: new Date(2025, 0, 10, 15, 30),
-    color: "purple",
-    attendees: [],
-    waitlist: [],
+    start: new Date(2025, 0, 11, 18, 0),
+    end: new Date(2025, 0, 11, 19, 0),
+    color: "green",
+    status: "scheduled",
+    attendees: [
+      { id: "1", name: "Olivia", status: "yes" },
+    ],
   },
 ];
 
@@ -157,53 +92,6 @@ function formatDate(date: Date): string {
 
 function formatShortDate(date: Date): string {
   return date.toLocaleDateString("en-US", { weekday: "long" });
-}
-
-// Avatar component
-function Avatar({ name, avatar, size = "md", showOnline }: { name: string; avatar?: string; size?: "sm" | "md"; showOnline?: boolean }) {
-  const sizeClasses = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
-  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2);
-  const colors = ["bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
-  const colorIndex = name.charCodeAt(0) % colors.length;
-
-  return (
-    <div className="relative">
-      {avatar ? (
-        <img src={avatar} alt={name} className={`${sizeClasses} rounded-full object-cover`} />
-      ) : (
-        <div className={`${sizeClasses} ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-medium`}>
-          {initials}
-        </div>
-      )}
-      {showOnline !== undefined && (
-        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${showOnline ? "bg-green-500" : "bg-gray-300"}`} />
-      )}
-    </div>
-  );
-}
-
-// Avatar group component
-function AvatarGroup({ attendees, max = 4 }: { attendees: Attendee[]; max?: number }) {
-  const displayed = attendees.slice(0, max);
-  const remaining = attendees.length - max;
-
-  return (
-    <div className="flex items-center">
-      <div className="flex -space-x-2">
-        {displayed.map((attendee) => (
-          <div key={attendee.id} className="ring-2 ring-white rounded-full">
-            <Avatar name={attendee.name} avatar={attendee.avatar} size="sm" />
-          </div>
-        ))}
-      </div>
-      {remaining > 0 && (
-        <span className="ml-2 text-sm text-gray-500 font-medium">OR</span>
-      )}
-      <button className="ml-2 w-8 h-8 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors">
-        <PlusIcon className="w-4 h-4" />
-      </button>
-    </div>
-  );
 }
 
 // Day calendar component
@@ -308,270 +196,193 @@ function CurrentTimeIndicator() {
   );
 }
 
-// Event details modal
-function EventDetailsModal({ event, onClose }: { event: ClassEvent; onClose: () => void }) {
-  const attendeeCounts = {
-    yes: event.attendees?.filter((a) => a.status === "yes").length || 0,
-    no: event.attendees?.filter((a) => a.status === "no").length || 0,
-    awaiting: event.attendees?.filter((a) => a.status === "awaiting").length || 0,
+// Mock instructor availability data
+const instructorAvailability: Record<string, { day: string; slots: { time: string; available: boolean }[] }[]> = {
+  "Ana": [
+    { day: "Monday", slots: [{ time: "9:00 AM", available: true }, { time: "10:00 AM", available: false }, { time: "2:00 PM", available: true }, { time: "5:00 PM", available: true }] },
+    { day: "Tuesday", slots: [{ time: "10:00 AM", available: true }, { time: "3:00 PM", available: true }] },
+    { day: "Wednesday", slots: [{ time: "9:00 AM", available: false }, { time: "2:00 PM", available: true }, { time: "5:00 PM", available: true }] },
+    { day: "Thursday", slots: [{ time: "10:00 AM", available: true }, { time: "4:00 PM", available: true }] },
+    { day: "Friday", slots: [{ time: "9:00 AM", available: true }, { time: "11:00 AM", available: true }] },
+  ],
+  "Maria": [
+    { day: "Monday", slots: [{ time: "8:00 AM", available: true }, { time: "11:00 AM", available: true }, { time: "3:00 PM", available: false }] },
+    { day: "Tuesday", slots: [{ time: "9:00 AM", available: true }, { time: "1:00 PM", available: true }, { time: "4:00 PM", available: true }] },
+    { day: "Wednesday", slots: [{ time: "10:00 AM", available: true }, { time: "2:00 PM", available: false }] },
+    { day: "Thursday", slots: [{ time: "9:00 AM", available: true }, { time: "11:00 AM", available: true }, { time: "3:00 PM", available: true }] },
+    { day: "Friday", slots: [{ time: "10:00 AM", available: true }, { time: "2:00 PM", available: true }] },
+  ],
+};
+
+// Request Modal Component
+type RequestType = "cancel" | "reschedule" | "change-instructor";
+
+function RequestModal({
+  type,
+  event,
+  onClose,
+  onSubmit
+}: {
+  type: RequestType;
+  event: ClassEvent;
+  onClose: () => void;
+  onSubmit: (reason: string, preferredDate?: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<{ day: string; time: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const titles: Record<RequestType, string> = {
+    cancel: "Request Cancellation",
+    reschedule: "Request Reschedule",
+    "change-instructor": "Request Instructor Change",
   };
-  const totalAttendees = event.attendees?.length || 0;
+
+  const descriptions: Record<RequestType, string> = {
+    cancel: "Please let us know why you need to cancel this class. Your request will be reviewed by our team.",
+    reschedule: "Select your preferred time slot from the instructor's available schedule.",
+    "change-instructor": "Please let us know why you'd like to change instructors. We'll do our best to accommodate your request.",
+  };
+
+  const placeholders: Record<RequestType, string> = {
+    cancel: "I need to cancel because...",
+    reschedule: "Additional notes (optional)...",
+    "change-instructor": "I would like to change instructors because...",
+  };
+
+  // Get instructor availability
+  const availability = event.instructor ? instructorAvailability[event.instructor] || [] : [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (type === "reschedule" && !selectedSlot) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    // Close modal after showing success
+    setTimeout(() => {
+      const preferredDate = selectedSlot ? `${selectedSlot.day} at ${selectedSlot.time}` : undefined;
+      onSubmit(reason, preferredDate);
+      onClose();
+    }, 1500);
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircleIcon className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Request Submitted</h3>
+          <p className="text-gray-600">Your request has been sent. We'll get back to you soon!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="p-6 overflow-y-auto">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{titles[type]}</h3>
+          <p className="text-sm text-gray-600 mb-4">{descriptions[type]}</p>
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-start justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">{event.title}</h2>
-            <div className="flex items-center gap-1">
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                <TrashIcon className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                <EditIcon className="w-5 h-5" />
-              </button>
-              <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded ml-2">
-                <CloseIcon className="w-5 h-5" />
-              </button>
-            </div>
+          {/* Class info */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <p className="font-medium text-gray-900">{event.title}</p>
+            <p className="text-sm text-gray-600">
+              {formatDate(event.start)} • {formatTime(event.start)} - {formatTime(event.end)}
+            </p>
+            {event.instructor && (
+              <p className="text-sm text-gray-600">Instructor: {event.instructor}</p>
+            )}
           </div>
 
-          {/* Event info */}
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <CalendarIcon className="w-5 h-5" />
-              <span>{formatDate(event.start)}</span>
-            </div>
-            {event.instructor && (
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <UserIcon className="w-5 h-5" />
-                <span>Instructor: {event.instructor}</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {type === "reschedule" && availability.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  {event.instructor}'s Available Slots
+                </label>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {availability.map((day) => (
+                    <div key={day.day} className="border border-gray-200 rounded-lg p-3">
+                      <p className="font-medium text-gray-900 text-sm mb-2">{day.day}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {day.slots.map((slot) => {
+                          const isSelected = selectedSlot?.day === day.day && selectedSlot?.time === slot.time;
+                          return (
+                            <button
+                              key={`${day.day}-${slot.time}`}
+                              type="button"
+                              disabled={!slot.available}
+                              onClick={() => setSelectedSlot({ day: day.day, time: slot.time })}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                !slot.available
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
+                                  : isSelected
+                                  ? "bg-primary-600 text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700"
+                              }`}
+                            >
+                              {slot.time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {selectedSlot && (
+                  <p className="text-sm text-primary-600 mt-2">
+                    Selected: {selectedSlot.day} at {selectedSlot.time}
+                  </p>
+                )}
               </div>
             )}
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
-            </div>
-          </div>
 
-          {/* Attendees */}
-          {event.attendees && event.attendees.length > 0 && (
-            <div className="mt-6">
-              <AvatarGroup attendees={event.attendees} />
-              <div className="mt-3 text-sm text-gray-600">
-                <span className="font-medium">{totalAttendees} attendees</span>
-                <span className="ml-4">{attendeeCounts.yes} yes</span>
-                <span className="ml-4">{attendeeCounts.no} no</span>
-                <span className="ml-4">{attendeeCounts.awaiting} awaiting</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Waitlist */}
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Wait list</h3>
-            <button className="text-gray-400 hover:text-gray-600">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="6" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="12" cy="18" r="2" />
-              </svg>
-            </button>
-          </div>
-
-          {!event.waitlist || event.waitlist.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <UserIcon className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500">No one on the waitlist</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {event.waitlist.map((item) => (
-                <div key={item.id} className="flex gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <Avatar name={item.name} avatar={item.avatar} showOnline={item.isOnline} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-gray-900">{item.name}</span>
-                      <span className="text-xs text-gray-500">{item.time}</span>
-                      {item.isOnline && <span className="w-2 h-2 rounded-full bg-green-500" />}
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {item.action}{" "}
-                      {item.actionLinkText && (
-                        <a href={item.actionLink} className="text-primary-600 hover:underline">
-                          {item.actionLinkText}
-                        </a>
-                      )}
-                      {item.action.includes("team") && " to the team"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Delete confirmation modal
-function DeleteConfirmModal({ event, onClose, onConfirm }: { event: ClassEvent; onClose: () => void; onConfirm: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6">
-          {/* Icon */}
-          <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <TrashIcon className="w-6 h-6 text-red-600" />
-          </div>
-
-          {/* Content */}
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete class</h3>
-            <p className="text-gray-600">
-              Are you sure you want to delete the class <strong>{event.title}</strong>? This action cannot be undone.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-
-        {/* Close button */}
-        <button onClick={onClose} className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600">
-          <CloseIcon className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Edit event modal
-function EditEventModal({ event, onClose, onSave }: { event: ClassEvent; onClose: () => void; onSave: (data: { title: string; instructor: string; date: string; startTime: string; endTime: string }) => void }) {
-  const [title, setTitle] = useState(event.title);
-  const [instructor, setInstructor] = useState(event.instructor || "");
-  const [date, setDate] = useState(event.start.toISOString().split("T")[0]);
-  const [startTime, setStartTime] = useState(
-    event.start.toTimeString().slice(0, 5)
-  );
-  const [endTime, setEndTime] = useState(
-    event.end.toTimeString().slice(0, 5)
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({ title, instructor, date, startTime, endTime });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6">
-          {/* Icon */}
-          <div className="w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircleIcon className="w-6 h-6 text-green-600" />
-          </div>
-
-          {/* Content */}
-          <div className="text-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Edit class</h3>
-            <p className="text-gray-600 text-sm mt-1">
-              Update the class information below.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class name</label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Pilates"
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {type === "reschedule" ? "Additional Notes" : "Reason"}
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={placeholders[type]}
+                rows={3}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                required={type !== "reschedule"}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Instructor</label>
-              <Input
-                value={instructor}
-                onChange={(e) => setInstructor(e.target.value)}
-                placeholder="e.g. Ana"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start time</label>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End time</label>
-                <Input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3">
               <Button variant="secondary" fullWidth onClick={onClose} type="button">
                 Cancel
               </Button>
-              <Button fullWidth type="submit">
-                Save
+              <Button
+                fullWidth
+                type="submit"
+                disabled={isSubmitting || (type === "reschedule" && !selectedSlot)}
+              >
+                {isSubmitting ? "Submitting..." : "Submit Request"}
               </Button>
             </div>
           </form>
         </div>
 
-        {/* Close button */}
         <button onClick={onClose} className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600">
           <CloseIcon className="w-5 h-5" />
         </button>
@@ -580,41 +391,99 @@ function EditEventModal({ event, onClose, onSave }: { event: ClassEvent; onClose
   );
 }
 
-// Event details sidebar
-function EventDetailsSidebar({ event, onExpand, onDelete, onEdit }: { event: ClassEvent | null; onExpand: () => void; onDelete: () => void; onEdit: () => void }) {
+// Instructor Schedule Modal
+function InstructorScheduleModal({ instructor, onClose }: { instructor: string; onClose: () => void }) {
+  // Mock instructor schedule
+  const schedule = [
+    { day: "Monday", times: ["9:00 AM - 10:00 AM", "2:00 PM - 3:00 PM", "5:00 PM - 6:00 PM"] },
+    { day: "Tuesday", times: ["10:00 AM - 11:00 AM", "3:00 PM - 4:00 PM"] },
+    { day: "Wednesday", times: ["9:00 AM - 10:00 AM", "2:00 PM - 3:00 PM", "5:00 PM - 6:00 PM"] },
+    { day: "Thursday", times: ["10:00 AM - 11:00 AM", "4:00 PM - 5:00 PM"] },
+    { day: "Friday", times: ["9:00 AM - 10:00 AM", "11:00 AM - 12:00 PM"] },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+              <UserIcon className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{instructor}'s Schedule</h3>
+              <p className="text-sm text-gray-600">Available class times</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {schedule.map((day) => (
+              <div key={day.day} className="border-b border-gray-100 pb-3 last:border-0">
+                <p className="font-medium text-gray-900 mb-2">{day.day}</p>
+                <div className="flex flex-wrap gap-2">
+                  {day.times.map((time, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg"
+                    >
+                      {time}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="secondary" fullWidth onClick={onClose} className="mt-6">
+            Close
+          </Button>
+        </div>
+
+        <button onClick={onClose} className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600">
+          <CloseIcon className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Event details sidebar for clients (view-only with request actions)
+function EventDetailsSidebar({
+  event,
+  onRequestCancel,
+  onRequestReschedule,
+  onRequestChangeInstructor,
+  onViewInstructorSchedule
+}: {
+  event: ClassEvent | null;
+  onRequestCancel: () => void;
+  onRequestReschedule: () => void;
+  onRequestChangeInstructor: () => void;
+  onViewInstructorSchedule: () => void;
+}) {
   if (!event) {
     return (
       <div className="w-80 border-l border-gray-200 p-6 flex items-center justify-center text-gray-500">
-        <p>Select an event to see details</p>
+        <p>Select a class to see details</p>
       </div>
     );
   }
-
-  const attendeeCounts = {
-    yes: event.attendees?.filter((a) => a.status === "yes").length || 0,
-    no: event.attendees?.filter((a) => a.status === "no").length || 0,
-    awaiting: event.attendees?.filter((a) => a.status === "awaiting").length || 0,
-  };
-  const totalAttendees = event.attendees?.length || 0;
 
   return (
     <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-start justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{event.title}</h2>
-          <div className="flex items-center gap-1">
-            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
-              <TrashIcon className="w-4 h-4" />
-            </button>
-            <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-              <EditIcon className="w-4 h-4" />
-            </button>
-            <button onClick={onExpand} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-              <ExpandIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900">{event.title}</h2>
+
+        {/* Status badge */}
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
+          event.status === "scheduled" ? "bg-green-100 text-green-700" :
+          event.status === "completed" ? "bg-gray-100 text-gray-700" :
+          "bg-red-100 text-red-700"
+        }`}>
+          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+        </span>
 
         {/* Event info */}
         <div className="mt-4 space-y-2">
@@ -626,6 +495,12 @@ function EventDetailsSidebar({ event, onExpand, onDelete, onEdit }: { event: Cla
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <UserIcon className="w-4 h-4" />
               <span>Instructor: {event.instructor}</span>
+              <button
+                onClick={onViewInstructorSchedule}
+                className="text-primary-600 hover:text-primary-700 text-xs underline ml-auto"
+              >
+                View schedule
+              </button>
             </div>
           )}
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -636,66 +511,59 @@ function EventDetailsSidebar({ event, onExpand, onDelete, onEdit }: { event: Cla
             <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
           </div>
         </div>
-
-        {/* Attendees */}
-        {event.attendees && event.attendees.length > 0 && (
-          <div className="mt-4">
-            <AvatarGroup attendees={event.attendees} />
-            <div className="mt-2 text-sm text-gray-600">
-              <span className="font-medium">{totalAttendees} attendees</span>
-              <span className="ml-3">{attendeeCounts.yes} yes</span>
-              <span className="ml-3">{attendeeCounts.no} no</span>
-              <span className="ml-3">{attendeeCounts.awaiting} awaiting</span>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Waitlist */}
+      {/* Actions for clients */}
       <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">Wait list</h3>
-          <button className="text-gray-400 hover:text-gray-600">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="6" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="12" cy="18" r="2" />
-            </svg>
+        <h3 className="font-semibold text-gray-900 mb-4">Actions</h3>
+
+        <div className="space-y-3">
+          <button
+            onClick={onRequestReschedule}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+              <CalendarIcon className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">Request Reschedule</p>
+              <p className="text-xs text-gray-500">Ask to move to another time</p>
+            </div>
+          </button>
+
+          <button
+            onClick={onRequestChangeInstructor}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-purple-600" />
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">Request Instructor Change</p>
+              <p className="text-xs text-gray-500">Ask to switch to another instructor</p>
+            </div>
+          </button>
+
+          <button
+            onClick={onRequestCancel}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+              <CloseIcon className="w-4 h-4 text-red-600" />
+            </div>
+            <div>
+              <p className="font-medium text-red-700">Request Cancellation</p>
+              <p className="text-xs text-red-500">Ask to cancel this class</p>
+            </div>
           </button>
         </div>
 
-        {!event.waitlist || event.waitlist.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-              <UserIcon className="w-6 h-6 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-500">Nenhuma pessoa na lista de espera</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {event.waitlist.map((item) => (
-              <div key={item.id} className="flex gap-3">
-                <Avatar name={item.name} avatar={item.avatar} showOnline={item.isOnline} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-gray-900">{item.name}</span>
-                    <span className="text-xs text-gray-500">{item.time}</span>
-                    {item.isOnline && <span className="w-2 h-2 rounded-full bg-green-500" />}
-                  </div>
-                  <p className="text-sm text-gray-600 truncate">
-                    {item.action}{" "}
-                    {item.actionLinkText && (
-                      <a href={item.actionLink} className="text-primary-600 hover:underline">
-                        {item.actionLinkText}
-                      </a>
-                    )}
-                    {item.action.includes("team") && " to the team"}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Info note */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600">
+            <strong>Note:</strong> All requests are subject to approval. You'll receive a notification once your request has been reviewed.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -703,11 +571,12 @@ function EventDetailsSidebar({ event, onExpand, onDelete, onEdit }: { event: Cla
 
 export default function ClassesPage() {
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 0, 10));
-  const [selectedEvent, setSelectedEvent] = useState<ClassEvent | null>(mockEvents[2]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [events, setEvents] = useState<ClassEvent[]>(mockEvents);
+  const [selectedEvent, setSelectedEvent] = useState<ClassEvent | null>(mockEvents[0]);
+  const [events] = useState<ClassEvent[]>(mockEvents);
+
+  // Modal states
+  const [requestModal, setRequestModal] = useState<{ type: RequestType; event: ClassEvent } | null>(null);
+  const [instructorScheduleModal, setInstructorScheduleModal] = useState<string | null>(null);
 
   const goToToday = () => setSelectedDate(new Date());
   const goToPrevDay = () => setSelectedDate((d) => new Date(d.getTime() - 86400000));
@@ -717,55 +586,41 @@ export default function ClassesPage() {
     setSelectedEvent(event);
   };
 
-  const handleExpand = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleDelete = () => {
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
+  const handleRequestCancel = () => {
     if (selectedEvent) {
-      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
-      setSelectedEvent(null);
-      setIsDeleteModalOpen(false);
+      setRequestModal({ type: "cancel", event: selectedEvent });
     }
   };
 
-  const handleEdit = () => {
-    setIsEditModalOpen(true);
+  const handleRequestReschedule = () => {
+    if (selectedEvent) {
+      setRequestModal({ type: "reschedule", event: selectedEvent });
+    }
   };
 
-  const handleSaveEdit = (data: { title: string; instructor: string; date: string; startTime: string; endTime: string }) => {
+  const handleRequestChangeInstructor = () => {
     if (selectedEvent) {
-      const [year, month, day] = data.date.split("-").map(Number);
-      const [startHour, startMin] = data.startTime.split(":").map(Number);
-      const [endHour, endMin] = data.endTime.split(":").map(Number);
-
-      const updatedEvent: ClassEvent = {
-        ...selectedEvent,
-        title: data.title,
-        instructor: data.instructor || undefined,
-        start: new Date(year, month - 1, day, startHour, startMin),
-        end: new Date(year, month - 1, day, endHour, endMin),
-      };
-
-      setEvents((prev) => prev.map((e) => (e.id === selectedEvent.id ? updatedEvent : e)));
-      setSelectedEvent(updatedEvent);
-      setIsEditModalOpen(false);
+      setRequestModal({ type: "change-instructor", event: selectedEvent });
     }
+  };
+
+  const handleViewInstructorSchedule = () => {
+    if (selectedEvent?.instructor) {
+      setInstructorScheduleModal(selectedEvent.instructor);
+    }
+  };
+
+  const handleRequestSubmit = (reason: string, preferredDate?: string) => {
+    // In a real app, this would send the request to the API
+    console.log("Request submitted:", { type: requestModal?.type, reason, preferredDate });
   };
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Page Header */}
       <div className="p-6 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-semibold text-gray-900">Classes</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">My Classes</h1>
+        <p className="text-gray-600 mt-1">View and manage your scheduled classes</p>
       </div>
 
       {/* Calendar Header */}
@@ -788,9 +643,6 @@ export default function ClassesPage() {
             </p>
             <p className="text-sm text-gray-500">{formatShortDate(selectedDate)}</p>
           </div>
-
-          {/* Loading indicator placeholder */}
-          <div className="w-5 h-5 rounded-full border-2 border-gray-200" />
         </div>
 
         <div className="flex items-center gap-3">
@@ -823,11 +675,6 @@ export default function ClassesPage() {
               <ChevronIcon className="w-4 h-4" direction="down" />
             </button>
           </div>
-
-          {/* Add event button */}
-          <Button leftIcon={<PlusIcon className="w-5 h-5" />}>
-            Add event
-          </Button>
         </div>
       </div>
 
@@ -846,32 +693,28 @@ export default function ClassesPage() {
         {/* Sidebar */}
         <EventDetailsSidebar
           event={selectedEvent}
-          onExpand={handleExpand}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
+          onRequestCancel={handleRequestCancel}
+          onRequestReschedule={handleRequestReschedule}
+          onRequestChangeInstructor={handleRequestChangeInstructor}
+          onViewInstructorSchedule={handleViewInstructorSchedule}
         />
       </div>
 
-      {/* Expand Modal */}
-      {isModalOpen && selectedEvent && (
-        <EventDetailsModal event={selectedEvent} onClose={handleCloseModal} />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && selectedEvent && (
-        <DeleteConfirmModal
-          event={selectedEvent}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleConfirmDelete}
+      {/* Request Modal */}
+      {requestModal && (
+        <RequestModal
+          type={requestModal.type}
+          event={requestModal.event}
+          onClose={() => setRequestModal(null)}
+          onSubmit={handleRequestSubmit}
         />
       )}
 
-      {/* Edit Event Modal */}
-      {isEditModalOpen && selectedEvent && (
-        <EditEventModal
-          event={selectedEvent}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={handleSaveEdit}
+      {/* Instructor Schedule Modal */}
+      {instructorScheduleModal && (
+        <InstructorScheduleModal
+          instructor={instructorScheduleModal}
+          onClose={() => setInstructorScheduleModal(null)}
         />
       )}
     </div>
