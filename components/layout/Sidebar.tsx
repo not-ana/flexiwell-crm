@@ -342,7 +342,11 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setIsProfileMenuOpen(false);
-                  // Handle logout
+                  // Clear any stored session/auth data
+                  localStorage.removeItem("flexiwell-session");
+                  sessionStorage.clear();
+                  // Redirect to login page
+                  router.push("/login");
                 }}
               >
                 <LogoutIcon className="w-4 h-4 text-gray-500" />

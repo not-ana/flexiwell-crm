@@ -1,89 +1,107 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { MoreIcon } from "@/components/icons";
-
 export interface ProgressData {
   completed: number;
   scheduled: number;
   total: number;
 }
 
+export interface WellnessData {
+  pilates: number;
+  yoga: number;
+  reformer: number;
+  stretch: number;
+  totalClasses: number;
+  monthlyGoal: number;
+}
+
 interface ProgressDonutCardProps {
   data: ProgressData;
+  wellnessData?: WellnessData;
 }
 
 const COLORS = {
-  completed: "#7F56D9",
-  scheduled: "#D6BBFB",
-  toBook: "#E5E7EB",
+  pilates: { bg: "bg-purple-500", light: "bg-purple-100" },
+  yoga: { bg: "bg-pink-500", light: "bg-pink-100" },
+  reformer: { bg: "bg-blue-500", light: "bg-blue-100" },
+  stretch: { bg: "bg-green-500", light: "bg-green-100" },
 };
 
-export default function ProgressDonutCard({ data }: ProgressDonutCardProps) {
-  const { completed, scheduled, total } = data;
-  const toBook = Math.max(0, total - completed - scheduled);
+const defaultWellnessData: WellnessData = {
+  pilates: 6,
+  yoga: 3,
+  reformer: 2,
+  stretch: 1,
+  totalClasses: 12,
+  monthlyGoal: 16,
+};
 
-  const chartData = [
-    { name: "Completed", value: completed, color: COLORS.completed },
-    { name: "Scheduled", value: scheduled, color: COLORS.scheduled },
-    { name: "To book", value: toBook, color: COLORS.toBook },
-  ];
+export default function ProgressDonutCard({ data, wellnessData = defaultWellnessData }: ProgressDonutCardProps) {
+  const classTypes = [
+    { name: "Pilates", value: wellnessData.pilates, ...COLORS.pilates },
+    { name: "Yoga", value: wellnessData.yoga, ...COLORS.yoga },
+    { name: "Reformer", value: wellnessData.reformer, ...COLORS.reformer },
+    { name: "Stretch", value: wellnessData.stretch, ...COLORS.stretch },
+  ].filter(item => item.value > 0);
+
+  const progressPercent = Math.round((wellnessData.totalClasses / wellnessData.monthlyGoal) * 100);
+  const remaining = wellnessData.monthlyGoal - wellnessData.totalClasses;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-4 py-5 h-[280px]">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">This Month&apos;s Progress</h2>
-        <button className="text-gray-400 hover:text-gray-600 transition-colors">
-          <MoreIcon className="w-5 h-5" />
-        </button>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Monthly Progress</h2>
+          <p className="text-sm text-gray-500">Goal: {wellnessData.monthlyGoal} classes</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-3xl font-bold text-gray-900">{wellnessData.totalClasses}</span>
+          <span className="text-sm text-gray-500">/ {wellnessData.monthlyGoal}</span>
+        </div>
       </div>
 
-      {/* Donut Chart and Legend */}
-      <div className="flex items-center justify-center gap-8">
-        {/* Donut Chart */}
-        <div className="relative w-[160px] h-[160px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={70}
-                paddingAngle={2}
-                dataKey="value"
-                startAngle={90}
-                endAngle={-270}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Center Text */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-gray-900">{completed}</span>
-            <span className="text-xs text-gray-600">of {total} classes</span>
-          </div>
+      {/* Main Progress Bar */}
+      <div className="mb-5">
+        <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-primary-500 to-pink-500 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(progressPercent, 100)}%` }}
+          />
         </div>
+        <div className="flex items-center justify-between mt-2">
+          <span className={`text-sm font-medium ${progressPercent >= 100 ? "text-green-600" : "text-gray-600"}`}>
+            {progressPercent}% completed
+          </span>
+          {progressPercent >= 100 ? (
+            <span className="text-sm text-green-600 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Goal achieved!
+            </span>
+          ) : (
+            <span className="text-sm text-gray-500">{remaining} more to go</span>
+          )}
+        </div>
+      </div>
 
-        {/* Legend */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.completed }} />
-            <span className="text-sm text-gray-600">Completed</span>
+      {/* Class Type Breakdown */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">By class type</p>
+        {classTypes.map((item) => (
+          <div key={item.name} className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-sm ${item.bg}`} />
+            <span className="text-sm text-gray-700 w-20">{item.name}</span>
+            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${item.bg}`}
+                style={{ width: `${(item.value / wellnessData.totalClasses) * 100}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-gray-900 w-6 text-right">{item.value}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.scheduled }} />
-            <span className="text-sm text-gray-600">Scheduled</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.toBook }} />
-            <span className="text-sm text-gray-600">To book</span>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

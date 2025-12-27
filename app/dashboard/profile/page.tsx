@@ -18,7 +18,7 @@ interface ScheduledClass {
   dayOfWeek: string;
   time: string;
   location: string;
-  status: "confirmed" | "pending" | "completed";
+  status: "confirmed" | "pending" | "completed" | "cancellation_requested" | "reschedule_requested";
 }
 
 interface Instructor {
@@ -78,9 +78,9 @@ const mockClasses: ScheduledClass[] = [
   },
 ];
 
-// Mock instructor data
+// Mock instructor data - Maria Santos is Olivia's instructor
 const currentInstructor: Instructor = {
-  id: "1",
+  id: "2",
   name: "Maria Santos",
   initials: "MS",
   specialties: ["Pilates", "Yoga", "Stretching"],
@@ -278,23 +278,37 @@ function InstructorScheduleModal({
 function ClassCardComponent({
   classData,
   onRequestCancel,
-  onRequestReschedule
+  onRequestReschedule,
+  onConfirmAttendance,
+  onWithdrawRequest,
+  isConfirming,
+  isWithdrawing
 }: {
   classData: ScheduledClass;
   onRequestCancel: () => void;
   onRequestReschedule: () => void;
+  onConfirmAttendance: () => void;
+  onWithdrawRequest: () => void;
+  isConfirming: boolean;
+  isWithdrawing: boolean;
 }) {
-  const statusStyles = {
+  const statusStyles: Record<ScheduledClass["status"], string> = {
     confirmed: "bg-green-100 text-green-700",
     pending: "bg-yellow-100 text-yellow-700",
     completed: "bg-gray-100 text-gray-600",
+    cancellation_requested: "bg-red-100 text-red-700",
+    reschedule_requested: "bg-orange-100 text-orange-700",
   };
 
-  const statusLabels = {
+  const statusLabels: Record<ScheduledClass["status"], string> = {
     confirmed: "Confirmed",
     pending: "Pending",
     completed: "Completed",
+    cancellation_requested: "Cancellation Requested",
+    reschedule_requested: "Reschedule Requested",
   };
+
+  const hasPendingRequest = classData.status === "cancellation_requested" || classData.status === "reschedule_requested";
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
@@ -328,19 +342,96 @@ function ClassCardComponent({
       </div>
 
       {classData.status !== "completed" && (
-        <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
-          <button
-            onClick={onRequestReschedule}
-            className="flex-1 px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-          >
-            Request Reschedule
-          </button>
-          <button
-            onClick={onRequestCancel}
-            className="flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            Request Cancel
-          </button>
+        <div className="mt-4 pt-3 border-t border-gray-100 space-y-2">
+          {/* Pending Request Message & Withdraw Button */}
+          {hasPendingRequest && (
+            <div className="space-y-2">
+              <div className={`w-full px-3 py-2 ${classData.status === "cancellation_requested" ? "bg-red-50 text-red-700" : "bg-orange-50 text-orange-700"} text-sm rounded-lg flex items-center justify-center gap-2`}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {classData.status === "cancellation_requested"
+                  ? "Awaiting cancellation approval"
+                  : "Awaiting reschedule approval"}
+              </div>
+              <button
+                onClick={onWithdrawRequest}
+                disabled={isWithdrawing}
+                className="w-full px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isWithdrawing ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Withdrawing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Withdraw Request
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Confirm Attendance Button - only show for pending */}
+          {classData.status === "pending" && (
+            <button
+              onClick={onConfirmAttendance}
+              disabled={isConfirming}
+              className="w-full px-3 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isConfirming ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Confirming...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confirm Attendance
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Confirmed message */}
+          {classData.status === "confirmed" && (
+            <div className="w-full px-3 py-2 bg-green-50 text-green-700 text-sm font-medium rounded-lg flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Attendance Confirmed
+            </div>
+          )}
+
+          {/* Reschedule and Cancel buttons - only show when no pending request */}
+          {!hasPendingRequest && (
+            <div className="flex gap-2">
+              <button
+                onClick={onRequestReschedule}
+                className="flex-1 px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              >
+                Request Reschedule
+              </button>
+              <button
+                onClick={onRequestCancel}
+                className="flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                Request Cancel
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -350,16 +441,55 @@ function ClassCardComponent({
 export default function ProfilePage() {
   const [modalType, setModalType] = useState<"cancel" | "reschedule" | "change-instructor" | null>(null);
   const [selectedClass, setSelectedClass] = useState<ScheduledClass | undefined>();
-  const [showInstructorSchedule, setShowInstructorSchedule] = useState(false);
+  const [showInstructorSchedule, setShowInstructorSchedule] = useState(true); // Show instructor schedule by default
+  const [classes, setClasses] = useState<ScheduledClass[]>(mockClasses);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
 
   const handleRequestCancel = (classData: ScheduledClass) => {
-    setSelectedClass(classData);
-    setModalType("cancel");
+    // Simulate request - in real app this would call API and then update status
+    setClasses((prev) =>
+      prev.map((cls) =>
+        cls.id === classData.id ? { ...cls, status: "cancellation_requested" as const } : cls
+      )
+    );
   };
 
   const handleRequestReschedule = (classData: ScheduledClass) => {
-    setSelectedClass(classData);
-    setModalType("reschedule");
+    // Simulate request - in real app this would call API and then update status
+    setClasses((prev) =>
+      prev.map((cls) =>
+        cls.id === classData.id ? { ...cls, status: "reschedule_requested" as const } : cls
+      )
+    );
+  };
+
+  const handleWithdrawRequest = (classId: string) => {
+    setWithdrawingId(classId);
+
+    // Simulate API call
+    setTimeout(() => {
+      setClasses((prev) =>
+        prev.map((cls) =>
+          cls.id === classId ? { ...cls, status: "confirmed" as const } : cls
+        )
+      );
+      setWithdrawingId(null);
+    }, 500);
+  };
+
+  const handleConfirmAttendance = (classId: string) => {
+    setConfirmingId(classId);
+
+    // Simulate API call
+    setTimeout(() => {
+      setClasses((prev) =>
+        prev.map((cls) =>
+          cls.id === classId ? { ...cls, status: "confirmed" as const } : cls
+        )
+      );
+      setConfirmingId(null);
+    }, 500);
   };
 
   return (
@@ -458,17 +588,21 @@ export default function ProfilePage() {
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">My Scheduled Classes</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockClasses.map((classData) => (
+              {classes.map((classData) => (
                 <ClassCardComponent
                   key={classData.id}
                   classData={classData}
                   onRequestCancel={() => handleRequestCancel(classData)}
                   onRequestReschedule={() => handleRequestReschedule(classData)}
+                  onConfirmAttendance={() => handleConfirmAttendance(classData.id)}
+                  onWithdrawRequest={() => handleWithdrawRequest(classData.id)}
+                  isConfirming={confirmingId === classData.id}
+                  isWithdrawing={withdrawingId === classData.id}
                 />
               ))}
             </div>
 
-            {mockClasses.length === 0 && (
+            {classes.length === 0 && (
               <div className="text-center py-12 bg-gray-50 rounded-xl">
                 <p className="text-gray-600">No classes scheduled yet.</p>
                 <p className="text-sm text-gray-500 mt-1">Contact support to book your first class!</p>

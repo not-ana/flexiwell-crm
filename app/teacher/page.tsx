@@ -166,138 +166,55 @@ export default function TeacherDashboard() {
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
-      <div className="p-8">
-        {/* Header with gradient */}
-        <div className="relative mb-8 rounded-2xl bg-gradient-to-r from-green-600 via-teal-500 to-cyan-500 p-8 text-white overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-          <div className="relative z-10 flex items-start justify-between">
-            <div>
-              <p className="text-white/80 text-sm mb-1">{currentDate}</p>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, Maria!</h1>
-              <p className="text-white/90 max-w-lg">
-                You have <span className="font-semibold">{mockTodaySchedule.length} classes</span> scheduled today.
-                {completedClasses > 0 && ` ${completedClasses} completed`}
-                {inProgressClass && `, 1 in progress`}.
-              </p>
-
-              {/* Current Class Badge */}
-              {inProgressClass && (
-                <div className="mt-4 inline-flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-                  <div>
-                    <p className="text-sm font-medium">Now Teaching: {inProgressClass.name}</p>
-                    <p className="text-xs text-white/80">{inProgressClass.room} • {inProgressClass.students} students</p>
-                  </div>
-                  <button className="ml-4 px-3 py-1.5 bg-white text-green-600 text-sm font-medium rounded-lg hover:bg-white/90 transition-colors">
-                    Take Attendance
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <Link
-                href="/teacher/classes"
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Full Schedule
-              </Link>
-              <Link
-                href="/teacher/students"
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                My Students
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-6 gap-4 mb-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-500">Classes</p>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{weeklyStats.classesCompleted}/{weeklyStats.totalClasses}</p>
-            <p className="text-xs text-gray-400 mt-1">This week</p>
+      <div className="p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Good morning, Maria
+            </h1>
+            <Link
+              href="/teacher/settings"
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Settings
+            </Link>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-500">Students</p>
+          {/* Stats Cards Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Classes */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 mb-1">Classes This Week</p>
+              <p className="text-2xl font-bold text-gray-900">{weeklyStats.classesCompleted}/{weeklyStats.totalClasses}</p>
+              <p className="text-sm text-gray-600">completed</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{weeklyStats.studentsServed}</p>
-            <p className="text-xs text-gray-400 mt-1">This week</p>
-          </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-500">Attendance</p>
+            {/* Students */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 mb-1">Students Served</p>
+              <p className="text-2xl font-bold text-gray-900">{weeklyStats.studentsServed}</p>
+              <p className="text-sm text-gray-600">this week</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">{weeklyStats.avgAttendance}%</p>
-            <p className="text-xs text-gray-400 mt-1">Average</p>
-          </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-500">Rating</p>
+            {/* Attendance */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 mb-1">Avg. Attendance</p>
+              <p className="text-2xl font-bold text-green-600">{weeklyStats.avgAttendance}%</p>
+              <p className="text-sm text-gray-600">this week</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{weeklyStats.rating}</p>
-            <p className="text-xs text-gray-400 mt-1">86 reviews</p>
-          </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {/* Rating */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
+                <p className="text-xs text-gray-500">Your Rating</p>
               </div>
-              <p className="text-sm text-gray-500">Hours</p>
+              <p className="text-2xl font-bold text-gray-900">{weeklyStats.rating}</p>
+              <p className="text-sm text-gray-600">86 reviews</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{weeklyStats.hoursTeaching}h</p>
-            <p className="text-xs text-gray-400 mt-1">This week</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-5 text-white hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </div>
-              <p className="text-sm text-white/80">Makeups</p>
-            </div>
-            <p className="text-2xl font-bold">{weeklyStats.makeupPending}</p>
-            <p className="text-xs text-white/70 mt-1">Pending</p>
           </div>
         </div>
 
@@ -427,7 +344,7 @@ export default function TeacherDashboard() {
               </div>
 
               {activeTab === "today" ? (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-200">
                   {(showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
                     <div
                       key={classItem.id}
@@ -468,7 +385,7 @@ export default function TeacherDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-200">
                   {mockMakeupRequests.map((request) => (
                     <div key={request.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-4">
@@ -516,7 +433,7 @@ export default function TeacherDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
                 <p className="text-sm text-gray-500">Next few days</p>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-200">
                 {mockUpcomingClasses.map((classItem) => (
                   <div key={classItem.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
@@ -554,7 +471,7 @@ export default function TeacherDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900">Student Attendance</h2>
                 <p className="text-sm text-gray-500">Track your regular students</p>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-200">
                 {mockStudentAttendance.map((student) => (
                   <div key={student.id} className="px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
                     <StudentAvatar name={student.name} initials={student.initials} />

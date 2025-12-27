@@ -257,43 +257,85 @@ function RatingStars({ rating }: { rating: number }) {
 
 type TimePeriod = "week" | "month" | "year";
 
+interface Establishment {
+  id: string;
+  name: string;
+  location: string;
+}
+
+const establishments: Establishment[] = [
+  { id: "1", name: "FlexiWell Centro", location: "Centro, São Paulo" },
+  { id: "2", name: "FlexiWell Jardins", location: "Jardins, São Paulo" },
+  { id: "3", name: "FlexiWell Pinheiros", location: "Pinheiros, São Paulo" },
+];
+
 export default function AdminDashboard() {
   const currentYear = new Date().getFullYear();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("month");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment>(establishments[0]);
+  const [showEstablishmentDropdown, setShowEstablishmentDropdown] = useState(false);
 
   const availableYears = [currentYear, currentYear - 1];
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
-      <div className="p-8">
-        {/* Header with gradient */}
-        <div className="relative mb-8 rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 p-8 text-white overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-          <div className="relative z-10 flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, Ana!</h1>
-              <p className="text-gray-400 max-w-lg">
-                Here's what's happening with your studio today. You have{" "}
-                <span className="text-white font-medium">4 classes</span> scheduled and{" "}
-                <span className="text-green-400 font-medium">$1,250</span> in new revenue.
-              </p>
+      <div className="p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Good morning, Ana
+              </h1>
+              {/* Establishment Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowEstablishmentDropdown(!showEstablishmentDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  {selectedEstablishment.name}
+                  <ChevronIcon className="w-4 h-4 text-gray-400" direction={showEstablishmentDropdown ? "up" : "down"} />
+                </button>
+                {showEstablishmentDropdown && (
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px]">
+                    {establishments.map((establishment) => (
+                      <button
+                        key={establishment.id}
+                        onClick={() => {
+                          setSelectedEstablishment(establishment);
+                          setShowEstablishmentDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                          selectedEstablishment.id === establishment.id ? "bg-primary-50" : ""
+                        }`}
+                      >
+                        <p className={`text-sm font-medium ${selectedEstablishment.id === establishment.id ? "text-primary-600" : "text-gray-900"}`}>
+                          {establishment.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{establishment.location}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {/* Year Selector */}
               <div className="relative">
                 <button
                   onClick={() => setShowYearDropdown(!showYearDropdown)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-white font-medium bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-colors backdrop-blur-sm"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   {selectedYear}
-                  <ChevronIcon className="w-4 h-4 text-gray-300" direction={showYearDropdown ? "up" : "down"} />
+                  <ChevronIcon className="w-4 h-4 text-gray-400" direction={showYearDropdown ? "up" : "down"} />
                 </button>
                 {showYearDropdown && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[100px]">
                     {availableYears.map((year) => (
                       <button
                         key={year}
@@ -301,7 +343,7 @@ export default function AdminDashboard() {
                           setSelectedYear(year);
                           setShowYearDropdown(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                        className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
                           selectedYear === year ? "font-medium text-primary-600 bg-primary-50" : "text-gray-700"
                         }`}
                       >
@@ -313,77 +355,43 @@ export default function AdminDashboard() {
               </div>
 
               {/* Period Selector */}
-              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/20">
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                 {(["week", "month", "year"] as TimePeriod[]).map((period) => (
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                       selectedPeriod === period
                         ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-300 hover:text-white"
+                        : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
                     {period.charAt(0).toUpperCase() + period.slice(1)}
                   </button>
                 ))}
               </div>
+
+              <Link
+                href="/admin/settings"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Settings
+              </Link>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="relative z-10 mt-6 flex gap-4">
-            <Link
-              href="/admin/clients"
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              Add Client
-            </Link>
-            <Link
-              href="/admin/conversations"
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Bot Messages
-              <span className="bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">3</span>
-            </Link>
-            <Link
-              href="/admin/reports"
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              View Reports
-            </Link>
-          </div>
-        </div>
-
-        {/* Overview Stats - Gradient Cards */}
-        <div className="grid grid-cols-4 gap-6 mb-8">
-          {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
-            <div key={idx} className="relative bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 overflow-hidden group">
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.color} opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`} />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg`}>
-                    {stat.icon}
-                  </div>
-                  <TrendIndicator trend={stat.trend} value={stat.change} />
-                </div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                <p className="text-base text-gray-600">{stat.label}</p>
-                {stat.subtext && (
-                  <p className="text-sm text-gray-400 mt-1">{stat.subtext}</p>
-                )}
+          {/* Stats Cards Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
+              <div key={idx} className="bg-white rounded-xl border border-gray-200 p-4">
+                <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className={`text-sm ${stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-600"}`}>
+                  {stat.change} {stat.subtext}
+                </p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Charts Row */}
@@ -584,7 +592,7 @@ export default function AdminDashboard() {
                   <ChevronIcon className="w-4 h-4" direction="right" />
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-200">
                 {upcomingClasses.map((cls) => (
                   <div key={cls.id} className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
                     <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -643,7 +651,7 @@ export default function AdminDashboard() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
                 <span className="text-sm text-gray-500">Average</span>
                 <span className="text-lg font-bold text-green-600">93.3%</span>
               </div>
@@ -655,7 +663,7 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
                 <p className="text-sm text-gray-500 mt-1">Latest updates from your studio</p>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-200">
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="px-6 py-4 flex items-center gap-4">
                     <div
