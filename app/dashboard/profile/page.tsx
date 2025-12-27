@@ -7,6 +7,8 @@ import {
   ClockIcon,
   CalendarIcon,
 } from "@/components/icons";
+import { Button } from "@/components/ui";
+import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 
 // Types
 interface ScheduledClass {
@@ -441,10 +443,19 @@ function ClassCardComponent({
 export default function ProfilePage() {
   const [modalType, setModalType] = useState<"cancel" | "reschedule" | "change-instructor" | null>(null);
   const [selectedClass, setSelectedClass] = useState<ScheduledClass | undefined>();
-  const [showInstructorSchedule, setShowInstructorSchedule] = useState(true); // Show instructor schedule by default
+  const [showInstructorSchedule, setShowInstructorSchedule] = useState(false);
   const [classes, setClasses] = useState<ScheduledClass[]>(mockClasses);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+
+  // Onboarding replay
+  const { resetOnboarding } = useInteractiveOnboarding("client");
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+
+  const handleReplayOnboarding = () => {
+    resetOnboarding();
+    setShowOnboardingModal(true);
+  };
 
   const handleRequestCancel = (classData: ScheduledClass) => {
     // Simulate request - in real app this would call API and then update status
@@ -610,6 +621,19 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* Platform Tour Section */}
+        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Platform Tour</h3>
+              <p className="text-sm text-gray-500">Replay the onboarding walkthrough to learn about all features</p>
+            </div>
+            <Button variant="secondary" onClick={handleReplayOnboarding}>
+              Replay Onboarding
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -627,6 +651,13 @@ export default function ProfilePage() {
         isOpen={showInstructorSchedule}
         onClose={() => setShowInstructorSchedule(false)}
         instructor={currentInstructor}
+      />
+
+      {/* Onboarding Modal */}
+      <InteractiveOnboarding
+        role="client"
+        isOpen={showOnboardingModal}
+        onComplete={() => setShowOnboardingModal(false)}
       />
     </div>
   );

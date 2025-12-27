@@ -155,7 +155,11 @@ function StatusBadge({ status }: { status: Student["status"] }) {
   );
 }
 
-function StudentCard({ student }: { student: Student }) {
+function StudentCard({ student, onViewProfile, onSendMessage }: {
+  student: Student;
+  onViewProfile: (student: Student) => void;
+  onSendMessage: (student: Student) => void;
+}) {
   const progressPercent = (student.classesRemaining / student.classesTotal) * 100;
 
   return (
@@ -216,10 +220,16 @@ function StudentCard({ student }: { student: Student }) {
 
       {/* Actions */}
       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2">
-        <button className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <button
+          onClick={() => onViewProfile(student)}
+          className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+        >
           View profile
         </button>
-        <button className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
+        <button
+          onClick={() => onSendMessage(student)}
+          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+        >
           Send message
         </button>
       </div>
@@ -227,7 +237,19 @@ function StudentCard({ student }: { student: Student }) {
   );
 }
 
-function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: boolean; onToggle: () => void }) {
+function UnitSection({
+  unit,
+  isExpanded,
+  onToggle,
+  onViewProfile,
+  onSendMessage,
+}: {
+  unit: Unit;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onViewProfile: (student: Student) => void;
+  onSendMessage: (student: Student) => void;
+}) {
   const activeCount = unit.students.filter((s) => s.status === "active").length;
 
   return (
@@ -264,7 +286,12 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
         <div className="px-6 pb-6 pt-2 border-t border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {unit.students.map((student) => (
-              <StudentCard key={student.id} student={student} />
+              <StudentCard
+                key={student.id}
+                student={student}
+                onViewProfile={onViewProfile}
+                onSendMessage={onSendMessage}
+              />
             ))}
           </div>
         </div>
@@ -273,10 +300,210 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
   );
 }
 
+// Student Profile Modal
+function StudentProfileModal({
+  student,
+  isOpen,
+  onClose,
+}: {
+  student: Student | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  if (!isOpen || !student) return null;
+
+  const statusStyle = statusStyles[student.status];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+              <span className="text-xl font-semibold text-primary-700">{student.initials}</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{student.name}</h2>
+              <StatusBadge status={student.status} />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <p className="text-sm text-gray-500">Email</p>
+            <p className="font-medium text-gray-900">{student.email}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Phone</p>
+            <p className="font-medium text-gray-900">{student.phone}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Current Plan</p>
+            <p className="font-medium text-gray-900">{student.plan}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Classes Remaining</p>
+            <p className="font-medium text-gray-900">{student.classesRemaining} of {student.classesTotal}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Member Since</p>
+            <p className="font-medium text-gray-900">{student.joinedDate}</p>
+          </div>
+          {student.nextClass && (
+            <div>
+              <p className="text-sm text-gray-500">Next Class</p>
+              <p className="font-medium text-primary-600">{student.nextClass}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Send Message Modal
+function SendMessageModal({
+  student,
+  isOpen,
+  onClose,
+}: {
+  student: Student | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [message, setMessage] = useState("");
+  const [channel, setChannel] = useState<"whatsapp" | "email" | "sms">("whatsapp");
+
+  if (!isOpen || !student) return null;
+
+  const handleSend = () => {
+    if (!message.trim()) {
+      alert("Please enter a message");
+      return;
+    }
+    // In production: await api.sendMessage({ studentId: student.id, message, channel });
+    console.log("Sending message:", { to: student.name, message, channel });
+    alert(`Message sent to ${student.name} via ${channel.toUpperCase()}!\n\n"${message}"`);
+    setMessage("");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Send Message</h2>
+          <p className="text-sm text-gray-600 mt-1">Send a message to {student.name}</p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Channel selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Channel</label>
+            <div className="flex gap-2">
+              {(["whatsapp", "email", "sms"] as const).map((ch) => (
+                <button
+                  key={ch}
+                  onClick={() => setChannel(ch)}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    channel === ch
+                      ? "bg-primary-100 text-primary-700 border-2 border-primary-500"
+                      : "bg-gray-50 text-gray-700 border-2 border-transparent hover:bg-gray-100"
+                  }`}
+                >
+                  {ch === "whatsapp" ? "WhatsApp" : ch === "email" ? "Email" : "SMS"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recipient info */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-gray-500">To: {student.name}</p>
+            <p className="text-sm text-gray-700 font-medium">
+              {channel === "email" ? student.email : student.phone}
+            </p>
+          </div>
+
+          {/* Message */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message here..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            />
+          </div>
+
+          {/* Quick messages */}
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Quick messages:</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "See you in class!",
+                "Don't forget your water bottle",
+                "Class is confirmed for tomorrow",
+              ].map((quick) => (
+                <button
+                  key={quick}
+                  onClick={() => setMessage(quick)}
+                  className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  {quick}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Send Message
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Student["status"]>("all");
   const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+
+  const handleViewProfile = (student: Student) => {
+    setSelectedStudent(student);
+    setShowProfileModal(true);
+  };
+
+  const handleSendMessage = (student: Student) => {
+    setSelectedStudent(student);
+    setShowMessageModal(true);
+  };
 
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) =>
@@ -381,6 +608,8 @@ export default function TeacherStudentsPage() {
               unit={unit}
               isExpanded={expandedUnits.includes(unit.id)}
               onToggle={() => toggleUnit(unit.id)}
+              onViewProfile={handleViewProfile}
+              onSendMessage={handleSendMessage}
             />
           ))
         ) : (
@@ -396,6 +625,18 @@ export default function TeacherStudentsPage() {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <StudentProfileModal
+        student={selectedStudent}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
+      <SendMessageModal
+        student={selectedStudent}
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+      />
     </div>
   );
 }

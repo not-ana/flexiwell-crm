@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronIcon } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from "recharts";
+import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 
 interface UpcomingClass {
   id: string;
@@ -161,6 +162,9 @@ export default function TeacherDashboard() {
     classId: "",
   });
 
+  // Onboarding
+  const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("teacher");
+
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -173,6 +177,13 @@ export default function TeacherDashboard() {
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
+      {/* Interactive Onboarding */}
+      <InteractiveOnboarding
+        role="teacher"
+        isOpen={showOnboarding}
+        onComplete={markComplete}
+      />
+
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
@@ -300,7 +311,7 @@ export default function TeacherDashboard() {
                       border: "1px solid #E5E7EB",
                       borderRadius: "8px",
                     }}
-                    formatter={(value: number) => [`${value}%`, ""]}
+                    formatter={(value) => [`${value}%`, ""]}
                   />
                 </PieChart>
               </ResponsiveContainer>

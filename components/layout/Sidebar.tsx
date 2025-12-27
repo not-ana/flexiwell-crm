@@ -20,6 +20,7 @@ import {
   ChatIcon,
   ReportIcon,
   PaymentIcon,
+  RoomsIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -49,6 +50,7 @@ interface MenuItem {
   hasBadge?: boolean;
   status?: string;
   requiresFeature?: string; // Feature key from PlanFeatures
+  onboardingId?: string; // ID for onboarding highlight
 }
 
 export interface SidebarProps {
@@ -60,37 +62,36 @@ export interface SidebarProps {
 const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }> = {
   client: {
     main: [
-      { name: "Dashboard", href: "/dashboard", icon: DashboardIcon },
-      { name: "Classes", href: "/dashboard/classes", icon: ClassesIcon },
+      { name: "Dashboard", href: "/dashboard", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Classes", href: "/dashboard/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
       { name: "Support", href: "/dashboard/support", icon: SupportIcon, status: "Online" },
     ],
     bottom: [],
   },
   admin: {
     main: [
-      { name: "Dashboard", href: "/admin", icon: DashboardIcon },
-      { name: "Clients", href: "/admin/clients", icon: ClientsIcon },
-      { name: "Payments", href: "/admin/payments", icon: PaymentIcon },
-      { name: "Staff", href: "/admin/staff", icon: UserIcon },
+      { name: "Dashboard", href: "/admin", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
+      { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
+      { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
-      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, requiresFeature: "apiAccess" },
       { name: "Notifications", href: "/admin/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
-      { name: "Settings", href: "/admin/settings", icon: SettingsIcon },
+      { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
       { name: "Support", href: "/admin/support", icon: SupportIcon, status: "Online" },
     ],
   },
   teacher: {
     main: [
-      { name: "Dashboard", href: "/teacher", icon: DashboardIcon },
-      { name: "My Classes", href: "/teacher/classes", icon: ClassesIcon },
+      { name: "Dashboard", href: "/teacher", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "My Classes", href: "/teacher/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
       { name: "My Students", href: "/teacher/students", icon: ClientsIcon },
       { name: "Notifications", href: "/teacher/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
-      { name: "Settings", href: "/teacher/settings", icon: SettingsIcon },
+      { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
       { name: "Support", href: "/teacher/support", icon: SupportIcon, status: "Online" },
     ],
   },
@@ -241,6 +242,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
               <li key={item.name}>
                 <Link
                   href={item.href}
+                  data-onboarding={item.onboardingId}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                     isActive
                       ? "bg-gray-50 text-gray-900"
@@ -271,6 +273,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
               <li key={item.name}>
                 <Link
                   href={item.href}
+                  data-onboarding={item.onboardingId}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                     isActive
                       ? "bg-gray-50 text-gray-900"

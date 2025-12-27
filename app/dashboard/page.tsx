@@ -6,6 +6,7 @@ import {
   ProgressDonutCard,
   YearlyBarChart,
 } from "@/components/dashboard";
+import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 
 const mockProgressData = {
   completed: 12,
@@ -34,6 +35,9 @@ const getUserData = () => {
 const userData = getUserData();
 
 export default function DashboardPage() {
+  // Onboarding
+  const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("client");
+
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -43,6 +47,13 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 bg-gray-50/50 min-h-screen">
+      {/* Interactive Onboarding */}
+      <InteractiveOnboarding
+        role="client"
+        isOpen={showOnboarding}
+        onComplete={markComplete}
+      />
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">

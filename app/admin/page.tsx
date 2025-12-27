@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronIcon } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
+import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 
 interface StaffPerformance {
   id: string;
@@ -277,10 +278,19 @@ export default function AdminDashboard() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment>(establishments[0]);
   const [showEstablishmentDropdown, setShowEstablishmentDropdown] = useState(false);
 
+  // Onboarding
+  const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("admin");
+
   const availableYears = [currentYear, currentYear - 1];
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
+      {/* Interactive Onboarding */}
+      <InteractiveOnboarding
+        role="admin"
+        isOpen={showOnboarding}
+        onComplete={markComplete}
+      />
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
@@ -431,7 +441,7 @@ export default function AdminDashboard() {
                       borderRadius: "12px",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+                    formatter={(value) => [`$${(value as number).toLocaleString()}`, ""]}
                   />
                   <Area type="monotone" dataKey="lastYear" stroke="#D1D5DB" strokeWidth={2} fill="transparent" />
                   <Area type="monotone" dataKey="revenue" stroke="#6938EF" strokeWidth={3} fill="url(#colorRevenue)" />
@@ -466,7 +476,7 @@ export default function AdminDashboard() {
                       border: "1px solid #E5E7EB",
                       borderRadius: "8px",
                     }}
-                    formatter={(value: number) => [`${value}%`, ""]}
+                    formatter={(value) => [`${value}%`, ""]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -648,7 +658,7 @@ export default function AdminDashboard() {
                         border: "1px solid #E5E7EB",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number) => [`${value}%`, "Attendance"]}
+                      formatter={(value) => [`${value}%`, "Attendance"]}
                     />
                   </LineChart>
                 </ResponsiveContainer>

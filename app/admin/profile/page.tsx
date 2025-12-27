@@ -5,6 +5,8 @@ import {
   MapPinIcon,
   ExternalLinkIcon,
 } from "@/components/icons";
+import { Button } from "@/components/ui";
+import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 
 // Admin user data (matching Sidebar mockAccountsData)
 const adminUser = {
@@ -63,6 +65,15 @@ export default function AdminProfilePage() {
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const aboutPreviewLength = 300;
   const shouldTruncate = adminUser.about.length > aboutPreviewLength;
+
+  // Onboarding replay
+  const { resetOnboarding } = useInteractiveOnboarding("admin");
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+
+  const handleReplayOnboarding = () => {
+    resetOnboarding();
+    setShowOnboardingModal(true);
+  };
 
   return (
     <div className="h-full overflow-auto">
@@ -168,9 +179,29 @@ export default function AdminProfilePage() {
                 ))}
               </div>
             </div>
+
+            {/* Platform Tour Section */}
+            <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Platform Tour</h3>
+                  <p className="text-sm text-gray-500">Replay the onboarding walkthrough to learn about all features</p>
+                </div>
+                <Button variant="secondary" onClick={handleReplayOnboarding}>
+                  Replay Onboarding
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Onboarding Modal */}
+      <InteractiveOnboarding
+        role="admin"
+        isOpen={showOnboardingModal}
+        onComplete={() => setShowOnboardingModal(false)}
+      />
     </div>
   );
 }

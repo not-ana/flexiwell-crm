@@ -408,6 +408,192 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
   );
 }
 
+// Plan options for clients
+const planOptions = [
+  { id: "monthly-8", name: "Monthly - 8 classes", price: 299 },
+  { id: "monthly-12", name: "Monthly - 12 classes", price: 399 },
+  { id: "quarterly-24", name: "Quarterly - 24 classes", price: 799 },
+  { id: "semiannual-48", name: "Semi-annual - 48 classes", price: 1499 },
+  { id: "annual-96", name: "Annual - 96 classes", price: 2499 },
+];
+
+// Add Client Modal Component (Single Entry Only - Import button handles bulk)
+function AddClientModal({
+  isOpen,
+  onClose,
+  units,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  units: Unit[];
+}) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    plan: planOptions[0].id,
+    unit: units[0]?.id || "",
+    notes: "",
+  });
+
+  const handleSubmit = () => {
+    if (!formData.name || !formData.email) {
+      alert("Please fill in name and email");
+      return;
+    }
+    const selectedPlan = planOptions.find((p) => p.id === formData.plan);
+    const selectedUnit = units.find((u) => u.id === formData.unit);
+    alert(
+      `Client added successfully!\n\nName: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nPlan: ${selectedPlan?.name}\nLocation: ${selectedUnit?.name}\n\nA welcome email will be sent to the client.`
+    );
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      plan: planOptions[0].id,
+      unit: units[0]?.id || "",
+      notes: "",
+    });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Add Client</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter client's full name"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="email@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="(555) 123-4567"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Plan *</label>
+              <select
+                value={formData.plan}
+                onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {planOptions.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} - ${plan.price}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+              <select
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+              placeholder="Any notes about this client..."
+            />
+          </div>
+
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-blue-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-blue-900">Welcome Email</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  A welcome email will be sent to the client with instructions to set up their account
+                  and view their class schedule.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Add Client
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Import Modal Component
 function ImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [dragActive, setDragActive] = useState(false);
@@ -663,6 +849,7 @@ export default function AdminClientsPage() {
   const [unitFilter, setUnitFilter] = useState<string>("all");
   const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) =>
@@ -715,7 +902,10 @@ export default function AdminClientsPage() {
             <UploadIcon className="w-5 h-5" />
             Import
           </button>
-          <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+          <button
+            onClick={() => setShowAddClientModal(true)}
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -838,6 +1028,13 @@ export default function AdminClientsPage() {
 
       {/* Import Modal */}
       <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
+
+      {/* Add Client Modal */}
+      <AddClientModal
+        isOpen={showAddClientModal}
+        onClose={() => setShowAddClientModal(false)}
+        units={mockUnits}
+      />
     </div>
   );
 }

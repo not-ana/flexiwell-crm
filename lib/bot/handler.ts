@@ -165,7 +165,8 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
         response = await handleBookClass(session, classIndex);
         await clearSessionFlow(session);
       } else if (session.currentFlow === "CANCEL_CLASS") {
-        const bookingId = session.flowData?.bookings?.[parseInt(messageContent, 10) - 1];
+        const bookings = session.flowData?.bookings as string[] | undefined;
+        const bookingId = bookings?.[parseInt(messageContent, 10) - 1];
         if (bookingId) {
           response = await handleCancelClass(session, bookingId);
           await clearSessionFlow(session);

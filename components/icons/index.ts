@@ -39,3 +39,4 @@ export { default as IntegrationsIcon } from "./IntegrationsIcon";
 export { default as ChatIcon } from "./ChatIcon";
 export { default as ReportIcon } from "./ReportIcon";
 export { default as PaymentIcon } from "./PaymentIcon";
+export { default as RoomsIcon } from "./RoomsIcon";

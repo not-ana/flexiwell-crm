@@ -30,34 +30,34 @@ const mockConversations: Conversation[] = [
     clientId: "c1",
     clientName: "Maria Silva",
     platform: "whatsapp",
-    lastMessage: "Obrigada! Consegui agendar minha aula.",
+    lastMessage: "Thanks! I was able to schedule my class.",
     lastMessageTime: new Date(Date.now() - 5 * 60 * 1000),
     unreadCount: 0,
     status: "active",
     messages: [
-      { id: "m1", from: "client", content: "Oi, quantas aulas eu ainda tenho?", timestamp: new Date(Date.now() - 30 * 60 * 1000) },
-      { id: "m2", from: "bot", content: "Olá Maria! Você tem 6 aulas restantes no seu plano mensal.", timestamp: new Date(Date.now() - 29 * 60 * 1000) },
-      { id: "m3", from: "client", content: "Quero agendar uma aula de pilates", timestamp: new Date(Date.now() - 25 * 60 * 1000) },
-      { id: "m4", from: "bot", content: "Claro! Temos as seguintes aulas de Pilates disponíveis:\n1. Terça 10h - Prof. Ana\n2. Quarta 14h - Prof. Maria\n3. Sexta 9h - Prof. Ana", timestamp: new Date(Date.now() - 24 * 60 * 1000) },
+      { id: "m1", from: "client", content: "Hi, how many classes do I have left?", timestamp: new Date(Date.now() - 30 * 60 * 1000) },
+      { id: "m2", from: "bot", content: "Hello Maria! You have 6 classes remaining in your monthly plan.", timestamp: new Date(Date.now() - 29 * 60 * 1000) },
+      { id: "m3", from: "client", content: "I want to schedule a pilates class", timestamp: new Date(Date.now() - 25 * 60 * 1000) },
+      { id: "m4", from: "bot", content: "Sure! Here are the available Pilates classes:\n1. Tuesday 10am - Instructor Ana\n2. Wednesday 2pm - Instructor Maria\n3. Friday 9am - Instructor Ana", timestamp: new Date(Date.now() - 24 * 60 * 1000) },
       { id: "m5", from: "client", content: "1", timestamp: new Date(Date.now() - 20 * 60 * 1000) },
-      { id: "m6", from: "bot", content: "Aula agendada com sucesso! Pilates - Terça às 10h com Prof. Ana.", timestamp: new Date(Date.now() - 19 * 60 * 1000) },
-      { id: "m7", from: "client", content: "Obrigada! Consegui agendar minha aula.", timestamp: new Date(Date.now() - 5 * 60 * 1000) },
+      { id: "m6", from: "bot", content: "Class booked successfully! Pilates - Tuesday at 10am with Instructor Ana.", timestamp: new Date(Date.now() - 19 * 60 * 1000) },
+      { id: "m7", from: "client", content: "Thanks! I was able to schedule my class.", timestamp: new Date(Date.now() - 5 * 60 * 1000) },
     ],
   },
   {
     id: "2",
     clientId: "c2",
-    clientName: "João Santos",
+    clientName: "John Santos",
     platform: "instagram",
-    lastMessage: "Preciso falar com alguém sobre meu plano",
+    lastMessage: "I need to talk to someone about my plan",
     lastMessageTime: new Date(Date.now() - 10 * 60 * 1000),
     unreadCount: 2,
     status: "waiting",
     messages: [
-      { id: "m1", from: "client", content: "Oi", timestamp: new Date(Date.now() - 15 * 60 * 1000) },
-      { id: "m2", from: "bot", content: "Olá João! Como posso ajudar?", timestamp: new Date(Date.now() - 14 * 60 * 1000) },
-      { id: "m3", from: "client", content: "Preciso falar com alguém sobre meu plano", timestamp: new Date(Date.now() - 10 * 60 * 1000) },
-      { id: "m4", from: "bot", content: "Claro! Um de nossos atendentes irá responder em breve.", timestamp: new Date(Date.now() - 9 * 60 * 1000) },
+      { id: "m1", from: "client", content: "Hi", timestamp: new Date(Date.now() - 15 * 60 * 1000) },
+      { id: "m2", from: "bot", content: "Hello John! How can I help you?", timestamp: new Date(Date.now() - 14 * 60 * 1000) },
+      { id: "m3", from: "client", content: "I need to talk to someone about my plan", timestamp: new Date(Date.now() - 10 * 60 * 1000) },
+      { id: "m4", from: "bot", content: "Of course! One of our team members will respond shortly.", timestamp: new Date(Date.now() - 9 * 60 * 1000) },
     ],
   },
   {
@@ -65,14 +65,14 @@ const mockConversations: Conversation[] = [
     clientId: "c3",
     clientName: "Ana Oliveira",
     platform: "whatsapp",
-    lastMessage: "Perfeito, muito obrigada!",
+    lastMessage: "Perfect, thank you so much!",
     lastMessageTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
     unreadCount: 0,
     status: "closed",
     messages: [
-      { id: "m1", from: "client", content: "Quero cancelar minha aula de amanhã", timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
-      { id: "m2", from: "bot", content: "Sua aula de Yoga amanhã às 9h foi cancelada. A aula foi restaurada ao seu pacote.", timestamp: new Date(Date.now() - 2.9 * 60 * 60 * 1000) },
-      { id: "m3", from: "client", content: "Perfeito, muito obrigada!", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+      { id: "m1", from: "client", content: "I want to cancel my class tomorrow", timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000) },
+      { id: "m2", from: "bot", content: "Your Yoga class tomorrow at 9am has been cancelled. The class credit has been restored to your plan.", timestamp: new Date(Date.now() - 2.9 * 60 * 60 * 1000) },
+      { id: "m3", from: "client", content: "Perfect, thank you so much!", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
     ],
   },
   {
@@ -80,13 +80,13 @@ const mockConversations: Conversation[] = [
     clientId: "c4",
     clientName: "Carlos Lima",
     platform: "whatsapp",
-    lastMessage: "Como faço pra trocar de instrutora?",
+    lastMessage: "How do I change my instructor?",
     lastMessageTime: new Date(Date.now() - 30 * 60 * 1000),
     unreadCount: 1,
     status: "waiting",
     messages: [
-      { id: "m1", from: "client", content: "Como faço pra trocar de instrutora?", timestamp: new Date(Date.now() - 30 * 60 * 1000) },
-      { id: "m2", from: "bot", content: "Para solicitar troca de instrutor, por favor descreva o motivo e entraremos em contato.", timestamp: new Date(Date.now() - 29 * 60 * 1000) },
+      { id: "m1", from: "client", content: "How do I change my instructor?", timestamp: new Date(Date.now() - 30 * 60 * 1000) },
+      { id: "m2", from: "bot", content: "To request an instructor change, please describe the reason and we'll get back to you.", timestamp: new Date(Date.now() - 29 * 60 * 1000) },
     ],
   },
 ];
@@ -98,14 +98,14 @@ function formatTime(date: Date): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Agora";
+  if (diffMins < 1) return "Now";
   if (diffMins < 60) return `${diffMins}min`;
   if (diffHours < 24) return `${diffHours}h`;
   return `${diffDays}d`;
 }
 
 function formatFullTime(date: Date): string {
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function ConversationsPage() {

@@ -163,9 +163,266 @@ function ProfileSettings() {
   );
 }
 
+// Available plans for Change Plan modal
+const availablePlans = [
+  {
+    id: "starter",
+    name: "Starter",
+    price: 49,
+    period: "month",
+    classes: 8,
+    features: ["8 classes/month", "Online booking", "Email reminders"],
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    price: 79,
+    period: "month",
+    classes: 16,
+    features: ["16 classes/month", "Priority booking", "WhatsApp reminders", "Cancel anytime"],
+    popular: true,
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    price: 149,
+    period: "month",
+    classes: -1, // unlimited
+    features: ["Unlimited classes", "VIP booking", "Personal trainer", "24/7 access"],
+  },
+];
+
+// Change Plan Modal
+function ChangePlanModal({
+  isOpen,
+  onClose,
+  currentPlanId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentPlanId: string;
+}) {
+  const [selectedPlan, setSelectedPlan] = useState(currentPlanId);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirmChange = async () => {
+    if (selectedPlan === currentPlanId) {
+      alert("You're already on this plan.");
+      return;
+    }
+
+    setIsProcessing(true);
+    // In production: await api.changePlan(selectedPlan) or redirect to Stripe Checkout
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsProcessing(false);
+
+    const plan = availablePlans.find((p) => p.id === selectedPlan);
+    alert(`Plan changed to ${plan?.name}!\n\nYour new plan will be active immediately.\nYou will be charged $${plan?.price}/${plan?.period} starting from your next billing cycle.`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Change Plan</h2>
+          <p className="text-sm text-gray-600 mt-1">Select a new plan for your subscription</p>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {availablePlans.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => setSelectedPlan(plan.id)}
+                className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                  selectedPlan === plan.id
+                    ? "border-primary-600 bg-primary-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                {plan.popular && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full">
+                    Most Popular
+                  </span>
+                )}
+                {currentPlanId === plan.id && (
+                  <span className="absolute -top-2 right-2 px-2 py-0.5 bg-green-600 text-white text-xs font-medium rounded-full">
+                    Current
+                  </span>
+                )}
+                <h3 className="font-semibold text-gray-900">{plan.name}</h3>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  ${plan.price}
+                  <span className="text-sm font-normal text-gray-500">/{plan.period}</span>
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmChange}
+            disabled={isProcessing || selectedPlan === currentPlanId}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? "Processing..." : "Confirm Change"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Update Payment Modal
+function UpdatePaymentModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || "";
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    return parts.length ? parts.join(" ") : value;
+  };
+
+  const formatExpiry = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    if (v.length >= 2) {
+      return v.slice(0, 2) + "/" + v.slice(2, 4);
+    }
+    return v;
+  };
+
+  const handleSubmit = async () => {
+    if (!cardNumber || !expiry || !cvc) {
+      alert("Please fill in all card details");
+      return;
+    }
+
+    setIsProcessing(true);
+    // In production: await stripe.createPaymentMethod() and api.updatePaymentMethod()
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsProcessing(false);
+
+    alert("Payment method updated successfully!\n\nYour new card will be used for future payments.");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Update Payment Method</h2>
+          <p className="text-sm text-gray-600 mt-1">Enter your new card details</p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+            <input
+              type="text"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+              placeholder="4242 4242 4242 4242"
+              maxLength={19}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+              <input
+                type="text"
+                value={expiry}
+                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+                placeholder="MM/YY"
+                maxLength={5}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+              <input
+                type="text"
+                value={cvc}
+                onChange={(e) => setCvc(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                placeholder="123"
+                maxLength={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+            <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <p className="text-xs text-gray-500">Your payment info is encrypted and secure</p>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            {isProcessing ? "Updating..." : "Update Card"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Billing Settings Component
 function BillingSettings() {
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   const currentPlan = {
+    id: "growth",
     name: "Premium Monthly",
     price: "$79",
     period: "month",
@@ -185,16 +442,6 @@ function BillingSettings() {
     { id: "2", date: "Nov 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
     { id: "3", date: "Oct 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
   ];
-
-  const handleChangePlan = () => {
-    // In production: open Stripe Customer Portal or plan selection modal
-    alert("Plan management coming soon! Contact support to change your plan.");
-  };
-
-  const handleUpdatePayment = () => {
-    // In production: redirect to Stripe Customer Portal
-    alert("Payment method update coming soon! Contact support to update your payment method.");
-  };
 
   const handleDownloadInvoice = (invoiceId: string) => {
     // In production: await api.downloadInvoice(invoiceId)
@@ -246,7 +493,7 @@ function BillingSettings() {
             <p className="text-sm text-gray-500">Next billing date</p>
             <p className="text-sm font-medium text-gray-900">{currentPlan.nextBilling}</p>
           </div>
-          <button onClick={handleChangePlan} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={() => setShowChangePlanModal(true)} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Change plan
           </button>
         </div>
@@ -267,7 +514,7 @@ function BillingSettings() {
               <p className="text-xs text-gray-500">Expires {paymentMethod.expiry}</p>
             </div>
           </div>
-          <button onClick={handleUpdatePayment} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={() => setShowPaymentModal(true)} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Update
           </button>
         </div>
@@ -312,6 +559,17 @@ function BillingSettings() {
           </table>
         </div>
       </div>
+
+      {/* Modals */}
+      <ChangePlanModal
+        isOpen={showChangePlanModal}
+        onClose={() => setShowChangePlanModal(false)}
+        currentPlanId={currentPlan.id}
+      />
+      <UpdatePaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+      />
     </div>
   );
 }

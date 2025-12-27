@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
+import { SearchIcon, FilterIcon, ChevronIcon, PlusIcon } from "@/components/icons";
 
 type ClassStatus = "scheduled" | "in-progress" | "completed" | "canceled";
 type ViewMode = "list" | "calendar";
@@ -250,7 +250,12 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
             </button>
           )}
           {classItem.status === "completed" && (
-            <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={() => {
+                alert(`Class Report: ${classItem.name}\n\nDate: ${classItem.date}\nAttendance: ${classItem.students.filter(s => s.attended).length}/${classItem.students.length} students\nDuration: ${classItem.duration}`);
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
               View report
             </button>
           )}
@@ -297,11 +302,193 @@ function ClassCard({ classItem, onTakeAttendance }: { classItem: Class; onTakeAt
   );
 }
 
+// Create Class Modal
+function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "Pilates",
+    date: "",
+    time: "",
+    duration: "50",
+    unit: "FlexiWell Centro",
+    room: "Room 1",
+    capacity: "8",
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (!formData.name || !formData.date || !formData.time) {
+      alert("Please fill in all required fields (Name, Date, Time)");
+      return;
+    }
+    // In production: await api.createClass(formData);
+    console.log("Creating class:", formData);
+    alert(`Class "${formData.name}" created successfully!\n\nDate: ${formData.date}\nTime: ${formData.time}\nDuration: ${formData.duration} min\nRoom: ${formData.room}\nCapacity: ${formData.capacity} students`);
+    onClose();
+    setFormData({
+      name: "",
+      type: "Pilates",
+      date: "",
+      time: "",
+      duration: "50",
+      unit: "FlexiWell Centro",
+      room: "Room 1",
+      capacity: "8",
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Create New Class</h2>
+          <p className="text-sm text-gray-600 mt-1">Schedule a new class for your students</p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Class Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Class Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Intermediate Pilates"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          {/* Class Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Class Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="Pilates">Pilates</option>
+              <option value="Yoga">Yoga</option>
+              <option value="Functional">Functional Training</option>
+              <option value="Stretching">Stretching</option>
+              <option value="Meditation">Meditation</option>
+            </select>
+          </div>
+
+          {/* Date and Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+            <select
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="30">30 minutes</option>
+              <option value="45">45 minutes</option>
+              <option value="50">50 minutes</option>
+              <option value="60">60 minutes</option>
+              <option value="75">75 minutes</option>
+              <option value="90">90 minutes</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <select
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="FlexiWell Centro">FlexiWell Centro</option>
+              <option value="FlexiWell Jardins">FlexiWell Jardins</option>
+              <option value="FlexiWell Moema">FlexiWell Moema</option>
+            </select>
+          </div>
+
+          {/* Room and Capacity */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+              <select
+                value={formData.room}
+                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="Room 1">Room 1</option>
+                <option value="Room 2">Room 2</option>
+                <option value="Room 3">Room 3</option>
+                <option value="Studio A">Studio A</option>
+                <option value="Studio B">Studio B</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={formData.capacity}
+                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Create Class
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ClassStatus>("all");
   const [unitFilter, setUnitFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Get unique units
   const units = Array.from(new Set(mockClasses.map((c) => c.unit)));
@@ -338,34 +525,45 @@ export default function TeacherClassesPage() {
           <h1 className="text-2xl font-bold text-gray-900">My Classes</h1>
           <p className="text-gray-600 mt-1">Manage your classes and track attendance</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === "list" ? "bg-primary-100 text-primary-600" : "text-gray-400 hover:bg-gray-100"
+              }`}
+              title="List view"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === "calendar" ? "bg-primary-100 text-primary-600" : "text-gray-400 hover:bg-gray-100"
+              }`}
+              title="Calendar view"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </button>
+          </div>
           <button
-            onClick={() => setViewMode("list")}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === "list" ? "bg-primary-100 text-primary-600" : "text-gray-400 hover:bg-gray-100"
-            }`}
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="8" y1="6" x2="21" y2="6" />
-              <line x1="8" y1="12" x2="21" y2="12" />
-              <line x1="8" y1="18" x2="21" y2="18" />
-              <line x1="3" y1="6" x2="3.01" y2="6" />
-              <line x1="3" y1="12" x2="3.01" y2="12" />
-              <line x1="3" y1="18" x2="3.01" y2="18" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode("calendar")}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === "calendar" ? "bg-primary-100 text-primary-600" : "text-gray-400 hover:bg-gray-100"
-            }`}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <PlusIcon className="w-5 h-5" />
+            <span>Create Class</span>
           </button>
         </div>
       </div>
@@ -435,36 +633,137 @@ export default function TeacherClassesPage() {
         </div>
       </div>
 
-      {/* Classes List */}
-      <div className="space-y-6">
-        {Object.entries(groupedClasses).map(([date, classes]) => (
-          <div key={date}>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">{date}</h2>
-            <div className="space-y-4">
-              {classes.map((classItem) => (
-                <ClassCard
-                  key={classItem.id}
-                  classItem={classItem}
-                  onTakeAttendance={() => console.log("Take attendance for", classItem.id)}
-                />
-              ))}
+      {/* Classes List View */}
+      {viewMode === "list" && (
+        <div className="space-y-6">
+          {Object.entries(groupedClasses).map(([date, classes]) => (
+            <div key={date}>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">{date}</h2>
+              <div className="space-y-4">
+                {classes.map((classItem) => (
+                  <ClassCard
+                    key={classItem.id}
+                    classItem={classItem}
+                    onTakeAttendance={() => {
+                      if (classItem.status === "scheduled") {
+                        alert(`Starting class: ${classItem.name}\n\nTime: ${classItem.time}\nRoom: ${classItem.room}\nStudents: ${classItem.enrolled}\n\nClass is now in progress. You can start taking attendance.`);
+                      } else {
+                        alert(`Taking attendance for: ${classItem.name}\n\nStudents enrolled: ${classItem.enrolled}\n\nMark each student as present or absent.`);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {filteredClasses.length === 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+              <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No classes found</h3>
+              <p className="text-gray-500">Try adjusting your search filters</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Calendar View */}
+      {viewMode === "calendar" && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">December 2024</h2>
+            <div className="flex items-center gap-2">
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <ChevronIcon className="w-5 h-5" direction="left" />
+              </button>
+              <button className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+                Today
+              </button>
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <ChevronIcon className="w-5 h-5" direction="right" />
+              </button>
             </div>
           </div>
-        ))}
 
-        {filteredClasses.length === 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No classes found</h3>
-            <p className="text-gray-500">Try adjusting your search filters</p>
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7">
+            {/* Day headers */}
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div key={day} className="p-3 text-center text-sm font-medium text-gray-500 border-b border-gray-200">
+                {day}
+              </div>
+            ))}
+
+            {/* Calendar days - simplified week view */}
+            {[22, 23, 24, 25, 26, 27, 28].map((day, index) => {
+              const isToday = day === 27;
+              const dayClasses = mockClasses.filter((c) => {
+                if (day === 27 && c.date === "Today") return true;
+                if (day === 28 && c.date === "Tomorrow") return true;
+                if (day === 26 && c.date === "Yesterday") return true;
+                return false;
+              });
+
+              return (
+                <div
+                  key={day}
+                  className={`min-h-[120px] p-2 border-b border-r border-gray-100 ${
+                    isToday ? "bg-primary-50" : index === 0 || index === 6 ? "bg-gray-50" : ""
+                  }`}
+                >
+                  <div className={`text-sm font-medium mb-2 ${isToday ? "text-primary-600" : "text-gray-900"}`}>
+                    {day}
+                  </div>
+                  <div className="space-y-1">
+                    {dayClasses.map((classItem) => (
+                      <button
+                        key={classItem.id}
+                        onClick={() => {
+                          alert(`${classItem.name}\n\nTime: ${classItem.time}\nDuration: ${classItem.duration}\nRoom: ${classItem.room}\nStudents: ${classItem.enrolled}/${classItem.capacity}`);
+                        }}
+                        className={`w-full text-left p-1.5 rounded text-xs truncate ${
+                          classItem.type === "Pilates"
+                            ? "bg-purple-100 text-purple-700"
+                            : classItem.type === "Yoga"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        <span className="font-medium">{classItem.time}</span> {classItem.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Legend */}
+          <div className="p-4 border-t border-gray-200 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-purple-100 border border-purple-300"></div>
+              <span className="text-xs text-gray-600">Pilates</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+              <span className="text-xs text-gray-600">Yoga</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-blue-100 border border-blue-300"></div>
+              <span className="text-xs text-gray-600">Functional</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Class Modal */}
+      <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </div>
   );
 }

@@ -650,14 +650,234 @@ function NotificationsSettings() {
   );
 }
 
+// Team Member interface
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: "Admin" | "Teacher" | "Receptionist";
+  status: "Active" | "Pending";
+}
+
+// Invite Member Modal
+function InviteMemberModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "Teacher" as TeamMember["role"],
+  });
+
+  const handleSubmit = () => {
+    if (!formData.name || !formData.email) {
+      alert("Please fill in name and email");
+      return;
+    }
+    alert(
+      `Invitation sent!\n\nName: ${formData.name}\nEmail: ${formData.email}\nRole: ${formData.role}\n\nAn invitation email has been sent to ${formData.email}.`
+    );
+    setFormData({ name: "", email: "", role: "Teacher" });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Invite Team Member</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter full name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="email@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as TeamMember["role"] })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="Admin">Admin</option>
+              <option value="Teacher">Teacher</option>
+              <option value="Receptionist">Receptionist</option>
+            </select>
+          </div>
+
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-blue-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-blue-900">Invitation Email</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  The team member will receive an email to set up their account and password.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Send Invitation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Member Action Menu
+function MemberActionMenu({
+  member,
+  onEdit,
+  onResendInvite,
+  onRemove,
+}: {
+  member: TeamMember;
+  onEdit: () => void;
+  onResendInvite: () => void;
+  onRemove: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+            <button
+              onClick={() => {
+                onEdit();
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit Member
+            </button>
+            {member.status === "Pending" && (
+              <button
+                onClick={() => {
+                  onResendInvite();
+                  setIsOpen(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                Resend Invite
+              </button>
+            )}
+            <button
+              onClick={() => {
+                onRemove();
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Remove Member
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Team Settings Component
 function TeamSettings() {
-  const teamMembers = [
-    { name: "Alex Thompson", email: "alex@flexiwell.com", role: "Admin", status: "Active" },
-    { name: "Sarah Johnson", email: "sarah@flexiwell.com", role: "Teacher", status: "Active" },
-    { name: "Michael Chen", email: "michael@flexiwell.com", role: "Teacher", status: "Active" },
-    { name: "James Wilson", email: "james@flexiwell.com", role: "Receptionist", status: "Pending" },
-  ];
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [teamMembers] = useState<TeamMember[]>([
+    { id: "1", name: "Alex Thompson", email: "alex@flexiwell.com", role: "Admin", status: "Active" },
+    { id: "2", name: "Sarah Johnson", email: "sarah@flexiwell.com", role: "Teacher", status: "Active" },
+    { id: "3", name: "Michael Chen", email: "michael@flexiwell.com", role: "Teacher", status: "Active" },
+    { id: "4", name: "James Wilson", email: "james@flexiwell.com", role: "Receptionist", status: "Pending" },
+  ]);
+
+  const handleEditMember = (member: TeamMember) => {
+    alert(`Edit Member\n\nName: ${member.name}\nEmail: ${member.email}\nRole: ${member.role}\n\nThis would open an edit dialog.`);
+  };
+
+  const handleResendInvite = (member: TeamMember) => {
+    alert(`Invitation resent to ${member.email}!`);
+  };
+
+  const handleRemoveMember = (member: TeamMember) => {
+    if (confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
+      alert(`${member.name} has been removed from the team.`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -666,13 +886,13 @@ function TeamSettings() {
           <h2 className="text-lg font-semibold text-gray-900">Team</h2>
           <p className="text-sm text-gray-600 mt-1">Manage team access and permissions.</p>
         </div>
-        <Button>Invite Member</Button>
+        <Button onClick={() => setShowInviteModal(true)}>Invite Member</Button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="space-y-4">
-          {teamMembers.map((member, idx) => (
-            <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          {teamMembers.map((member) => (
+            <div key={member.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                 <span className="text-sm font-semibold text-primary-700">
                   {member.name.split(" ").map(n => n[0]).join("")}
@@ -694,15 +914,21 @@ function TeamSettings() {
               }`}>
                 {member.status}
               </span>
-              <button className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
+              <MemberActionMenu
+                member={member}
+                onEdit={() => handleEditMember(member)}
+                onResendInvite={() => handleResendInvite(member)}
+                onRemove={() => handleRemoveMember(member)}
+              />
             </div>
           ))}
         </div>
       </div>
+
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+      />
     </div>
   );
 }

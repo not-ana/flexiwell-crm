@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
 
     // Get client
-    const client = await db.collection<Client>("clients").findOne({
+    const client = await db.collection("clients").findOne({
       _id: new ObjectId(clientId),
-    });
+    }) as Client | null;
 
     if (!client) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get class
-    const classDoc = await db.collection<Class>("classes").findOne({
+    const classDoc = await db.collection("classes").findOne({
       _id: new ObjectId(classId),
       status: "scheduled",
-    });
+    }) as Class | null;
 
     if (!classDoc) {
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
@@ -143,8 +143,9 @@ export async function POST(request: NextRequest) {
     const result = await db.collection<Booking>("bookings").insertOne(booking);
 
     // Update class enrollment
-    await db.collection<Class>("classes").updateOne(
+    await db.collection("classes").updateOne(
       { _id: new ObjectId(classId) },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {
         $inc: { currentEnrollment: 1 },
         $push: {
@@ -155,11 +156,11 @@ export async function POST(request: NextRequest) {
             enrolledAt: new Date(),
           },
         },
-      }
+      } as any
     );
 
     // Update client's remaining classes
-    await db.collection<Client>("clients").updateOne(
+    await db.collection("clients").updateOne(
       { _id: new ObjectId(clientId) },
       {
         $inc: { "plan.usedClasses": 1, "plan.remainingClasses": -1 },
@@ -201,11 +202,11 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase();
 
     // Get booking
-    const booking = await db.collection<Booking>("bookings").findOne({
+    const booking = await db.collection("bookings").findOne({
       _id: new ObjectId(bookingId),
       clientId,
       status: "confirmed",
-    });
+    }) as Booking | null;
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
@@ -228,22 +229,23 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Cancel booking
-    await db.collection<Booking>("bookings").updateOne(
+    await db.collection("bookings").updateOne(
       { _id: new ObjectId(bookingId) },
       { $set: { status: "cancelled", updatedAt: new Date() } }
     );
 
     // Update class enrollment
-    await db.collection<Class>("classes").updateOne(
+    await db.collection("classes").updateOne(
       { _id: new ObjectId(booking.classId) },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {
         $inc: { currentEnrollment: -1 },
         $pull: { enrolledClients: { clientId } },
-      }
+      } as any
     );
 
     // Restore client's class credit
-    await db.collection<Client>("clients").updateOne(
+    await db.collection("clients").updateOne(
       { _id: new ObjectId(clientId) },
       {
         $inc: { "plan.usedClasses": -1, "plan.remainingClasses": 1 },
