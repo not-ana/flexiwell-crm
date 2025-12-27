@@ -1,36 +1,181 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlexiWell CRM
+
+A modern, full-featured CRM designed specifically for **Pilates studios, yoga centers, and wellness businesses**. Built with Next.js 16, React 19, and Tailwind CSS 4.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38B2AC?style=flat-square&logo=tailwind-css)
+
+## Overview
+
+FlexiWell CRM is a comprehensive studio management platform that helps wellness businesses manage clients, instructors, classes, payments, and communications - all in one place.
+
+### Key Features
+
+- **Multi-role Dashboards** - Separate interfaces for Admins, Teachers, and Clients
+- **Client Management** - Complete client profiles, plans, and activity tracking
+- **Class Scheduling** - Calendar views (day, week, month) with drag-and-drop
+- **Payment Tracking** - Monitor subscriptions, pending payments, and billing history
+- **Staff Management** - Multi-location staff organization with role-based access
+- **Waitlist System** - Smart waitlist with priority tiers and auto-enrollment
+- **Integrations** - Connect with Wellhub, ClassPass, Stripe, Google Calendar, and more
+- **WhatsApp Bot** - Automated messaging and client communication
+- **Reports & Analytics** - Revenue, attendance, and performance insights
+
+## Screenshots
+
+### Admin Dashboard
+Multi-unit overview with revenue metrics, class schedules, and staff activity.
+
+### Client Portal
+Personal dashboard with upcoming classes, billing, and support chat.
+
+### Teacher View
+Daily schedule, attendance tracking, and makeup class management.
+
+## Tech Stack
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Next.js | 16.0.10 | React framework with App Router |
+| React | 19.2.1 | UI components |
+| TypeScript | 5.9.3 | Type safety |
+| Tailwind CSS | 4.0 | Styling |
+| Recharts | 3.6.0 | Charts and analytics |
+| date-fns | 4.1.0 | Date manipulation |
+| react-big-calendar | 1.19.4 | Calendar component |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm, yarn, or pnpm
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/not-ana/flexiwell-crm.git
+cd flexiwell-crm
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+flexiwell-crm/
+├── app/
+│   ├── admin/           # Admin dashboard & management
+│   │   ├── clients/     # Client management
+│   │   ├── staff/       # Staff management
+│   │   ├── payments/    # Payment tracking
+│   │   ├── reports/     # Analytics & reports
+│   │   ├── integrations/# Third-party connections
+│   │   ├── notifications/# Notification preferences
+│   │   ├── conversations/# WhatsApp conversations
+│   │   └── settings/    # Studio settings
+│   ├── dashboard/       # Client portal
+│   │   ├── classes/     # Class calendar
+│   │   ├── clients/     # Client directory (for teachers)
+│   │   ├── settings/    # Profile & billing
+│   │   └── support/     # Support chat
+│   ├── teacher/         # Teacher dashboard
+│   ├── login/           # Authentication
+│   └── signup/          # Registration
+├── components/
+│   ├── dashboard/       # Dashboard widgets
+│   ├── icons/           # SVG icon components
+│   ├── layout/          # Sidebar, navigation
+│   └── ui/              # Reusable UI components
+├── lib/
+│   └── config/          # App configuration
+│       ├── pricing.ts   # Pricing plans
+│       ├── studio-plans.ts # Client subscription config
+│       ├── waitlist.ts  # Waitlist configuration
+│       └── ai-support.ts # AI assistant config
+└── public/              # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Features in Detail
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Multi-Location Support
+Manage multiple studio locations with:
+- Unified admin dashboard
+- Per-location staff assignment
+- Location-specific class schedules
+- Consolidated reporting
 
-## Deploy on Vercel
+### Pricing Plans
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Plan | Monthly | Annual | Instructors | Clients |
+|------|---------|--------|-------------|---------|
+| Starter | $49 | $39/mo | 1 | 100 |
+| Growth | $99 | $79/mo | 3 | 500 |
+| Professional | $199 | $159/mo | 10 | 2,000 |
+| Enterprise | $399 | $319/mo | Unlimited | Unlimited |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Integrations
+
+- **Marketplace**: Wellhub (Gympass), ClassPass
+- **Payments**: Stripe, PayPal (coming soon)
+- **Scheduling**: Google Calendar, Zoom
+- **Marketing**: Mailchimp
+- **Analytics**: Google Analytics
+
+### WhatsApp Bot Features
+- Automated class reminders
+- Booking confirmations
+- Payment notifications
+- AI-powered support assistant
+
+## Roadmap
+
+- [ ] Backend API implementation
+- [ ] Authentication (NextAuth.js)
+- [ ] Database integration (Prisma + PostgreSQL)
+- [ ] Stripe payment processing
+- [ ] WhatsApp Business API
+- [ ] Mobile app (React Native)
+- [ ] Multi-language support
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Contact
+
+**Ana** - [@not-ana](https://github.com/not-ana)
+
+Project Link: [https://github.com/not-ana/flexiwell-crm](https://github.com/not-ana/flexiwell-crm)
+
+---
+
+Built with Next.js and Tailwind CSS
