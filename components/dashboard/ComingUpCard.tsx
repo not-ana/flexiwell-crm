@@ -28,7 +28,7 @@ function formatMonth(date: Date): string {
 }
 
 const typeColors = {
-  pilates: "bg-purple-50 border-purple-200 text-purple-600",
+  pilates: "bg-primary-50 border-primary-200 text-primary-600",
   yoga: "bg-pink-50 border-pink-200 text-pink-600",
   reformer: "bg-blue-50 border-blue-200 text-blue-600",
   stretch: "bg-green-50 border-green-200 text-green-600",

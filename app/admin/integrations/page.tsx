@@ -123,7 +123,7 @@ const mockIntegrations: Integration[] = [
 ];
 
 const categoryLabels = {
-  marketplace: { label: "Marketplace", color: "bg-purple-100 text-purple-700" },
+  marketplace: { label: "Marketplace", color: "bg-primary-100 text-primary-700" },
   payment: { label: "Payment", color: "bg-green-100 text-green-700" },
   marketing: { label: "Marketing", color: "bg-blue-100 text-blue-700" },
   scheduling: { label: "Scheduling", color: "bg-orange-100 text-orange-700" },
@@ -132,7 +132,7 @@ const categoryLabels = {
 
 const logoColors: Record<string, string> = {
   wellhub: "bg-orange-500",
-  classpass: "bg-purple-600",
+  classpass: "bg-primary-600",
   stripe: "bg-indigo-600",
   paypal: "bg-blue-600",
   mailchimp: "bg-yellow-500",
@@ -323,7 +323,13 @@ function ConfigureModal({
           >
             Cancel
           </button>
-          <button className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700">
+          <button
+            onClick={() => {
+              alert("Integration settings saved successfully!");
+              onClose();
+            }}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
+          >
             Save Changes
           </button>
         </div>

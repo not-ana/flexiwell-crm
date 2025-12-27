@@ -15,24 +15,24 @@ interface UpcomingClass {
 }
 
 const classTypeColors = {
-  pilates: "bg-purple-500",
-  yoga: "bg-pink-400",
-  reformer: "bg-blue-500",
-  stretch: "bg-green-500",
+  pilates: "bg-accent-500",
+  yoga: "bg-accent-400",
+  reformer: "bg-accent-300",
+  stretch: "bg-accent-600",
 };
 
 const classTypeBgColors = {
-  pilates: "bg-purple-50 border-purple-200",
-  yoga: "bg-pink-50 border-pink-200",
-  reformer: "bg-blue-50 border-blue-200",
-  stretch: "bg-green-50 border-green-200",
+  pilates: "bg-accent-50 border-accent-200",
+  yoga: "bg-accent-50 border-accent-200",
+  reformer: "bg-accent-50 border-accent-200",
+  stretch: "bg-accent-50 border-accent-200",
 };
 
 const upcomingClasses: UpcomingClass[] = [
-  { id: "c1", title: "Morning Pilates", date: "Dec 27", dayOfWeek: "Today", time: "9:00 AM", instructor: "Ana", type: "pilates", confirmed: false },
-  { id: "c2", title: "Afternoon Yoga", date: "Dec 28", dayOfWeek: "Tomorrow", time: "4:00 PM", instructor: "Maria", type: "yoga", confirmed: false },
-  { id: "c3", title: "Reformer Session", date: "Dec 29", dayOfWeek: "Sunday", time: "10:00 AM", instructor: "Ana", type: "reformer", confirmed: true },
-  { id: "c4", title: "Yoga Flow", date: "Dec 31", dayOfWeek: "Tuesday", time: "10:00 AM", instructor: "Maria", type: "yoga", confirmed: false },
+  { id: "c1", title: "Morning Pilates", date: "Dec 27", dayOfWeek: "Today", time: "9:00 AM", instructor: "Sarah", type: "pilates", confirmed: false },
+  { id: "c2", title: "Afternoon Yoga", date: "Dec 28", dayOfWeek: "Tomorrow", time: "4:00 PM", instructor: "Emily", type: "yoga", confirmed: false },
+  { id: "c3", title: "Reformer Session", date: "Dec 29", dayOfWeek: "Sunday", time: "10:00 AM", instructor: "Sarah", type: "reformer", confirmed: true },
+  { id: "c4", title: "Yoga Flow", date: "Dec 31", dayOfWeek: "Tuesday", time: "10:00 AM", instructor: "Emily", type: "yoga", confirmed: false },
 ];
 
 export default function ScheduleCard() {
@@ -63,7 +63,7 @@ export default function ScheduleCard() {
         </div>
         <Link
           href="/dashboard/classes"
-          className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 rounded-lg transition-colors"
         >
           View Calendar →
         </Link>
@@ -160,7 +160,7 @@ export default function ScheduleCard() {
             </svg>
           </div>
           <p className="text-sm text-gray-500 mb-2">No upcoming classes</p>
-          <Link href="/dashboard/classes" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+          <Link href="/dashboard/classes" className="text-xs text-accent-600 hover:text-accent-700 font-medium">
             Book a class
           </Link>
         </div>

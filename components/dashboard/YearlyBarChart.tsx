@@ -13,8 +13,8 @@ interface YearlyBarChartProps {
   yearData?: DataPoint[];
 }
 
-const BAR_COLOR = "#F9A8D4"; // pink-300
-const BAR_COLOR_HIGHLIGHT = "#EC4899"; // pink-500
+const BAR_COLOR = "#FCE7F6"; // accent-100
+const BAR_COLOR_HIGHLIGHT = "#DD2590"; // accent-600
 
 // Last 6 months data for the client
 const monthlyData: DataPoint[] = [

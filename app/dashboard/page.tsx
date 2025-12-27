@@ -13,17 +13,25 @@ const mockProgressData = {
   total: 20,
 };
 
-// TODO: Get user data from auth context
-const userData = {
-  name: "Olivia",
-  memberSince: "March 2024",
-  streak: 8,
-  totalClasses: 47,
-  favoriteInstructor: "Ana",
-  planName: "Premium Monthly",
-  classesRemaining: 8,
-  nextPayment: "Jan 15, 2025",
+// User data - will be fetched from auth context when backend is ready
+// Mock data simulates API response structure
+const getUserData = () => {
+  // In production, replace with:
+  // const { user } = useAuth();
+  // const { data } = useUserProfile(user?.id);
+  return {
+    name: "Olivia",
+    memberSince: "March 2024",
+    streak: 8,
+    totalClasses: 47,
+    favoriteInstructor: "Sarah",
+    planName: "Premium Monthly",
+    classesRemaining: 8,
+    nextPayment: "Jan 15, 2025",
+  };
 };
+
+const userData = getUserData();
 
 export default function DashboardPage() {
   const greeting = () => {
@@ -78,17 +86,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Instructor */}
-          <Link href="/dashboard/profile" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-primary-200 hover:bg-primary-50/30 transition-colors">
+          <Link href="/dashboard/profile" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-accent-200 hover:bg-accent-50/30 transition-colors">
             <p className="text-xs text-gray-500 mb-1">Your Instructor</p>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-100 to-pink-100 flex items-center justify-center">
-                <span className="text-xs font-semibold text-primary-600">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-100 to-accent-200 flex items-center justify-center">
+                <span className="text-xs font-semibold text-accent-600">
                   {userData.favoriteInstructor.charAt(0)}
                 </span>
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">{userData.favoriteInstructor}</p>
-                <p className="text-xs text-primary-600">View schedule →</p>
+                <p className="text-xs text-accent-600">View schedule →</p>
               </div>
             </div>
           </Link>

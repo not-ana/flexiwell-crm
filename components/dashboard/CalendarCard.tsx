@@ -22,14 +22,14 @@ interface CalendarDay {
 }
 
 const classTypeColors = {
-  pilates: "bg-purple-500",
+  pilates: "bg-primary-500",
   yoga: "bg-pink-400",
   reformer: "bg-blue-500",
   stretch: "bg-green-500",
 };
 
 const classTypeBgColors = {
-  pilates: "bg-purple-50 border-purple-200",
+  pilates: "bg-primary-50 border-primary-200",
   yoga: "bg-pink-50 border-pink-200",
   reformer: "bg-blue-50 border-blue-200",
   stretch: "bg-green-50 border-green-200",
@@ -238,7 +238,7 @@ export default function CalendarCard() {
           {/* Legend */}
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+              <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />
               <span className="text-xs text-gray-500">Pilates</span>
             </div>
             <div className="flex items-center gap-1.5">

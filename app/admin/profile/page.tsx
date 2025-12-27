@@ -53,7 +53,7 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
   return avatar ? (
     <img src={avatar} alt={name} className={`${sizeClasses[size]} rounded-full object-cover`} />
   ) : (
-    <div className={`${sizeClasses[size]} bg-purple-500 rounded-full flex items-center justify-center text-white font-medium`}>
+    <div className={`${sizeClasses[size]} bg-primary-500 rounded-full flex items-center justify-center text-white font-medium`}>
       {initials}
     </div>
   );
@@ -72,7 +72,7 @@ export default function AdminProfilePage() {
           <Avatar name={adminUser.name} avatar={adminUser.avatar} size="xl" />
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{adminUser.name}</h1>
-            <span className="inline-block mt-1 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+            <span className="inline-block mt-1 px-3 py-1 bg-primary-100 text-primary-700 text-sm font-medium rounded-full">
               {adminUser.role}
             </span>
           </div>

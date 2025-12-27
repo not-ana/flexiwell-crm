@@ -38,12 +38,12 @@ const mockUnits: Unit[] = [
     staff: [
       {
         id: "1",
-        name: "Maria Santos",
-        email: "maria@flexiwell.com",
+        name: "Sarah Johnson",
+        email: "sarah@flexiwell.com",
         phone: "(555) 123-4567",
         role: "admin",
         status: "active",
-        initials: "MS",
+        initials: "SJ",
         unit: "FlexiWell Downtown",
         joinDate: "Jan 2023",
         lastActive: "Just now",
@@ -52,12 +52,12 @@ const mockUnits: Unit[] = [
       },
       {
         id: "2",
-        name: "Carlos Mendes",
-        email: "carlos@flexiwell.com",
+        name: "Michael Chen",
+        email: "michael@flexiwell.com",
         phone: "(555) 234-5678",
         role: "teacher",
         status: "active",
-        initials: "CM",
+        initials: "MC",
         unit: "FlexiWell Downtown",
         joinDate: "Mar 2023",
         lastActive: "2 hours ago",
@@ -66,12 +66,12 @@ const mockUnits: Unit[] = [
       },
       {
         id: "3",
-        name: "Ana Paula",
-        email: "ana.paula@flexiwell.com",
+        name: "Emily Davis",
+        email: "emily@flexiwell.com",
         phone: "(555) 345-6789",
         role: "teacher",
         status: "active",
-        initials: "AP",
+        initials: "ED",
         unit: "FlexiWell Downtown",
         joinDate: "Jun 2023",
         lastActive: "1 day ago",
@@ -80,24 +80,24 @@ const mockUnits: Unit[] = [
       },
       {
         id: "4",
-        name: "Roberto Lima",
-        email: "roberto@flexiwell.com",
+        name: "Robert Brown",
+        email: "robert@flexiwell.com",
         phone: "(555) 456-7890",
         role: "receptionist",
         status: "active",
-        initials: "RL",
+        initials: "RB",
         unit: "FlexiWell Downtown",
         joinDate: "Sep 2023",
         lastActive: "30 minutes ago",
       },
       {
         id: "5",
-        name: "Julia Oliveira",
-        email: "julia@flexiwell.com",
+        name: "Jessica Taylor",
+        email: "jessica@flexiwell.com",
         phone: "(555) 567-8901",
         role: "teacher",
         status: "invited",
-        initials: "JO",
+        initials: "JT",
         unit: "FlexiWell Downtown",
         joinDate: "Dec 2024",
       },
@@ -110,12 +110,12 @@ const mockUnits: Unit[] = [
     staff: [
       {
         id: "6",
-        name: "Fernanda Lima",
-        email: "fernanda@flexiwell.com",
+        name: "Rachel Green",
+        email: "rachel@flexiwell.com",
         phone: "(555) 678-9012",
         role: "admin",
         status: "active",
-        initials: "FL",
+        initials: "RG",
         unit: "FlexiWell Westside",
         joinDate: "Feb 2023",
         lastActive: "1 hour ago",
@@ -124,12 +124,12 @@ const mockUnits: Unit[] = [
       },
       {
         id: "7",
-        name: "Pedro Costa",
-        email: "pedro@flexiwell.com",
+        name: "James Wilson",
+        email: "james@flexiwell.com",
         phone: "(555) 789-0123",
         role: "teacher",
         status: "active",
-        initials: "PC",
+        initials: "JW",
         unit: "FlexiWell Westside",
         joinDate: "Apr 2023",
         lastActive: "3 hours ago",
@@ -138,12 +138,12 @@ const mockUnits: Unit[] = [
       },
       {
         id: "8",
-        name: "Lucia Ferreira",
-        email: "lucia@flexiwell.com",
+        name: "Lisa Anderson",
+        email: "lisa@flexiwell.com",
         phone: "(555) 890-1234",
         role: "teacher",
         status: "inactive",
-        initials: "LF",
+        initials: "LA",
         unit: "FlexiWell Westside",
         joinDate: "May 2023",
         lastActive: "2 weeks ago",
@@ -188,7 +188,7 @@ const mockUnits: Unit[] = [
 ];
 
 const roleStyles: Record<StaffRole, { bg: string; text: string; label: string }> = {
-  admin: { bg: "bg-purple-50", text: "text-purple-700", label: "Admin" },
+  admin: { bg: "bg-primary-50", text: "text-primary-700", label: "Admin" },
   teacher: { bg: "bg-blue-50", text: "text-blue-700", label: "Teacher" },
   receptionist: { bg: "bg-green-50", text: "text-green-700", label: "Receptionist" },
 };
@@ -383,9 +383,17 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
                 <StaffRow
                   key={staff.id}
                   staff={staff}
-                  onResendInvite={() => console.log("Resend invite to", staff.id)}
-                  onEdit={() => console.log("Edit", staff.id)}
-                  onDeactivate={() => console.log("Deactivate", staff.id)}
+                  onResendInvite={() => {
+                    alert(`Invite resent to ${staff.name} (${staff.email})`);
+                  }}
+                  onEdit={() => {
+                    alert(`Edit ${staff.name}\n\nRole: ${staff.role}\nEmail: ${staff.email}\nPhone: ${staff.phone}\nUnit: ${staff.unit}`);
+                  }}
+                  onDeactivate={() => {
+                    if (confirm(`Are you sure you want to deactivate ${staff.name}?`)) {
+                      alert(`${staff.name} has been deactivated.`);
+                    }
+                  }}
                 />
               ))}
             </tbody>
@@ -447,7 +455,12 @@ export default function AdminStaffPage() {
             Manage employees across all locations
           </p>
         </div>
-        <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+        <button
+          onClick={() => {
+            alert("Add Staff Member form coming soon!\n\nYou'll be able to:\n• Add new employees\n• Assign roles (Admin, Teacher, Receptionist)\n• Select location\n• Send invite email");
+          }}
+          className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+        >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />

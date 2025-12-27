@@ -194,7 +194,14 @@ export default function AdminNotificationsPage() {
 
       {/* Save Button */}
       <div className="mt-6 flex justify-end">
-        <button className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+        <button
+          onClick={() => {
+            // In production: await api.saveNotificationPreferences({ generalSettings, summarySettings, businessSettings, staffSettings });
+            console.log("Saving notification preferences:", { generalSettings, summarySettings, businessSettings, staffSettings });
+            alert("Notification preferences saved successfully!");
+          }}
+          className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+        >
           Save changes
         </button>
       </div>

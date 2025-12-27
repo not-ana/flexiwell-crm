@@ -75,7 +75,7 @@ const mockEvents: ClassEvent[] = [
 ];
 
 const colorStyles: Record<ClassEvent["color"], { bg: string; border: string; text: string }> = {
-  purple: { bg: "bg-purple-50", border: "border-l-purple-500", text: "text-purple-700" },
+  purple: { bg: "bg-primary-50", border: "border-l-primary-500", text: "text-primary-700" },
   gray: { bg: "bg-gray-50", border: "border-l-gray-400", text: "text-gray-700" },
   pink: { bg: "bg-pink-50", border: "border-l-pink-500", text: "text-pink-700" },
   orange: { bg: "bg-orange-50", border: "border-l-orange-500", text: "text-orange-700" },
@@ -469,7 +469,7 @@ function EventDetailsSidebar({ event, onRequestCancel, onRequestReschedule, onRe
             <div><p className="font-medium text-gray-900">Request Reschedule</p><p className="text-xs text-gray-500">Move to another time</p></div>
           </button>
           <button onClick={onRequestChangeInstructor} className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
-            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"><UserIcon className="w-4 h-4 text-purple-600" /></div>
+            <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center"><UserIcon className="w-4 h-4 text-primary-600" /></div>
             <div><p className="font-medium text-gray-900">Change Instructor</p><p className="text-xs text-gray-500">Switch to another instructor</p></div>
           </button>
           <button onClick={onRequestCancel} className="w-full flex items-center gap-3 px-4 py-3 text-left border border-red-200 rounded-lg hover:bg-red-50">
@@ -582,7 +582,12 @@ export default function ClassesPage() {
         />
       </div>
 
-      {requestModal && <RequestModal type={requestModal.type} event={requestModal.event} onClose={() => setRequestModal(null)} onSubmit={() => {}} />}
+      {requestModal && <RequestModal type={requestModal.type} event={requestModal.event} onClose={() => setRequestModal(null)} onSubmit={(reason) => {
+          // Handle request submission - will integrate with backend API
+          console.log(`Request submitted: ${requestModal.type}`, { reason, event: requestModal.event });
+          // In production: await api.submitClassRequest({ type: requestModal.type, classId: requestModal.event.id, reason });
+          setRequestModal(null);
+        }} />}
     </div>
   );
 }

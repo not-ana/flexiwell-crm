@@ -256,7 +256,7 @@ export default function ConversationsPage() {
                     </div>
                     {/* Platform badge */}
                     <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                      conv.platform === "whatsapp" ? "bg-green-500" : "bg-gradient-to-br from-purple-500 to-pink-500"
+                      conv.platform === "whatsapp" ? "bg-green-500" : "bg-gradient-to-br from-primary-500 to-pink-500"
                     }`}>
                       {conv.platform === "whatsapp" ? (
                         <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -313,14 +313,20 @@ export default function ConversationsPage() {
                   <p className="font-semibold text-gray-900">{selectedConversation.clientName}</p>
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${
-                      selectedConversation.platform === "whatsapp" ? "bg-green-500" : "bg-purple-500"
+                      selectedConversation.platform === "whatsapp" ? "bg-green-500" : "bg-primary-500"
                     }`} />
                     <span className="text-sm text-gray-500 capitalize">{selectedConversation.platform}</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => {
+                    // In production: router.push(`/admin/clients/${selectedConversation.clientId}`)
+                    alert(`Viewing profile for: ${selectedConversation.clientName}\nClient ID: ${selectedConversation.clientId}`);
+                  }}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
                   View Profile
                 </button>
                 {selectedConversation.status !== "closed" && (

@@ -5,46 +5,59 @@
   --background: #ffffff;
   --foreground: #101828;
 
-  /* Untitled UI Colors - Gray */
+  /* FlexiWell Grey Scale */
   --gray-25: #FCFCFD;
-  --gray-50: #F9FAFB;
-  --gray-100: #F2F4F7;
+  --gray-50: #F5F5F5;
+  --gray-100: #F5F5F5;
   --gray-200: #EAECF0;
   --gray-300: #D0D5DD;
   --gray-400: #98A2B3;
-  --gray-500: #667085;
+  --gray-500: #535862;
   --gray-600: #475467;
   --gray-700: #344054;
   --gray-800: #1D2939;
   --gray-900: #101828;
 
-  /* Untitled UI Colors - Primary (Purple) */
-  --primary-25: #FCFAFF;
-  --primary-50: #F9F5FF;
-  --primary-100: #F4EBFF;
-  --primary-200: #E9D7FE;
-  --primary-300: #D6BBFB;
-  --primary-400: #B692F6;
-  --primary-500: #9E77ED;
-  --primary-600: #7F56D9;
-  --primary-700: #6941C6;
-  --primary-800: #53389E;
-  --primary-900: #42307D;
+  /* FlexiWell Primary (Purple - CTAs & Main Actions) */
+  --primary-25: #FAFAFF;
+  --primary-50: #F4F3FF;
+  --primary-100: #EBE9FE;
+  --primary-200: #D9D6FE;
+  --primary-300: #BDB4FE;
+  --primary-400: #8870E9;
+  --primary-500: #6938EF;
+  --primary-600: #6938EF;
+  --primary-700: #5925DC;
+  --primary-800: #4A1FB8;
+  --primary-900: #53389E;
 
-  /* Untitled UI Colors - Error */
+  /* FlexiWell Accent (Pink/Magenta - Highlights & Accents) */
+  --accent-25: #FEF6FB;
+  --accent-50: #F7EBFF;
+  --accent-100: #FCE7F6;
+  --accent-200: #FCCEEE;
+  --accent-300: #FD6F8E;
+  --accent-400: #FF437E;
+  --accent-500: #EB2B95;
+  --accent-600: #DD2590;
+  --accent-700: #C11574;
+  --accent-800: #9E165F;
+  --accent-900: #851651;
+
+  /* FlexiWell Error (Orange/Red) */
   --error-25: #FFFBFA;
   --error-50: #FEF3F2;
   --error-100: #FEE4E2;
   --error-200: #FECDCA;
   --error-300: #FDA29B;
-  --error-400: #F97066;
+  --error-400: #FF437E;
   --error-500: #F04438;
   --error-600: #D92D20;
   --error-700: #B42318;
   --error-800: #912018;
   --error-900: #7A271A;
 
-  /* Untitled UI Colors - Success */
+  /* FlexiWell Success */
   --success-25: #F6FEF9;
   --success-50: #ECFDF3;
   --success-100: #D1FADF;
@@ -56,6 +69,7 @@
   --success-700: #027A48;
   --success-800: #05603A;
   --success-900: #054F31;
+
 }
 
 @theme inline {
@@ -115,6 +129,20 @@
   --color-success-700: var(--success-700);
   --color-success-800: var(--success-800);
   --color-success-900: var(--success-900);
+
+  /* Accent (Pink) */
+  --color-accent-25: var(--accent-25);
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-300: var(--accent-300);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+  --color-accent-800: var(--accent-800);
+  --color-accent-900: var(--accent-900);
+
 }
 
 @media (prefers-color-scheme: dark) {

@@ -263,9 +263,24 @@ export default function SupportPage() {
       {/* Message Input */}
       <div className="px-6 py-4 border-t border-gray-200 bg-white">
         <div className="flex items-end gap-3">
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+          <label className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">
             <AttachIcon className="w-5 h-5" />
-          </button>
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Handle file attachment - will integrate with backend
+                  console.log("File attached:", file.name);
+                  // In production: await api.uploadAttachment(file);
+                  alert(`File "${file.name}" attached. File upload will be available soon.`);
+                }
+                e.target.value = "";
+              }}
+            />
+          </label>
           <div className="flex-1 relative">
             <input
               type="text"
@@ -275,7 +290,16 @@ export default function SupportPage() {
               onKeyPress={handleKeyPress}
               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600">
+            <button
+              type="button"
+              onClick={() => {
+                // Simple emoji picker - in production use a proper emoji picker library
+                const emojis = ["😊", "👍", "❤️", "🙏", "👏", "🎉", "💪", "✨"];
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                setNewMessage((prev) => prev + emoji);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+            >
               <EmojiIcon className="w-5 h-5" />
             </button>
           </div>

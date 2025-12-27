@@ -61,17 +61,17 @@ const mockUpcomingClasses: UpcomingClass[] = [
 ];
 
 const mockStudentAttendance: StudentAttendance[] = [
-  { id: "1", name: "Lucas Ferreira", initials: "LF", classesAttended: 18, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-  { id: "2", name: "Camila Souza", initials: "CS", classesAttended: 15, totalClasses: 20, lastClass: "Yesterday", needsMakeup: true },
-  { id: "3", name: "Rafael Lima", initials: "RL", classesAttended: 12, totalClasses: 20, lastClass: "2 days ago", needsMakeup: true },
-  { id: "4", name: "Julia Martins", initials: "JM", classesAttended: 19, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-  { id: "5", name: "Pedro Alves", initials: "PA", classesAttended: 8, totalClasses: 20, lastClass: "1 week ago", needsMakeup: true },
+  { id: "1", name: "Lucas Brooks", initials: "LB", classesAttended: 18, totalClasses: 20, lastClass: "Today", needsMakeup: false },
+  { id: "2", name: "Camille Stone", initials: "CS", classesAttended: 15, totalClasses: 20, lastClass: "Yesterday", needsMakeup: true },
+  { id: "3", name: "Ryan Lewis", initials: "RL", classesAttended: 12, totalClasses: 20, lastClass: "2 days ago", needsMakeup: true },
+  { id: "4", name: "Julia Martin", initials: "JM", classesAttended: 19, totalClasses: 20, lastClass: "Today", needsMakeup: false },
+  { id: "5", name: "Patrick Adams", initials: "PA", classesAttended: 8, totalClasses: 20, lastClass: "1 week ago", needsMakeup: true },
 ];
 
 const mockMakeupRequests: MakeupRequest[] = [
-  { id: "1", studentName: "Camila Souza", studentInitials: "CS", originalClass: "Morning Yoga", originalDate: "Dec 20", status: "pending" },
-  { id: "2", studentName: "Rafael Lima", studentInitials: "RL", originalClass: "Core Training", originalDate: "Dec 18", requestedDate: "Dec 28, 10:00 AM", status: "scheduled" },
-  { id: "3", studentName: "Pedro Alves", studentInitials: "PA", originalClass: "Pilates Basics", originalDate: "Dec 15", status: "pending" },
+  { id: "1", studentName: "Camille Stone", studentInitials: "CS", originalClass: "Morning Yoga", originalDate: "Dec 20", status: "pending" },
+  { id: "2", studentName: "Ryan Lewis", studentInitials: "RL", originalClass: "Core Training", originalDate: "Dec 18", requestedDate: "Dec 28, 10:00 AM", status: "scheduled" },
+  { id: "3", studentName: "Patrick Adams", studentInitials: "PA", originalClass: "Pilates Basics", originalDate: "Dec 15", status: "pending" },
 ];
 
 const weeklyStats = {
@@ -95,18 +95,18 @@ const weeklyClassData = [
   { day: "Sun", classes: 1, students: 12 },
 ];
 
-// Class type distribution
+// Class type distribution - Using accent theme colors (pink/magenta)
 const classTypeData = [
-  { name: "Yoga", value: 35, color: "#7C3AED" },
-  { name: "Pilates", value: 30, color: "#EC4899" },
-  { name: "Core", value: 20, color: "#3B82F6" },
-  { name: "Stretch", value: 15, color: "#10B981" },
+  { name: "Yoga", value: 35, color: "#DD2590" },   // accent-600
+  { name: "Pilates", value: 30, color: "#EB2B95" }, // accent-500
+  { name: "Core", value: 20, color: "#FF437E" },    // accent-400
+  { name: "Stretch", value: 15, color: "#FD6F8E" }, // accent-300
 ];
 
 function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
   const styles = {
-    completed: "bg-green-100 text-green-700",
-    "in-progress": "bg-blue-100 text-blue-700 animate-pulse",
+    completed: "bg-accent-100 text-accent-700",
+    "in-progress": "bg-accent-50 text-accent-600 animate-pulse",
     upcoming: "bg-gray-100 text-gray-600",
     canceled: "bg-red-100 text-red-700",
   };
@@ -126,7 +126,7 @@ function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
 }
 
 function StudentAvatar({ name, initials }: { name: string; initials: string }) {
-  const colors = ["bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
+  const colors = ["bg-accent-500", "bg-accent-400", "bg-accent-600", "bg-accent-300", "bg-accent-700"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
   return (
@@ -153,6 +153,13 @@ function MakeupStatusBadge({ status }: { status: MakeupRequest["status"] }) {
 export default function TeacherDashboard() {
   const [showAllSchedule, setShowAllSchedule] = useState(false);
   const [activeTab, setActiveTab] = useState<"today" | "makeups">("today");
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [walkInData, setWalkInData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    classId: "",
+  });
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -171,14 +178,25 @@ export default function TeacherDashboard() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">
-              Good morning, Maria
+              Good morning, Sarah
             </h1>
-            <Link
-              href="/teacher/settings"
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Settings
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowWalkInModal(true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Add Walk-in
+              </button>
+              <Link
+                href="/teacher/settings"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Settings
+              </Link>
+            </div>
           </div>
 
           {/* Stats Cards Row */}
@@ -229,11 +247,11 @@ export default function TeacherDashboard() {
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-teal-500" />
+                  <div className="w-3 h-3 rounded-full bg-accent-500" />
                   <span className="text-gray-600">Classes</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-teal-200" />
+                  <div className="w-3 h-3 rounded-full bg-accent-200" />
                   <span className="text-gray-600">Students</span>
                 </div>
               </div>
@@ -250,7 +268,7 @@ export default function TeacherDashboard() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="classes" fill="#14B8A6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="classes" fill="#DD2590" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -310,7 +328,7 @@ export default function TeacherDashboard() {
                     onClick={() => setActiveTab("today")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === "today"
-                        ? "bg-teal-100 text-teal-700"
+                        ? "bg-accent-100 text-accent-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
@@ -335,7 +353,7 @@ export default function TeacherDashboard() {
                 {activeTab === "today" && (
                   <button
                     onClick={() => setShowAllSchedule(!showAllSchedule)}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                    className="text-sm text-accent-600 hover:text-accent-700 font-medium flex items-center gap-1"
                   >
                     {showAllSchedule ? "Show less" : "View all"}
                     <ChevronIcon className="w-4 h-4" direction={showAllSchedule ? "up" : "down"} />
@@ -349,13 +367,13 @@ export default function TeacherDashboard() {
                     <div
                       key={classItem.id}
                       className={`px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                        classItem.status === "in-progress" ? "bg-teal-50" : ""
+                        classItem.status === "in-progress" ? "bg-accent-50" : ""
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${
                           classItem.status === "in-progress"
-                            ? "bg-teal-500 text-white"
+                            ? "bg-accent-500 text-white"
                             : classItem.status === "completed"
                             ? "bg-gray-100 text-gray-400"
                             : "bg-gray-100 text-gray-700"
@@ -371,12 +389,24 @@ export default function TeacherDashboard() {
                       <div className="flex items-center gap-3">
                         <StatusBadge status={classItem.status} />
                         {classItem.status === "in-progress" && (
-                          <button className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                          <button
+                            onClick={() => {
+                              // In production: navigate to attendance page or open modal
+                              alert(`Taking attendance for ${classItem.name}`);
+                            }}
+                            className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                          >
                             Take Attendance
                           </button>
                         )}
                         {classItem.status === "upcoming" && (
-                          <button className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                          <button
+                            onClick={() => {
+                              // In production: open class details modal
+                              alert(`Class: ${classItem.name}\nTime: ${classItem.time}\nRoom: ${classItem.room}\nStudents: ${classItem.students}`);
+                            }}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                          >
                             View Details
                           </button>
                         )}
@@ -403,12 +433,24 @@ export default function TeacherDashboard() {
                       <div className="flex items-center gap-3">
                         <MakeupStatusBadge status={request.status} />
                         {request.status === "pending" && (
-                          <button className="px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors">
+                          <button
+                            onClick={() => {
+                              // In production: open scheduling modal
+                              alert(`Scheduling makeup class for ${request.studentName}\nOriginal: ${request.originalClass} on ${request.originalDate}`);
+                            }}
+                            className="px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                          >
                             Schedule
                           </button>
                         )}
                         {request.status === "scheduled" && (
-                          <button className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                          <button
+                            onClick={() => {
+                              // In production: open rescheduling modal
+                              alert(`Rescheduling makeup for ${request.studentName}\nCurrently scheduled: ${request.requestedDate}`);
+                            }}
+                            className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                          >
                             Reschedule
                           </button>
                         )}
@@ -459,7 +501,7 @@ export default function TeacherDashboard() {
                 ))}
               </div>
               <div className="px-6 py-4 border-t border-gray-200">
-                <Link href="/teacher/classes" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <Link href="/teacher/classes" className="text-sm text-accent-600 hover:text-accent-700 font-medium">
                   View full schedule
                 </Link>
               </div>
@@ -499,7 +541,7 @@ export default function TeacherDashboard() {
                 ))}
               </div>
               <div className="px-6 py-4 border-t border-gray-200">
-                <Link href="/teacher/students" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <Link href="/teacher/students" className="text-sm text-accent-600 hover:text-accent-700 font-medium">
                   View all students
                 </Link>
               </div>
@@ -507,6 +549,133 @@ export default function TeacherDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Walk-in Modal */}
+      {showWalkInModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Add Walk-in Student</h3>
+                    <p className="text-sm text-gray-500">Add a drop-in student to a class</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowWalkInModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Select Class */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Class *</label>
+                <select
+                  value={walkInData.classId}
+                  onChange={(e) => setWalkInData({ ...walkInData, classId: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select a class...</option>
+                  {mockTodaySchedule
+                    .filter(c => c.status === "in-progress" || c.status === "upcoming")
+                    .map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} - {c.time} ({c.room})
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              {/* Student Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter student name"
+                  value={walkInData.name}
+                  onChange={(e) => setWalkInData({ ...walkInData, name: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  placeholder="student@email.com (optional)"
+                  value={walkInData.email}
+                  onChange={(e) => setWalkInData({ ...walkInData, email: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 123-4567 (optional)"
+                  value={walkInData.phone}
+                  onChange={(e) => setWalkInData({ ...walkInData, phone: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              {/* Info */}
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="flex gap-2">
+                  <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-blue-800">
+                    Walk-in students will be marked as attending this class. You can collect payment and create a full profile later.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowWalkInModal(false);
+                  setWalkInData({ name: "", email: "", phone: "", classId: "" });
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // In production: await api.addWalkInStudent(walkInData);
+                  const selectedClass = mockTodaySchedule.find(c => c.id === walkInData.classId);
+                  console.log("Adding walk-in:", walkInData);
+                  alert(`Walk-in student "${walkInData.name}" added to ${selectedClass?.name || "class"}!`);
+                  setShowWalkInModal(false);
+                  setWalkInData({ name: "", email: "", phone: "", classId: "" });
+                }}
+                disabled={!walkInData.name || !walkInData.classId}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Walk-in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

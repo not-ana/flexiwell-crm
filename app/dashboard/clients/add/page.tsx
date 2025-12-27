@@ -245,7 +245,13 @@ export default function AddClientPage() {
                   <p className="text-sm text-gray-500 mt-1">{field.description}</p>
                 )}
                 {field.type === "checkboxGroup" && (
-                  <button className="text-sm text-primary-600 hover:text-primary-700 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert("Example goals:\n\n• Improve flexibility and posture\n• Build core strength\n• Reduce stress and anxiety\n• Recover from injury\n• Increase overall fitness");
+                    }}
+                    className="text-sm text-primary-600 hover:text-primary-700 mt-2"
+                  >
                     View examples
                   </button>
                 )}

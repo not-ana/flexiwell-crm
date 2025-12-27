@@ -34,9 +34,9 @@ interface OverviewStat {
 const mockStaffPerformance: StaffPerformance[] = [
   {
     id: "1",
-    name: "Maria Santos",
+    name: "Sarah Johnson",
     role: "teacher",
-    initials: "MS",
+    initials: "SJ",
     stats: {
       classesThisMonth: 24,
       clientsServed: 86,
@@ -48,9 +48,9 @@ const mockStaffPerformance: StaffPerformance[] = [
   },
   {
     id: "2",
-    name: "Pedro Costa",
+    name: "James Wilson",
     role: "teacher",
-    initials: "PC",
+    initials: "JW",
     stats: {
       classesThisMonth: 18,
       clientsServed: 62,
@@ -62,9 +62,9 @@ const mockStaffPerformance: StaffPerformance[] = [
   },
   {
     id: "3",
-    name: "Carlos Mendes",
+    name: "Michael Chen",
     role: "admin",
-    initials: "CM",
+    initials: "MC",
     stats: {
       classesThisMonth: 0,
       clientsServed: 124,
@@ -75,9 +75,9 @@ const mockStaffPerformance: StaffPerformance[] = [
   },
   {
     id: "4",
-    name: "Julia Oliveira",
+    name: "Emily Davis",
     role: "teacher",
-    initials: "JO",
+    initials: "ED",
     stats: {
       classesThisMonth: 12,
       clientsServed: 45,
@@ -105,12 +105,12 @@ const revenueData = [
   { month: "Dec", revenue: 32400, lastYear: 27900 },
 ];
 
-// Class types distribution
+// Class types distribution - Using admin purple theme variations
 const classTypesData = [
-  { name: "Pilates", value: 45, color: "#7C3AED" },
-  { name: "Yoga", value: 25, color: "#EC4899" },
-  { name: "Reformer", value: 20, color: "#3B82F6" },
-  { name: "Stretch", value: 10, color: "#10B981" },
+  { name: "Pilates", value: 45, color: "#6938EF" },  // primary-500
+  { name: "Yoga", value: 25, color: "#8870E9" },     // primary-400
+  { name: "Reformer", value: 20, color: "#5925DC" }, // primary-700
+  { name: "Stretch", value: 10, color: "#BDB4FE" },  // primary-300
 ];
 
 // Attendance trend data
@@ -150,7 +150,7 @@ const getOverviewStats = (period: string, year: number): OverviewStat[] => {
       change: data.revenueChange,
       trend: "up",
       subtext: `vs last ${period}`,
-      color: "from-purple-500 to-purple-600",
+      color: "from-primary-500 to-primary-600",
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -200,22 +200,22 @@ const getOverviewStats = (period: string, year: number): OverviewStat[] => {
 };
 
 const recentActivity = [
-  { id: 1, action: "New client registration", name: "Lucas Ferreira", time: "5 min ago", type: "client" },
+  { id: 1, action: "New client registration", name: "Lucas Brooks", time: "5 min ago", type: "client" },
   { id: 2, action: "Class completed", name: "Morning Yoga", time: "1 hour ago", type: "class" },
   { id: 3, action: "Payment received", name: "$350.00", time: "2 hours ago", type: "payment" },
-  { id: 4, action: "New booking", name: "Pilates - Maria S.", time: "3 hours ago", type: "booking" },
+  { id: 4, action: "New booking", name: "Pilates - Sarah J.", time: "3 hours ago", type: "booking" },
   { id: 5, action: "Class canceled", name: "Evening Stretch", time: "5 hours ago", type: "cancel" },
 ];
 
 const upcomingClasses = [
-  { id: 1, name: "Morning Pilates", time: "9:00 AM", instructor: "Maria Santos", enrolled: 8, capacity: 12 },
-  { id: 2, name: "Yoga Flow", time: "10:30 AM", instructor: "Pedro Costa", enrolled: 10, capacity: 10 },
-  { id: 3, name: "Stretch & Relax", time: "2:00 PM", instructor: "Julia Oliveira", enrolled: 6, capacity: 15 },
-  { id: 4, name: "Power Pilates", time: "4:30 PM", instructor: "Maria Santos", enrolled: 11, capacity: 12 },
+  { id: 1, name: "Morning Pilates", time: "9:00 AM", instructor: "Sarah Johnson", enrolled: 8, capacity: 12 },
+  { id: 2, name: "Yoga Flow", time: "10:30 AM", instructor: "James Wilson", enrolled: 10, capacity: 10 },
+  { id: 3, name: "Stretch & Relax", time: "2:00 PM", instructor: "Emily Davis", enrolled: 6, capacity: 15 },
+  { id: 4, name: "Power Pilates", time: "4:30 PM", instructor: "Sarah Johnson", enrolled: 11, capacity: 12 },
 ];
 
 function StaffAvatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
-  const colors = ["bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
+  const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
   return avatar ? (
@@ -264,9 +264,9 @@ interface Establishment {
 }
 
 const establishments: Establishment[] = [
-  { id: "1", name: "FlexiWell Centro", location: "Centro, São Paulo" },
-  { id: "2", name: "FlexiWell Jardins", location: "Jardins, São Paulo" },
-  { id: "3", name: "FlexiWell Pinheiros", location: "Pinheiros, São Paulo" },
+  { id: "1", name: "FlexiWell Downtown", location: "Downtown, New York" },
+  { id: "2", name: "FlexiWell Midtown", location: "Midtown, New York" },
+  { id: "3", name: "FlexiWell Uptown", location: "Uptown, New York" },
 ];
 
 export default function AdminDashboard() {
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-semibold text-gray-900">
-                Good morning, Ana
+                Good morning, Alex
               </h1>
               {/* Establishment Selector */}
               <div className="relative">
@@ -404,7 +404,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-purple-500" />
+                  <div className="w-3 h-3 rounded-full bg-primary-500" />
                   <span className="text-gray-600">This Year</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -418,8 +418,8 @@ export default function AdminDashboard() {
                 <AreaChart data={revenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#6938EF" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#6938EF" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} />
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
                     formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
                   />
                   <Area type="monotone" dataKey="lastYear" stroke="#D1D5DB" strokeWidth={2} fill="transparent" />
-                  <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={3} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="revenue" stroke="#6938EF" strokeWidth={3} fill="url(#colorRevenue)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -586,10 +586,13 @@ export default function AdminDashboard() {
                   <h2 className="text-xl font-bold text-gray-900">Today's Classes</h2>
                   <p className="text-sm text-gray-500 mt-1">Upcoming classes for today</p>
                 </div>
-                <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+                <Link
+                  href="/admin/classes"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                >
                   View schedule
                   <ChevronIcon className="w-4 h-4" direction="right" />
-                </button>
+                </Link>
               </div>
               <div className="divide-y divide-gray-200">
                 {upcomingClasses.map((cls) => (
@@ -672,7 +675,7 @@ export default function AdminDashboard() {
                           : activity.type === "class"
                           ? "bg-green-100 text-green-600"
                           : activity.type === "payment"
-                          ? "bg-purple-100 text-purple-600"
+                          ? "bg-primary-100 text-primary-600"
                           : activity.type === "booking"
                           ? "bg-orange-100 text-orange-600"
                           : "bg-red-100 text-red-600"
@@ -750,14 +753,14 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
                     </div>
                     <span className="text-sm text-gray-300">Revenue growth</span>
                   </div>
-                  <span className="text-lg font-bold text-purple-400">+12.5%</span>
+                  <span className="text-lg font-bold text-primary-400">+12.5%</span>
                 </div>
               </div>
             </div>

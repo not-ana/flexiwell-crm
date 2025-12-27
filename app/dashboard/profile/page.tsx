@@ -96,7 +96,7 @@ function Avatar({ name, avatar, initials, size = "md" }: { name: string; avatar?
     xl: "w-20 h-20 text-2xl",
   };
   const displayInitials = initials || name.split(" ").map((n) => n[0]).join("").slice(0, 2);
-  const colors = ["bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
+  const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
   return avatar ? (

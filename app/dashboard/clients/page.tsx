@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import {
   PlusIcon,
@@ -117,7 +118,7 @@ const mockClients: Client[] = [
 ];
 
 function Avatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
-  const colors = ["bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
+  const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
   return avatar ? (
@@ -150,10 +151,12 @@ function StatusBadge({ status }: { status: Client["status"] }) {
 }
 
 export default function ClientsPage() {
+  const router = useRouter();
   const [clients] = useState<Client[]>(mockClients);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Client["status"]>("all");
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch =
@@ -260,7 +263,12 @@ export default function ClientsPage() {
                   className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-64"
                 />
               </div>
-              <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+                  showFilters ? "text-primary-700 border-primary-300 bg-primary-50" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
                 <FilterIcon className="w-4 h-4" />
                 Filters
               </button>
@@ -342,7 +350,10 @@ export default function ClientsPage() {
                       {client.lastActivity}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      <button
+                        onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      >
                         View
                       </button>
                     </td>

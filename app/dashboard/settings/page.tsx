@@ -12,15 +12,46 @@ const tabs: { id: ClientSettingsTab; label: string }[] = [
 
 // Profile Settings Component
 function ProfileSettings() {
-  const [formData, setFormData] = useState({
+  const initialData = {
     firstName: "Olivia",
     lastName: "Rhye",
     email: "olivia@flexitrack.net",
     phone: "+1 (555) 123-4567",
-  });
+  };
+
+  const [formData, setFormData] = useState(initialData);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  const handleCancel = () => {
+    setFormData(initialData);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    // In production: await api.updateProfile(formData);
+    console.log("Saving profile:", formData);
+    await new Promise((r) => setTimeout(r, 1000));
+    setIsSaving(false);
+    alert("Profile updated successfully!");
+  };
+
+  const handlePhotoChange = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        // In production: await api.uploadAvatar(file);
+        console.log("Photo selected:", file.name);
+        alert(`Photo "${file.name}" selected. Upload will be available soon.`);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -37,7 +68,10 @@ function ProfileSettings() {
             <span className="text-xl font-semibold text-primary-600">OR</span>
           </div>
           <div>
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button
+              onClick={handlePhotoChange}
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
               Change photo
             </button>
             <p className="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max 2MB.</p>
@@ -119,8 +153,10 @@ function ProfileSettings() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-4">
-          <Button variant="secondary">Cancel</Button>
-          <Button>Save changes</Button>
+          <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save changes"}
+          </Button>
         </div>
       </div>
     </div>
@@ -149,6 +185,22 @@ function BillingSettings() {
     { id: "2", date: "Nov 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
     { id: "3", date: "Oct 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
   ];
+
+  const handleChangePlan = () => {
+    // In production: open Stripe Customer Portal or plan selection modal
+    alert("Plan management coming soon! Contact support to change your plan.");
+  };
+
+  const handleUpdatePayment = () => {
+    // In production: redirect to Stripe Customer Portal
+    alert("Payment method update coming soon! Contact support to update your payment method.");
+  };
+
+  const handleDownloadInvoice = (invoiceId: string) => {
+    // In production: await api.downloadInvoice(invoiceId)
+    console.log("Downloading invoice:", invoiceId);
+    alert(`Invoice download coming soon! Invoice #${invoiceId}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -194,7 +246,7 @@ function BillingSettings() {
             <p className="text-sm text-gray-500">Next billing date</p>
             <p className="text-sm font-medium text-gray-900">{currentPlan.nextBilling}</p>
           </div>
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={handleChangePlan} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Change plan
           </button>
         </div>
@@ -215,7 +267,7 @@ function BillingSettings() {
               <p className="text-xs text-gray-500">Expires {paymentMethod.expiry}</p>
             </div>
           </div>
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={handleUpdatePayment} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Update
           </button>
         </div>
@@ -247,7 +299,10 @@ function BillingSettings() {
                     </span>
                   </td>
                   <td className="py-3 text-right">
-                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    <button
+                      onClick={() => handleDownloadInvoice(item.id)}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
                       Download
                     </button>
                   </td>

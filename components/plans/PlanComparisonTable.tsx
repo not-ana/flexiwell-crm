@@ -63,14 +63,14 @@ export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanCompariso
               key={planId}
               className={`relative rounded-2xl border-2 p-6 ${
                 isPopular
-                  ? "border-purple-500 bg-gradient-to-b from-purple-50 to-white"
+                  ? "border-primary-500 bg-gradient-to-b from-primary-50 to-white"
                   : isCurrent
                   ? "border-green-500 bg-green-50"
                   : "border-gray-200 bg-white"
               }`}
             >
               {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full">
                   Most Popular
                 </div>
               )}
@@ -124,7 +124,7 @@ export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanCompariso
                   isCurrent
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : isPopular
-                    ? "bg-purple-600 text-white hover:bg-purple-700"
+                    ? "bg-primary-600 text-white hover:bg-primary-700"
                     : "bg-gray-900 text-white hover:bg-gray-800"
                 }`}
               >

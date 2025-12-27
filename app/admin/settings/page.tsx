@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui";
+import { BusinessType, businessTypes, getBusinessTypeOptions } from "@/lib/config/business-types";
 
-type AdminSettingsTab = "general" | "establishments" | "billing" | "notifications" | "team" | "integrations";
+type AdminSettingsTab = "general" | "branding" | "waitlist" | "establishments" | "billing" | "notifications" | "team" | "integrations" | "whatsapp";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
+  { id: "branding", label: "Branding" },
+  { id: "waitlist", label: "Waitlist" },
   { id: "establishments", label: "Establishments" },
   { id: "billing", label: "Billing" },
   { id: "notifications", label: "Notifications" },
   { id: "team", label: "Team" },
   { id: "integrations", label: "Integrations" },
+  { id: "whatsapp", label: "WhatsApp" },
 ];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => void }) {
@@ -36,22 +40,86 @@ function GeneralSettings() {
   const [settings, setSettings] = useState({
     studioName: "FlexiWell Studio",
     email: "contact@flexiwell.com",
-    phone: "55 21 99999 0000",
-    address: "Rua das Flores, 123 - Rio de Janeiro, RJ",
-    timezone: "America/Sao_Paulo",
-    currency: "BRL",
-    language: "pt-BR",
+    phone: "+1 (555) 123-4567",
+    address: "123 Main Street - New York, NY 10001",
+    timezone: "America/New_York",
+    currency: "USD",
+    language: "en-US",
+    businessType: "pilates" as BusinessType,
   });
 
   const updateSetting = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
+  const businessTypeOptions = getBusinessTypeOptions();
+  const selectedBusinessType = businessTypes[settings.businessType];
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">General</h2>
         <p className="text-sm text-gray-600 mt-1">Basic studio information and preferences.</p>
+      </div>
+
+      {/* Business Type Selection */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-gray-900">Business Type</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Select your business type to customize terminology throughout the app.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {businessTypeOptions.map((option) => {
+            const isSelected = settings.businessType === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => updateSetting("businessType", option.value)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  isSelected
+                    ? "border-primary-600 bg-primary-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <span className="text-2xl">{option.icon}</span>
+                <span className={`text-sm font-medium text-center ${
+                  isSelected ? "text-primary-700" : "text-gray-700"
+                }`}>
+                  {option.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Terminology Preview */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700 mb-3">
+            Terminology preview for {selectedBusinessType.name}:
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Sessions:</span>
+              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.classes}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Staff:</span>
+              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.teachers}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Clients:</span>
+              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.clients}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Location:</span>
+              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.studio}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -106,7 +174,10 @@ function GeneralSettings() {
             >
               <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
               <option value="America/New_York">New York (GMT-5)</option>
+              <option value="America/Los_Angeles">Los Angeles (GMT-8)</option>
+              <option value="America/Chicago">Chicago (GMT-6)</option>
               <option value="Europe/London">London (GMT)</option>
+              <option value="Europe/Paris">Paris (GMT+1)</option>
             </select>
           </div>
           <div>
@@ -119,6 +190,7 @@ function GeneralSettings() {
               <option value="BRL">BRL (R$)</option>
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
             </select>
           </div>
           <div>
@@ -161,16 +233,16 @@ interface Establishment {
 
 function EstablishmentsSettings() {
   const [establishments, setEstablishments] = useState<Establishment[]>([
-    { id: "1", name: "FlexiWell Centro", location: "Centro, São Paulo", assignedTeachers: ["1", "2"] },
-    { id: "2", name: "FlexiWell Jardins", location: "Jardins, São Paulo", assignedTeachers: ["1", "3"] },
-    { id: "3", name: "FlexiWell Pinheiros", location: "Pinheiros, São Paulo", assignedTeachers: ["2"] },
+    { id: "1", name: "FlexiWell Downtown", location: "Downtown, New York", assignedTeachers: ["1", "2"] },
+    { id: "2", name: "FlexiWell Midtown", location: "Midtown, New York", assignedTeachers: ["1", "3"] },
+    { id: "3", name: "FlexiWell Uptown", location: "Uptown, New York", assignedTeachers: ["2"] },
   ]);
 
   const allTeachers: Teacher[] = [
-    { id: "1", name: "Maria Santos", email: "maria@flexiwell.com", initials: "MS" },
-    { id: "2", name: "Carlos Lima", email: "carlos@flexiwell.com", initials: "CL" },
-    { id: "3", name: "Julia Oliveira", email: "julia@flexiwell.com", initials: "JO" },
-    { id: "4", name: "Pedro Costa", email: "pedro@flexiwell.com", initials: "PC" },
+    { id: "1", name: "Sarah Johnson", email: "sarah@flexiwell.com", initials: "SJ" },
+    { id: "2", name: "Michael Chen", email: "michael@flexiwell.com", initials: "MC" },
+    { id: "3", name: "Emily Davis", email: "emily@flexiwell.com", initials: "ED" },
+    { id: "4", name: "James Wilson", email: "james@flexiwell.com", initials: "JW" },
   ];
 
   const [editingEstablishment, setEditingEstablishment] = useState<string | null>(null);
@@ -376,7 +448,7 @@ function EstablishmentsSettings() {
 function BillingSettings() {
   const currentPlan = {
     name: "Professional Plan",
-    price: "R$ 299",
+    price: "$199",
     period: "month",
   };
 
@@ -387,9 +459,9 @@ function BillingSettings() {
   };
 
   const billingHistory = [
-    { id: "1", date: "Dec 1, 2024", description: "Professional Plan", amount: "R$ 299.00", status: "Paid" },
-    { id: "2", date: "Nov 1, 2024", description: "Professional Plan", amount: "R$ 299.00", status: "Paid" },
-    { id: "3", date: "Oct 1, 2024", description: "Professional Plan", amount: "R$ 299.00", status: "Paid" },
+    { id: "1", date: "Dec 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
+    { id: "2", date: "Nov 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
+    { id: "3", date: "Oct 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
   ];
 
   return (
@@ -581,10 +653,10 @@ function NotificationsSettings() {
 // Team Settings Component
 function TeamSettings() {
   const teamMembers = [
-    { name: "Ana Silva", email: "ana@flexiwell.com", role: "Admin", status: "Active" },
-    { name: "Maria Santos", email: "maria@flexiwell.com", role: "Teacher", status: "Active" },
-    { name: "Carlos Lima", email: "carlos@flexiwell.com", role: "Teacher", status: "Active" },
-    { name: "Pedro Costa", email: "pedro@flexiwell.com", role: "Receptionist", status: "Pending" },
+    { name: "Alex Thompson", email: "alex@flexiwell.com", role: "Admin", status: "Active" },
+    { name: "Sarah Johnson", email: "sarah@flexiwell.com", role: "Teacher", status: "Active" },
+    { name: "Michael Chen", email: "michael@flexiwell.com", role: "Teacher", status: "Active" },
+    { name: "James Wilson", email: "james@flexiwell.com", role: "Receptionist", status: "Pending" },
   ];
 
   return (
@@ -611,7 +683,7 @@ function TeamSettings() {
                 <p className="text-sm text-gray-500">{member.email}</p>
               </div>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                member.role === "Admin" ? "bg-purple-100 text-purple-700" :
+                member.role === "Admin" ? "bg-primary-100 text-primary-700" :
                 member.role === "Teacher" ? "bg-green-100 text-green-700" :
                 "bg-gray-100 text-gray-700"
               }`}>
@@ -635,18 +707,1041 @@ function TeamSettings() {
   );
 }
 
+// WhatsApp Settings Component
+type WhatsAppPlan = "starter" | "pro" | "enterprise";
+
+interface WhatsAppPlanDetails {
+  name: string;
+  price: string;
+  features: string[];
+  highlighted?: boolean;
+}
+
+const whatsappPlans: Record<WhatsAppPlan, WhatsAppPlanDetails> = {
+  starter: {
+    name: "Starter",
+    price: "$49/month",
+    features: [
+      "View scheduled classes",
+      "Confirm attendance",
+      "500 conversations/month",
+      "Basic automated messages",
+    ],
+  },
+  pro: {
+    name: "Pro",
+    price: "$99/month",
+    features: [
+      "Everything in Starter",
+      "Cancel classes",
+      "Book new classes",
+      "2,000 conversations/month",
+      "Proactive notifications",
+      "Automatic reminders",
+    ],
+    highlighted: true,
+  },
+  enterprise: {
+    name: "Enterprise",
+    price: "$199/month",
+    features: [
+      "Everything in Pro",
+      "Unlimited conversations",
+      "Multiple phone numbers",
+      "Advanced reports",
+      "Priority support",
+      "Custom integrations",
+    ],
+  },
+};
+
+function WhatsAppSettings() {
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<WhatsAppPlan>("pro");
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [twilioConfig, setTwilioConfig] = useState({
+    accountSid: "",
+    authToken: "",
+    whatsappNumber: "",
+  });
+
+  const handleSaveConfig = () => {
+    // In production, save to database
+    console.log("Saving Twilio config:", twilioConfig);
+    setShowConfigModal(false);
+    setIsEnabled(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">WhatsApp Business</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Let your clients check classes, confirm attendance, and cancel via WhatsApp.
+        </p>
+      </div>
+
+      {/* Status Card */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">WhatsApp Bot</p>
+              <p className="text-sm text-gray-500">
+                {isEnabled ? "Active • " + whatsappPlans[selectedPlan].name + " Plan" : "Not configured"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {isEnabled ? (
+              <>
+                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                  Ativo
+                </span>
+                <Button variant="secondary" onClick={() => setShowConfigModal(true)}>
+                  Configurar
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setShowConfigModal(true)}>
+                Ativar WhatsApp
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {isEnabled && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">1,247</p>
+                <p className="text-xs text-gray-500">Mensagens este mes</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">89%</p>
+                <p className="text-xs text-gray-500">Taxa de resposta</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">156</p>
+                <p className="text-xs text-gray-500">Confirmacoes pelo bot</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pricing Plans */}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Planos WhatsApp</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {(Object.keys(whatsappPlans) as WhatsAppPlan[]).map((planKey) => {
+            const plan = whatsappPlans[planKey];
+            const isSelected = selectedPlan === planKey;
+            return (
+              <div
+                key={planKey}
+                className={`relative bg-white border-2 rounded-xl p-5 transition-all cursor-pointer ${
+                  isSelected
+                    ? "border-primary-500 ring-2 ring-primary-100"
+                    : "border-gray-200 hover:border-gray-300"
+                } ${plan.highlighted ? "shadow-lg" : ""}`}
+                onClick={() => setSelectedPlan(planKey)}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full">
+                      Popular
+                    </span>
+                  </div>
+                )}
+                <div className="text-center mb-4">
+                  <h4 className="font-semibold text-gray-900">{plan.name}</h4>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{plan.price}</p>
+                </div>
+                <ul className="space-y-2">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    className={`w-full py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isSelected
+                        ? "bg-primary-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {isSelected ? "Current Plan" : "Select"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bot Features */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Bot Features</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">View Classes</p>
+              <p className="text-xs text-gray-500">Client views their upcoming scheduled classes</p>
+            </div>
+            <Toggle enabled={true} onChange={() => {}} />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Confirm Attendance</p>
+              <p className="text-xs text-gray-500">Client confirms attendance for classes</p>
+            </div>
+            <Toggle enabled={true} onChange={() => {}} />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Cancel Class</p>
+              <p className="text-xs text-gray-500">Client cancels class directly</p>
+            </div>
+            <Toggle enabled={selectedPlan !== "starter"} onChange={() => {}} />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Book New Class</p>
+              <p className="text-xs text-gray-500">Client books new classes via WhatsApp</p>
+            </div>
+            <Toggle enabled={selectedPlan !== "starter"} onChange={() => {}} />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Automatic Reminders</p>
+              <p className="text-xs text-gray-500">Send reminder 24h before class</p>
+            </div>
+            <Toggle enabled={selectedPlan !== "starter"} onChange={() => {}} />
+          </div>
+        </div>
+      </div>
+
+      {/* Twilio Configuration Modal */}
+      {showConfigModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Configure Twilio</h3>
+                </div>
+                <button onClick={() => setShowConfigModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  To use WhatsApp Business, you need a Twilio account.
+                  <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="font-medium underline ml-1">
+                    Create free account
+                  </a>
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account SID</label>
+                <input
+                  type="text"
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  value={twilioConfig.accountSid}
+                  onChange={(e) => setTwilioConfig({ ...twilioConfig, accountSid: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Found in Twilio Console</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Auth Token</label>
+                <input
+                  type="password"
+                  placeholder="••••••••••••••••••••••••••••••••"
+                  value={twilioConfig.authToken}
+                  onChange={(e) => setTwilioConfig({ ...twilioConfig, authToken: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                <input
+                  type="text"
+                  placeholder="+15551234567"
+                  value={twilioConfig.whatsappNumber}
+                  onChange={(e) => setTwilioConfig({ ...twilioConfig, whatsappNumber: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">WhatsApp approved number in Twilio</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-700 mb-2">Webhook URL</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-600 overflow-x-auto">
+                    https://your-domain.com/api/webhook/whatsapp/twilio
+                  </code>
+                  <button className="px-3 py-2 text-xs font-medium text-primary-600 border border-primary-200 rounded hover:bg-primary-50">
+                    Copy
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Configure this URL in Twilio Console → Messaging → WhatsApp Sandbox</p>
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveConfig}
+                disabled={!twilioConfig.accountSid || !twilioConfig.authToken || !twilioConfig.whatsappNumber}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              >
+                Save and Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Branding Settings Component (White Label)
+function BrandingSettings() {
+  const [branding, setBranding] = useState({
+    whiteLabelEnabled: false,
+    customLogo: "",
+    customFavicon: "",
+    primaryColor: "#6938EF",
+    accentColor: "#DD2590",
+    customDomain: "",
+    hideFlexiwellBranding: false,
+    customEmailHeader: "",
+    customLoginBackground: "",
+  });
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Mock: Check if white label is available in current plan
+  const isWhiteLabelAvailable = false; // Would come from plan context
+
+  const updateBranding = (key: string, value: string | boolean) => {
+    setBranding((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Branding & White Label</h2>
+        <p className="text-sm text-gray-600 mt-1">Customize the look and feel of your studio's platform.</p>
+      </div>
+
+      {/* White Label Status */}
+      <div className={`bg-white border rounded-xl p-6 ${isWhiteLabelAvailable ? "border-gray-200" : "border-primary-200 bg-primary-50/30"}`}>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isWhiteLabelAvailable ? "bg-green-100" : "bg-primary-100"}`}>
+              <svg className={`w-6 h-6 ${isWhiteLabelAvailable ? "text-green-600" : "text-primary-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-gray-900">White Label Mode</h3>
+                {isWhiteLabelAvailable ? (
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">Pro Feature</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                {isWhiteLabelAvailable
+                  ? "Your studio's branding is displayed to all users."
+                  : "Remove FlexiWell branding and use your own logo, colors, and domain."}
+              </p>
+            </div>
+          </div>
+          {!isWhiteLabelAvailable ? (
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Upgrade to Pro
+            </button>
+          ) : (
+            <Toggle enabled={branding.whiteLabelEnabled} onChange={(v) => updateBranding("whiteLabelEnabled", v)} />
+          )}
+        </div>
+
+        {!isWhiteLabelAvailable && (
+          <div className="mt-4 p-4 bg-white rounded-lg border border-primary-100">
+            <p className="text-sm font-medium text-gray-900 mb-2">White Label includes:</p>
+            <ul className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Custom logo & favicon
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Custom color scheme
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Custom domain (studio.com)
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Branded email templates
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Remove "Powered by FlexiWell"
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Custom login page
+              </li>
+            </ul>
+            <p className="text-sm text-primary-700 font-medium mt-3">+$39/month</p>
+          </div>
+        )}
+      </div>
+
+      {/* Logo & Assets */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Logo & Assets</h3>
+        <div className="grid grid-cols-2 gap-6">
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Studio Logo</label>
+            <div className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}>
+              {branding.customLogo ? (
+                <div className="flex flex-col items-center">
+                  <img src={branding.customLogo} alt="Logo" className="h-12 mb-2" />
+                  <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                </div>
+              ) : (
+                <>
+                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-400 mt-1">SVG, PNG or JPG (max 2MB)</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Favicon Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+            <div className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}>
+              {branding.customFavicon ? (
+                <div className="flex flex-col items-center">
+                  <img src={branding.customFavicon} alt="Favicon" className="h-8 mb-2" />
+                  <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                </div>
+              ) : (
+                <>
+                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-600">Click to upload favicon</p>
+                  <p className="text-xs text-gray-400 mt-1">ICO or PNG (32x32px)</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Color Scheme */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Color Scheme</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+            <div className={`flex items-center gap-3 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
+              <input
+                type="color"
+                value={branding.primaryColor}
+                onChange={(e) => updateBranding("primaryColor", e.target.value)}
+                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+              />
+              <input
+                type="text"
+                value={branding.primaryColor}
+                onChange={(e) => updateBranding("primaryColor", e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Used for buttons, links, and accents</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
+            <div className={`flex items-center gap-3 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
+              <input
+                type="color"
+                value={branding.accentColor}
+                onChange={(e) => updateBranding("accentColor", e.target.value)}
+                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+              />
+              <input
+                type="text"
+                value={branding.accentColor}
+                onChange={(e) => updateBranding("accentColor", e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Secondary highlights and badges</p>
+          </div>
+        </div>
+
+        {/* Color Preview */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700 mb-3">Preview</p>
+          <div className="flex items-center gap-4">
+            <button
+              style={{ backgroundColor: branding.primaryColor }}
+              className="px-4 py-2 text-white text-sm font-medium rounded-lg"
+            >
+              Primary Button
+            </button>
+            <button
+              style={{ backgroundColor: branding.accentColor }}
+              className="px-4 py-2 text-white text-sm font-medium rounded-lg"
+            >
+              Accent Button
+            </button>
+            <span
+              style={{ backgroundColor: branding.primaryColor + "20", color: branding.primaryColor }}
+              className="px-3 py-1 text-xs font-medium rounded-full"
+            >
+              Badge
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Domain */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Custom Domain</h3>
+        <p className="text-sm text-gray-600 mb-4">Use your own domain for a fully branded experience.</p>
+
+        <div className={`space-y-4 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">https://</span>
+              <input
+                type="text"
+                placeholder="app.yourstudio.com"
+                value={branding.customDomain}
+                onChange={(e) => updateBranding("customDomain", e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Point your domain's CNAME record to <code className="bg-gray-100 px-1 rounded">app.flexiwell.net</code>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+            <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-sm text-yellow-800">SSL certificates are automatically provisioned. DNS changes may take up to 48 hours.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Branding Options */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Branding Options</h3>
+        <div className={`space-y-4 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Hide "Powered by FlexiWell"</p>
+              <p className="text-sm text-gray-500">Remove FlexiWell attribution from footer</p>
+            </div>
+            <Toggle enabled={branding.hideFlexiwellBranding} onChange={(v) => updateBranding("hideFlexiwellBranding", v)} />
+          </div>
+        </div>
+      </div>
+
+      {isWhiteLabelAvailable && (
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="secondary">Cancel</Button>
+          <Button>Save Branding</Button>
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="p-6">
+              <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                Upgrade to Pro
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Unlock White Label mode and make FlexiWell truly yours. Your clients will only see your brand.
+              </p>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-baseline justify-center gap-1 mb-4">
+                  <span className="text-3xl font-bold text-gray-900">$39</span>
+                  <span className="text-gray-500">/month</span>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2 text-gray-700">
+                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Custom logo, colors & favicon
+                  </li>
+                  <li className="flex items-center gap-2 text-gray-700">
+                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Custom domain with SSL
+                  </li>
+                  <li className="flex items-center gap-2 text-gray-700">
+                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Branded email templates
+                  </li>
+                  <li className="flex items-center gap-2 text-gray-700">
+                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    No FlexiWell branding
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Maybe later
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Redirect to upgrade flow
+                  setShowUpgradeModal(false);
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+              >
+                Upgrade Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Waitlist Settings Component
+function WaitlistSettings() {
+  const [settings, setSettings] = useState({
+    enabled: true,
+    maxWaitlistSize: 10,
+    autoNotifyOnCancel: true,
+    showPositionToClient: true,
+    allowAutoConfirm: true,
+    notificationChannels: ["whatsapp", "email"] as string[],
+    confirmationMethod: "link" as "link" | "reply" | "app",
+    noShowPenalty: {
+      enabled: true,
+      maxNoShows: 2,
+      penaltyDays: 7,
+    },
+    priorityBoost: {
+      enabled: true,
+      attendanceThreshold: 8,
+      boostPercentage: 20,
+    },
+  });
+
+  const [priorityTiers, setPriorityTiers] = useState([
+    {
+      id: "vip",
+      label: "VIP Members",
+      responseTimeMinutes: 240,
+      cancellationGraceHours: 2,
+      sources: ["Native VIP"],
+      color: "#6938EF",
+      enabled: true,
+    },
+    {
+      id: "high",
+      label: "Direct Clients",
+      responseTimeMinutes: 120,
+      cancellationGraceHours: 4,
+      sources: ["Native", "Packages"],
+      color: "#8870E9",
+      enabled: true,
+    },
+    {
+      id: "medium",
+      label: "ClassPass",
+      responseTimeMinutes: 60,
+      cancellationGraceHours: 12,
+      sources: ["ClassPass"],
+      color: "#DD2590",
+      enabled: true,
+    },
+    {
+      id: "low",
+      label: "Aggregators",
+      responseTimeMinutes: 30,
+      cancellationGraceHours: 24,
+      sources: ["Gympass", "TotalPass", "Urban"],
+      color: "#98A2B3",
+      enabled: true,
+    },
+  ]);
+
+  const updateTier = (tierId: string, field: string, value: number | boolean) => {
+    setPriorityTiers(prev =>
+      prev.map(tier =>
+        tier.id === tierId ? { ...tier, [field]: value } : tier
+      )
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Waitlist Management</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Configure smart waitlist with priority-based notifications and automatic spot filling.
+        </p>
+      </div>
+
+      {/* Waitlist Toggle */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Enable Waitlist</h3>
+              <p className="text-sm text-gray-600">Allow clients to join waitlist when classes are full</p>
+            </div>
+          </div>
+          <Toggle enabled={settings.enabled} onChange={(v) => setSettings({ ...settings, enabled: v })} />
+        </div>
+      </div>
+
+      {/* Priority Tiers */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="mb-6">
+          <h3 className="text-base font-semibold text-gray-900">Priority Tiers</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Configure priority levels for different client sources. Higher priority clients get notified first and have more time to respond.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {priorityTiers.map((tier, index) => (
+            <div
+              key={tier.id}
+              className={`border rounded-xl p-4 transition-all ${
+                tier.enabled ? "border-gray-200 bg-white" : "border-gray-100 bg-gray-50 opacity-60"
+              }`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                    style={{ backgroundColor: tier.color }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">{tier.label}</h4>
+                    <p className="text-xs text-gray-500">{tier.sources.join(", ")}</p>
+                  </div>
+                </div>
+                <Toggle enabled={tier.enabled} onChange={(v) => updateTier(tier.id, "enabled", v)} />
+              </div>
+
+              {tier.enabled && (
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Response Time
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={tier.responseTimeMinutes}
+                        onChange={(e) => updateTier(tier.id, "responseTimeMinutes", parseInt(e.target.value))}
+                        className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-xs text-gray-500">minutes to confirm</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Cancellation Grace
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={tier.cancellationGraceHours}
+                        onChange={(e) => updateTier(tier.id, "cancellationGraceHours", parseInt(e.target.value))}
+                        className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-xs text-gray-500">hours before class</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 p-4 bg-primary-50 rounded-lg">
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-sm text-primary-800">
+              <p className="font-medium mb-1">How Priority Works</p>
+              <p>When a spot opens, the highest-priority client on the waitlist gets notified first. If they don't confirm within their response time, the next person is notified automatically.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Settings */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">Notification Settings</h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notification Channels</label>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { id: "whatsapp", label: "WhatsApp", icon: "💬" },
+                { id: "sms", label: "SMS", icon: "📱" },
+                { id: "email", label: "Email", icon: "📧" },
+                { id: "push", label: "Push", icon: "🔔" },
+              ].map((channel) => (
+                <button
+                  key={channel.id}
+                  onClick={() => {
+                    const channels = settings.notificationChannels.includes(channel.id)
+                      ? settings.notificationChannels.filter(c => c !== channel.id)
+                      : [...settings.notificationChannels, channel.id];
+                    setSettings({ ...settings, notificationChannels: channels });
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                    settings.notificationChannels.includes(channel.id)
+                      ? "border-primary-600 bg-primary-50 text-primary-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <span>{channel.icon}</span>
+                  <span className="text-sm font-medium">{channel.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Auto-notify on cancellation</p>
+              <p className="text-xs text-gray-500">Immediately notify next in line when someone cancels</p>
+            </div>
+            <Toggle enabled={settings.autoNotifyOnCancel} onChange={(v) => setSettings({ ...settings, autoNotifyOnCancel: v })} />
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Show queue position</p>
+              <p className="text-xs text-gray-500">Let clients see their position in the waitlist</p>
+            </div>
+            <Toggle enabled={settings.showPositionToClient} onChange={(v) => setSettings({ ...settings, showPositionToClient: v })} />
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Allow auto-confirm</p>
+              <p className="text-xs text-gray-500">Let clients opt-in to automatic booking when spot opens</p>
+            </div>
+            <Toggle enabled={settings.allowAutoConfirm} onChange={(v) => setSettings({ ...settings, allowAutoConfirm: v })} />
+          </div>
+        </div>
+      </div>
+
+      {/* No-Show Penalty */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">No-Show Penalty</h3>
+            <p className="text-sm text-gray-600">Penalize clients who don't show up after getting a waitlist spot</p>
+          </div>
+          <Toggle enabled={settings.noShowPenalty.enabled} onChange={(v) => setSettings({ ...settings, noShowPenalty: { ...settings.noShowPenalty, enabled: v } })} />
+        </div>
+
+        {settings.noShowPenalty.enabled && (
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max No-Shows</label>
+              <select
+                value={settings.noShowPenalty.maxNoShows}
+                onChange={(e) => setSettings({ ...settings, noShowPenalty: { ...settings.noShowPenalty, maxNoShows: parseInt(e.target.value) } })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value={1}>1 no-show</option>
+                <option value={2}>2 no-shows</option>
+                <option value={3}>3 no-shows</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Penalty Duration</label>
+              <select
+                value={settings.noShowPenalty.penaltyDays}
+                onChange={(e) => setSettings({ ...settings, noShowPenalty: { ...settings.noShowPenalty, penaltyDays: parseInt(e.target.value) } })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value={3}>3 days</option>
+                <option value={7}>7 days</option>
+                <option value={14}>14 days</option>
+                <option value={30}>30 days</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Priority Boost */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Loyalty Priority Boost</h3>
+            <p className="text-sm text-gray-600">Give priority boost to frequent attendees</p>
+          </div>
+          <Toggle enabled={settings.priorityBoost.enabled} onChange={(v) => setSettings({ ...settings, priorityBoost: { ...settings.priorityBoost, enabled: v } })} />
+        </div>
+
+        {settings.priorityBoost.enabled && (
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Attendance Threshold</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={settings.priorityBoost.attendanceThreshold}
+                  onChange={(e) => setSettings({ ...settings, priorityBoost: { ...settings.priorityBoost, attendanceThreshold: parseInt(e.target.value) } })}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-500">classes/month</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority Boost</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={settings.priorityBoost.boostPercentage}
+                  onChange={(e) => setSettings({ ...settings, priorityBoost: { ...settings.priorityBoost, boostPercentage: parseInt(e.target.value) } })}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-500">% priority increase</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* General Settings */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">General Settings</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Max Waitlist Size</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={settings.maxWaitlistSize}
+              onChange={(e) => setSettings({ ...settings, maxWaitlistSize: parseInt(e.target.value) })}
+              className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <span className="text-sm text-gray-500">people per class</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">Maximum number of people that can join the waitlist for a single class</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <Button variant="secondary">Cancel</Button>
+        <Button>Save Waitlist Settings</Button>
+      </div>
+    </div>
+  );
+}
+
 // Integrations Settings Component
 function IntegrationsSettings() {
   const integrations = [
     { name: "Wellhub", icon: "WH", color: "green", status: "Active", description: "Connected • Last sync: 2 hours ago" },
     { name: "Stripe", icon: "ST", color: "purple", status: null, description: "Payment processing" },
-    { name: "Google Calendar", icon: "GC", color: "blue", status: null, description: "Calendar sync" },
-    { name: "WhatsApp Business", icon: "WA", color: "green", status: null, description: "Customer messaging" },
+    { name: "Google Calendar", icon: "GC", color: "blue", status: null, description: "Calendar sync & notifications" },
   ];
 
   const colorClasses: Record<string, string> = {
     green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
+    purple: "bg-primary-100 text-primary-600",
     blue: "bg-blue-100 text-blue-600",
   };
 
@@ -697,6 +1792,10 @@ export default function AdminSettingsPage() {
     switch (activeTab) {
       case "general":
         return <GeneralSettings />;
+      case "branding":
+        return <BrandingSettings />;
+      case "waitlist":
+        return <WaitlistSettings />;
       case "establishments":
         return <EstablishmentsSettings />;
       case "billing":
@@ -707,6 +1806,8 @@ export default function AdminSettingsPage() {
         return <TeamSettings />;
       case "integrations":
         return <IntegrationsSettings />;
+      case "whatsapp":
+        return <WhatsAppSettings />;
       default:
         return <GeneralSettings />;
     }
@@ -738,7 +1839,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-2xl">
+        <div className={activeTab === "whatsapp" ? "max-w-4xl" : "max-w-2xl"}>
           {renderTabContent()}
         </div>
       </div>

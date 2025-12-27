@@ -65,19 +65,19 @@ export function UpgradePrompt({ feature, currentPlan, compact = false }: Upgrade
 
   if (compact) {
     return (
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-full">
-        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-primary-50 to-pink-50 border border-primary-200 rounded-full">
+        <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
-        <span className="text-sm text-purple-700">Upgrade to unlock</span>
+        <span className="text-sm text-primary-700">Upgrade to unlock</span>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4">
+        <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -89,14 +89,14 @@ export function UpgradePrompt({ feature, currentPlan, compact = false }: Upgrade
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{featureName}</h3>
       <p className="text-sm text-gray-600 mb-4 max-w-xs">
         This feature is available on the{" "}
-        <span className="font-medium text-purple-600">
+        <span className="font-medium text-primary-600">
           {availableIn ? plans[availableIn].name : "Professional"}
         </span>{" "}
         plan and above.
       </p>
       <Link
         href="/admin/settings?tab=billing"
-        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
+        className="px-4 py-2 bg-gradient-to-r from-primary-600 to-pink-600 text-white font-medium rounded-lg hover:from-primary-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
       >
         Upgrade Now
       </Link>
@@ -110,7 +110,7 @@ export function UpgradePrompt({ feature, currentPlan, compact = false }: Upgrade
 export function UpgradeBadge({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-medium rounded-full ${className}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-primary-100 to-pink-100 text-primary-700 text-xs font-medium rounded-full ${className}`}
     >
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />

@@ -104,7 +104,7 @@ function ProgressBar({ value, max, color = "primary" }: { value: number; max: nu
     green: "bg-green-500",
     blue: "bg-blue-500",
     orange: "bg-orange-500",
-    purple: "bg-purple-500",
+    purple: "bg-primary-500",
   };
 
   return (
@@ -139,7 +139,15 @@ export default function ReportsPage() {
               <option value="this_year">This Year</option>
               <option value="all_time">All Time</option>
             </select>
-            <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+            <button
+              onClick={() => {
+                // In production: await api.exportReport({ dateRange, activeTab, format: 'pdf' });
+                const reportName = `flexiwell-${activeTab}-report-${dateRange}.pdf`;
+                console.log("Exporting report:", { dateRange, activeTab });
+                alert(`Exporting ${activeTab} report for ${dateRange}...\n\nFile: ${reportName}\n\nDownload will start shortly.`);
+              }}
+              className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
               Export Report
             </button>
           </div>
