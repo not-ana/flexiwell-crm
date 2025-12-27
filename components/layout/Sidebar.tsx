@@ -120,6 +120,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
   const pathname = usePathname();
   const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [addAccountStep, setAddAccountStep] = useState<"role" | "credentials">("role");
+  const [newAccountRole, setNewAccountRole] = useState<AccountType>("client");
+  const [newAccountEmail, setNewAccountEmail] = useState("");
+  const [newAccountPassword, setNewAccountPassword] = useState("");
+  const [isAddingAccount, setIsAddingAccount] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Get menu config based on variant
@@ -150,6 +157,51 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
       default:
         router.push("/dashboard");
     }
+  };
+
+  const handleSignOut = () => {
+    // Clear any stored session/auth data
+    localStorage.removeItem("flexiwell-session");
+    sessionStorage.clear();
+    setShowSignOutModal(false);
+    // Redirect to login page
+    router.push("/login");
+  };
+
+  const handleAddAccount = async () => {
+    if (addAccountStep === "role") {
+      setAddAccountStep("credentials");
+      return;
+    }
+
+    setIsAddingAccount(true);
+    // Simulate API call for account authentication
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setIsAddingAccount(false);
+    setShowAddAccountModal(false);
+    setAddAccountStep("role");
+    setNewAccountEmail("");
+    setNewAccountPassword("");
+
+    // Redirect based on account type
+    switch (newAccountRole) {
+      case "admin":
+        router.push("/admin");
+        break;
+      case "teacher":
+        router.push("/teacher");
+        break;
+      default:
+        router.push("/dashboard");
+    }
+  };
+
+  const resetAddAccountModal = () => {
+    setShowAddAccountModal(false);
+    setAddAccountStep("role");
+    setNewAccountRole("client");
+    setNewAccountEmail("");
+    setNewAccountPassword("");
   };
 
   // Close menu when clicking outside
@@ -326,7 +378,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setIsProfileMenuOpen(false);
-                  router.push("/login");
+                  setShowAddAccountModal(true);
                 }}
               >
                 <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -342,17 +394,208 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setIsProfileMenuOpen(false);
-                  // Clear any stored session/auth data
-                  localStorage.removeItem("flexiwell-session");
-                  sessionStorage.clear();
-                  // Redirect to login page
-                  router.push("/login");
+                  setShowSignOutModal(true);
                 }}
               >
                 <LogoutIcon className="w-4 h-4 text-gray-500" />
                 <span className="flex-1">Sign out</span>
                 <span className="text-xs text-gray-400">Ctrl+Q</span>
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Sign Out Confirmation Modal */}
+        {showSignOutModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+              <div className="p-6">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <LogoutIcon className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                  Sign out?
+                </h3>
+                <p className="text-sm text-gray-600 text-center">
+                  Are you sure you want to sign out of your account? You'll need to sign in again to access your data.
+                </p>
+              </div>
+              <div className="px-6 pb-6 flex gap-3">
+                <button
+                  onClick={() => setShowSignOutModal(false)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Account Modal */}
+        {showAddAccountModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {addAccountStep === "role" ? "Add account" : "Sign in"}
+                  </h3>
+                  <button
+                    onClick={resetAddAccountModal}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {addAccountStep === "role"
+                    ? "Select the type of account you want to add."
+                    : `Sign in to your ${newAccountRole} account.`}
+                </p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {addAccountStep === "role" ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* Client */}
+                    <button
+                      type="button"
+                      onClick={() => setNewAccountRole("client")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        newAccountRole === "client"
+                          ? "border-primary-600 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        newAccountRole === "client" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <span className={`text-sm font-medium ${newAccountRole === "client" ? "text-primary-700" : "text-gray-700"}`}>
+                        Client
+                      </span>
+                    </button>
+
+                    {/* Admin */}
+                    <button
+                      type="button"
+                      onClick={() => setNewAccountRole("admin")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        newAccountRole === "admin"
+                          ? "border-purple-600 bg-purple-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        newAccountRole === "admin" ? "bg-purple-100 text-purple-600" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <span className={`text-sm font-medium ${newAccountRole === "admin" ? "text-purple-700" : "text-gray-700"}`}>
+                        Admin
+                      </span>
+                    </button>
+
+                    {/* Teacher */}
+                    <button
+                      type="button"
+                      onClick={() => setNewAccountRole("teacher")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        newAccountRole === "teacher"
+                          ? "border-green-600 bg-green-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        newAccountRole === "teacher" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <span className={`text-sm font-medium ${newAccountRole === "teacher" ? "text-green-700" : "text-gray-700"}`}>
+                        Teacher
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        placeholder="Enter your email"
+                        value={newAccountEmail}
+                        onChange={(e) => setNewAccountEmail(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                      <input
+                        type="password"
+                        placeholder="Enter your password"
+                        value={newAccountPassword}
+                        onChange={(e) => setNewAccountPassword(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 pb-6 flex gap-3">
+                {addAccountStep === "credentials" && (
+                  <button
+                    onClick={() => setAddAccountStep("role")}
+                    className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  onClick={resetAddAccountModal}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddAccount}
+                  disabled={addAccountStep === "credentials" && (!newAccountEmail || !newAccountPassword)}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingAccount ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : addAccountStep === "role" ? (
+                    "Continue"
+                  ) : (
+                    "Sign in"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

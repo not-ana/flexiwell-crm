@@ -284,7 +284,7 @@ export default function AdminDashboard() {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-semibold text-gray-900">
                 Good morning, Ana
@@ -379,29 +379,28 @@ export default function AdminDashboard() {
               </Link>
             </div>
           </div>
-
-          {/* Stats Cards Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
-              <div key={idx} className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className={`text-sm ${stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-600"}`}>
-                  {stat.change} {stat.subtext}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Charts Row */}
         <div className="grid grid-cols-12 gap-6 mb-8">
-          {/* Revenue Chart */}
+          {/* Revenue Chart with Stats */}
           <div className="col-span-8 bg-white border border-gray-200 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+            {/* Stats Row inside Revenue Card */}
+            <div className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
+              {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
+                <div key={idx}>
+                  <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
+                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                  <p className={`text-sm ${stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-600"}`}>
+                    {stat.change}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Revenue Trend</h2>
-                <p className="text-sm text-gray-500 mt-1">Monthly revenue comparison</p>
+                <h2 className="text-lg font-semibold text-gray-900">Revenue Trend</h2>
+                <p className="text-sm text-gray-500">Monthly comparison</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -414,7 +413,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-            <div className="h-[280px]">
+            <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <defs>
