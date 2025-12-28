@@ -466,7 +466,11 @@ export default function TeacherSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-2xl">
+        <div className={
+          activeTab === "availability"
+            ? "max-w-4xl"
+            : "max-w-3xl"
+        }>
           {renderTabContent()}
         </div>
       </div>

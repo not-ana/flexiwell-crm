@@ -22,6 +22,7 @@ import {
   PaymentIcon,
   RoomsIcon,
   CloseIcon,
+  WaitlistIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -77,6 +78,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     main: [
       { name: "Dashboard", href: "/admin", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
+      { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },

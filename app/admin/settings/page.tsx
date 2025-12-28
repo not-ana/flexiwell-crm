@@ -72,7 +72,7 @@ function GeneralSettings() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {businessTypeOptions.map((option) => {
             const isSelected = settings.businessType === option.value;
             return (
@@ -678,12 +678,444 @@ function PlansSettings() {
   );
 }
 
+// FlexiWell SaaS Plans for Studios
+const flexiwellPlans = [
+  {
+    id: "professional",
+    name: "Professional",
+    monthlyPrice: 497,
+    yearlyPrice: 397,
+    description: "For growing studios",
+    limits: {
+      clients: 150,
+      staff: 5,
+      locations: 1,
+      storage: "5GB",
+    },
+    features: [
+      "Up to 150 clients",
+      "5 team accounts",
+      "1 location",
+      "Online scheduling",
+      "Email reminders",
+      "Basic reports",
+      "Email support",
+    ],
+    highlight: false,
+  },
+  {
+    id: "business",
+    name: "Business",
+    monthlyPrice: 897,
+    yearlyPrice: 717,
+    description: "For established studios",
+    limits: {
+      clients: 500,
+      staff: 15,
+      locations: 2,
+      storage: "25GB",
+    },
+    features: [
+      "Up to 500 clients",
+      "15 team accounts",
+      "2 locations",
+      "WhatsApp Bot included",
+      "Advanced reports",
+      "Smart waitlist",
+      "Payment integrations",
+      "Priority support",
+    ],
+    highlight: true,
+    badge: "Most Popular",
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    monthlyPrice: 1897,
+    yearlyPrice: 1517,
+    description: "For studio networks",
+    limits: {
+      clients: -1,
+      staff: -1,
+      locations: 10,
+      storage: "100GB",
+    },
+    features: [
+      "Unlimited clients",
+      "Unlimited team",
+      "Up to 10 locations",
+      "WhatsApp + Instagram Bot",
+      "White-label (your brand)",
+      "Complete API",
+      "Dedicated success manager",
+      "Custom onboarding",
+      "SLA 99.9%",
+    ],
+    highlight: false,
+  },
+];
+
+// Change Plan Modal Component
+function ChangePlanModal({
+  isOpen,
+  onClose,
+  currentPlanId,
+  billingCycle,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentPlanId: string;
+  billingCycle: "monthly" | "yearly";
+}) {
+  const [selectedPlan, setSelectedPlan] = useState(currentPlanId);
+  const [selectedCycle, setSelectedCycle] = useState(billingCycle);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirmChange = async () => {
+    if (selectedPlan === currentPlanId && selectedCycle === billingCycle) {
+      alert("You are already on this plan.");
+      return;
+    }
+
+    setIsProcessing(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsProcessing(false);
+
+    const plan = flexiwellPlans.find((p) => p.id === selectedPlan);
+    const price = selectedCycle === "yearly" ? plan?.yearlyPrice : plan?.monthlyPrice;
+    alert(`Plan changed to ${plan?.name}!\n\nYour new plan will be activated immediately.\nYou will be charged R$ ${price}/${selectedCycle === "yearly" ? "month (yearly)" : "month"} starting from the next billing cycle.`);
+    onClose();
+  };
+
+  const currentPlanIndex = flexiwellPlans.findIndex((p) => p.id === currentPlanId);
+  const selectedPlanIndex = flexiwellPlans.findIndex((p) => p.id === selectedPlan);
+  const isUpgrade = selectedPlanIndex > currentPlanIndex;
+  const isDowngrade = selectedPlanIndex < currentPlanIndex;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Change FlexiWell Plan</h2>
+              <p className="text-sm text-gray-600 mt-1">Choose the ideal plan for your studio</p>
+            </div>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Billing Cycle Toggle */}
+          <div className="flex items-center justify-center gap-3 mt-4 p-1 bg-gray-100 rounded-lg w-fit mx-auto">
+            <button
+              onClick={() => setSelectedCycle("monthly")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                selectedCycle === "monthly"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setSelectedCycle("yearly")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${
+                selectedCycle === "yearly"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Yearly
+              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                -20%
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {flexiwellPlans.map((plan) => {
+              const price = selectedCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+              const isCurrentPlan = currentPlanId === plan.id;
+              const isSelected = selectedPlan === plan.id;
+
+              return (
+                <button
+                  key={plan.id}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  className={`relative p-4 sm:p-5 rounded-xl border-2 text-left transition-all ${
+                    isSelected
+                      ? "border-primary-600 bg-primary-50 ring-2 ring-primary-200"
+                      : plan.highlight
+                      ? "border-primary-200 bg-primary-50/30"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  {plan.badge && (
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full whitespace-nowrap">
+                      {plan.badge}
+                    </span>
+                  )}
+                  {isCurrentPlan && (
+                    <span className="absolute -top-2.5 right-2 px-2 py-0.5 bg-green-600 text-white text-xs font-medium rounded-full">
+                      Current
+                    </span>
+                  )}
+
+                  <h3 className="font-semibold text-gray-900 text-lg">{plan.name}</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{plan.description}</p>
+
+                  <div className="mt-3">
+                    <span className="text-3xl font-bold text-gray-900">R$ {price}</span>
+                    <span className="text-sm text-gray-500">/month</span>
+                    {selectedCycle === "yearly" && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Billed annually (R$ {price * 12}/year)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Limits */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-500">Clients:</span>
+                        <span className="ml-1 font-medium text-gray-900">
+                          {plan.limits.clients === -1 ? "Unlimited" : plan.limits.clients}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Team:</span>
+                        <span className="ml-1 font-medium text-gray-900">
+                          {plan.limits.staff === -1 ? "Unlimited" : plan.limits.staff}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Locations:</span>
+                        <span className="ml-1 font-medium text-gray-900">{plan.limits.locations}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Storage:</span>
+                        <span className="ml-1 font-medium text-gray-900">{plan.limits.storage}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="mt-4 space-y-2">
+                    {plan.features.slice(0, 5).map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
+                        <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                    {plan.features.length > 5 && (
+                      <li className="text-xs text-primary-600 font-medium pl-6">
+                        +{plan.features.length - 5} more features
+                      </li>
+                    )}
+                  </ul>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Upgrade/Downgrade Notice */}
+          {selectedPlan !== currentPlanId && (
+            <div className={`mt-4 p-4 rounded-lg ${
+              isUpgrade ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+            }`}>
+              <div className="flex items-start gap-3">
+                <svg className={`w-5 h-5 flex-shrink-0 ${isUpgrade ? "text-green-600" : "text-amber-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm">
+                  <p className={`font-medium ${isUpgrade ? "text-green-800" : "text-amber-800"}`}>
+                    {isUpgrade ? "Plan upgrade" : "Plan downgrade"}
+                  </p>
+                  <p className={isUpgrade ? "text-green-700" : "text-amber-700"}>
+                    {isUpgrade
+                      ? "Your new plan will be activated immediately with access to all features."
+                      : "When downgrading, you may lose access to some features. Data above the limit will be preserved but inaccessible."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col-reverse sm:flex-row gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmChange}
+            disabled={isProcessing || (selectedPlan === currentPlanId && selectedCycle === billingCycle)}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? "Processing..." : isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Confirm Change"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Update Payment Modal
+function UpdatePaymentModalAdmin({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || "";
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    return parts.length ? parts.join(" ") : value;
+  };
+
+  const formatExpiry = (value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+    if (v.length >= 2) {
+      return v.slice(0, 2) + "/" + v.slice(2, 4);
+    }
+    return v;
+  };
+
+  const handleSubmit = async () => {
+    if (!cardNumber || !expiry || !cvc) {
+      alert("Please fill in all card details");
+      return;
+    }
+
+    setIsProcessing(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsProcessing(false);
+
+    alert("Payment method updated!\n\nYour new card will be used for future payments.");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Update Payment</h2>
+          <p className="text-sm text-gray-600 mt-1">Enter the new card details</p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+            <input
+              type="text"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+              placeholder="4242 4242 4242 4242"
+              maxLength={19}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
+              <input
+                type="text"
+                value={expiry}
+                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+                placeholder="MM/YY"
+                maxLength={5}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+              <input
+                type="text"
+                value={cvc}
+                onChange={(e) => setCvc(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                placeholder="123"
+                maxLength={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+            <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <p className="text-xs text-gray-500">Your data is protected with SSL encryption</p>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            {isProcessing ? "Updating..." : "Update Card"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Billing Settings Component
 function BillingSettings() {
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   const currentPlan = {
-    name: "Professional Plan",
-    price: "$199",
-    period: "month",
+    id: "business",
+    name: "Business",
+    monthlyPrice: 897,
+    yearlyPrice: 717,
+    billingCycle: "monthly" as "monthly" | "yearly",
+    nextBilling: "15 Jan 2025",
+    usage: {
+      clients: 342,
+      clientsLimit: 500,
+      staff: 8,
+      staffLimit: 15,
+      locations: 1,
+      locationsLimit: 2,
+      storage: "12GB",
+      storageLimit: "25GB",
+    },
   };
 
   const paymentMethod = {
@@ -693,67 +1125,184 @@ function BillingSettings() {
   };
 
   const billingHistory = [
-    { id: "1", date: "Dec 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
-    { id: "2", date: "Nov 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
-    { id: "3", date: "Oct 1, 2024", description: "Professional Plan", amount: "$199.00", status: "Paid" },
+    { id: "1", date: "Dec 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
+    { id: "2", date: "Nov 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
+    { id: "3", date: "Oct 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
+    { id: "4", date: "Sep 1, 2024", description: "Professional Plan", amount: "R$ 497.00", status: "Paid" },
   ];
+
+  const usagePercentage = (used: number, limit: number) => {
+    return Math.round((used / limit) * 100);
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Billing</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Billing</h2>
         <p className="text-sm text-gray-600 mt-1">Manage your subscription and payment methods.</p>
       </div>
 
       {/* Current Plan */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-start justify-between mb-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
           <div>
-            <h3 className="text-sm font-medium text-gray-900">Current plan</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium text-gray-900">Current plan</h3>
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
+                Most Popular
+              </span>
+            </div>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{currentPlan.name}</p>
-            <p className="text-sm text-gray-500">{currentPlan.price}/{currentPlan.period}</p>
+            <p className="text-sm text-gray-500">
+              R$ {currentPlan.monthlyPrice}/month
+              {currentPlan.billingCycle === "yearly" && " (yearly)"}
+            </p>
           </div>
-          <span className="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-full">
+          <span className="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-full self-start">
             Active
           </span>
         </div>
 
-        <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-            Change plan
-          </button>
-          <span className="text-gray-300">|</span>
-          <button className="text-sm text-gray-600 hover:text-gray-700 font-medium">
-            View invoices
-          </button>
+        {/* Usage Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Clients</span>
+              <span className="text-xs font-medium text-gray-700">
+                {currentPlan.usage.clients}/{currentPlan.usage.clientsLimit}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${
+                  usagePercentage(currentPlan.usage.clients, currentPlan.usage.clientsLimit) > 80
+                    ? "bg-amber-500"
+                    : "bg-primary-500"
+                }`}
+                style={{ width: `${usagePercentage(currentPlan.usage.clients, currentPlan.usage.clientsLimit)}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Team</span>
+              <span className="text-xs font-medium text-gray-700">
+                {currentPlan.usage.staff}/{currentPlan.usage.staffLimit}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary-500 rounded-full"
+                style={{ width: `${usagePercentage(currentPlan.usage.staff, currentPlan.usage.staffLimit)}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Locations</span>
+              <span className="text-xs font-medium text-gray-700">
+                {currentPlan.usage.locations}/{currentPlan.usage.locationsLimit}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary-500 rounded-full"
+                style={{ width: `${usagePercentage(currentPlan.usage.locations, currentPlan.usage.locationsLimit)}%` }}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Storage</span>
+              <span className="text-xs font-medium text-gray-700">
+                {currentPlan.usage.storage}/{currentPlan.usage.storageLimit}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary-500 rounded-full"
+                style={{ width: `48%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 border-t border-gray-200">
+          <div>
+            <p className="text-sm text-gray-500">Next billing</p>
+            <p className="text-sm font-medium text-gray-900">{currentPlan.nextBilling}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowChangePlanModal(true)}
+              className="px-4 py-2 text-sm font-medium text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              Change plan
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Savings Tip */}
+      {currentPlan.billingCycle === "monthly" && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800">Save 20% with yearly plan</p>
+              <p className="text-sm text-green-700 mt-0.5">
+                Switch to yearly billing and save R$ {Math.round((currentPlan.monthlyPrice - currentPlan.yearlyPrice) * 12)}/year
+              </p>
+            </div>
+            <button
+              onClick={() => setShowChangePlanModal(true)}
+              className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
+            >
+              View plans
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Payment Method */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <h3 className="text-sm font-medium text-gray-900 mb-4">Payment method</h3>
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-7 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white text-xs font-bold">VISA</span>
+            <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded flex items-center justify-center shadow-sm">
+              <span className="text-white text-xs font-bold tracking-wide">VISA</span>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {paymentMethod.type} ending in {paymentMethod.last4}
+                {paymentMethod.type} •••• {paymentMethod.last4}
               </p>
               <p className="text-xs text-gray-500">Expires {paymentMethod.expiry}</p>
             </div>
           </div>
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+          >
             Update
           </button>
         </div>
       </div>
 
       {/* Billing History */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Billing history</h3>
-        <div className="overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-gray-900">Billing history</h3>
+          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            View all
+          </button>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
@@ -769,7 +1318,7 @@ function BillingSettings() {
                 <tr key={item.id}>
                   <td className="py-3 text-sm text-gray-600">{item.date}</td>
                   <td className="py-3 text-sm text-gray-900">{item.description}</td>
-                  <td className="py-3 text-sm text-gray-900">{item.amount}</td>
+                  <td className="py-3 text-sm font-medium text-gray-900">{item.amount}</td>
                   <td className="py-3">
                     <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
                       {item.status}
@@ -785,7 +1334,40 @@ function BillingSettings() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="sm:hidden space-y-3">
+          {billingHistory.map((item) => (
+            <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-900">{item.description}</span>
+                <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                  {item.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">{item.date}</span>
+                <span className="font-medium text-gray-900">{item.amount}</span>
+              </div>
+              <button className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Download invoice
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Modals */}
+      <ChangePlanModal
+        isOpen={showChangePlanModal}
+        onClose={() => setShowChangePlanModal(false)}
+        currentPlanId={currentPlan.id}
+        billingCycle={currentPlan.billingCycle}
+      />
+      <UpdatePaymentModalAdmin
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+      />
     </div>
   );
 }
@@ -1867,6 +2449,24 @@ function WaitlistSettings() {
     },
   });
 
+  // Priority Score Configuration (matches WaitlistPriorityConfig schema)
+  const [priorityConfig, setPriorityConfig] = useState({
+    planTypePoints: {
+      annual: 50,
+      quarterly: 30,
+      monthly: 15,
+      "drop-in": 5,
+    },
+    waitingTimePointsPerDay: 2,
+    attendanceRateMultiplier: 0.5,
+    vipBonus: 100,
+    cancelledByStudioBonus: 75,
+    urgentReasonBonus: 25,
+    notificationWindowMinutes: 30,
+    autoDeclineAfterMinutes: 120,
+    maxNotificationsPerSlot: 3,
+  });
+
   const [priorityTiers, setPriorityTiers] = useState([
     {
       id: "vip",
@@ -2016,9 +2616,222 @@ function WaitlistSettings() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-sm text-primary-800">
-              <p className="font-medium mb-1">How Priority Works</p>
-              <p>When a spot opens, the highest-priority client on the waitlist gets notified first. If they don't confirm within their response time, the next person is notified automatically.</p>
+              <p className="font-medium mb-1">Como a Prioridade Funciona</p>
+              <p>Quando uma vaga abre, o cliente com maior prioridade na lista de espera é notificado primeiro. Se não confirmar dentro do tempo de resposta, o próximo é notificado automaticamente.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Priority Score Configuration */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <div className="mb-6">
+          <h3 className="text-base font-semibold text-gray-900">Configuração de Pontos de Prioridade</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Configure quantos pontos cada critério adiciona à pontuação de prioridade do cliente.
+          </p>
+        </div>
+
+        {/* Plan Type Points */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos por Tipo de Plano</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { key: "annual" as const, label: "Anual", color: "bg-purple-100 text-purple-700" },
+              { key: "quarterly" as const, label: "Trimestral", color: "bg-blue-100 text-blue-700" },
+              { key: "monthly" as const, label: "Mensal", color: "bg-green-100 text-green-700" },
+              { key: "drop-in" as const, label: "Avulso", color: "bg-gray-100 text-gray-700" },
+            ].map((plan) => (
+              <div key={plan.key} className="p-3 border border-gray-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${plan.color}`}>
+                    {plan.label}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={priorityConfig.planTypePoints[plan.key]}
+                    onChange={(e) => setPriorityConfig({
+                      ...priorityConfig,
+                      planTypePoints: {
+                        ...priorityConfig.planTypePoints,
+                        [plan.key]: parseInt(e.target.value) || 0,
+                      },
+                    })}
+                    className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <span className="text-xs text-gray-500">pts</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bonus Points */}
+        <div className="mb-6 pt-4 border-t border-gray-100">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos de Bônus</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-3 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">⭐</span>
+                <span className="text-sm font-medium text-gray-900">VIP</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={priorityConfig.vipBonus}
+                  onChange={(e) => setPriorityConfig({ ...priorityConfig, vipBonus: parseInt(e.target.value) || 0 })}
+                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-xs text-gray-500">pts bônus</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Clientes marcados como VIP</p>
+            </div>
+
+            <div className="p-3 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🏢</span>
+                <span className="text-sm font-medium text-gray-900">Cancelado pelo Estúdio</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={priorityConfig.cancelledByStudioBonus}
+                  onChange={(e) => setPriorityConfig({ ...priorityConfig, cancelledByStudioBonus: parseInt(e.target.value) || 0 })}
+                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-xs text-gray-500">pts bônus</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Quando o estúdio cancela a aula</p>
+            </div>
+
+            <div className="p-3 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🚨</span>
+                <span className="text-sm font-medium text-gray-900">Motivo Urgente</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={priorityConfig.urgentReasonBonus}
+                  onChange={(e) => setPriorityConfig({ ...priorityConfig, urgentReasonBonus: parseInt(e.target.value) || 0 })}
+                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-xs text-gray-500">pts bônus</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Solicitações marcadas como urgentes</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Points */}
+        <div className="pt-4 border-t border-gray-100">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos Dinâmicos</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-3 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">⏳</span>
+                <span className="text-sm font-medium text-gray-900">Tempo de Espera</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.5"
+                  value={priorityConfig.waitingTimePointsPerDay}
+                  onChange={(e) => setPriorityConfig({ ...priorityConfig, waitingTimePointsPerDay: parseFloat(e.target.value) || 0 })}
+                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-xs text-gray-500">pts / dia esperando</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Pontos adicionados por cada dia na fila</p>
+            </div>
+
+            <div className="p-3 border border-gray-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">📊</span>
+                <span className="text-sm font-medium text-gray-900">Taxa de Frequência</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  value={priorityConfig.attendanceRateMultiplier}
+                  onChange={(e) => setPriorityConfig({ ...priorityConfig, attendanceRateMultiplier: parseFloat(e.target.value) || 0 })}
+                  className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <span className="text-xs text-gray-500">pts / 1% frequência</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Ex: 80% frequência = +40 pts (0.5 × 80)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Example Calculation */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Exemplo de Cálculo</h4>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>Cliente com plano <span className="font-medium">Anual</span> ({priorityConfig.planTypePoints.annual} pts)</p>
+            <p>+ Marcado como <span className="font-medium">VIP</span> (+{priorityConfig.vipBonus} pts)</p>
+            <p>+ Esperando há <span className="font-medium">3 dias</span> (+{priorityConfig.waitingTimePointsPerDay * 3} pts)</p>
+            <p>+ Frequência de <span className="font-medium">90%</span> (+{Math.round(priorityConfig.attendanceRateMultiplier * 90)} pts)</p>
+            <div className="pt-2 mt-2 border-t border-gray-200">
+              <p className="font-semibold text-gray-900">
+                Total: {priorityConfig.planTypePoints.annual + priorityConfig.vipBonus + (priorityConfig.waitingTimePointsPerDay * 3) + Math.round(priorityConfig.attendanceRateMultiplier * 90)} pontos
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Timing */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-gray-900">Tempo de Notificação</h3>
+          <p className="text-sm text-gray-600 mt-1">Configure quanto tempo o cliente tem para responder às notificações.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Janela de Notificação</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={priorityConfig.notificationWindowMinutes}
+                onChange={(e) => setPriorityConfig({ ...priorityConfig, notificationWindowMinutes: parseInt(e.target.value) || 0 })}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-500">minutos</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Tempo para cliente responder</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Auto-declínio após</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={priorityConfig.autoDeclineAfterMinutes}
+                onChange={(e) => setPriorityConfig({ ...priorityConfig, autoDeclineAfterMinutes: parseInt(e.target.value) || 0 })}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-500">minutos</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Sem resposta = próximo na fila</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Máx. notificações/vaga</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={priorityConfig.maxNotificationsPerSlot}
+                onChange={(e) => setPriorityConfig({ ...priorityConfig, maxNotificationsPerSlot: parseInt(e.target.value) || 0 })}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-500">pessoas</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Tentativas antes de desistir</p>
           </div>
         </div>
       </div>
@@ -2301,7 +3114,13 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className={activeTab === "whatsapp" || activeTab === "plans" ? "max-w-4xl" : "max-w-2xl"}>
+        <div className={
+          activeTab === "whatsapp" || activeTab === "plans" || activeTab === "waitlist" || activeTab === "billing"
+            ? "max-w-4xl"
+            : activeTab === "general"
+            ? "max-w-3xl"
+            : "max-w-2xl"
+        }>
           {renderTabContent()}
         </div>
       </div>

@@ -318,6 +318,101 @@ function ClientRow({ client, onApprove, onReject }: { client: Client; onApprove?
   );
 }
 
+function ClientCard({ client, onApprove, onReject }: { client: Client; onApprove?: () => void; onReject?: () => void }) {
+  const progressPercent = client.classesTotal > 0 ? (client.classesRemaining / client.classesTotal) * 100 : 0;
+
+  return (
+    <div className="p-4 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+            {client.avatar ? (
+              <img src={client.avatar} alt={client.name} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <span className="text-xs font-semibold text-primary-700">{client.initials}</span>
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{client.name}</p>
+            <p className="text-xs text-gray-500">{client.email}</p>
+          </div>
+        </div>
+        <StatusBadge status={client.status} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+        <div>
+          <p className="text-gray-500 text-xs">Plan</p>
+          <p className="font-medium text-gray-900 truncate">{client.plan}</p>
+          {client.classesTotal > 0 && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-500">{client.classesRemaining}/{client.classesTotal}</span>
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Instructor</p>
+          <p className="font-medium text-gray-900">{client.instructor}</p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Last Activity</p>
+          <p className="font-medium text-gray-900">{client.lastActivity}</p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Revenue</p>
+          <p className="font-medium text-green-600">{formatCurrency(client.revenue)}</p>
+        </div>
+      </div>
+
+      {client.status === "pending" ? (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onApprove}
+            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Approve
+          </button>
+          <button
+            onClick={onReject}
+            className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Reject
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-1">
+          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: boolean; onToggle: () => void }) {
   const activeCount = unit.clients.filter((c) => c.status === "active").length;
   const pendingCount = unit.clients.filter((c) => c.status === "pending").length;
@@ -327,44 +422,59 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
       {/* Unit Header */}
       <button
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-          <svg className="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </div>
-        <div className="flex-1 text-left">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-gray-900">{unit.name}</h2>
+        <div className="flex-1 text-left min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{unit.name}</h2>
             {pendingCount > 0 && (
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full flex-shrink-0">
                 {pendingCount} pending
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500">{unit.address}</p>
+          <p className="text-xs sm:text-sm text-gray-500 truncate">{unit.address}</p>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="text-right">
+        <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">{unit.clients.length} clients</p>
             <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-medium text-green-600">{formatCurrency(unit.totalRevenue)}</p>
-            <p className="text-xs text-gray-500">total revenue</p>
+            <p className="text-xs sm:text-sm font-medium text-green-600">{formatCurrency(unit.totalRevenue)}</p>
+            <p className="text-xs text-gray-500 hidden sm:block">total revenue</p>
+            <p className="text-xs text-gray-500 sm:hidden">{unit.clients.length} clients</p>
           </div>
           <ChevronIcon
-            className="w-5 h-5 text-gray-400 transition-transform"
+            className="w-5 h-5 text-gray-400 transition-transform flex-shrink-0"
             direction={isExpanded ? "up" : "down"}
           />
         </div>
       </button>
 
-      {/* Clients Table */}
+      {/* Clients - Mobile Card View */}
       {isExpanded && (
-        <div className="border-t border-gray-100">
+        <div className="border-t border-gray-100 md:hidden">
+          {unit.clients.map((client) => (
+            <ClientCard
+              key={client.id}
+              client={client}
+              onApprove={() => console.log("Approve", client.id)}
+              onReject={() => console.log("Reject", client.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Clients - Desktop Table View */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -461,9 +571,9 @@ function AddClientModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Add Client</h2>
             <button
@@ -478,7 +588,7 @@ function AddClientModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
             <input
@@ -490,7 +600,7 @@ function AddClientModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
               <input
@@ -514,7 +624,7 @@ function AddClientModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Plan *</label>
               <select
@@ -575,16 +685,16 @@ function AddClientModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 bg-white">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
             Add Client
           </button>
@@ -667,11 +777,11 @@ Robert Brown,robert.b@email.com,(555) 567-8901,Annual - 96 classes,FlexiWell Mid
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Import Clients</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Import Clients</h2>
             <button onClick={resetModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -681,7 +791,7 @@ Robert Brown,robert.b@email.com,(555) 567-8901,Annual - 96 classes,FlexiWell Mid
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {!importResult ? (
             <>
               {/* File Upload Area */}
@@ -811,7 +921,7 @@ Robert Brown,robert.b@email.com,(555) 567-8901,Annual - 96 classes,FlexiWell Mid
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex gap-3">
+        <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 sticky bottom-0 bg-white">
           <button
             onClick={resetModal}
             className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -885,120 +995,125 @@ export default function AdminClientsPage() {
   const totalRevenue = mockUnits.reduce((acc, unit) => acc + unit.totalRevenue, 0);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Clients</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Manage all clients across all locations
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setShowImportModal(true)}
-            className="px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <UploadIcon className="w-5 h-5" />
-            Import
+            <span className="hidden sm:inline">Import</span>
           </button>
           <button
             onClick={() => setShowAddClientModal(true)}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add Client
+            <span className="hidden sm:inline">Add Client</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total Clients</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalClients}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Total Clients</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totalClients}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Active Clients</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{activeClients}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Active Clients</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{activeClients}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Pending</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Pending</p>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-2xl font-bold text-blue-600">{pendingClients}</p>
+            <p className="text-lg sm:text-2xl font-bold text-blue-600">{pendingClients}</p>
             {pendingClients > 0 && (
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-pulse">
-                Action required
+              <span className="px-1.5 sm:px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full animate-pulse">
+                Action
               </span>
             )}
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Locations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Locations</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total Revenue</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalRevenue)}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
+          <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalRevenue)}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 mb-6 bg-white rounded-xl px-4 py-3">
+      <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
         {/* Search */}
-        <div className="flex-1 relative">
+        <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search client by name, email or instructor..."
+            placeholder="Search by name, email or instructor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 sm:bg-transparent border border-gray-200 sm:border-0 rounded-lg sm:rounded-none focus:outline-none focus:ring-2 sm:focus:ring-0 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
           />
         </div>
 
-        {/* Unit Filter */}
-        <select
-          value={unitFilter}
-          onChange={(e) => setUnitFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        >
-          <option value="all">All locations</option>
-          {mockUnits.map((unit) => (
-            <option key={unit.id} value={unit.id}>
-              {unit.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Status Filter */}
-        <div className="flex items-center gap-2">
-          <FilterIcon className="w-5 h-5 text-gray-400" />
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Unit Filter */}
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            value={unitFilter}
+            onChange={(e) => setUnitFilter(e.target.value)}
+            className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="expired">Expired</option>
-            <option value="pending">Pending</option>
+            <option value="all">All locations</option>
+            {mockUnits.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
           </select>
-        </div>
 
-        {/* Expand/Collapse All */}
-        <button
-          onClick={() =>
-            setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
-          }
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-        >
-          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
-        </button>
+          {/* Status Filter */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
+            <FilterIcon className="w-5 h-5 text-gray-400 hidden sm:block flex-shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="expired">Expired</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+
+          {/* Expand/Collapse All */}
+          <button
+            onClick={() =>
+              setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+            }
+            className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+          >
+            <span className="hidden sm:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
+            <span className="sm:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Units List */}

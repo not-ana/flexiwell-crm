@@ -309,6 +309,102 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
   );
 }
 
+function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
+  staff: StaffMember;
+  onResendInvite?: () => void;
+  onEdit?: () => void;
+  onDeactivate?: () => void;
+}) {
+  return (
+    <div className="p-4 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+            {staff.avatar ? (
+              <img src={staff.avatar} alt={staff.name} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <span className="text-xs font-semibold text-primary-700">{staff.initials}</span>
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{staff.name}</p>
+            <p className="text-xs text-gray-500">{staff.email}</p>
+          </div>
+        </div>
+        <StatusBadge status={staff.status} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+        <div>
+          <p className="text-gray-500 text-xs">Role</p>
+          <div className="mt-1"><RoleBadge role={staff.role} /></div>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Phone</p>
+          <p className="font-medium text-gray-900">{staff.phone}</p>
+        </div>
+        {staff.role === "teacher" && (
+          <>
+            <div>
+              <p className="text-gray-500 text-xs">Classes This Week</p>
+              <p className="font-medium text-gray-900">{staff.classesThisWeek ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-xs">Rating</p>
+              {staff.rating ? (
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span className="font-medium text-gray-900">{staff.rating}</span>
+                </div>
+              ) : (
+                <p className="text-gray-400">—</p>
+              )}
+            </div>
+          </>
+        )}
+        <div className={staff.role !== "teacher" ? "col-span-2" : ""}>
+          <p className="text-gray-500 text-xs">Last Active</p>
+          <p className="font-medium text-gray-900">{staff.lastActive || "—"}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-1">
+        {staff.status === "invited" && (
+          <button
+            onClick={onResendInvite}
+            className="px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+          >
+            Resend Invite
+          </button>
+        )}
+        <button
+          onClick={onEdit}
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </button>
+        {staff.status !== "inactive" && (
+          <button
+            onClick={onDeactivate}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: boolean; onToggle: () => void }) {
   const activeCount = unit.staff.filter((s) => s.status === "active").length;
   const teacherCount = unit.staff.filter((s) => s.role === "teacher").length;
@@ -318,37 +414,61 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
       {/* Unit Header */}
       <button
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-          <svg className="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </div>
-        <div className="flex-1 text-left">
-          <h2 className="font-semibold text-gray-900">{unit.name}</h2>
-          <p className="text-sm text-gray-500">{unit.address}</p>
+        <div className="flex-1 text-left min-w-0">
+          <h2 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{unit.name}</h2>
+          <p className="text-xs sm:text-sm text-gray-500 truncate">{unit.address}</p>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="text-right">
+        <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">{unit.staff.length} staff</p>
             <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
           <div className="text-right">
-            <p className="text-sm font-medium text-blue-600">{teacherCount} teachers</p>
-            <p className="text-xs text-gray-500">this location</p>
+            <p className="text-xs sm:text-sm font-medium text-blue-600">{teacherCount} teachers</p>
+            <p className="text-xs text-gray-500 hidden sm:block">this location</p>
+            <p className="text-xs text-gray-500 sm:hidden">{unit.staff.length} staff</p>
           </div>
           <ChevronIcon
-            className="w-5 h-5 text-gray-400 transition-transform"
+            className="w-5 h-5 text-gray-400 transition-transform flex-shrink-0"
             direction={isExpanded ? "up" : "down"}
           />
         </div>
       </button>
 
-      {/* Staff Table */}
+      {/* Staff - Mobile Card View */}
       {isExpanded && (
-        <div className="border-t border-gray-100">
+        <div className="border-t border-gray-100 md:hidden">
+          {unit.staff.map((staff) => (
+            <StaffCard
+              key={staff.id}
+              staff={staff}
+              onResendInvite={() => {
+                alert(`Invite resent to ${staff.name} (${staff.email})`);
+              }}
+              onEdit={() => {
+                alert(`Edit ${staff.name}\n\nRole: ${staff.role}\nEmail: ${staff.email}\nPhone: ${staff.phone}\nUnit: ${staff.unit}`);
+              }}
+              onDeactivate={() => {
+                if (confirm(`Are you sure you want to deactivate ${staff.name}?`)) {
+                  alert(`${staff.name} has been deactivated.`);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Staff - Desktop Table View */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -444,11 +564,11 @@ function AddStaffModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Add Staff Member</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add Staff Member</h2>
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -461,7 +581,7 @@ function AddStaffModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
             <input
@@ -473,7 +593,7 @@ function AddStaffModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
               <input
@@ -497,7 +617,7 @@ function AddStaffModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
               <select
@@ -529,7 +649,7 @@ function AddStaffModal({
 
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="flex gap-3">
-              <svg className="w-5 h-5 text-blue-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4M12 8h.01" />
               </svg>
@@ -544,16 +664,16 @@ function AddStaffModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 bg-white">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
             Add & Send Invite
           </button>
@@ -613,11 +733,11 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Import Staff</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Import Staff</h2>
             <button onClick={resetModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -627,12 +747,12 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {!importResult ? (
             <>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                className={`border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors ${
                   file ? "border-green-300 bg-green-50" : "border-gray-300 hover:border-primary-500"
                 }`}
               >
@@ -645,23 +765,23 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
                 />
                 {file ? (
                   <>
-                    <svg className="w-12 h-12 text-green-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-green-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 12l2 2 4-4" />
                       <circle cx="12" cy="12" r="10" />
                     </svg>
-                    <p className="text-gray-900 font-medium">{file.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">Click to change file</p>
+                    <p className="text-gray-900 font-medium text-sm sm:text-base truncate">{file.name}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Click to change file</p>
                   </>
                 ) : (
                   <>
-                    <UploadIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-700 font-medium">Click to upload CSV file</p>
-                    <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                    <UploadIcon className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-700 font-medium text-sm sm:text-base">Click to upload CSV file</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">or drag and drop</p>
                   </>
                 )}
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-sm">
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
                 <button onClick={downloadTemplate} className="text-primary-600 hover:text-primary-700 font-medium">
                   Download template
                 </button>
@@ -671,13 +791,13 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
             </>
           ) : (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Import Complete</h3>
-              <p className="text-gray-600">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Import Complete</h3>
+              <p className="text-sm sm:text-base text-gray-600">
                 Successfully imported <span className="font-semibold text-green-600">{importResult.success}</span> staff members
                 {importResult.failed > 0 && (
                   <>. <span className="font-semibold text-red-600">{importResult.failed}</span> failed.</>
@@ -687,15 +807,15 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-          <button onClick={resetModal} className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+        <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3 sticky bottom-0 bg-white">
+          <button onClick={resetModal} className="w-full sm:w-auto px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors">
             {importResult ? "Close" : "Cancel"}
           </button>
           {!importResult && (
             <button
               onClick={handleImport}
               disabled={!file || importing}
-              className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {importing ? (
                 <>
@@ -760,117 +880,122 @@ export default function AdminStaffPage() {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Staff</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Manage employees across all locations
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setShowImportModal(true)}
-            className="px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <UploadIcon className="w-5 h-5" />
-            Import
+            <span className="hidden sm:inline">Import</span>
           </button>
           <button
             onClick={() => setShowAddStaffModal(true)}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add Staff Member
+            <span className="hidden sm:inline">Add Staff Member</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total Staff</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalStaff}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Total Staff</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totalStaff}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Active Staff</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{activeStaff}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Active Staff</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{activeStaff}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Teachers</p>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{teacherCount}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Teachers</p>
+          <p className="text-lg sm:text-2xl font-bold text-blue-600 mt-1">{teacherCount}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Pending Invites</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Pending Invites</p>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-2xl font-bold text-yellow-600">{pendingInvites}</p>
+            <p className="text-lg sm:text-2xl font-bold text-yellow-600">{pendingInvites}</p>
             {pendingInvites > 0 && (
-              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+              <span className="px-1.5 sm:px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
                 Awaiting
               </span>
             )}
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Locations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
+          <p className="text-xs sm:text-sm text-gray-600">Locations</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 mb-6 bg-white rounded-xl px-4 py-3">
+      <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
         {/* Search */}
-        <div className="flex-1 relative">
+        <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search staff by name or email..."
+            placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 sm:bg-transparent border border-gray-200 sm:border-0 rounded-lg sm:rounded-none focus:outline-none focus:ring-2 sm:focus:ring-0 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
           />
         </div>
 
-        {/* Role Filter */}
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
-          className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        >
-          <option value="all">All roles</option>
-          <option value="admin">Admin</option>
-          <option value="teacher">Teacher</option>
-          <option value="receptionist">Receptionist</option>
-        </select>
-
-        {/* Status Filter */}
-        <div className="flex items-center gap-2">
-          <FilterIcon className="w-5 h-5 text-gray-400" />
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Role Filter */}
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
+            className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="invited">Invited</option>
-            <option value="inactive">Inactive</option>
+            <option value="all">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="receptionist">Receptionist</option>
           </select>
-        </div>
 
-        {/* Expand/Collapse All */}
-        <button
-          onClick={() =>
-            setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
-          }
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-        >
-          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
-        </button>
+          {/* Status Filter */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
+            <FilterIcon className="w-5 h-5 text-gray-400 hidden sm:block flex-shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="invited">Invited</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          {/* Expand/Collapse All */}
+          <button
+            onClick={() =>
+              setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+            }
+            className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+          >
+            <span className="hidden sm:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
+            <span className="sm:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Units List */}
