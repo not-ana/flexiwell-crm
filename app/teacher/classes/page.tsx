@@ -261,56 +261,131 @@ function WeekView({ events, selectedDate, onEventClick, selectedEventId, onDayCl
   const getEventStyle = (event: ClassEvent) => {
     const startHour = event.start.getHours() + event.start.getMinutes() / 60;
     const endHour = event.end.getHours() + event.end.getMinutes() / 60;
-    return { top: `${(startHour - 7) * 48}px`, height: `${Math.max((endHour - startHour) * 48, 24)}px` };
+    return { top: `${(startHour - 7) * 60}px`, height: `${Math.max((endHour - startHour) * 60, 30)}px` };
   };
+
+  const getEventStyleMobile = (event: ClassEvent) => {
+    const startHour = event.start.getHours() + event.start.getMinutes() / 60;
+    const endHour = event.end.getHours() + event.end.getMinutes() / 60;
+    return { top: `${(startHour - 7) * 60}px`, height: `${Math.max((endHour - startHour) * 60, 40)}px` };
+  };
+
+  // For mobile, show selected day's events
+  const selectedDayEvents = events.filter((e) => isSameDay(e.start, selectedDate));
 
   return (
     <div>
-      <div className="flex border-b border-gray-200 sticky top-0 bg-white z-10">
-        <div className="w-16 flex-shrink-0" />
-        {weekDates.map((date, idx) => {
-          const isToday = isSameDay(date, new Date());
-          return (
-            <button key={idx} onClick={() => onDayClick(date)} className="flex-1 py-3 text-center border-l border-gray-200 hover:bg-gray-50">
-              <div className={`text-xs font-medium ${isToday ? "text-primary-600" : "text-gray-500"}`}>
-                {date.toLocaleDateString("en-US", { weekday: "short" })}
+      {/* Desktop Week View */}
+      <div className="hidden sm:block">
+        <div className="flex border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="w-16 flex-shrink-0" />
+          {weekDates.map((date, idx) => {
+            const isToday = isSameDay(date, new Date());
+            return (
+              <button key={idx} onClick={() => onDayClick(date)} className="flex-1 py-3 text-center border-l border-gray-200 hover:bg-gray-50">
+                <div className={`text-xs font-medium ${isToday ? "text-primary-600" : "text-gray-500"}`}>
+                  {date.toLocaleDateString("en-US", { weekday: "short" })}
+                </div>
+                <div className={`text-lg font-semibold mt-1 ${isToday ? "w-8 h-8 mx-auto rounded-full bg-primary-600 text-white flex items-center justify-center" : "text-gray-900"}`}>
+                  {date.getDate()}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative">
+          {hours.map((hour) => (
+            <div key={hour} className="flex h-12 border-b border-gray-100">
+              <div className="w-16 pr-2 text-right text-xs text-gray-500 -mt-2 flex-shrink-0">
+                {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
               </div>
-              <div className={`text-lg font-semibold mt-1 ${isToday ? "w-8 h-8 mx-auto rounded-full bg-primary-600 text-white flex items-center justify-center" : "text-gray-900"}`}>
-                {date.getDate()}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <div className="relative">
-        {hours.map((hour) => (
-          <div key={hour} className="flex h-12 border-b border-gray-100">
-            <div className="w-16 pr-2 text-right text-xs text-gray-500 -mt-2 flex-shrink-0">
-              {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-            </div>
-            {weekDates.map((_, idx) => <div key={idx} className="flex-1 border-l border-gray-200" />)}
-          </div>
-        ))}
-        <div className="absolute top-0 left-16 right-0 flex">
-          {weekDates.map((date, dayIdx) => (
-            <div key={dayIdx} className="flex-1 relative border-l border-gray-200">
-              {events.filter((e) => isSameDay(e.start, date)).map((event) => {
-                const style = getEventStyle(event);
-                const colors = colorStyles[event.color];
-                return (
-                  <button
-                    key={event.id}
-                    onClick={() => onEventClick(event)}
-                    className={`absolute left-1 right-1 px-2 py-1 rounded border-l-2 ${colors.bg} ${colors.border} ${colors.text} text-left text-xs hover:shadow-sm transition-shadow ${event.id === selectedEventId ? "ring-2 ring-primary-500 shadow-md" : ""}`}
-                    style={style}
-                  >
-                    <div className="font-medium truncate">{event.title}</div>
-                    <div className="opacity-75 truncate">{formatTime(event.start)}</div>
-                  </button>
-                );
-              })}
+              {weekDates.map((_, idx) => <div key={idx} className="flex-1 border-l border-gray-200" />)}
             </div>
           ))}
+          <div className="absolute top-0 left-16 right-0 flex">
+            {weekDates.map((date, dayIdx) => (
+              <div key={dayIdx} className="flex-1 relative border-l border-gray-200">
+                {events.filter((e) => isSameDay(e.start, date)).map((event) => {
+                  const startHour = event.start.getHours() + event.start.getMinutes() / 60;
+                  const endHour = event.end.getHours() + event.end.getMinutes() / 60;
+                  const style = { top: `${(startHour - 7) * 48}px`, height: `${Math.max((endHour - startHour) * 48, 24)}px` };
+                  const colors = colorStyles[event.color];
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => onEventClick(event)}
+                      className={`absolute left-1 right-1 px-2 py-1 rounded border-l-2 ${colors.bg} ${colors.border} ${colors.text} text-left text-xs hover:shadow-sm transition-shadow ${event.id === selectedEventId ? "ring-2 ring-primary-500 shadow-md" : ""}`}
+                      style={style}
+                    >
+                      <div className="font-medium truncate">{event.title}</div>
+                      <div className="opacity-75 truncate">{formatTime(event.start)}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Week View - Horizontal week days + vertical timeline */}
+      <div className="sm:hidden">
+        {/* Week days header - horizontal scroll */}
+        <div className="flex border-b border-gray-200 sticky top-0 bg-white z-10 mb-2">
+          {weekDates.map((date, idx) => {
+            const isToday = isSameDay(date, new Date());
+            const isSelected = isSameDay(date, selectedDate);
+            return (
+              <button
+                key={idx}
+                onClick={() => onDayClick(date)}
+                className="flex-1 py-2 text-center"
+              >
+                <div className={`text-[10px] font-medium ${isToday ? "text-primary-600" : "text-gray-500"}`}>
+                  {date.toLocaleDateString("en-US", { weekday: "short" })}
+                </div>
+                <div className={`w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-semibold mt-1 ${
+                  isSelected
+                    ? "bg-primary-600 text-white"
+                    : isToday
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-gray-900"
+                }`}>
+                  {date.getDate()}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Timeline for selected day */}
+        <div className="relative">
+          {hours.map((hour) => (
+            <div key={hour} className="flex h-[60px] border-b border-gray-100">
+              <div className="w-14 pr-2 text-right text-xs text-gray-400 -mt-2 flex-shrink-0">
+                {hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+              </div>
+              <div className="flex-1 border-l border-gray-200" />
+            </div>
+          ))}
+          {/* Events for selected day */}
+          <div className="absolute top-0 left-14 right-0">
+            {selectedDayEvents.map((event) => {
+              const style = getEventStyleMobile(event);
+              const colors = colorStyles[event.color];
+              return (
+                <button
+                  key={event.id}
+                  onClick={() => onEventClick(event)}
+                  className={`absolute left-2 right-2 px-3 py-2 rounded-lg border-l-4 ${colors.bg} ${colors.border} ${colors.text} text-left hover:shadow-md transition-shadow ${event.id === selectedEventId ? "ring-2 ring-primary-500 shadow-md" : ""}`}
+                  style={style}
+                >
+                  <div className="font-medium text-sm">{event.title}</div>
+                  <div className="text-xs opacity-75">{formatTime(event.start)}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -318,45 +393,130 @@ function WeekView({ events, selectedDate, onEventClick, selectedEventId, onDayCl
 }
 
 // Month View Component
+// Color mapping for dots
+const dotColors: Record<ClassEvent["color"], string> = {
+  purple: "bg-purple-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  orange: "bg-orange-500",
+  pink: "bg-pink-500",
+};
+
 function MonthView({ events, selectedDate, onEventClick, selectedEventId, onDayClick }: { events: ClassEvent[]; selectedDate: Date; onEventClick: (event: ClassEvent) => void; selectedEventId?: string; onDayClick: (date: Date) => void }) {
   const dates = getMonthDates(selectedDate);
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekDaysMobile = ["S", "M", "T", "W", "T", "F", "S"];
+  const selectedDayEvents = events.filter((e) => isSameDay(e.start, selectedDate));
 
   return (
     <div>
-      <div className="grid grid-cols-7 border-b border-gray-200">
-        {weekDays.map((day) => (
-          <div key={day} className="py-3 text-center text-sm font-medium text-gray-500 border-l border-gray-200 first:border-l-0">{day}</div>
-        ))}
+      {/* Desktop Month View */}
+      <div className="hidden sm:block">
+        <div className="grid grid-cols-7 border-b border-gray-200">
+          {weekDays.map((day) => (
+            <div key={day} className="py-3 text-center text-sm font-medium text-gray-500 border-l border-gray-200 first:border-l-0">{day}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {dates.map((date, idx) => {
+            const isToday = isSameDay(date, new Date());
+            const inMonth = isCurrentMonth(date, selectedDate);
+            const dayEvents = events.filter((e) => isSameDay(e.start, date));
+            return (
+              <button key={idx} onClick={() => onDayClick(date)} className={`min-h-[100px] p-2 border-l border-b border-gray-200 first:border-l-0 text-left ${inMonth ? "bg-white hover:bg-gray-50" : "bg-gray-50"}`}>
+                <div className={`text-sm font-medium mb-1 ${isToday ? "w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center" : inMonth ? "text-gray-900" : "text-gray-400"}`}>
+                  {date.getDate()}
+                </div>
+                <div className="space-y-1">
+                  {dayEvents.slice(0, 3).map((event) => {
+                    const colors = colorStyles[event.color];
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
+                        className={`text-xs px-1.5 py-0.5 rounded truncate cursor-pointer ${colors.bg} ${colors.text} ${event.id === selectedEventId ? "ring-1 ring-primary-500" : ""}`}
+                      >
+                        {event.title}
+                      </div>
+                    );
+                  })}
+                  {dayEvents.length > 3 && <div className="text-xs text-gray-500 px-1">+{dayEvents.length - 3} more</div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div className="grid grid-cols-7">
-        {dates.map((date, idx) => {
-          const isToday = isSameDay(date, new Date());
-          const inMonth = isCurrentMonth(date, selectedDate);
-          const dayEvents = events.filter((e) => isSameDay(e.start, date));
-          return (
-            <button key={idx} onClick={() => onDayClick(date)} className={`min-h-[100px] p-2 border-l border-b border-gray-200 first:border-l-0 text-left ${inMonth ? "bg-white hover:bg-gray-50" : "bg-gray-50"}`}>
-              <div className={`text-sm font-medium mb-1 ${isToday ? "w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center" : inMonth ? "text-gray-900" : "text-gray-400"}`}>
-                {date.getDate()}
-              </div>
-              <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => {
-                  const colors = colorStyles[event.color];
-                  return (
-                    <div
-                      key={event.id}
-                      onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
-                      className={`text-xs px-1.5 py-0.5 rounded truncate cursor-pointer ${colors.bg} ${colors.text} ${event.id === selectedEventId ? "ring-1 ring-primary-500" : ""}`}
-                    >
-                      {event.title}
+
+      {/* Mobile Month View - Compact with dots */}
+      <div className="sm:hidden">
+        {/* Mini calendar grid */}
+        <div className="grid grid-cols-7 mb-4">
+          {weekDaysMobile.map((day, i) => (
+            <div key={i} className="py-2 text-center text-xs font-medium text-gray-500">{day}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-y-1">
+          {dates.map((date, idx) => {
+            const isToday = isSameDay(date, new Date());
+            const isSelected = isSameDay(date, selectedDate);
+            const inMonth = isCurrentMonth(date, selectedDate);
+            const dayEvents = events.filter((e) => isSameDay(e.start, date));
+            return (
+              <button
+                key={idx}
+                onClick={() => onDayClick(date)}
+                className="flex flex-col items-center py-2"
+              >
+                <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium mb-1 ${
+                  isSelected
+                    ? "bg-primary-600 text-white"
+                    : isToday
+                    ? "bg-primary-100 text-primary-700"
+                    : inMonth
+                    ? "text-gray-900"
+                    : "text-gray-400"
+                }`}>
+                  {date.getDate()}
+                </div>
+                {/* Dots for events */}
+                <div className="flex gap-0.5 h-2">
+                  {dayEvents.slice(0, 4).map((event, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${dotColors[event.color]}`} />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected day events list */}
+        <div className="mt-6 border-t border-gray-200 pt-4">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">
+            {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          </h3>
+          {selectedDayEvents.length > 0 ? (
+            <div className="space-y-2">
+              {selectedDayEvents.map((event) => {
+                const colors = colorStyles[event.color];
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => onEventClick(event)}
+                    className={`w-full p-3 rounded-lg border-l-4 text-left ${colors.bg} ${colors.border} ${event.id === selectedEventId ? "ring-2 ring-primary-500" : ""}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`font-medium ${colors.text}`}>{event.title}</p>
+                      <span className="text-sm text-gray-500">{formatTime(event.start)}</span>
                     </div>
-                  );
-                })}
-                {dayEvents.length > 3 && <div className="text-xs text-gray-500 px-1">+{dayEvents.length - 3} more</div>}
-              </div>
-            </button>
-          );
-        })}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No classes scheduled</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1176,7 +1336,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
 }) {
   if (!event) {
     return (
-      <div className="w-80 border-l border-gray-200 p-6 flex items-center justify-center text-gray-500">
+      <div className="hidden lg:flex w-80 border-l border-gray-200 p-6 items-center justify-center text-gray-500 bg-white">
         <p>Select a class to see details</p>
       </div>
     );
@@ -1185,7 +1345,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
   const statusStyle = statusStyles[event.status];
 
   return (
-    <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+    <div className="w-[300px] sm:w-80 h-full border-l border-gray-200 bg-white overflow-y-auto">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-start justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{event.title}</h2>
@@ -1352,44 +1512,44 @@ export default function TeacherClassesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="p-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 border-b border-gray-200 bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">My Classes</h1>
-            <p className="text-gray-600 mt-1">Manage your classes and track attendance</p>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">My Classes</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your classes and track attendance</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <PlusIcon className="w-5 h-5" />
-            Create Class
+            <span className="sm:inline">Create Class</span>
           </button>
         </div>
       </div>
 
-      <div className="px-6 py-4 border-b border-gray-200 bg-white flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center border border-gray-300 rounded-lg">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+          <div className="flex items-center border border-gray-300 rounded-lg shrink-0">
             <button onClick={goToPrev} className="p-2 hover:bg-gray-50 rounded-l-lg border-r border-gray-300">
-              <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+              <ArrowLeftIcon className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
             </button>
-            <button onClick={goToToday} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Today</button>
+            <button onClick={goToToday} className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50">Today</button>
             <button onClick={goToNext} className="p-2 hover:bg-gray-50 rounded-r-lg border-l border-gray-300">
-              <ArrowRightIcon className="w-5 h-5 text-gray-600" />
+              <ArrowRightIcon className="w-4 sm:w-5 h-4 sm:h-5 text-gray-600" />
             </button>
           </div>
-          <div className="relative">
-            <button onClick={() => setShowDatePicker(!showDatePicker)} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 rounded-lg">
-              <span>{getHeaderText()}</span>
-              <ChevronIcon className="w-4 h-4 text-gray-500" direction={showDatePicker ? "up" : "down"} />
+          <div className="relative shrink-0">
+            <button onClick={() => setShowDatePicker(!showDatePicker)} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-900 hover:bg-gray-50 rounded-lg">
+              <span className="truncate max-w-[120px] sm:max-w-none">{getHeaderText()}</span>
+              <ChevronIcon className="w-4 h-4 text-gray-500 shrink-0" direction={showDatePicker ? "up" : "down"} />
             </button>
             {showDatePicker && <DatePicker selectedDate={selectedDate} onSelect={setSelectedDate} onClose={() => setShowDatePicker(false)} />}
           </div>
         </div>
-        <div className="relative">
-          <button onClick={() => setShowViewDropdown(!showViewDropdown)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <span>{viewModeLabels[viewMode]} view</span>
+        <div className="relative self-end sm:self-auto">
+          <button onClick={() => setShowViewDropdown(!showViewDropdown)} className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <span>{viewModeLabels[viewMode]}</span>
             <ChevronIcon className="w-4 h-4" direction="down" />
           </button>
           {showViewDropdown && (
@@ -1405,20 +1565,34 @@ export default function TeacherClassesPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6 bg-white">
+      <div className="flex-1 flex overflow-hidden relative">
+        <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 bg-white">
           {viewMode === "week" && <WeekView events={events} selectedDate={selectedDate} onEventClick={setSelectedEvent} selectedEventId={selectedEvent?.id} onDayClick={(date) => { setSelectedDate(date); setViewMode("day"); }} />}
           {viewMode === "month" && <MonthView events={events} selectedDate={selectedDate} onEventClick={setSelectedEvent} selectedEventId={selectedEvent?.id} onDayClick={(date) => { setSelectedDate(date); setViewMode("day"); }} />}
           {viewMode === "day" && <WeekView events={events} selectedDate={selectedDate} onEventClick={setSelectedEvent} selectedEventId={selectedEvent?.id} onDayClick={(date) => { setSelectedDate(date); }} />}
         </div>
-        <EventDetailsSidebar
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          onStartClass={handleStartClass}
-          onTakeAttendance={handleTakeAttendance}
-          onViewReport={handleViewReport}
-          onViewStudents={handleViewStudents}
-        />
+        {/* Mobile overlay */}
+        {selectedEvent && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setSelectedEvent(null)}
+          />
+        )}
+        {/* Sidebar - hidden on mobile unless event selected, always visible on desktop */}
+        <div className={`
+          fixed lg:static inset-y-0 right-0 z-50
+          transform transition-transform duration-300 ease-in-out
+          ${selectedEvent ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        `}>
+          <EventDetailsSidebar
+            event={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+            onStartClass={handleStartClass}
+            onTakeAttendance={handleTakeAttendance}
+            onViewReport={handleViewReport}
+            onViewStudents={handleViewStudents}
+          />
+        </div>
       </div>
 
       <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />

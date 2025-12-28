@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/layout";
+import { ResponsiveLayout } from "@/components/layout";
 
 export default function AdminLayout({
   children,
@@ -8,9 +8,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar variant="admin" notificationCount={5} />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <ResponsiveLayout variant="admin" notificationCount={5}>
+      {children}
+    </ResponsiveLayout>
   );
 }

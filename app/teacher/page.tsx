@@ -184,26 +184,27 @@ export default function TeacherDashboard() {
         onComplete={markComplete}
       />
 
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-semibold text-gray-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
               Good morning, Sarah
             </h1>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowWalkInModal(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
-                Add Walk-in
+                <span className="hidden sm:inline">Add Walk-in</span>
+                <span className="sm:hidden">Walk-in</span>
               </button>
               <Link
                 href="/teacher/settings"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Settings
               </Link>
@@ -248,12 +249,12 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
           {/* Weekly Chart */}
-          <div className="col-span-8 bg-white border border-gray-200 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Weekly Overview</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Weekly Overview</h2>
                 <p className="text-sm text-gray-500 mt-1">Classes and students per day</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -286,8 +287,8 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Class Distribution */}
-          <div className="col-span-4 bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Class Types</h2>
+          <div className="lg:col-span-4 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Class Types</h2>
             <p className="text-sm text-gray-500 mb-4">Your teaching distribution</p>
             <div className="h-[140px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -328,32 +329,34 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
           {/* Left Column - Schedule & Makeups */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-2 lg:order-1">
             {/* Tab Navigation */}
             <div data-onboarding="teacher-schedule" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex gap-4">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex gap-2 sm:gap-4">
                   <button
                     onClick={() => setActiveTab("today")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === "today"
                         ? "bg-primary-100 text-primary-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    Today's Schedule
+                    <span className="hidden sm:inline">Today's Schedule</span>
+                    <span className="sm:hidden">Today</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("makeups")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                       activeTab === "makeups"
                         ? "bg-orange-100 text-orange-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    Makeup Classes
+                    <span className="hidden sm:inline">Makeup Classes</span>
+                    <span className="sm:hidden">Makeups</span>
                     {mockMakeupRequests.filter(r => r.status === "pending").length > 0 && (
                       <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                         {mockMakeupRequests.filter(r => r.status === "pending").length}
@@ -364,7 +367,7 @@ export default function TeacherDashboard() {
                 {activeTab === "today" && (
                   <button
                     onClick={() => setShowAllSchedule(!showAllSchedule)}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 self-end sm:self-auto"
                   >
                     {showAllSchedule ? "Show less" : "View all"}
                     <ChevronIcon className="w-4 h-4" direction={showAllSchedule ? "up" : "down"} />
@@ -377,27 +380,27 @@ export default function TeacherDashboard() {
                   {(showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
                     <div
                       key={classItem.id}
-                      className={`px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                      className={`px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 transition-colors ${
                         classItem.status === "in-progress" ? "bg-primary-50" : ""
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex flex-col items-center justify-center shrink-0 ${
                           classItem.status === "in-progress"
                             ? "bg-primary-500 text-white"
                             : classItem.status === "completed"
                             ? "bg-gray-100 text-gray-400"
                             : "bg-gray-100 text-gray-700"
                         }`}>
-                          <p className="text-sm font-bold">{classItem.time.split(" - ")[0]}</p>
-                          <p className="text-xs">{classItem.time.split(" - ")[1]}</p>
+                          <p className="text-xs sm:text-sm font-bold">{classItem.time.split(" - ")[0]}</p>
+                          <p className="text-[10px] sm:text-xs">{classItem.time.split(" - ")[1]}</p>
                         </div>
-                        <div>
-                          <p className="text-base font-semibold text-gray-900">{classItem.name}</p>
-                          <p className="text-sm text-gray-500">{classItem.room} • {classItem.students} students</p>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{classItem.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-500">{classItem.room} • {classItem.students} students</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 ml-[60px] sm:ml-0">
                         <StatusBadge status={classItem.status} />
                         {classItem.status === "in-progress" && (
                           <button
@@ -405,17 +408,19 @@ export default function TeacherDashboard() {
                               // In production: navigate to attendance page or open modal
                               alert(`Taking attendance for ${classItem.name}`);
                             }}
-                            className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
                           >
-                            Take Attendance
+                            <span className="hidden sm:inline">Take Attendance</span>
+                            <span className="sm:hidden">Attendance</span>
                           </button>
                         )}
                         {classItem.status === "upcoming" && (
                           <Link
                             href={`/teacher/classes?class=${classItem.id}`}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                           >
-                            View Details
+                            <span className="hidden sm:inline">View Details</span>
+                            <span className="sm:hidden">Details</span>
                           </Link>
                         )}
                       </div>
@@ -425,12 +430,12 @@ export default function TeacherDashboard() {
               ) : (
                 <div className="divide-y divide-gray-200">
                   {mockMakeupRequests.map((request) => (
-                    <div key={request.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
+                    <div key={request.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3 sm:gap-4">
                         <StudentAvatar name={request.studentName} initials={request.studentInitials} />
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900">{request.studentName}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs sm:text-sm text-gray-500 truncate">
                             Missed: {request.originalClass} on {request.originalDate}
                           </p>
                           {request.requestedDate && (
@@ -438,7 +443,7 @@ export default function TeacherDashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 ml-[52px] sm:ml-0">
                         <MakeupStatusBadge status={request.status} />
                         {request.status === "pending" && (
                           <button
@@ -446,7 +451,7 @@ export default function TeacherDashboard() {
                               // In production: open scheduling modal
                               alert(`Scheduling makeup class for ${request.studentName}\nOriginal: ${request.originalClass} on ${request.originalDate}`);
                             }}
-                            className="px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                            className="px-3 py-1.5 bg-orange-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
                           >
                             Schedule
                           </button>
@@ -457,7 +462,7 @@ export default function TeacherDashboard() {
                               // In production: open rescheduling modal
                               alert(`Rescheduling makeup for ${request.studentName}\nCurrently scheduled: ${request.requestedDate}`);
                             }}
-                            className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             Reschedule
                           </button>
@@ -466,7 +471,7 @@ export default function TeacherDashboard() {
                     </div>
                   ))}
                   {mockMakeupRequests.length === 0 && (
-                    <div className="px-6 py-12 text-center">
+                    <div className="px-4 sm:px-6 py-12 text-center">
                       <p className="text-gray-500">No makeup requests at the moment</p>
                     </div>
                   )}
@@ -476,24 +481,24 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-1 lg:order-2">
             {/* Upcoming Classes */}
             <div data-onboarding="teacher-upcoming" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
-                <p className="text-sm text-gray-500">Next few days</p>
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+                <p className="text-xs sm:text-sm text-gray-500">Next few days</p>
               </div>
               <div className="divide-y divide-gray-200">
                 {mockUpcomingClasses.map((classItem) => (
-                  <div key={classItem.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div key={classItem.id} className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-semibold text-gray-900">{classItem.name}</p>
                       <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{classItem.room}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500">{classItem.time}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{classItem.time}</p>
                       <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="w-12 sm:w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
                               classItem.students === classItem.maxStudents ? "bg-red-500" :
@@ -508,7 +513,7 @@ export default function TeacherDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="px-6 py-4 border-t border-gray-200">
+              <div className="px-4 sm:px-6 py-4 border-t border-gray-200">
                 <Link href="/teacher/classes" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   View full schedule
                 </Link>
@@ -517,26 +522,26 @@ export default function TeacherDashboard() {
 
             {/* Students Needing Attention */}
             <div className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Student Attendance</h2>
-                <p className="text-sm text-gray-500">Track your regular students</p>
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Student Attendance</h2>
+                <p className="text-xs sm:text-sm text-gray-500">Track your regular students</p>
               </div>
               <div className="divide-y divide-gray-200">
                 {mockStudentAttendance.map((student) => (
-                  <div key={student.id} className="px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                  <div key={student.id} className="px-4 sm:px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
                     <StudentAvatar name={student.name} initials={student.initials} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-gray-900">{student.name}</p>
                         {student.needsMakeup && (
-                          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded">
+                          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] sm:text-xs font-medium rounded whitespace-nowrap">
                             Needs makeup
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500">Last: {student.lastClass}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className={`text-sm font-semibold ${
                         (student.classesAttended / student.totalClasses) >= 0.9 ? "text-green-600" :
                         (student.classesAttended / student.totalClasses) >= 0.7 ? "text-yellow-600" : "text-red-600"
@@ -548,7 +553,7 @@ export default function TeacherDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="px-6 py-4 border-t border-gray-200">
+              <div className="px-4 sm:px-6 py-4 border-t border-gray-200">
                 <Link href="/teacher/students" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   View all students
                 </Link>

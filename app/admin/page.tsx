@@ -291,25 +291,25 @@ export default function AdminDashboard() {
         isOpen={showOnboarding}
         onComplete={markComplete}
       />
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-semibold text-gray-900">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
                 Good morning, Alex
               </h1>
               {/* Establishment Selector */}
               <div className="relative">
                 <button
                   onClick={() => setShowEstablishmentDropdown(!showEstablishmentDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
                 >
-                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
-                  {selectedEstablishment.name}
-                  <ChevronIcon className="w-4 h-4 text-gray-400" direction={showEstablishmentDropdown ? "up" : "down"} />
+                  <span className="truncate">{selectedEstablishment.name}</span>
+                  <ChevronIcon className="w-4 h-4 text-gray-400 shrink-0" direction={showEstablishmentDropdown ? "up" : "down"} />
                 </button>
                 {showEstablishmentDropdown && (
                   <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px]">
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Year Selector */}
               <div className="relative">
                 <button
@@ -370,7 +370,7 @@ export default function AdminDashboard() {
                   <button
                     key={period}
                     onClick={() => setSelectedPeriod(period)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
                       selectedPeriod === period
                         ? "bg-white text-gray-900 shadow-sm"
                         : "text-gray-600 hover:text-gray-900"
@@ -383,7 +383,7 @@ export default function AdminDashboard() {
 
               <Link
                 href="/admin/settings"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Settings
               </Link>
@@ -392,25 +392,25 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div data-onboarding="admin-charts" className="grid grid-cols-12 gap-6 mb-8">
+        <div data-onboarding="admin-charts" className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
           {/* Revenue Chart with Stats */}
-          <div className="col-span-8 bg-white border border-gray-200 rounded-2xl p-6">
+          <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
             {/* Stats Row inside Revenue Card */}
-            <div data-onboarding="admin-metrics" className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div data-onboarding="admin-metrics" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
               {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
                 <div key={idx}>
                   <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
-                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
-                  <p className={`text-sm ${stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-600"}`}>
+                  <p className="text-lg sm:text-xl font-bold text-gray-900">{stat.value}</p>
+                  <p className={`text-xs sm:text-sm ${stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-600"}`}>
                     {stat.change}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Revenue Trend</h2>
-                <p className="text-sm text-gray-500">Monthly comparison</p>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Revenue Trend</h2>
+                <p className="text-xs sm:text-sm text-gray-500">Monthly comparison</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -451,9 +451,9 @@ export default function AdminDashboard() {
           </div>
 
           {/* Class Distribution */}
-          <div className="col-span-4 bg-white border border-gray-200 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Class Distribution</h2>
-            <p className="text-sm text-gray-500 mb-6">Classes by type this month</p>
+          <div className="lg:col-span-4 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Class Distribution</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mb-6">Classes by type this month</p>
             <div className="h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -493,15 +493,15 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-2 lg:order-1">
             {/* Staff Performance Table */}
             <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Staff Performance</h2>
-                  <p className="text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Staff Performance</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
                 </div>
                 <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
                   View all
@@ -591,10 +591,10 @@ export default function AdminDashboard() {
 
             {/* Today's Classes */}
             <div className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Today's Classes</h2>
-                  <p className="text-sm text-gray-500 mt-1">Upcoming classes for today</p>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Today's Classes</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Upcoming classes for today</p>
                 </div>
                 <Link
                   href="/admin/classes"
@@ -606,22 +606,22 @@ export default function AdminDashboard() {
               </div>
               <div className="divide-y divide-gray-200">
                 {upcomingClasses.map((cls) => (
-                  <div key={cls.id} className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-lg font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
+                  <div key={cls.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
+                      <span className="text-base sm:text-lg font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-semibold text-gray-900">{cls.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm sm:text-base font-semibold text-gray-900">{cls.name}</p>
                         {cls.enrolled === cls.capacity && (
                           <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">Full</span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">{cls.instructor}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{cls.instructor}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="w-20 sm:w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
                               cls.enrolled === cls.capacity ? "bg-red-500" :
@@ -634,7 +634,7 @@ export default function AdminDashboard() {
                           {cls.enrolled}/{cls.capacity}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">enrolled</p>
+                      <p className="text-xs text-gray-400">enrolled</p>
                     </div>
                   </div>
                 ))}
@@ -643,11 +643,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-1 lg:order-2">
             {/* Attendance Trend Mini Chart */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Attendance Trend</h3>
-              <p className="text-sm text-gray-500 mb-4">Last 8 weeks</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Attendance Trend</h3>
+              <p className="text-xs sm:text-sm text-gray-500 mb-4">Last 8 weeks</p>
               <div className="h-[120px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={attendanceData}>
@@ -671,13 +671,13 @@ export default function AdminDashboard() {
 
             {/* Recent Activity */}
             <div data-onboarding="admin-activity" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
-                <p className="text-sm text-gray-500 mt-1">Latest updates from your studio</p>
+              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Activity</h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Latest updates from your studio</p>
               </div>
               <div className="divide-y divide-gray-200">
                 {recentActivity.map((activity) => (
-                  <div key={activity.id} className="px-6 py-4 flex items-center gap-4">
+                  <div key={activity.id} className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         activity.type === "client"
@@ -725,7 +725,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <div className="px-6 py-4 border-t border-gray-200">
+              <div className="px-4 sm:px-6 py-4 border-t border-gray-200">
                 <Link
                   href="/admin/activity"
                   className="block w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-2 hover:bg-primary-50 rounded-lg transition-colors text-center"
@@ -736,8 +736,8 @@ export default function AdminDashboard() {
             </div>
 
             {/* Monthly Summary */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
-              <h3 className="text-lg font-bold mb-5">Monthly Highlights</h3>
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-4 sm:p-6 text-white">
+              <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5">Monthly Highlights</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

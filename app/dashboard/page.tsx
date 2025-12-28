@@ -46,7 +46,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 lg:p-8 bg-gray-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
       {/* Interactive Onboarding */}
       <InteractiveOnboarding
         role="client"
@@ -57,12 +57,12 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
             {greeting()}, {userData.name}
           </h1>
           <Link
             href="/dashboard/settings"
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Settings
           </Link>

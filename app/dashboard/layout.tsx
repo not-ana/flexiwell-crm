@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/layout";
+import { ResponsiveLayout } from "@/components/layout";
 
 export default function DashboardLayout({
   children,
@@ -8,9 +8,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar notificationCount={8} />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <ResponsiveLayout variant="client" notificationCount={8}>
+      {children}
+    </ResponsiveLayout>
   );
 }

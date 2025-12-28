@@ -192,6 +192,99 @@ export interface Activity {
   createdAt: Date;
 }
 
+// Waitlist types
+export type WaitlistRequestType = "reschedule" | "extra_class" | "cancelled_by_studio";
+
+export type WaitlistStatus = "waiting" | "notified" | "confirmed" | "expired" | "declined";
+
+export interface WaitlistPriorityConfig {
+  _id?: string;
+  // Points per criteria
+  planTypePoints: {
+    annual: number;
+    quarterly: number;
+    monthly: number;
+    "drop-in": number;
+  };
+  waitingTimePointsPerDay: number;
+  attendanceRateMultiplier: number; // e.g., 0.5 means 0.5 points per 1% attendance
+  vipBonus: number;
+  cancelledByStudioBonus: number;
+  urgentReasonBonus: number;
+  // Notification settings
+  notificationWindowMinutes: number; // Time client has to respond
+  autoDeclineAfterMinutes: number;
+  maxNotificationsPerSlot: number;
+  updatedAt: Date;
+}
+
+export interface WaitlistEntry {
+  _id?: string;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  // Request details
+  requestType: WaitlistRequestType;
+  reason?: string;
+  isUrgent: boolean;
+  // Class preferences
+  preferredClassId?: string; // Specific class they want
+  preferredClassName?: string;
+  preferredClassTypes?: string[]; // e.g., ["yoga", "pilates"]
+  preferredInstructorIds?: string[];
+  preferredDays?: string[]; // e.g., ["monday", "wednesday"]
+  preferredTimeSlots?: { start: string; end: string }[];
+  // Original booking (for reschedules)
+  originalBookingId?: string;
+  originalClassId?: string;
+  originalClassName?: string;
+  originalDate?: Date;
+  // Priority calculation
+  priorityScore: number;
+  priorityBreakdown: {
+    planTypePoints: number;
+    waitingTimePoints: number;
+    attendancePoints: number;
+    vipPoints: number;
+    cancelledByStudioPoints: number;
+    urgentReasonPoints: number;
+  };
+  // Status tracking
+  status: WaitlistStatus;
+  notifiedAt?: Date;
+  notificationExpiresAt?: Date;
+  confirmedClassId?: string;
+  confirmedClassName?: string;
+  confirmedDate?: Date;
+  declinedAt?: Date;
+  declineReason?: string;
+  // Metadata
+  position?: number; // Current position in queue
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date; // Auto-expire after X days
+}
+
+export interface WaitlistNotification {
+  _id?: string;
+  waitlistEntryId: string;
+  clientId: string;
+  clientName: string;
+  classId: string;
+  className: string;
+  classDate: Date;
+  classTime: string;
+  spotsAvailable: number;
+  status: "sent" | "opened" | "confirmed" | "declined" | "expired";
+  sentAt: Date;
+  expiresAt: Date;
+  respondedAt?: Date;
+  responseType?: "confirmed" | "declined";
+  notificationChannel: "email" | "whatsapp" | "sms" | "push";
+  createdAt: Date;
+}
+
 // Bot-specific types
 export interface BotCommand {
   command: string;

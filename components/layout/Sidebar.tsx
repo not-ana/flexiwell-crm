@@ -21,6 +21,7 @@ import {
   ReportIcon,
   PaymentIcon,
   RoomsIcon,
+  CloseIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -56,6 +57,8 @@ interface MenuItem {
 export interface SidebarProps {
   variant?: AccountType;
   notificationCount?: number;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 // Menu configurations per role
@@ -119,7 +122,7 @@ function AccountTypeBadge({ type }: { type: AccountType }) {
   );
 }
 
-export default function Sidebar({ variant = "client", notificationCount = 0 }: SidebarProps) {
+export default function Sidebar({ variant = "client", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -131,6 +134,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
   const [newAccountPassword, setNewAccountPassword] = useState("");
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile menu when navigating
+  useEffect(() => {
+    if (onMobileClose) {
+      onMobileClose();
+    }
+  }, [pathname]);
 
   // Get menu config based on variant
   const { main: mainMenuItems, bottom: bottomMenuItems } = menuConfigs[variant];
@@ -220,17 +230,37 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
   }, []);
 
   return (
-    <aside className="w-[280px] h-screen bg-white border-r border-gray-200 flex flex-col overflow-visible">
-      {/* Logo */}
-      <div className="px-6 py-8">
-        <Image
-          src="/flexiwell-logo.svg"
-          alt="Flexiwell"
-          width={87}
-          height={19}
-          priority
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onMobileClose}
         />
-      </div>
+      )}
+
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        w-[280px] h-screen bg-white border-r border-gray-200 flex flex-col overflow-visible
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Logo & Mobile Close */}
+        <div className="px-6 py-8 flex items-center justify-between">
+          <Image
+            src="/flexiwell-logo.svg"
+            alt="Flexiwell"
+            width={87}
+            height={19}
+            priority
+          />
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden p-2 -mr-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+          >
+            <CloseIcon className="w-5 h-5" />
+          </button>
+        </div>
 
       {/* Main Menu */}
       <nav className="flex-1 px-4">
@@ -445,17 +475,17 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
 
         {/* Add Account Modal */}
         {showAddAccountModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm sm:max-w-md overflow-hidden max-h-[90vh] overflow-y-auto">
               {/* Header */}
-              <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+              <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                     {addAccountStep === "role" ? "Add account" : "Sign in"}
                   </h3>
                   <button
                     onClick={resetAddAccountModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -470,20 +500,20 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
               </div>
 
               {/* Content */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {addAccountStep === "role" ? (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3">
                     {/* Client */}
                     <button
                       type="button"
                       onClick={() => setNewAccountRole("client")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
                         newAccountRole === "client"
                           ? "border-primary-600 bg-primary-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                         newAccountRole === "client" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
                       }`}>
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -499,13 +529,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                     <button
                       type="button"
                       onClick={() => setNewAccountRole("admin")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
                         newAccountRole === "admin"
                           ? "border-primary-600 bg-primary-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                         newAccountRole === "admin" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
                       }`}>
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -521,13 +551,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                     <button
                       type="button"
                       onClick={() => setNewAccountRole("teacher")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
                         newAccountRole === "teacher"
                           ? "border-primary-600 bg-primary-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                         newAccountRole === "teacher" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
                       }`}>
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -542,23 +572,23 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                       <input
                         type="email"
                         placeholder="Enter your email"
                         value={newAccountEmail}
                         onChange={(e) => setNewAccountEmail(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                       <input
                         type="password"
                         placeholder="Enter your password"
                         value={newAccountPassword}
                         onChange={(e) => setNewAccountPassword(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                   </div>
@@ -566,25 +596,25 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-6 flex gap-3">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                 {addAccountStep === "credentials" && (
                   <button
                     onClick={() => setAddAccountStep("role")}
-                    className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Back
                   </button>
                 )}
                 <button
                   onClick={resetAddAccountModal}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="w-full sm:flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddAccount}
                   disabled={addAccountStep === "credentials" && (!newAccountEmail || !newAccountPassword)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isAddingAccount ? (
                     <span className="flex items-center justify-center gap-2">
@@ -607,5 +637,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0 }: S
 
       </div>
     </aside>
+    </>
   );
 }
