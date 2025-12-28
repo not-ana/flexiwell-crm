@@ -76,7 +76,7 @@ async function getOrCreateSession(platformUserId: string, platform: "whatsapp" |
   };
 
   const result = await sessionsCollection.insertOne(newSession);
-  return { ...newSession, _id: result.insertedId.toString() };
+  return { ...newSession, _id: result.insertedId };
 }
 
 // Log conversation

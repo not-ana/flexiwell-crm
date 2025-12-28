@@ -295,8 +295,8 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+              <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">
                 Good morning, Alex
               </h1>
               {/* Establishment Selector */}
@@ -407,9 +407,9 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
               <div>
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Revenue Trend</h2>
+                <h2 className="text-base lg:text-lg font-semibold text-gray-900">Revenue Trend</h2>
                 <p className="text-xs sm:text-sm text-gray-500">Monthly comparison</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -493,14 +493,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left Column */}
-          <div className="space-y-6 order-2 lg:order-1">
+          <div className="space-y-6 order-2 xl:order-1 xl:col-span-2">
             {/* Staff Performance Table */}
             <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Staff Performance</h2>
+                  <h2 className="text-lg lg:text-xl font-bold text-gray-900">Staff Performance</h2>
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
                 </div>
                 <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
@@ -509,25 +509,25 @@ export default function AdminDashboard() {
                 </Link>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Staff Member
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Classes
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Clients
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Rating
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Attendance
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Trend
                       </th>
                     </tr>
@@ -535,27 +535,27 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-gray-200">
                     {mockStaffPerformance.map((staff) => (
                       <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-5">
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <StaffAvatar name={staff.name} initials={staff.initials} avatar={staff.avatar} />
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">{staff.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{staff.name}</p>
                               <p className="text-xs text-gray-500 capitalize">{staff.role}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-3 py-3">
                           <span className="text-sm font-medium text-gray-900">{staff.stats.classesThisMonth}</span>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-3 py-3">
                           <span className="text-sm font-medium text-gray-900">{staff.stats.clientsServed}</span>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-3 py-3">
                           <RatingStars rating={staff.stats.avgRating} />
                         </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
                                   staff.stats.attendance >= 95 ? "bg-green-500" :
@@ -567,9 +567,9 @@ export default function AdminDashboard() {
                             <span className="text-sm font-medium text-gray-700">{staff.stats.attendance}%</span>
                           </div>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-3 py-3">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
                               staff.trend === "up"
                                 ? "text-green-700 bg-green-50"
                                 : staff.trend === "down"
@@ -577,8 +577,8 @@ export default function AdminDashboard() {
                                 : "text-gray-700 bg-gray-100"
                             }`}
                           >
-                            {staff.trend === "up" && "↑ Improving"}
-                            {staff.trend === "down" && "↓ Declining"}
+                            {staff.trend === "up" && "↑ Up"}
+                            {staff.trend === "down" && "↓ Down"}
                             {staff.trend === "stable" && "→ Stable"}
                           </span>
                         </td>
@@ -591,9 +591,9 @@ export default function AdminDashboard() {
 
             {/* Today's Classes */}
             <div className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Today's Classes</h2>
+                  <h2 className="text-lg lg:text-xl font-bold text-gray-900">Today's Classes</h2>
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">Upcoming classes for today</p>
                 </div>
                 <Link
@@ -606,35 +606,32 @@ export default function AdminDashboard() {
               </div>
               <div className="divide-y divide-gray-200">
                 {upcomingClasses.map((cls) => (
-                  <div key={cls.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
-                      <span className="text-base sm:text-lg font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
+                  <div key={cls.id} className="px-4 sm:px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm sm:text-base font-semibold text-gray-900">{cls.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{cls.name}</p>
                         {cls.enrolled === cls.capacity && (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">Full</span>
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full shrink-0">Full</span>
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-500">{cls.instructor}</p>
+                      <p className="text-xs text-gray-500">{cls.instructor}</p>
                     </div>
-                    <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 sm:w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              cls.enrolled === cls.capacity ? "bg-red-500" :
-                              cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
-                            }`}
-                            style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-gray-700 w-12 text-right">
-                          {cls.enrolled}/{cls.capacity}
-                        </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            cls.enrolled === cls.capacity ? "bg-red-500" :
+                            cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
+                          }`}
+                          style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
+                        />
                       </div>
-                      <p className="text-xs text-gray-400">enrolled</p>
+                      <span className="text-sm font-medium text-gray-700 w-10 text-right">
+                        {cls.enrolled}/{cls.capacity}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -643,7 +640,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6 order-1 lg:order-2">
+          <div className="space-y-6 order-1 xl:order-2">
             {/* Attendance Trend Mini Chart */}
             <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
               <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Attendance Trend</h3>

@@ -126,7 +126,7 @@ export default function ReportsPage() {
     <div className="h-full overflow-auto">
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1">Track your studio's performance</p>
@@ -135,7 +135,7 @@ export default function ReportsPage() {
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary-500"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary-500"
             >
               <option value="this_month">This Month</option>
               <option value="last_month">Last Month</option>
@@ -150,19 +150,19 @@ export default function ReportsPage() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              <span className="hidden sm:inline">Export Report</span>
-              <span className="sm:hidden">Export</span>
+              <span className="hidden lg:inline">Export Report</span>
+              <span className="lg:hidden">Export</span>
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-full sm:w-fit mb-6 sm:mb-8 overflow-x-auto">
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-full lg:w-fit mb-6 lg:mb-8 overflow-x-auto">
           {(["overview", "classes", "instructors", "clients"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
+              className={`flex-1 lg:flex-none px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
                 activeTab === tab
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -293,8 +293,8 @@ export default function ReportsPage() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Class Performance</h2>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="sm:hidden divide-y divide-gray-100">
+              {/* Mobile/Tablet Card View */}
+              <div className="lg:hidden divide-y divide-gray-100">
                 {classMetrics.popularClasses.map((cls) => (
                   <div key={cls.name} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -321,7 +321,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Desktop Table View */}
-              <table className="w-full hidden sm:table">
+              <table className="w-full hidden lg:table">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
@@ -370,8 +370,8 @@ export default function ReportsPage() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Instructor Performance</h2>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="sm:hidden divide-y divide-gray-100">
+              {/* Mobile/Tablet Card View */}
+              <div className="lg:hidden divide-y divide-gray-100">
                 {instructorMetrics.map((instructor) => (
                   <div key={instructor.name} className="p-4 space-y-3">
                     <div className="flex items-center gap-3">
@@ -409,7 +409,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Desktop Table View */}
-              <table className="w-full hidden sm:table">
+              <table className="w-full hidden lg:table">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Instructor</th>

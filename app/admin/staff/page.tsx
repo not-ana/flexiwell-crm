@@ -427,14 +427,14 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
           <p className="text-xs sm:text-sm text-gray-500 truncate">{unit.address}</p>
         </div>
         <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
-          <div className="text-right hidden sm:block">
+          <div className="text-right hidden lg:block">
             <p className="text-sm font-medium text-gray-900">{unit.staff.length} staff</p>
             <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
           <div className="text-right">
-            <p className="text-xs sm:text-sm font-medium text-blue-600">{teacherCount} teachers</p>
-            <p className="text-xs text-gray-500 hidden sm:block">this location</p>
-            <p className="text-xs text-gray-500 sm:hidden">{unit.staff.length} staff</p>
+            <p className="text-xs lg:text-sm font-medium text-blue-600">{teacherCount} teachers</p>
+            <p className="text-xs text-gray-500 hidden lg:block">this location</p>
+            <p className="text-xs text-gray-500 lg:hidden">{unit.staff.length} staff</p>
           </div>
           <ChevronIcon
             className="w-5 h-5 text-gray-400 transition-transform flex-shrink-0"
@@ -445,7 +445,7 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
 
       {/* Staff - Mobile Card View */}
       {isExpanded && (
-        <div className="border-t border-gray-100 md:hidden">
+        <div className="border-t border-gray-100 lg:hidden">
           {unit.staff.map((staff) => (
             <StaffCard
               key={staff.id}
@@ -468,7 +468,7 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
 
       {/* Staff - Desktop Table View */}
       {isExpanded && (
-        <div className="border-t border-gray-100 hidden md:block overflow-x-auto">
+        <div className="border-t border-gray-100 hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -882,31 +882,30 @@ export default function AdminStaffPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+      <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 mt-1 hidden lg:block">
             Manage employees across all locations
           </p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
           <button
             onClick={() => setShowImportModal(true)}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="p-2 lg:px-4 lg:py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <UploadIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">Import</span>
+            <span className="hidden lg:inline">Import</span>
           </button>
           <button
             onClick={() => setShowAddStaffModal(true)}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className="px-3 py-2 lg:px-4 lg:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            <span className="hidden sm:inline">Add Staff Member</span>
-            <span className="sm:hidden">Add</span>
+            <span className="hidden lg:inline">Add</span>
           </button>
         </div>
       </div>
@@ -972,7 +971,7 @@ export default function AdminStaffPage() {
 
           {/* Status Filter */}
           <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
-            <FilterIcon className="w-5 h-5 text-gray-400 hidden sm:block flex-shrink-0" />
+            <FilterIcon className="w-5 h-5 text-gray-400 hidden lg:block flex-shrink-0" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
@@ -992,8 +991,8 @@ export default function AdminStaffPage() {
             }
             className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
-            <span className="hidden sm:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
-            <span className="sm:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+            <span className="hidden lg:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
+            <span className="lg:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
           </button>
         </div>
       </div>

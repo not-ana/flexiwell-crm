@@ -3114,13 +3114,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className={
-          activeTab === "whatsapp" || activeTab === "plans" || activeTab === "waitlist" || activeTab === "billing"
-            ? "max-w-4xl"
-            : activeTab === "general"
-            ? "max-w-3xl"
-            : "max-w-2xl"
-        }>
+        <div className="max-w-4xl">
           {renderTabContent()}
         </div>
       </div>

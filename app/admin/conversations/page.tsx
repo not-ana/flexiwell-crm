@@ -110,7 +110,7 @@ function formatFullTime(date: Date): string {
 
 export default function ConversationsPage() {
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(mockConversations[1]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [replyText, setReplyText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "waiting" | "active" | "closed">("all");
@@ -182,25 +182,25 @@ export default function ConversationsPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
+      {/* Header - Hidden on mobile/tablet when conversation is selected */}
+      <div className={`p-4 sm:p-6 border-b border-gray-200 bg-white ${selectedConversation ? "hidden lg:block" : ""}`}>
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Bot Conversations</h1>
-            <p className="text-gray-600 mt-1">Manage WhatsApp and Instagram conversations</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Bot Conversations</h1>
+            <p className="text-gray-600 mt-1 hidden lg:block">Manage WhatsApp and Instagram conversations</p>
           </div>
           {waitingCount > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-100 text-orange-700 rounded-lg">
               <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-              <span className="font-medium">{waitingCount} awaiting response</span>
+              <span className="text-sm sm:text-base font-medium">{waitingCount} awaiting response</span>
             </div>
           )}
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Conversation List */}
-        <div className="w-96 border-r border-gray-200 bg-white flex flex-col">
+        {/* Conversation List - Full width on mobile/tablet, hidden when conversation selected */}
+        <div className={`w-full lg:w-96 border-r border-gray-200 bg-white flex flex-col ${selectedConversation ? "hidden lg:flex" : "flex"}`}>
           {/* Search and Filters */}
           <div className="p-4 border-b border-gray-200 space-y-3">
             <div className="relative">
@@ -298,12 +298,19 @@ export default function ConversationsPage() {
           </div>
         </div>
 
-        {/* Conversation Detail */}
+        {/* Conversation Detail - Full screen on mobile/tablet */}
         {selectedConversation ? (
-          <div className="flex-1 flex flex-col bg-gray-50">
+          <div className={`flex-1 flex flex-col bg-gray-50 ${selectedConversation ? "flex" : "hidden lg:flex"}`}>
             {/* Conversation Header */}
-            <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="p-3 sm:p-4 bg-white border-b border-gray-200 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Back button - mobile/tablet only */}
+                <button
+                  onClick={() => setSelectedConversation(null)}
+                  className="lg:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  <ChevronIcon className="w-5 h-5" direction="left" />
+                </button>
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
                   <span className="text-sm font-semibold text-primary-700">
                     {selectedConversation.clientName.split(" ").map((n) => n[0]).join("")}
@@ -319,20 +326,20 @@ export default function ConversationsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <button
                   onClick={() => {
-                    // In production: router.push(`/admin/clients/${selectedConversation.clientId}`)
                     alert(`Viewing profile for: ${selectedConversation.clientName}\nClient ID: ${selectedConversation.clientId}`);
                   }}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-2 lg:px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg whitespace-nowrap"
                 >
-                  View Profile
+                  <span className="hidden lg:inline">View Profile</span>
+                  <span className="lg:hidden">Profile</span>
                 </button>
                 {selectedConversation.status !== "closed" && (
                   <button
                     onClick={handleCloseConversation}
-                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                    className="px-2 sm:px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
                   >
                     Close
                   </button>
@@ -375,20 +382,20 @@ export default function ConversationsPage() {
 
             {/* Reply Input */}
             {selectedConversation.status !== "closed" && (
-              <div className="p-4 bg-white border-t border-gray-200">
-                <div className="flex gap-3">
+              <div className="p-3 sm:p-4 bg-white border-t border-gray-200">
+                <div className="flex gap-2 sm:gap-3">
                   <input
                     type="text"
-                    placeholder="Type your message..."
+                    placeholder="Message"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="flex-1 px-3 sm:px-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                   <button
                     onClick={handleSendReply}
                     disabled={!replyText.trim()}
-                    className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 sm:px-6 py-2.5 bg-primary-600 text-white font-medium rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Send
                   </button>
@@ -397,7 +404,7 @@ export default function ConversationsPage() {
             )}
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="hidden lg:flex flex-1 items-center justify-center bg-gray-50">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

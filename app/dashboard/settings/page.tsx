@@ -683,11 +683,7 @@ export default function ClientSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className={
-          activeTab === "plans" || activeTab === "billing"
-            ? "max-w-4xl"
-            : "max-w-3xl"
-        }>
+        <div className="max-w-4xl">
           {renderTabContent()}
         </div>
       </div>

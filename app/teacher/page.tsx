@@ -187,20 +187,20 @@ export default function TeacherDashboard() {
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+            <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">
               Good morning, Sarah
             </h1>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
               <button
                 onClick={() => setShowWalkInModal(true)}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="flex-1 lg:flex-none px-3 lg:px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
-                <span className="hidden sm:inline">Add Walk-in</span>
-                <span className="sm:hidden">Walk-in</span>
+                <span className="hidden lg:inline">Add Walk-in</span>
+                <span className="lg:hidden">Walk-in</span>
               </button>
               <Link
                 href="/teacher/settings"
@@ -252,9 +252,9 @@ export default function TeacherDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
           {/* Weekly Chart */}
           <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Weekly Overview</h2>
+                <h2 className="text-lg lg:text-xl font-bold text-gray-900">Weekly Overview</h2>
                 <p className="text-sm text-gray-500 mt-1">Classes and students per day</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -329,34 +329,34 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left Column - Schedule & Makeups */}
-          <div className="space-y-6 order-2 lg:order-1">
+          <div className="space-y-6 order-2 xl:order-1 xl:col-span-2">
             {/* Tab Navigation */}
             <div data-onboarding="teacher-schedule" className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex gap-2 sm:gap-4">
+              <div className="px-4 lg:px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="flex gap-2 lg:gap-4">
                   <button
                     onClick={() => setActiveTab("today")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === "today"
                         ? "bg-primary-100 text-primary-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    <span className="hidden sm:inline">Today's Schedule</span>
-                    <span className="sm:hidden">Today</span>
+                    <span className="hidden lg:inline">Today's Schedule</span>
+                    <span className="lg:hidden">Today</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("makeups")}
-                    className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    className={`px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                       activeTab === "makeups"
                         ? "bg-orange-100 text-orange-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    <span className="hidden sm:inline">Makeup Classes</span>
-                    <span className="sm:hidden">Makeups</span>
+                    <span className="hidden lg:inline">Makeup Classes</span>
+                    <span className="lg:hidden">Makeups</span>
                     {mockMakeupRequests.filter(r => r.status === "pending").length > 0 && (
                       <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                         {mockMakeupRequests.filter(r => r.status === "pending").length}
@@ -380,27 +380,27 @@ export default function TeacherDashboard() {
                   {(showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
                     <div
                       key={classItem.id}
-                      className={`px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 transition-colors ${
+                      className={`px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors ${
                         classItem.status === "in-progress" ? "bg-primary-50" : ""
                       }`}
                     >
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex flex-col items-center justify-center shrink-0 ${
+                      <div className="flex items-center gap-3 lg:gap-4">
+                        <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex flex-col items-center justify-center shrink-0 ${
                           classItem.status === "in-progress"
                             ? "bg-primary-500 text-white"
                             : classItem.status === "completed"
                             ? "bg-gray-100 text-gray-400"
                             : "bg-gray-100 text-gray-700"
                         }`}>
-                          <p className="text-xs sm:text-sm font-bold">{classItem.time.split(" - ")[0]}</p>
-                          <p className="text-[10px] sm:text-xs">{classItem.time.split(" - ")[1]}</p>
+                          <p className="text-xs lg:text-sm font-bold">{classItem.time.split(" - ")[0]}</p>
+                          <p className="text-[10px] lg:text-xs">{classItem.time.split(" - ")[1]}</p>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{classItem.name}</p>
-                          <p className="text-xs sm:text-sm text-gray-500">{classItem.room} • {classItem.students} students</p>
+                          <p className="text-sm lg:text-base font-semibold text-gray-900 truncate">{classItem.name}</p>
+                          <p className="text-xs lg:text-sm text-gray-500">{classItem.room} • {classItem.students} students</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-3 ml-[60px] sm:ml-0">
+                      <div className="flex items-center gap-2 lg:gap-3 ml-[60px] lg:ml-0">
                         <StatusBadge status={classItem.status} />
                         {classItem.status === "in-progress" && (
                           <button
@@ -408,19 +408,19 @@ export default function TeacherDashboard() {
                               // In production: navigate to attendance page or open modal
                               alert(`Taking attendance for ${classItem.name}`);
                             }}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                            className="px-3 lg:px-4 py-1.5 lg:py-2 bg-primary-600 text-white text-xs lg:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
                           >
-                            <span className="hidden sm:inline">Take Attendance</span>
-                            <span className="sm:hidden">Attendance</span>
+                            <span className="hidden lg:inline">Take Attendance</span>
+                            <span className="lg:hidden">Attendance</span>
                           </button>
                         )}
                         {classItem.status === "upcoming" && (
                           <Link
                             href={`/teacher/classes?class=${classItem.id}`}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-3 lg:px-4 py-1.5 lg:py-2 border border-gray-300 text-gray-700 text-xs lg:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                           >
-                            <span className="hidden sm:inline">View Details</span>
-                            <span className="sm:hidden">Details</span>
+                            <span className="hidden lg:inline">View Details</span>
+                            <span className="lg:hidden">Details</span>
                           </Link>
                         )}
                       </div>
@@ -430,12 +430,12 @@ export default function TeacherDashboard() {
               ) : (
                 <div className="divide-y divide-gray-200">
                   {mockMakeupRequests.map((request) => (
-                    <div key={request.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3 sm:gap-4">
+                    <div key={request.id} className="px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3 lg:gap-4">
                         <StudentAvatar name={request.studentName} initials={request.studentInitials} />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900">{request.studentName}</p>
-                          <p className="text-xs sm:text-sm text-gray-500 truncate">
+                          <p className="text-xs lg:text-sm text-gray-500 truncate">
                             Missed: {request.originalClass} on {request.originalDate}
                           </p>
                           {request.requestedDate && (
@@ -443,7 +443,7 @@ export default function TeacherDashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-3 ml-[52px] sm:ml-0">
+                      <div className="flex items-center gap-2 lg:gap-3 ml-[52px] lg:ml-0">
                         <MakeupStatusBadge status={request.status} />
                         {request.status === "pending" && (
                           <button
@@ -481,7 +481,7 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6 order-1 lg:order-2">
+          <div className="space-y-6 order-1 xl:order-2">
             {/* Upcoming Classes */}
             <div data-onboarding="teacher-upcoming" className="bg-white border border-gray-200 rounded-2xl">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-200">

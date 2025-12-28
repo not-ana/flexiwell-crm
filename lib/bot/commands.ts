@@ -1,6 +1,7 @@
 // Bot Command Handlers for FlexiWell
 
 import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
 import type { Client, Class, Booking, BotSession } from "@/lib/db/schemas";
 
 export type CommandResponse = {
@@ -26,7 +27,7 @@ export async function handleRemainingClasses(session: BotSession): Promise<Comma
   }
 
   const db = await getDatabase();
-  const client = await db.collection<Client>("clients").findOne({ _id: session.clientId });
+  const client = await db.collection<Client>("clients").findOne({ _id: new ObjectId(session.clientId) });
 
   if (!client) {
     return { text: "Não encontramos seu cadastro. Por favor, entre em contato com o suporte." };
@@ -59,7 +60,7 @@ export async function handleUpcomingClasses(session: BotSession): Promise<Comman
 
   const bookings = await db.collection<Booking>("bookings")
     .find({
-      clientId: session.clientId,
+      clientId: session.clientId!,
       scheduledDate: { $gte: now },
       status: "confirmed",
     })
@@ -164,7 +165,7 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
   }
 
   const selectedClass = classes[classIndex - 1];
-  const client = await db.collection<Client>("clients").findOne({ _id: session.clientId });
+  const client = await db.collection<Client>("clients").findOne({ _id: new ObjectId(session.clientId) });
 
   if (!client) {
     return { text: "Erro ao buscar seus dados. Tente novamente." };
@@ -180,8 +181,8 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
 
   // Check if already enrolled
   const existingBooking = await db.collection<Booking>("bookings").findOne({
-    clientId: session.clientId,
-    classId: selectedClass._id,
+    clientId: session.clientId!,
+    classId: selectedClass._id!.toString(),
     status: "confirmed",
   });
 
@@ -190,10 +191,10 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
   }
 
   // Create booking
-  const booking: Booking = {
+  const booking: Omit<Booking, "_id"> = {
     clientId: session.clientId!,
     clientName: client.name,
-    classId: selectedClass._id!,
+    classId: selectedClass._id!.toString(),
     className: selectedClass.title,
     instructorId: selectedClass.instructorId,
     instructorName: selectedClass.instructorName,
@@ -206,7 +207,7 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
     updatedAt: new Date(),
   };
 
-  await db.collection<Booking>("bookings").insertOne(booking);
+  await db.collection("bookings").insertOne(booking);
 
   // Update class enrollment
   await db.collection<Class>("classes").updateOne(
@@ -225,8 +226,8 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
   );
 
   // Update client's remaining classes
-  await db.collection<Client>("clients").updateOne(
-    { _id: session.clientId },
+  await db.collection("clients").updateOne(
+    { _id: new ObjectId(session.clientId) },
     {
       $inc: { "plan.usedClasses": 1, "plan.remainingClasses": -1 },
     }
@@ -252,8 +253,8 @@ export async function handleCancelClass(session: BotSession, bookingId: string):
 
   const db = await getDatabase();
   const booking = await db.collection<Booking>("bookings").findOne({
-    _id: bookingId,
-    clientId: session.clientId,
+    _id: new ObjectId(bookingId),
+    clientId: session.clientId!,
     status: "confirmed",
   });
 
@@ -278,23 +279,23 @@ export async function handleCancelClass(session: BotSession, bookingId: string):
   }
 
   // Cancel booking
-  await db.collection<Booking>("bookings").updateOne(
-    { _id: bookingId },
+  await db.collection("bookings").updateOne(
+    { _id: new ObjectId(bookingId) },
     { $set: { status: "cancelled", updatedAt: new Date() } }
   );
 
   // Update class enrollment
-  await db.collection<Class>("classes").updateOne(
-    { _id: booking.classId },
+  await db.collection("classes").updateOne(
+    { _id: new ObjectId(booking.classId) },
     {
       $inc: { currentEnrollment: -1 },
-      $pull: { enrolledClients: { clientId: session.clientId } },
-    }
+      $pull: { enrolledClients: { clientId: session.clientId } as unknown },
+    } as Record<string, unknown>
   );
 
   // Restore client's class credit
-  await db.collection<Client>("clients").updateOne(
-    { _id: session.clientId },
+  await db.collection("clients").updateOne(
+    { _id: new ObjectId(session.clientId) },
     {
       $inc: { "plan.usedClasses": -1, "plan.remainingClasses": 1 },
     }

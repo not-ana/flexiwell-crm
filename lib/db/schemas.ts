@@ -1,7 +1,8 @@
 // MongoDB Schema Types for FlexiWell CRM
+import { ObjectId } from "mongodb";
 
 export interface Client {
-  _id?: string;
+  _id?: ObjectId;
   name: string;
   email: string;
   phone: string;
@@ -32,7 +33,7 @@ export interface Client {
 }
 
 export interface Staff {
-  _id?: string;
+  _id?: ObjectId;
   name: string;
   email: string;
   phone: string;
@@ -49,7 +50,7 @@ export interface Staff {
 }
 
 export interface Class {
-  _id?: string;
+  _id?: ObjectId;
   title: string;
   description?: string;
   type: "yoga" | "pilates" | "stretching" | "meditation" | "other";
@@ -80,7 +81,7 @@ export interface Class {
 }
 
 export interface Booking {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   classId: string;
@@ -90,14 +91,14 @@ export interface Booking {
   scheduledDate: Date;
   startTime: string;
   endTime: string;
-  status: "confirmed" | "cancelled" | "completed" | "no-show";
+  status: "pending" | "confirmed" | "cancelled" | "completed" | "no-show";
   source: "web" | "bot" | "admin";
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Request {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   type: "cancel" | "reschedule" | "change-instructor" | "other";
@@ -115,7 +116,7 @@ export interface Request {
 }
 
 export interface Conversation {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   platform: "whatsapp" | "instagram";
@@ -139,7 +140,7 @@ export interface Conversation {
 }
 
 export interface SupportTicket {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   subject: string;
@@ -160,7 +161,7 @@ export interface SupportTicket {
 }
 
 export interface Payment {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   amount: number;
@@ -180,7 +181,7 @@ export interface Payment {
 }
 
 export interface Activity {
-  _id?: string;
+  _id?: ObjectId;
   type: "client" | "class" | "payment" | "booking" | "cancel" | "staff" | "system";
   action: string;
   description: string;
@@ -198,7 +199,7 @@ export type WaitlistRequestType = "reschedule" | "extra_class" | "cancelled_by_s
 export type WaitlistStatus = "waiting" | "notified" | "confirmed" | "expired" | "declined";
 
 export interface WaitlistPriorityConfig {
-  _id?: string;
+  _id?: ObjectId;
   // Points per criteria
   planTypePoints: {
     annual: number;
@@ -219,7 +220,7 @@ export interface WaitlistPriorityConfig {
 }
 
 export interface WaitlistEntry {
-  _id?: string;
+  _id?: ObjectId;
   clientId: string;
   clientName: string;
   clientEmail: string;
@@ -267,7 +268,7 @@ export interface WaitlistEntry {
 }
 
 export interface WaitlistNotification {
-  _id?: string;
+  _id?: ObjectId;
   waitlistEntryId: string;
   clientId: string;
   clientName: string;
@@ -285,6 +286,32 @@ export interface WaitlistNotification {
   createdAt: Date;
 }
 
+// User Authentication types
+export interface User {
+  _id?: ObjectId;
+  email: string;
+  password: string; // hashed
+  name: string;
+  role: "admin" | "teacher" | "client";
+  avatar?: string;
+  phone?: string;
+  // Link to other entities based on role
+  staffId?: string; // For admin/teacher roles
+  clientId?: string; // For client role
+  isActive: boolean;
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RefreshToken {
+  _id?: ObjectId;
+  userId: string;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
 // Bot-specific types
 export interface BotCommand {
   command: string;
@@ -295,7 +322,7 @@ export interface BotCommand {
 }
 
 export interface BotSession {
-  _id?: string;
+  _id?: ObjectId;
   platformUserId: string;
   platform: "whatsapp" | "instagram";
   clientId?: string;

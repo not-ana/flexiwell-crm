@@ -272,7 +272,7 @@ export default function PaymentsPage() {
           {selectedPayments.length > 0 && (
             <button
               onClick={handleBulkReminder}
-              className="hidden sm:flex px-4 py-2.5 text-primary-600 font-medium border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors items-center gap-2"
+              className="hidden lg:flex px-4 py-2.5 text-primary-600 font-medium border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -287,8 +287,8 @@ export default function PaymentsPage() {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            <span className="hidden sm:inline">Export Report</span>
-            <span className="sm:hidden">Export</span>
+            <span className="hidden lg:inline">Export Report</span>
+            <span className="lg:hidden">Export</span>
           </button>
         </div>
       </div>
@@ -395,8 +395,8 @@ export default function PaymentsPage() {
 
       {/* Payments Table/Cards */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {/* Mobile Card View */}
-        <div className="sm:hidden divide-y divide-gray-100">
+        {/* Mobile/Tablet Card View */}
+        <div className="lg:hidden divide-y divide-gray-100">
           {filteredPayments.length === 0 ? (
             <div className="py-12 text-center">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -409,74 +409,69 @@ export default function PaymentsPage() {
             filteredPayments.map((payment) => (
               <div
                 key={payment.id}
-                className={`p-4 ${selectedPayments.includes(payment.id) ? "bg-primary-50" : ""}`}
+                className={`px-4 py-4 ${selectedPayments.includes(payment.id) ? "bg-primary-50" : ""}`}
               >
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedPayments.includes(payment.id)}
-                    onChange={() => toggleSelectPayment(payment.id)}
-                    className="w-4 h-4 mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
+                {/* Row 1: Checkbox + Avatar + Name + Status */}
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedPayments.includes(payment.id)}
+                      onChange={() => toggleSelectPayment(payment.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      aria-label={`Select payment for ${payment.clientName}`}
+                    />
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-primary-700">{payment.clientInitials}</span>
+                    </div>
+                  </label>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-semibold text-primary-700">{payment.clientInitials}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{payment.clientName}</p>
-                          <p className="text-xs text-gray-500 truncate">{payment.planName}</p>
-                        </div>
-                      </div>
-                      <StatusBadge status={payment.status} daysOverdue={payment.daysOverdue} />
-                    </div>
+                    <p className="font-semibold text-gray-900">{payment.clientName}</p>
+                    <p className="text-sm text-gray-500">{payment.planName}</p>
+                  </div>
+                  <StatusBadge status={payment.status} daysOverdue={payment.daysOverdue} />
+                </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-gray-500 text-xs">Amount</p>
-                        <p className="font-semibold text-gray-900">{formatCurrency(payment.amount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-xs">Due Date</p>
-                        <p className="text-gray-900">{payment.dueDate}</p>
-                        {payment.paidDate && (
-                          <p className="text-xs text-green-600">Paid {payment.paidDate}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      {(payment.status === "pending" || payment.status === "overdue") && (
-                        <button
-                          onClick={() => handleSendReminder(payment)}
-                          className="flex-1 px-3 py-2 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-                        >
-                          Send Reminder
-                        </button>
-                      )}
-                      {payment.status === "failed" && (
-                        <button className="flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                          Retry Payment
-                        </button>
-                      )}
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="19" cy="12" r="1" />
-                          <circle cx="5" cy="12" r="1" />
-                        </svg>
-                      </button>
-                    </div>
+                {/* Row 2: Amount + Due Date - aligned with name */}
+                <div className="mt-3 pl-[4.25rem] grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Amount</p>
+                    <p className="text-lg font-bold text-primary-600">{formatCurrency(payment.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Due Date</p>
+                    <p className="text-base font-semibold text-gray-900">{payment.dueDate}</p>
+                    {payment.paidDate && (
+                      <p className="text-xs text-green-600 mt-0.5">Paid {payment.paidDate}</p>
+                    )}
                   </div>
                 </div>
+
+                {/* Row 3: Action button - aligned with name */}
+                {(payment.status === "pending" || payment.status === "overdue") && (
+                  <button
+                    onClick={() => handleSendReminder(payment)}
+                    className="mt-3 ml-[4.25rem] w-[calc(100%-4.25rem)] py-2.5 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
+                    aria-label={`Send reminder to ${payment.clientName}`}
+                  >
+                    Send Reminder
+                  </button>
+                )}
+                {payment.status === "failed" && (
+                  <button
+                    className="mt-3 ml-[4.25rem] w-[calc(100%-4.25rem)] py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
+                    aria-label={`Retry payment for ${payment.clientName}`}
+                  >
+                    Retry Payment
+                  </button>
+                )}
               </div>
             ))
           )}
         </div>
 
         {/* Desktop Table View */}
-        <table className="w-full hidden sm:table">
+        <table className="w-full hidden lg:table">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-4 py-3 text-left">
@@ -585,7 +580,7 @@ export default function PaymentsPage() {
         </table>
 
         {filteredPayments.length === 0 && (
-          <div className="hidden sm:block py-12 text-center">
+          <div className="hidden lg:block py-12 text-center">
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>

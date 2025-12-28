@@ -476,19 +476,18 @@ export default function WaitlistPage() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 sm:p-6 lg:p-8 border-b border-gray-200 bg-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Waitlist Management</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage client waitlist requests and priorities</p>
+            <p className="text-sm text-gray-600 mt-1 hidden lg:block">Manage client waitlist requests and priorities</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowPrioritySettings(true)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Priority Settings
-            </button>
-          </div>
+          <button
+            onClick={() => setShowPrioritySettings(true)}
+            className="px-3 py-2 lg:px-4 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+          >
+            <span className="hidden lg:inline">Priority Settings</span>
+            <span className="lg:hidden">Settings</span>
+          </button>
         </div>
 
         {/* Stats */}
