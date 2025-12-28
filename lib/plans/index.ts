@@ -1,6 +1,6 @@
 // Plan types and feature flags for FlexiWell CRM
 
-export type PlanType = "starter" | "professional" | "enterprise";
+export type PlanType = "starter" | "growth" | "business" | "professional" | "enterprise";
 
 export interface PlanLimits {
   maxClients: number;
@@ -65,17 +65,18 @@ export interface Plan {
 }
 
 // Plan definitions
+// Updated 2025 pricing from IMPLEMENTATION_GUIDE.md
 export const plans: Record<PlanType, Plan> = {
   starter: {
     id: "starter",
     name: "Starter",
     description: "Perfect for solo instructors and small studios just getting started",
     price: {
-      monthly: 29,
-      yearly: 24, // ~17% discount
+      monthly: 49,
+      yearly: 39, // ~20% discount
     },
     limits: {
-      maxClients: 50,
+      maxClients: 100,
       maxStaff: 1,
       maxLocations: 1,
     },
@@ -123,18 +124,133 @@ export const plans: Record<PlanType, Plan> = {
     },
   },
 
+  growth: {
+    id: "growth",
+    name: "Growth",
+    description: "For growing studios ready to scale with smart automation",
+    price: {
+      monthly: 99,
+      yearly: 79, // ~20% discount
+    },
+    limits: {
+      maxClients: 150,
+      maxStaff: 5,
+      maxLocations: 1,
+    },
+    features: {
+      // Core - Full
+      basicScheduling: true,
+      classManagement: true,
+      clientProfiles: true,
+
+      // Communication - No SMS
+      emailReminders: true,
+      whatsappReminders: false,
+      whatsappBot: false,
+      instagramBot: false,
+      smsReminders: false,
+
+      // Reporting - Full
+      basicReports: true,
+      advancedReports: true,
+      revenueAnalytics: true,
+      instructorAnalytics: true,
+      exportReports: true,
+
+      // Advanced - Full
+      waitlist: true,
+      makeupClasses: true,
+      packages: true,
+      memberships: true,
+
+      // Integrations - Basic
+      calendarSync: true,
+      paymentIntegration: true,
+      apiAccess: false,
+      webhooks: false,
+
+      // Multi-location - No
+      multiLocation: false,
+
+      // Support - Email + Chat
+      emailSupport: true,
+      chatSupport: true,
+      phoneSupport: false,
+      prioritySupport: false,
+      dedicatedManager: false,
+    },
+  },
+
+  business: {
+    id: "business",
+    name: "Business",
+    description: "For established studios looking to scale with intelligent automation",
+    price: {
+      monthly: 179,
+      yearly: 149, // ~17% discount
+    },
+    limits: {
+      maxClients: 500,
+      maxStaff: 3,
+      maxLocations: 2,
+    },
+    features: {
+      // Core - Full
+      basicScheduling: true,
+      classManagement: true,
+      clientProfiles: true,
+
+      // Communication - Full except Instagram
+      emailReminders: true,
+      whatsappReminders: true,
+      whatsappBot: true,
+      instagramBot: false,
+      smsReminders: true,
+
+      // Reporting - Full
+      basicReports: true,
+      advancedReports: true,
+      revenueAnalytics: true,
+      instructorAnalytics: true,
+      exportReports: true,
+
+      // Advanced - Full
+      waitlist: true,
+      makeupClasses: true,
+      packages: true,
+      memberships: true,
+
+      // Integrations - Basic
+      calendarSync: true,
+      paymentIntegration: true,
+      apiAccess: false,
+      webhooks: false,
+
+      // Multi-location - Yes (2)
+      multiLocation: true,
+
+      // Support - Email + Chat
+      emailSupport: true,
+      chatSupport: true,
+      phoneSupport: false,
+      prioritySupport: true,
+      dedicatedManager: false,
+    },
+    popular: true,
+  },
+
   professional: {
     id: "professional",
     name: "Professional",
-    description: "For growing studios that need automation and advanced features",
+    description: "For established studios with multiple instructors and locations",
     price: {
-      monthly: 79,
-      yearly: 66, // ~17% discount
+      monthly: 199,
+      yearly: 159, // ~20% discount
     },
     limits: {
-      maxClients: 200,
-      maxStaff: 5,
-      maxLocations: 1,
+      maxClients: 2000,
+      maxStaff: 10,
+      maxLocations: 5,
     },
     features: {
       // Core - Full
@@ -174,20 +290,19 @@ export const plans: Record<PlanType, Plan> = {
       // Support - Email + Chat
       emailSupport: true,
       chatSupport: true,
-      phoneSupport: false,
-      prioritySupport: false,
+      phoneSupport: true,
+      prioritySupport: true,
       dedicatedManager: false,
     },
-    popular: true,
   },
 
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    description: "For established studios and chains needing unlimited scale and premium support",
+    description: "For studio networks and franchises requiring unlimited scale and customization",
     price: {
-      monthly: 199,
-      yearly: 166, // ~17% discount
+      monthly: 399,
+      yearly: 319, // ~20% discount
     },
     limits: {
       maxClients: -1, // -1 = unlimited

@@ -188,8 +188,8 @@ function GeneralSettings() {
               onChange={(e) => updateSetting("currency", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="BRL">BRL (R$)</option>
               <option value="USD">USD ($)</option>
+              <option value="BRL">BRL (R$)</option>
               <option value="EUR">EUR (€)</option>
               <option value="GBP">GBP (£)</option>
             </select>
@@ -679,18 +679,41 @@ function PlansSettings() {
 }
 
 // FlexiWell SaaS Plans for Studios
+// Updated 2025 pricing from IMPLEMENTATION_GUIDE.md
 const flexiwellPlans = [
   {
-    id: "professional",
-    name: "Professional",
-    monthlyPrice: 497,
-    yearlyPrice: 397,
+    id: "starter",
+    name: "Starter",
+    monthlyPrice: 49,
+    yearlyPrice: 39,
+    description: "For solo instructors",
+    limits: {
+      clients: 100,
+      staff: 1,
+      locations: 1,
+      storage: "5GB",
+    },
+    features: [
+      "Up to 100 clients",
+      "1 staff account",
+      "1 location",
+      "Online scheduling",
+      "Email reminders",
+      "Basic reports",
+    ],
+    highlight: false,
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    monthlyPrice: 99,
+    yearlyPrice: 79,
     description: "For growing studios",
     limits: {
       clients: 150,
       staff: 5,
       locations: 1,
-      storage: "5GB",
+      storage: "10GB",
     },
     features: [
       "Up to 150 clients",
@@ -698,32 +721,58 @@ const flexiwellPlans = [
       "1 location",
       "Online scheduling",
       "Email reminders",
-      "Basic reports",
-      "Email support",
+      "Advanced reports",
+      "Chat support",
+    ],
+    highlight: false,
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    monthlyPrice: 199,
+    yearlyPrice: 159,
+    description: "For established studios",
+    limits: {
+      clients: 2000,
+      staff: 10,
+      locations: 5,
+      storage: "200GB",
+    },
+    features: [
+      "Up to 2,000 clients",
+      "10 team accounts",
+      "5 locations",
+      "Online scheduling",
+      "Email + SMS + WhatsApp",
+      "AI Support Pro (2,000 chats/mo)",
+      "WhatsApp Bot (5,000 msgs/month)",
+      "Instagram Bot",
+      "Advanced reports",
+      "Priority support (12h)",
     ],
     highlight: false,
   },
   {
     id: "business",
     name: "Business",
-    monthlyPrice: 897,
-    yearlyPrice: 717,
+    monthlyPrice: 179,
+    yearlyPrice: 149,
     description: "For established studios",
     limits: {
       clients: 500,
-      staff: 15,
+      staff: 3,
       locations: 2,
-      storage: "25GB",
+      storage: "50GB",
     },
     features: [
       "Up to 500 clients",
-      "15 team accounts",
+      "3 team accounts",
       "2 locations",
-      "WhatsApp Bot included",
+      "AI Support Basic (500 chats/mo)",
+      "WhatsApp Bot (1,000 msgs/month)",
+      "AI-powered smart waitlist",
       "Advanced reports",
-      "Smart waitlist",
-      "Payment integrations",
-      "Priority support",
+      "Priority support (24h)",
     ],
     highlight: true,
     badge: "Most Popular",
@@ -731,23 +780,24 @@ const flexiwellPlans = [
   {
     id: "enterprise",
     name: "Enterprise",
-    monthlyPrice: 1897,
-    yearlyPrice: 1517,
+    monthlyPrice: 399,
+    yearlyPrice: 319,
     description: "For studio networks",
     limits: {
       clients: -1,
       staff: -1,
       locations: 10,
-      storage: "100GB",
+      storage: "500GB",
     },
     features: [
       "Unlimited clients",
       "Unlimited team",
       "Up to 10 locations",
-      "WhatsApp + Instagram Bot",
+      "AI Support Enterprise (unlimited)",
+      "WhatsApp + Instagram Bot (unlimited)",
       "White-label (your brand)",
-      "Complete API",
-      "Dedicated success manager",
+      "Complete API access",
+      "Dedicated account manager",
       "Custom onboarding",
       "SLA 99.9%",
     ],
@@ -796,7 +846,7 @@ function ChangePlanModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-[95vw] xl:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -838,92 +888,116 @@ function ChangePlanModal({
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 sm:p-6 overflow-y-auto">
+          {/* Responsive grid for 5 plans */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 gap-y-8 items-start">
             {flexiwellPlans.map((plan) => {
               const price = selectedCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
               const isCurrentPlan = currentPlanId === plan.id;
               const isSelected = selectedPlan === plan.id;
 
               return (
-                <button
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`relative p-4 sm:p-5 rounded-xl border-2 text-left transition-all ${
-                    isSelected
-                      ? "border-primary-600 bg-primary-50 ring-2 ring-primary-200"
-                      : plan.highlight
-                      ? "border-primary-200 bg-primary-50/30"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  {plan.badge && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full whitespace-nowrap">
-                      {plan.badge}
-                    </span>
-                  )}
-                  {isCurrentPlan && (
-                    <span className="absolute -top-2.5 right-2 px-2 py-0.5 bg-green-600 text-white text-xs font-medium rounded-full">
-                      Current
-                    </span>
-                  )}
+                <div className="relative h-full">
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`relative w-full h-full p-4 sm:p-5 rounded-xl border-2 text-left transition-all flex flex-col ${
+                      isSelected
+                        ? "border-primary-600 bg-primary-50 ring-2 ring-primary-200"
+                        : plan.highlight
+                        ? "border-primary-200 bg-primary-50/30"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    {/* Badge at top edge */}
+                    {plan.badge && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="px-3.5 py-1.5 bg-primary-600 text-white text-[10px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-md">
+                          ⭐ {plan.badge}
+                        </span>
+                      </div>
+                    )}
 
-                  <h3 className="font-semibold text-gray-900 text-lg">{plan.name}</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">{plan.description}</p>
+                    {/* Add top spacing for badge */}
+                    <div className="h-4"></div>
 
-                  <div className="mt-3">
-                    <span className="text-3xl font-bold text-gray-900">R$ {price}</span>
-                    <span className="text-sm text-gray-500">/month</span>
+                    {/* Current Plan badge inside card, below Most Popular */}
+                    {isCurrentPlan && (
+                      <div className="flex justify-center mb-3">
+                        <span className="px-3 py-1.5 bg-green-600 text-white text-[10px] font-semibold rounded-full uppercase tracking-wide shadow-sm">
+                          Current Plan
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Plan name and description */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-gray-900 text-xl tracking-tight">{plan.name}</h3>
+                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">{plan.description}</p>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="mb-5">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-bold text-gray-900 tracking-tight">${price}</span>
+                      <span className="text-base text-gray-500">/mo</span>
+                    </div>
                     {selectedCycle === "yearly" && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Billed annually (R$ {price * 12}/year)
-                      </p>
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-md">
+                        <span className="text-xs text-green-700 font-semibold">
+                          💰 Save ${(plan.monthlyPrice - price) * 12}/year
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Limits */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-gray-500">Clients:</span>
-                        <span className="ml-1 font-medium text-gray-900">
-                          {plan.limits.clients === -1 ? "Unlimited" : plan.limits.clients}
+                  {/* Limits with icons */}
+                  <div className="mb-5 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">👥</span>
+                        <span className="text-gray-600">
+                          <span className="font-semibold text-gray-900">
+                            {plan.limits.clients === -1 ? "∞" : plan.limits.clients}
+                          </span> clients
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Team:</span>
-                        <span className="ml-1 font-medium text-gray-900">
-                          {plan.limits.staff === -1 ? "Unlimited" : plan.limits.staff}
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">👤</span>
+                        <span className="text-gray-600">
+                          <span className="font-semibold text-gray-900">
+                            {plan.limits.staff === -1 ? "∞" : plan.limits.staff}
+                          </span> team
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Locations:</span>
-                        <span className="ml-1 font-medium text-gray-900">{plan.limits.locations}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">📍</span>
+                        <span className="text-gray-600">
+                          <span className="font-semibold text-gray-900">{plan.limits.locations}</span> locations
+                        </span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Storage:</span>
-                        <span className="ml-1 font-medium text-gray-900">{plan.limits.storage}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">💾</span>
+                        <span className="text-gray-600">
+                          <span className="font-semibold text-gray-900">{plan.limits.storage}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Features */}
-                  <ul className="mt-4 space-y-2">
-                    {plan.features.slice(0, 5).map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-                        <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="20 6 9 17 4 12" />
+                  <ul className="space-y-2 flex-grow">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5 text-sm text-gray-700">
+                        <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                         </svg>
-                        {feature}
+                        <span className="leading-snug">{feature}</span>
                       </li>
                     ))}
-                    {plan.features.length > 5 && (
-                      <li className="text-xs text-primary-600 font-medium pl-6">
-                        +{plan.features.length - 5} more features
-                      </li>
-                    )}
                   </ul>
                 </button>
+              </div>
               );
             })}
           </div>
@@ -1102,8 +1176,8 @@ function BillingSettings() {
   const currentPlan = {
     id: "business",
     name: "Business",
-    monthlyPrice: 897,
-    yearlyPrice: 717,
+    monthlyPrice: 179,
+    yearlyPrice: 143,
     billingCycle: "monthly" as "monthly" | "yearly",
     nextBilling: "15 Jan 2025",
     usage: {
@@ -1125,10 +1199,10 @@ function BillingSettings() {
   };
 
   const billingHistory = [
-    { id: "1", date: "Dec 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
-    { id: "2", date: "Nov 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
-    { id: "3", date: "Oct 1, 2024", description: "Business Plan", amount: "R$ 897.00", status: "Paid" },
-    { id: "4", date: "Sep 1, 2024", description: "Professional Plan", amount: "R$ 497.00", status: "Paid" },
+    { id: "1", date: "Dec 1, 2024", description: "Business Plan", amount: "$179.00", status: "Paid" },
+    { id: "2", date: "Nov 1, 2024", description: "Business Plan", amount: "$179.00", status: "Paid" },
+    { id: "3", date: "Oct 1, 2024", description: "Business Plan", amount: "$179.00", status: "Paid" },
+    { id: "4", date: "Sep 1, 2024", description: "Professional Plan", amount: "$99.00", status: "Paid" },
   ];
 
   const usagePercentage = (used: number, limit: number) => {

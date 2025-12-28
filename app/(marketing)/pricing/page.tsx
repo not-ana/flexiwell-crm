@@ -6,7 +6,8 @@ import Image from "next/image";
 
 // FlexiWell CRM Premium Pricing
 // Target: Studios with 50+ active clients, established businesses, tech-savvy owners
-// Minimum ticket: R$ 497/month (filters out low-ticket clients)
+// Free Trial: 30 days (no credit card required)
+// Bundle: FlexiLaunch + FlexiWell for early adopters
 
 interface PricingPlan {
   id: string;
@@ -31,14 +32,81 @@ interface PricingPlan {
   cta: string;
 }
 
+interface AddOn {
+  name: string;
+  description: string;
+  price: number;
+  oneTime?: boolean;
+  badge?: string;
+}
+
 const plans: PricingPlan[] = [
   {
-    id: "professional",
-    name: "Professional",
-    description: "For growing studios that need organization and basic automation.",
-    monthlyPrice: 497,
-    yearlyPrice: 397,
-    yearlyTotal: 4764,
+    id: "starter",
+    name: "Starter",
+    description: "Perfect for solo instructors and small studios starting their digital journey.",
+    monthlyPrice: 49,
+    yearlyPrice: 39,
+    yearlyTotal: 468,
+    features: [
+      {
+        category: "Client Management",
+        items: [
+          { name: "Complete CRM with history", included: true },
+          { name: "Up to 100 active clients", included: true },
+          { name: "Online scheduling", included: true },
+          { name: "Automatic reminders (email)", included: true },
+          { name: "Basic client portal", included: true },
+        ],
+      },
+      {
+        category: "Class Management",
+        items: [
+          { name: "Class calendar", included: true },
+          { name: "Attendance tracking", included: true },
+          { name: "Basic waitlist", included: true },
+          { name: "Makeup classes", included: true },
+          { name: "Single modality", included: true },
+        ],
+      },
+      {
+        category: "Financial",
+        items: [
+          { name: "Payment tracking", included: true },
+          { name: "Invoice generation", included: true },
+          { name: "Basic reports", included: true },
+          { name: "Pix integration", included: false },
+          { name: "Automatic recurring billing", included: false },
+        ],
+      },
+      {
+        category: "Automation & AI",
+        items: [
+          { name: "Automatic emails", included: true },
+          { name: "AI Support Basic (500 chats/mo)", included: false },
+          { name: "WhatsApp Bot", included: false },
+          { name: "Instagram Bot", included: false },
+        ],
+      },
+    ],
+    limits: {
+      activeClients: 100,
+      staff: 1,
+      locations: 1,
+      storageGB: 5,
+    },
+    support: "Email (48h)",
+    cta: "Start free trial",
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    description: "For growing studios ready to scale with smart automation and AI.",
+    monthlyPrice: 99,
+    yearlyPrice: 79,
+    yearlyTotal: 948,
+    highlighted: true,
+    badge: "Most Popular",
     features: [
       {
         category: "Client Management",
@@ -93,9 +161,9 @@ const plans: PricingPlan[] = [
     id: "business",
     name: "Business",
     description: "For established studios looking to scale with intelligent automation.",
-    monthlyPrice: 897,
-    yearlyPrice: 747,
-    yearlyTotal: 8964,
+    monthlyPrice: 179,
+    yearlyPrice: 149,
+    yearlyTotal: 1788,
     highlighted: true,
     badge: "Most Popular",
     features: [
@@ -114,7 +182,7 @@ const plans: PricingPlan[] = [
         items: [
           { name: "Class calendar", included: true },
           { name: "Attendance tracking", included: true },
-          { name: "Smart waitlist with priorities", included: true },
+          { name: "AI-powered smart waitlist", included: true },
           { name: "Automatic makeup classes", included: true },
           { name: "Multiple modalities", included: true },
         ],
@@ -130,9 +198,10 @@ const plans: PricingPlan[] = [
         ],
       },
       {
-        category: "Automation",
+        category: "Automation & AI",
         items: [
           { name: "Automatic emails", included: true },
+          { name: "AI Support Basic (500 chats/mo)", included: true },
           { name: "WhatsApp Bot (1,000 msgs/month)", included: true },
           { name: "Instagram Bot", included: false },
           { name: "Custom workflows (5)", included: true },
@@ -141,21 +210,79 @@ const plans: PricingPlan[] = [
     ],
     limits: {
       activeClients: 500,
-      staff: 15,
+      staff: 3,
       locations: 2,
       storageGB: 50,
     },
     support: "Chat + Email (24h)",
-    cta: "Get started",
+    cta: "Start free trial",
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    description: "For established studios with multiple locations and advanced needs.",
+    monthlyPrice: 199,
+    yearlyPrice: 159,
+    yearlyTotal: 1908,
+    features: [
+      {
+        category: "Client Management",
+        items: [
+          { name: "Complete CRM with history", included: true },
+          { name: "Up to 2,000 active clients", included: true },
+          { name: "Online scheduling", included: true },
+          { name: "Automatic reminders (email + SMS + WhatsApp)", included: true },
+          { name: "Advanced client portal with app", included: true },
+        ],
+      },
+      {
+        category: "Class Management",
+        items: [
+          { name: "Class calendar", included: true },
+          { name: "Attendance tracking + analytics", included: true },
+          { name: "AI-powered smart waitlist", included: true },
+          { name: "Automatic makeup classes", included: true },
+          { name: "Multiple modalities + rooms", included: true },
+        ],
+      },
+      {
+        category: "Financial",
+        items: [
+          { name: "Payment tracking", included: true },
+          { name: "Automatic invoice + receipt generation", included: true },
+          { name: "Advanced analytics + BI", included: true },
+          { name: "Custom payment gateway", included: true },
+          { name: "Recurring billing + split payments", included: true },
+        ],
+      },
+      {
+        category: "Automation & AI",
+        items: [
+          { name: "Automatic emails", included: true },
+          { name: "AI Support Pro (2,000 chats/mo)", included: true },
+          { name: "WhatsApp Bot (5,000 msgs/month)", included: true },
+          { name: "Instagram Bot", included: true },
+          { name: "Custom workflows (unlimited)", included: true },
+        ],
+      },
+    ],
+    limits: {
+      activeClients: 2000,
+      staff: 10,
+      locations: 5,
+      storageGB: 200,
+    },
+    support: "Priority (12h) + Phone",
+    cta: "Start free trial",
   },
   {
     id: "enterprise",
     name: "Enterprise",
-    description: "For studio networks and complex operations requiring the best technology.",
-    monthlyPrice: 1897,
-    yearlyPrice: 1497,
-    yearlyTotal: 17964,
-    badge: "White Label",
+    description: "For studio networks and franchises requiring unlimited scale and customization.",
+    monthlyPrice: 399,
+    yearlyPrice: 319,
+    yearlyTotal: 3828,
+    badge: "White Label Included",
     features: [
       {
         category: "Client Management",
@@ -188,11 +315,12 @@ const plans: PricingPlan[] = [
         ],
       },
       {
-        category: "Automation",
+        category: "Automation & AI",
         items: [
           { name: "Automatic emails", included: true },
+          { name: "AI Support Enterprise (unlimited)", included: true },
           { name: "WhatsApp Bot (unlimited)", included: true },
-          { name: "Instagram Bot", included: true },
+          { name: "Instagram Bot + Facebook Bot", included: true },
           { name: "Custom workflows (unlimited)", included: true },
         ],
       },
@@ -208,27 +336,44 @@ const plans: PricingPlan[] = [
   },
 ];
 
-const addOns = [
+const addOns: AddOn[] = [
+  {
+    name: "AI Support Upgrade",
+    description: "+1,500 conversations/month",
+    price: 29,
+  },
   {
     name: "WhatsApp Bot Extra",
-    description: "+1,000 messages/month",
-    price: 97,
+    description: "+2,000 messages/month",
+    price: 19,
   },
   {
     name: "Additional Location",
     description: "For each extra location",
-    price: 197,
+    price: 49,
+  },
+  {
+    name: "White Label",
+    description: "Custom branding + domain",
+    price: 79,
   },
   {
     name: "Premium Onboarding",
     description: "Complete setup + training",
-    price: 997,
+    price: 199,
     oneTime: true,
   },
   {
     name: "Custom Integration",
-    description: "Custom API",
-    price: 297,
+    description: "Custom API development",
+    price: 99,
+  },
+  {
+    name: "FlexiLaunch Bundle",
+    description: "Website + CRM package",
+    price: 499,
+    oneTime: true,
+    badge: "Early Adopter",
   },
 ];
 
@@ -279,15 +424,15 @@ export default function PricingPage() {
       <section className="bg-gradient-to-b from-white to-gray-50 py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-4 py-1.5 bg-primary-100 text-primary-700 text-sm font-medium rounded-full mb-6">
-            Transparent pricing, no surprises
+            30-day free trial • No credit card required
           </span>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
             Invest in technology that<br />
             <span className="text-primary-600">delivers results</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Plans designed for serious studios that want to grow with organization,
-            automation, and intelligent data. No cheap plans, no unprepared clients.
+            Plans designed for tech-savvy studios that want to grow with AI automation,
+            intelligent waitlist management, and powerful integrations. Start your 30-day trial today.
           </p>
 
           {/* Billing Toggle */}
@@ -353,13 +498,13 @@ export default function PricingPage() {
                   <div className="mt-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-bold text-gray-900">
-                        R$ {billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice}
+                        ${billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice}
                       </span>
                       <span className="text-gray-500">/month</span>
                     </div>
                     {billingCycle === "yearly" && (
                       <p className="text-sm text-gray-500 mt-1">
-                        R$ {plan.yearlyTotal.toLocaleString()}/year (save R$ {((plan.monthlyPrice - plan.yearlyPrice) * 12).toLocaleString()})
+                        ${plan.yearlyTotal.toLocaleString()}/year (save ${((plan.monthlyPrice - plan.yearlyPrice) * 12).toLocaleString()})
                       </p>
                     )}
                   </div>
@@ -448,11 +593,18 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {addOns.map((addon) => (
-              <div key={addon.name} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <div key={addon.name} className={`bg-gray-50 rounded-xl p-6 border-2 ${addon.badge ? 'border-primary-500 relative' : 'border-gray-200'}`}>
+                {addon.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full">
+                      {addon.badge}
+                    </span>
+                  </div>
+                )}
                 <h3 className="font-semibold text-gray-900">{addon.name}</h3>
                 <p className="text-sm text-gray-600 mt-1">{addon.description}</p>
                 <p className="mt-4">
-                  <span className="text-2xl font-bold text-gray-900">R$ {addon.price}</span>
+                  <span className="text-2xl font-bold text-gray-900">${addon.price}</span>
                   <span className="text-gray-500">/{addon.oneTime ? "one-time" : "month"}</span>
                 </p>
               </div>
@@ -518,16 +670,20 @@ export default function PricingPage() {
           <div className="space-y-4">
             {[
               {
-                q: "Why are the plans more expensive than other systems?",
-                a: "FlexiWell is a premium solution for studios that take their business seriously. We invest in cutting-edge technology, intelligent automation, and quality support. Our clients save time, reduce payment defaults, and increase retention - the ROI easily exceeds the investment.",
+                q: "What makes FlexiWell different from competitors?",
+                a: "FlexiWell combines modern technology (Next.js, React, AI) with studio-specific features. We offer native AI support, intelligent waitlist management, and WhatsApp automation - features that competitors charge extra for. Plus, our API-first architecture allows unlimited customization for tech-savvy studios.",
               },
               {
-                q: "Can I try before subscribing?",
-                a: "We offer a personalized 30-minute demo where we show exactly how FlexiWell can help your studio. After the demo, you can start with a 14-day trial.",
+                q: "What is the FlexiLaunch bundle?",
+                a: "FlexiLaunch is our web design agency that creates professional websites for wellness studios. The Early Adopter Bundle ($499 one-time) includes a custom website + 3 months of FlexiWell CRM free. Perfect for studios starting their digital transformation.",
+              },
+              {
+                q: "How does the 30-day free trial work?",
+                a: "Start using FlexiWell immediately with full access to all features in your chosen plan. No credit card required. After 30 days, you can subscribe to continue or cancel with no obligations.",
               },
               {
                 q: "What if I need more clients or locations?",
-                a: "You can upgrade at any time. We add extra locations for R$ 197/month each. If you need custom limits, contact us for a tailored Enterprise plan.",
+                a: "You can upgrade at any time. We add extra locations for $39/month each. If you need custom limits, contact us for a tailored Enterprise plan.",
               },
               {
                 q: "Do you offer a discount for annual payment?",

@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       clientId,
       clientName,
       amount,
-      currency: currency || "BRL",
+      currency: currency || "USD",
       type,
       planDetails: planDetails || undefined,
       status: "pending",

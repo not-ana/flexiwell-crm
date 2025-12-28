@@ -11,7 +11,7 @@ interface PlanComparisonTableProps {
 export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanComparisonTableProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
 
-  const planOrder: PlanType[] = ["starter", "professional", "enterprise"];
+  const planOrder: PlanType[] = ["starter", "growth", "business", "professional", "enterprise"];
 
   const categoryLabels: Record<string, string> = {
     core: "Core Features",

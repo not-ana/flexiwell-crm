@@ -1,7 +1,7 @@
 // FlexiWell Pricing Configuration
 // US Market Pricing in USD
 
-export type PlanTier = "starter" | "growth" | "professional" | "enterprise";
+export type PlanTier = "starter" | "growth" | "business" | "professional" | "enterprise";
 export type BillingPeriod = "monthly" | "annual";
 export type Currency = "USD" | "BRL" | "EUR" | "GBP";
 
@@ -41,6 +41,7 @@ export interface AddOn {
 }
 
 // Core pricing plans for US market
+// Updated 2025 pricing from IMPLEMENTATION_GUIDE.md
 export const pricingPlans: PricingPlan[] = [
   {
     id: "starter",
@@ -100,6 +101,41 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Waitlist management", included: true },
       { name: "Multiple locations", included: true, limit: 2 },
       { name: "Custom branding", included: false },
+      { name: "API access", included: false },
+      { name: "Priority support", included: true, tooltip: "Response within 24 hours" },
+    ],
+  },
+  {
+    id: "business",
+    name: "Business",
+    description: "For established studios looking to scale with intelligent automation",
+    tagline: "Most popular",
+    pricing: {
+      monthly: 179,
+      annual: 149,
+      annualTotal: 1788,
+      currency: "USD",
+    },
+    instructorLimit: 3,
+    additionalInstructor: 20,
+    clientLimit: 500,
+    highlighted: true,
+    badge: "Most Popular",
+    features: [
+      { name: "Online booking", included: true },
+      { name: "Class scheduling", included: true },
+      { name: "Client management", included: true, limit: 500 },
+      { name: "Advanced analytics", included: true },
+      { name: "Email, SMS & WhatsApp", included: true },
+      { name: "Payment processing", included: true, tooltip: "2.2% + $0.20 per transaction" },
+      { name: "Mobile app access", included: true },
+      { name: "AI Support Basic (500 chats/mo)", included: true },
+      { name: "WhatsApp Bot (1,000 msgs/month)", included: true },
+      { name: "Instagram Bot", included: false },
+      { name: "AI-powered smart waitlist", included: true },
+      { name: "Multiple locations", included: true, limit: 2 },
+      { name: "Custom branding", included: false },
+      { name: "Custom workflows (5)", included: true },
       { name: "API access", included: false },
       { name: "Priority support", included: true, tooltip: "Response within 24 hours" },
     ],
@@ -221,38 +257,39 @@ export const addOns: AddOn[] = [
 export const transactionFees: Record<PlanTier, { percentage: number; fixed: number }> = {
   starter: { percentage: 2.9, fixed: 0.30 },
   growth: { percentage: 2.5, fixed: 0.25 },
+  business: { percentage: 2.3, fixed: 0.22 },
   professional: { percentage: 2.2, fixed: 0.20 },
   enterprise: { percentage: 1.9, fixed: 0.15 },
 };
 
 // Feature availability matrix
 export const featureMatrix: Record<string, Record<PlanTier, boolean | string | number>> = {
-  online_booking: { starter: true, growth: true, professional: true, enterprise: true },
-  class_scheduling: { starter: true, growth: true, professional: true, enterprise: true },
-  client_management: { starter: 100, growth: 500, professional: 2000, enterprise: "unlimited" },
-  instructor_limit: { starter: 1, growth: 3, professional: 10, enterprise: "unlimited" },
-  locations: { starter: 1, growth: 2, professional: 5, enterprise: "unlimited" },
-  analytics_basic: { starter: true, growth: true, professional: true, enterprise: true },
-  analytics_advanced: { starter: false, growth: true, professional: true, enterprise: true },
-  email_notifications: { starter: true, growth: true, professional: true, enterprise: true },
-  sms_notifications: { starter: false, growth: true, professional: true, enterprise: true },
-  whatsapp_notifications: { starter: false, growth: true, professional: true, enterprise: true },
-  whatsapp_automation: { starter: false, growth: false, professional: true, enterprise: true },
-  waitlist_basic: { starter: false, growth: true, professional: true, enterprise: true },
-  waitlist_smart: { starter: false, growth: false, professional: true, enterprise: true },
-  custom_branding: { starter: false, growth: false, professional: true, enterprise: true },
-  white_label: { starter: false, growth: "add-on", professional: "add-on", enterprise: true },
-  api_access: { starter: false, growth: false, professional: true, enterprise: true },
-  mobile_app: { starter: true, growth: true, professional: true, enterprise: true },
-  support_email: { starter: true, growth: true, professional: true, enterprise: true },
-  support_chat: { starter: false, growth: true, professional: true, enterprise: true },
-  support_priority: { starter: false, growth: "24h", professional: "4h", enterprise: "1h" },
-  support_phone: { starter: false, growth: false, professional: false, enterprise: true },
-  support_dedicated: { starter: false, growth: false, professional: false, enterprise: true },
-  integrations_basic: { starter: true, growth: true, professional: true, enterprise: true },
-  integrations_custom: { starter: false, growth: false, professional: false, enterprise: true },
-  reports_standard: { starter: true, growth: true, professional: true, enterprise: true },
-  reports_custom: { starter: false, growth: false, professional: true, enterprise: true },
+  online_booking: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  class_scheduling: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  client_management: { starter: 100, growth: 150, business: 500, professional: 2000, enterprise: "unlimited" },
+  instructor_limit: { starter: 1, growth: 3, business: 3, professional: 10, enterprise: "unlimited" },
+  locations: { starter: 1, growth: 2, business: 2, professional: 5, enterprise: "unlimited" },
+  analytics_basic: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  analytics_advanced: { starter: false, growth: true, business: true, professional: true, enterprise: true },
+  email_notifications: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  sms_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
+  whatsapp_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
+  whatsapp_automation: { starter: false, growth: false, business: true, professional: true, enterprise: true },
+  waitlist_basic: { starter: false, growth: true, business: true, professional: true, enterprise: true },
+  waitlist_smart: { starter: false, growth: false, business: true, professional: true, enterprise: true },
+  custom_branding: { starter: false, growth: false, business: false, professional: true, enterprise: true },
+  white_label: { starter: false, growth: "add-on", business: "add-on", professional: "add-on", enterprise: true },
+  api_access: { starter: false, growth: false, business: false, professional: true, enterprise: true },
+  mobile_app: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  support_email: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  support_chat: { starter: false, growth: true, business: true, professional: true, enterprise: true },
+  support_priority: { starter: false, growth: "24h", business: "24h", professional: "4h", enterprise: "1h" },
+  support_phone: { starter: false, growth: false, business: false, professional: false, enterprise: true },
+  support_dedicated: { starter: false, growth: false, business: false, professional: false, enterprise: true },
+  integrations_basic: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  integrations_custom: { starter: false, growth: false, business: false, professional: false, enterprise: true },
+  reports_standard: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  reports_custom: { starter: false, growth: false, business: true, professional: true, enterprise: true },
 };
 
 // Helper functions
