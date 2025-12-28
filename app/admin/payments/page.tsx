@@ -184,12 +184,16 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 }
 
+type PeriodFilter = "this_month" | "last_month" | "this_quarter" | "this_year" | "custom";
+
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("this_month");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderTarget, setReminderTarget] = useState<ClientPayment | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Filter payments
   const filteredPayments = mockPayments.filter((payment) => {
@@ -254,6 +258,17 @@ export default function PaymentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Period Filter */}
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="this_month">This Month</option>
+            <option value="last_month">Last Month</option>
+            <option value="this_quarter">This Quarter</option>
+            <option value="this_year">This Year</option>
+          </select>
           {selectedPayments.length > 0 && (
             <button
               onClick={handleBulkReminder}
@@ -265,7 +280,10 @@ export default function PaymentsPage() {
               Send Reminders ({selectedPayments.length})
             </button>
           )}
-          <button className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -576,6 +594,135 @@ export default function PaymentsPage() {
                 className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
               >
                 Send Reminder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Export Payment Report</h2>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Period Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
+                <select
+                  value={periodFilter}
+                  onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="this_month">This Month (December 2024)</option>
+                  <option value="last_month">Last Month (November 2024)</option>
+                  <option value="this_quarter">This Quarter (Q4 2024)</option>
+                  <option value="this_year">This Year (2024)</option>
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                <div className="space-y-2">
+                  {(["all", "paid", "pending", "overdue", "failed"] as PaymentFilter[]).map((status) => (
+                    <label key={status} className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="exportStatus"
+                        checked={statusFilter === status}
+                        onChange={() => setStatusFilter(status)}
+                        className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        {status === "all" ? "All Payments" : statusConfig[status as PaymentStatus].label}
+                        {status !== "all" && (
+                          <span className="text-gray-400 ml-1">
+                            ({status === "paid" ? stats.paidCount : status === "pending" ? stats.pendingCount : status === "overdue" ? stats.overdueCount : stats.failedCount})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Format Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button className="px-4 py-3 border-2 border-primary-500 bg-primary-50 rounded-xl text-center">
+                    <svg className="w-6 h-6 mx-auto mb-1 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-primary-700">PDF</span>
+                  </button>
+                  <button className="px-4 py-3 border-2 border-gray-200 rounded-xl text-center hover:border-gray-300">
+                    <svg className="w-6 h-6 mx-auto mb-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">Excel</span>
+                  </button>
+                  <button className="px-4 py-3 border-2 border-gray-200 rounded-xl text-center hover:border-gray-300">
+                    <svg className="w-6 h-6 mx-auto mb-1 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-900">{filteredPayments.length} payments</span> will be exported
+                  {statusFilter !== "all" && ` (${statusConfig[statusFilter as PaymentStatus].label} only)`}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Total: {formatCurrency(filteredPayments.reduce((acc, p) => acc + p.amount, 0))}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const periodLabels: Record<PeriodFilter, string> = {
+                    this_month: "December-2024",
+                    last_month: "November-2024",
+                    this_quarter: "Q4-2024",
+                    this_year: "2024",
+                    custom: "custom",
+                  };
+                  const fileName = `payments-${periodLabels[periodFilter]}-${statusFilter}.pdf`;
+                  alert(`Exporting ${filteredPayments.length} payments...\n\nFile: ${fileName}\n\nDownload will start shortly.`);
+                  setShowExportModal(false);
+                }}
+                className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export
               </button>
             </div>
           </div>

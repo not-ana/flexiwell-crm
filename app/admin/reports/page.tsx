@@ -114,9 +114,13 @@ function ProgressBar({ value, max, color = "primary" }: { value: number; max: nu
   );
 }
 
+type ExportFormat = "pdf" | "excel" | "csv";
+
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("this_year");
   const [activeTab, setActiveTab] = useState<"overview" | "classes" | "instructors" | "clients">("overview");
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
 
   return (
     <div className="h-full overflow-auto">
@@ -140,14 +144,12 @@ export default function ReportsPage() {
               <option value="all_time">All Time</option>
             </select>
             <button
-              onClick={() => {
-                // In production: await api.exportReport({ dateRange, activeTab, format: 'pdf' });
-                const reportName = `flexiwell-${activeTab}-report-${dateRange}.pdf`;
-                console.log("Exporting report:", { dateRange, activeTab });
-                alert(`Exporting ${activeTab} report for ${dateRange}...\n\nFile: ${reportName}\n\nDownload will start shortly.`);
-              }}
-              className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+              onClick={() => setShowExportModal(true)}
+              className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
             >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
               Export Report
             </button>
           </div>
@@ -421,6 +423,145 @@ export default function ReportsPage() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Export Modal */}
+        {showExportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">Export Report</h2>
+                  <button
+                    onClick={() => setShowExportModal(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Report Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                  <select
+                    value={activeTab}
+                    onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="overview">Overview Report</option>
+                    <option value="classes">Classes Report</option>
+                    <option value="instructors">Instructors Report</option>
+                    <option value="clients">Clients Report</option>
+                  </select>
+                </div>
+
+                {/* Period Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Period</label>
+                  <select
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="this_month">This Month (December 2024)</option>
+                    <option value="last_month">Last Month (November 2024)</option>
+                    <option value="this_quarter">This Quarter (Q4 2024)</option>
+                    <option value="this_year">This Year (2024)</option>
+                    <option value="all_time">All Time</option>
+                  </select>
+                </div>
+
+                {/* Format Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setExportFormat("pdf")}
+                      className={`px-4 py-3 border-2 rounded-xl text-center ${
+                        exportFormat === "pdf" ? "border-primary-500 bg-primary-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mx-auto mb-1 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className={`text-sm font-medium ${exportFormat === "pdf" ? "text-primary-700" : "text-gray-700"}`}>PDF</span>
+                    </button>
+                    <button
+                      onClick={() => setExportFormat("excel")}
+                      className={`px-4 py-3 border-2 rounded-xl text-center ${
+                        exportFormat === "excel" ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mx-auto mb-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span className={`text-sm font-medium ${exportFormat === "excel" ? "text-green-700" : "text-gray-700"}`}>Excel</span>
+                    </button>
+                    <button
+                      onClick={() => setExportFormat("csv")}
+                      className={`px-4 py-3 border-2 rounded-xl text-center ${
+                        exportFormat === "csv" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mx-auto mb-1 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
+                      </svg>
+                      <span className={`text-sm font-medium ${exportFormat === "csv" ? "text-blue-700" : "text-gray-700"}`}>CSV</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-900 capitalize">{activeTab}</span> report for{" "}
+                    <span className="font-medium text-gray-900">
+                      {dateRange === "this_month" ? "December 2024" :
+                       dateRange === "last_month" ? "November 2024" :
+                       dateRange === "this_quarter" ? "Q4 2024" :
+                       dateRange === "this_year" ? "2024" : "All Time"}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Format: {exportFormat.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 flex gap-3">
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const periodLabels: Record<string, string> = {
+                      this_month: "December-2024",
+                      last_month: "November-2024",
+                      this_quarter: "Q4-2024",
+                      this_year: "2024",
+                      all_time: "all-time",
+                    };
+                    const fileName = `flexiwell-${activeTab}-report-${periodLabels[dateRange]}.${exportFormat === "excel" ? "xlsx" : exportFormat}`;
+                    alert(`Exporting ${activeTab} report...\n\nPeriod: ${periodLabels[dateRange]}\nFormat: ${exportFormat.toUpperCase()}\nFile: ${fileName}\n\nDownload will start shortly.`);
+                    setShowExportModal(false);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Export
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

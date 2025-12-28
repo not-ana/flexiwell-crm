@@ -96,18 +96,18 @@ const weeklyClassData = [
   { day: "Sun", classes: 1, students: 12 },
 ];
 
-// Class type distribution - Using accent theme colors (pink/magenta)
+// Class type distribution - Using primary theme colors (purple)
 const classTypeData = [
-  { name: "Yoga", value: 35, color: "#DD2590" },   // accent-600
-  { name: "Pilates", value: 30, color: "#EB2B95" }, // accent-500
-  { name: "Core", value: 20, color: "#FF437E" },    // accent-400
-  { name: "Stretch", value: 15, color: "#FD6F8E" }, // accent-300
+  { name: "Yoga", value: 35, color: "#7C3AED" },   // primary-600
+  { name: "Pilates", value: 30, color: "#8B5CF6" }, // primary-500
+  { name: "Core", value: 20, color: "#A78BFA" },    // primary-400
+  { name: "Stretch", value: 15, color: "#C4B5FD" }, // primary-300
 ];
 
 function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
   const styles = {
-    completed: "bg-accent-100 text-accent-700",
-    "in-progress": "bg-accent-50 text-accent-600 animate-pulse",
+    completed: "bg-primary-100 text-primary-700",
+    "in-progress": "bg-primary-50 text-primary-600 animate-pulse",
     upcoming: "bg-gray-100 text-gray-600",
     canceled: "bg-red-100 text-red-700",
   };
@@ -127,7 +127,7 @@ function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
 }
 
 function StudentAvatar({ name, initials }: { name: string; initials: string }) {
-  const colors = ["bg-accent-500", "bg-accent-400", "bg-accent-600", "bg-accent-300", "bg-accent-700"];
+  const colors = ["bg-primary-500", "bg-primary-400", "bg-primary-600", "bg-primary-300", "bg-primary-700"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
   return (
@@ -211,7 +211,7 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Stats Cards Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div data-onboarding="teacher-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Classes */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Classes This Week</p>
@@ -258,11 +258,11 @@ export default function TeacherDashboard() {
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-accent-500" />
+                  <div className="w-3 h-3 rounded-full bg-primary-500" />
                   <span className="text-gray-600">Classes</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-accent-200" />
+                  <div className="w-3 h-3 rounded-full bg-primary-200" />
                   <span className="text-gray-600">Students</span>
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function TeacherDashboard() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="classes" fill="#DD2590" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="classes" fill="#7C3AED" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -332,14 +332,14 @@ export default function TeacherDashboard() {
           {/* Left Column - Schedule & Makeups */}
           <div className="space-y-6">
             {/* Tab Navigation */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
+            <div data-onboarding="teacher-schedule" className="bg-white border border-gray-200 rounded-2xl">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex gap-4">
                   <button
                     onClick={() => setActiveTab("today")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === "today"
-                        ? "bg-accent-100 text-accent-700"
+                        ? "bg-primary-100 text-primary-700"
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
@@ -364,7 +364,7 @@ export default function TeacherDashboard() {
                 {activeTab === "today" && (
                   <button
                     onClick={() => setShowAllSchedule(!showAllSchedule)}
-                    className="text-sm text-accent-600 hover:text-accent-700 font-medium flex items-center gap-1"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                   >
                     {showAllSchedule ? "Show less" : "View all"}
                     <ChevronIcon className="w-4 h-4" direction={showAllSchedule ? "up" : "down"} />
@@ -378,13 +378,13 @@ export default function TeacherDashboard() {
                     <div
                       key={classItem.id}
                       className={`px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                        classItem.status === "in-progress" ? "bg-accent-50" : ""
+                        classItem.status === "in-progress" ? "bg-primary-50" : ""
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${
                           classItem.status === "in-progress"
-                            ? "bg-accent-500 text-white"
+                            ? "bg-primary-500 text-white"
                             : classItem.status === "completed"
                             ? "bg-gray-100 text-gray-400"
                             : "bg-gray-100 text-gray-700"
@@ -411,15 +411,12 @@ export default function TeacherDashboard() {
                           </button>
                         )}
                         {classItem.status === "upcoming" && (
-                          <button
-                            onClick={() => {
-                              // In production: open class details modal
-                              alert(`Class: ${classItem.name}\nTime: ${classItem.time}\nRoom: ${classItem.room}\nStudents: ${classItem.students}`);
-                            }}
+                          <Link
+                            href={`/teacher/classes?class=${classItem.id}`}
                             className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             View Details
-                          </button>
+                          </Link>
                         )}
                       </div>
                     </div>
@@ -481,7 +478,7 @@ export default function TeacherDashboard() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Upcoming Classes */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
+            <div data-onboarding="teacher-upcoming" className="bg-white border border-gray-200 rounded-2xl">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
                 <p className="text-sm text-gray-500">Next few days</p>
@@ -512,7 +509,7 @@ export default function TeacherDashboard() {
                 ))}
               </div>
               <div className="px-6 py-4 border-t border-gray-200">
-                <Link href="/teacher/classes" className="text-sm text-accent-600 hover:text-accent-700 font-medium">
+                <Link href="/teacher/classes" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   View full schedule
                 </Link>
               </div>
@@ -552,7 +549,7 @@ export default function TeacherDashboard() {
                 ))}
               </div>
               <div className="px-6 py-4 border-t border-gray-200">
-                <Link href="/teacher/students" className="text-sm text-accent-600 hover:text-accent-700 font-medium">
+                <Link href="/teacher/students" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   View all students
                 </Link>
               </div>
@@ -568,8 +565,8 @@ export default function TeacherDashboard() {
             <div className="px-6 pt-6 pb-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                   </div>

@@ -15,17 +15,10 @@ interface UpcomingClass {
 }
 
 const classTypeColors = {
-  pilates: "bg-accent-500",
-  yoga: "bg-accent-400",
-  reformer: "bg-accent-300",
-  stretch: "bg-accent-600",
-};
-
-const classTypeBgColors = {
-  pilates: "bg-accent-50 border-accent-200",
-  yoga: "bg-accent-50 border-accent-200",
-  reformer: "bg-accent-50 border-accent-200",
-  stretch: "bg-accent-50 border-accent-200",
+  pilates: "bg-purple-500",
+  yoga: "bg-green-500",
+  reformer: "bg-blue-500",
+  stretch: "bg-orange-500",
 };
 
 const upcomingClasses: UpcomingClass[] = [
@@ -63,7 +56,7 @@ export default function ScheduleCard() {
         </div>
         <Link
           href="/dashboard/classes"
-          className="px-3 py-1.5 text-sm font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 rounded-lg transition-colors"
+          className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
         >
           View Calendar →
         </Link>
@@ -74,7 +67,7 @@ export default function ScheduleCard() {
         {classes.map((cls) => (
           <div
             key={cls.id}
-            className={`p-4 rounded-xl border transition-all ${classTypeBgColors[cls.type]}`}
+            className="p-4 rounded-xl border border-gray-200 bg-white transition-all"
           >
             <div className="flex items-start gap-3">
               {/* Date Badge */}
@@ -160,7 +153,7 @@ export default function ScheduleCard() {
             </svg>
           </div>
           <p className="text-sm text-gray-500 mb-2">No upcoming classes</p>
-          <Link href="/dashboard/classes" className="text-xs text-accent-600 hover:text-accent-700 font-medium">
+          <Link href="/dashboard/classes" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
             Book a class
           </Link>
         </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   MapPinIcon,
   ExternalLinkIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import { useInteractiveOnboarding } from "@/components/onboarding";
 
 // Admin user data (matching Sidebar mockAccountsData)
 const adminUser = {
@@ -62,17 +63,18 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 }
 
 export default function AdminProfilePage() {
+  const router = useRouter();
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const aboutPreviewLength = 300;
   const shouldTruncate = adminUser.about.length > aboutPreviewLength;
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("admin");
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   const handleReplayOnboarding = () => {
     resetOnboarding();
-    setShowOnboardingModal(true);
+    // Redirect to admin dashboard where the onboarding elements are
+    router.push("/admin");
   };
 
   return (
@@ -196,12 +198,6 @@ export default function AdminProfilePage() {
         </div>
       </div>
 
-      {/* Onboarding Modal */}
-      <InteractiveOnboarding
-        role="admin"
-        isOpen={showOnboardingModal}
-        onComplete={() => setShowOnboardingModal(false)}
-      />
     </div>
   );
 }

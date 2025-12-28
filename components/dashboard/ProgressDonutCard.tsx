@@ -21,10 +21,10 @@ interface ProgressDonutCardProps {
 }
 
 const COLORS = {
-  pilates: { bg: "bg-accent-500", light: "bg-accent-100" },
-  yoga: { bg: "bg-accent-400", light: "bg-accent-100" },
-  reformer: { bg: "bg-accent-300", light: "bg-accent-100" },
-  stretch: { bg: "bg-accent-600", light: "bg-accent-100" },
+  pilates: { bg: "bg-primary-500", light: "bg-primary-100" },
+  yoga: { bg: "bg-primary-400", light: "bg-primary-100" },
+  reformer: { bg: "bg-primary-300", light: "bg-primary-100" },
+  stretch: { bg: "bg-primary-600", light: "bg-primary-100" },
 };
 
 const defaultWellnessData: WellnessData = {
@@ -65,7 +65,7 @@ export default function ProgressDonutCard({ data, wellnessData = defaultWellness
       <div className="mb-5">
         <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-accent-500 to-accent-400 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500"
             style={{ width: `${Math.min(progressPercent, 100)}%` }}
           />
         </div>

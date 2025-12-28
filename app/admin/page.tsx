@@ -392,11 +392,11 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-12 gap-6 mb-8">
+        <div data-onboarding="admin-charts" className="grid grid-cols-12 gap-6 mb-8">
           {/* Revenue Chart with Stats */}
           <div className="col-span-8 bg-white border border-gray-200 rounded-2xl p-6">
             {/* Stats Row inside Revenue Card */}
-            <div className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div data-onboarding="admin-metrics" className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
               {getOverviewStats(selectedPeriod, selectedYear).map((stat, idx) => (
                 <div key={idx}>
                   <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
@@ -497,7 +497,7 @@ export default function AdminDashboard() {
           {/* Left Column */}
           <div className="space-y-6">
             {/* Staff Performance Table */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
+            <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl">
               <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Staff Performance</h2>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
+            <div data-onboarding="admin-activity" className="bg-white border border-gray-200 rounded-2xl">
               <div className="px-6 py-5 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
                 <p className="text-sm text-gray-500 mt-1">Latest updates from your studio</p>

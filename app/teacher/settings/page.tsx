@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui";
 
-type TeacherSettingsTab = "profile" | "availability";
+type TeacherSettingsTab = "profile" | "availability" | "notifications";
 
 const tabs: { id: TeacherSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "availability", label: "Availability" },
+  { id: "notifications", label: "Notifications" },
 ];
 
 // Profile Settings Component
@@ -153,6 +154,156 @@ function ProfileSettings() {
   );
 }
 
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+        enabled ? "bg-primary-600" : "bg-gray-200"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          enabled ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
+// Notifications Settings Component
+function NotificationsSettings() {
+  const [notifications, setNotifications] = useState({
+    classReminders: true,
+    newStudentEnrolled: true,
+    classCancellations: true,
+    scheduleChanges: true,
+    studentMessages: true,
+    weeklyReport: false,
+    emailNotifications: true,
+    pushNotifications: true,
+  });
+
+  const updateNotification = (key: string, value: boolean) => {
+    setNotifications((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage how you receive notifications.</p>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+        <div>
+          <h3 className="text-sm font-medium text-gray-900 mb-4">Class Notifications</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Class reminders</p>
+                <p className="text-sm text-gray-500">Get notified before your classes start</p>
+              </div>
+              <Toggle
+                enabled={notifications.classReminders}
+                onChange={(value) => updateNotification("classReminders", value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">New student enrolled</p>
+                <p className="text-sm text-gray-500">When a student enrolls in your class</p>
+              </div>
+              <Toggle
+                enabled={notifications.newStudentEnrolled}
+                onChange={(value) => updateNotification("newStudentEnrolled", value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Class cancellations</p>
+                <p className="text-sm text-gray-500">When a student cancels their booking</p>
+              </div>
+              <Toggle
+                enabled={notifications.classCancellations}
+                onChange={(value) => updateNotification("classCancellations", value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Schedule changes</p>
+                <p className="text-sm text-gray-500">When admin changes your schedule</p>
+              </div>
+              <Toggle
+                enabled={notifications.scheduleChanges}
+                onChange={(value) => updateNotification("scheduleChanges", value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">Communication</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Student messages</p>
+                <p className="text-sm text-gray-500">When a student sends you a message</p>
+              </div>
+              <Toggle
+                enabled={notifications.studentMessages}
+                onChange={(value) => updateNotification("studentMessages", value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Weekly report</p>
+                <p className="text-sm text-gray-500">Receive a weekly summary of your classes</p>
+              </div>
+              <Toggle
+                enabled={notifications.weeklyReport}
+                onChange={(value) => updateNotification("weeklyReport", value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">Notification Channels</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Email notifications</p>
+                <p className="text-sm text-gray-500">Receive notifications via email</p>
+              </div>
+              <Toggle
+                enabled={notifications.emailNotifications}
+                onChange={(value) => updateNotification("emailNotifications", value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Push notifications</p>
+                <p className="text-sm text-gray-500">Receive push notifications on your device</p>
+              </div>
+              <Toggle
+                enabled={notifications.pushNotifications}
+                onChange={(value) => updateNotification("pushNotifications", value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-3 pt-4">
+          <Button variant="secondary">Cancel</Button>
+          <Button>Save changes</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Availability Settings Component
 function AvailabilitySettings() {
   const [schedule, setSchedule] = useState([
@@ -282,6 +433,8 @@ export default function TeacherSettingsPage() {
         return <ProfileSettings />;
       case "availability":
         return <AvailabilitySettings />;
+      case "notifications":
+        return <NotificationsSettings />;
       default:
         return <ProfileSettings />;
     }

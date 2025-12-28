@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ExternalLinkIcon,
   UserIcon,
   ClockIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import { useInteractiveOnboarding } from "@/components/onboarding";
 
 // Teacher user data (matching Sidebar mockAccountsData)
 const teacherUser = {
@@ -84,17 +85,18 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 }
 
 export default function TeacherProfilePage() {
+  const router = useRouter();
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const aboutPreviewLength = 300;
   const shouldTruncate = teacherUser.about.length > aboutPreviewLength;
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("teacher");
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   const handleReplayOnboarding = () => {
     resetOnboarding();
-    setShowOnboardingModal(true);
+    // Redirect to teacher dashboard where the onboarding elements are
+    router.push("/teacher");
   };
 
   return (
@@ -251,12 +253,6 @@ export default function TeacherProfilePage() {
         </div>
       </div>
 
-      {/* Onboarding Modal */}
-      <InteractiveOnboarding
-        role="teacher"
-        isOpen={showOnboardingModal}
-        onComplete={() => setShowOnboardingModal(false)}
-      />
     </div>
   );
 }

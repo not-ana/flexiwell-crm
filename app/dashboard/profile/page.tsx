@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ExternalLinkIcon,
   UserIcon,
@@ -8,7 +9,7 @@ import {
   CalendarIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui";
-import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import { useInteractiveOnboarding } from "@/components/onboarding";
 
 // Types
 interface ScheduledClass {
@@ -450,11 +451,12 @@ export default function ProfilePage() {
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("client");
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const router = useRouter();
 
   const handleReplayOnboarding = () => {
     resetOnboarding();
-    setShowOnboardingModal(true);
+    // Redirect to dashboard where the onboarding elements are
+    router.push("/dashboard");
   };
 
   const handleRequestCancel = (classData: ScheduledClass) => {
@@ -653,12 +655,6 @@ export default function ProfilePage() {
         instructor={currentInstructor}
       />
 
-      {/* Onboarding Modal */}
-      <InteractiveOnboarding
-        role="client"
-        isOpen={showOnboardingModal}
-        onComplete={() => setShowOnboardingModal(false)}
-      />
     </div>
   );
 }

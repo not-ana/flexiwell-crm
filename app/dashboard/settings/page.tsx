@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui";
 
-type ClientSettingsTab = "profile" | "billing";
+type ClientSettingsTab = "profile" | "plans" | "billing";
 
 const tabs: { id: ClientSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
+  { id: "plans", label: "Plans" },
   { id: "billing", label: "Billing" },
 ];
 
@@ -416,10 +417,9 @@ function UpdatePaymentModal({
   );
 }
 
-// Billing Settings Component
-function BillingSettings() {
+// Plans Settings Component
+function PlansSettings() {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const currentPlan = {
     id: "growth",
@@ -431,29 +431,11 @@ function BillingSettings() {
     nextBilling: "Jan 15, 2025",
   };
 
-  const paymentMethod = {
-    type: "Visa",
-    last4: "4242",
-    expiry: "12/26",
-  };
-
-  const billingHistory = [
-    { id: "1", date: "Dec 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
-    { id: "2", date: "Nov 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
-    { id: "3", date: "Oct 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
-  ];
-
-  const handleDownloadInvoice = (invoiceId: string) => {
-    // In production: await api.downloadInvoice(invoiceId)
-    console.log("Downloading invoice:", invoiceId);
-    alert(`Invoice download coming soon! Invoice #${invoiceId}`);
-  };
-
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Billing</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage your subscription and payment methods.</p>
+        <h2 className="text-lg font-semibold text-gray-900">Plans</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage your subscription plan.</p>
       </div>
 
       {/* Current Plan */}
@@ -497,6 +479,96 @@ function BillingSettings() {
             Change plan
           </button>
         </div>
+      </div>
+
+      {/* Available Plans */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Available plans</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {availablePlans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative p-4 rounded-xl border-2 ${
+                currentPlan.id === plan.id
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-gray-200"
+              }`}
+            >
+              {plan.popular && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full">
+                  Most Popular
+                </span>
+              )}
+              {currentPlan.id === plan.id && (
+                <span className="absolute -top-2 right-2 px-2 py-0.5 bg-green-600 text-white text-xs font-medium rounded-full">
+                  Current
+                </span>
+              )}
+              <h4 className="font-semibold text-gray-900">{plan.name}</h4>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                ${plan.price}
+                <span className="text-sm font-normal text-gray-500">/{plan.period}</span>
+              </p>
+              <ul className="mt-4 space-y-2">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              {currentPlan.id !== plan.id && (
+                <button
+                  onClick={() => setShowChangePlanModal(true)}
+                  className="w-full mt-4 px-4 py-2 text-sm font-medium text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                >
+                  {plan.price > 79 ? "Upgrade" : "Downgrade"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Change Plan Modal */}
+      <ChangePlanModal
+        isOpen={showChangePlanModal}
+        onClose={() => setShowChangePlanModal(false)}
+        currentPlanId={currentPlan.id}
+      />
+    </div>
+  );
+}
+
+// Billing Settings Component
+function BillingSettings() {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const paymentMethod = {
+    type: "Visa",
+    last4: "4242",
+    expiry: "12/26",
+  };
+
+  const billingHistory = [
+    { id: "1", date: "Dec 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
+    { id: "2", date: "Nov 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
+    { id: "3", date: "Oct 15, 2024", description: "Premium Monthly", amount: "$79.00", status: "Paid" },
+  ];
+
+  const handleDownloadInvoice = (invoiceId: string) => {
+    // In production: await api.downloadInvoice(invoiceId)
+    console.log("Downloading invoice:", invoiceId);
+    alert(`Invoice download coming soon! Invoice #${invoiceId}`);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Billing</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage your payment methods and view billing history.</p>
       </div>
 
       {/* Payment Method */}
@@ -560,12 +632,7 @@ function BillingSettings() {
         </div>
       </div>
 
-      {/* Modals */}
-      <ChangePlanModal
-        isOpen={showChangePlanModal}
-        onClose={() => setShowChangePlanModal(false)}
-        currentPlanId={currentPlan.id}
-      />
+      {/* Update Payment Modal */}
       <UpdatePaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -581,6 +648,8 @@ export default function ClientSettingsPage() {
     switch (activeTab) {
       case "profile":
         return <ProfileSettings />;
+      case "plans":
+        return <PlansSettings />;
       case "billing":
         return <BillingSettings />;
       default:

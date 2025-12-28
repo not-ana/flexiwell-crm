@@ -64,9 +64,11 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     main: [
       { name: "Dashboard", href: "/dashboard", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "Classes", href: "/dashboard/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
+    ],
+    bottom: [
+      { name: "Settings", href: "/dashboard/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
       { name: "Support", href: "/dashboard/support", icon: SupportIcon, status: "Online" },
     ],
-    bottom: [],
   },
   admin: {
     main: [
@@ -76,7 +78,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
-      { name: "Notifications", href: "/admin/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
@@ -88,7 +89,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Dashboard", href: "/teacher", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "My Classes", href: "/teacher/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
       { name: "My Students", href: "/teacher/students", icon: ClientsIcon },
-      { name: "Notifications", href: "/teacher/notifications", icon: NotificationIcon, hasBadge: true },
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },

@@ -69,7 +69,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div data-onboarding="client-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Plan & Classes */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 mb-1">{userData.planName}</p>
@@ -97,17 +97,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Instructor */}
-          <Link href="/dashboard/profile" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-accent-200 hover:bg-accent-50/30 transition-colors">
+          <Link href="/dashboard/profile" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-primary-200 hover:bg-primary-50/30 transition-colors">
             <p className="text-xs text-gray-500 mb-1">Your Instructor</p>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-100 to-accent-200 flex items-center justify-center">
-                <span className="text-xs font-semibold text-accent-600">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                <span className="text-xs font-semibold text-primary-600">
                   {userData.favoriteInstructor.charAt(0)}
                 </span>
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">{userData.favoriteInstructor}</p>
-                <p className="text-xs text-accent-600">View schedule →</p>
+                <p className="text-xs text-primary-600">View schedule →</p>
               </div>
             </div>
           </Link>
@@ -116,8 +116,10 @@ export default function DashboardPage() {
 
       {/* Cards Row - Upcoming Classes + Stacked Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ScheduleCard />
-        <div className="flex flex-col gap-6">
+        <div data-onboarding="client-schedule">
+          <ScheduleCard />
+        </div>
+        <div data-onboarding="client-progress" className="flex flex-col gap-6">
           <ProgressDonutCard data={mockProgressData} />
           <YearlyBarChart />
         </div>
