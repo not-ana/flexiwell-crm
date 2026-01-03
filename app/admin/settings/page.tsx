@@ -4,17 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { BusinessType, businessTypes, getBusinessTypeOptions } from "@/lib/config/business-types";
 
-type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "billing" | "notifications" | "team" | "integrations" | "whatsapp";
+type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "rooms" | "billing" | "notifications" | "team" | "integrations" | "whatsapp";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "branding", label: "Branding" },
   { id: "plans", label: "Plans" },
   { id: "waitlist", label: "Waitlist" },
+  { id: "team", label: "Team" },
   { id: "establishments", label: "Establishments" },
+  { id: "rooms", label: "Rooms" },
   { id: "billing", label: "Billing" },
   { id: "notifications", label: "Notifications" },
-  { id: "team", label: "Team" },
   { id: "integrations", label: "Integrations" },
   { id: "whatsapp", label: "WhatsApp" },
 ];
@@ -445,6 +446,253 @@ function EstablishmentsSettings() {
   );
 }
 
+// Rooms Settings Component
+interface Room {
+  id: string;
+  name: string;
+  capacity: number;
+  establishmentId: string;
+  amenities: string[];
+  isActive: boolean;
+}
+
+function RoomsSettings() {
+  const [rooms, setRooms] = useState<Room[]>([
+    { id: "1", name: "Studio A", capacity: 15, establishmentId: "1", amenities: ["Mirrors", "Sound System", "Air Conditioning"], isActive: true },
+    { id: "2", name: "Studio B", capacity: 20, establishmentId: "1", amenities: ["Mirrors", "Sound System", "Yoga Mats"], isActive: true },
+    { id: "3", name: "Pilates Room", capacity: 10, establishmentId: "1", amenities: ["Reformers", "Air Conditioning"], isActive: true },
+    { id: "4", name: "Main Studio", capacity: 25, establishmentId: "2", amenities: ["Mirrors", "Sound System", "Air Conditioning", "Ballet Barre"], isActive: true },
+    { id: "5", name: "Training Room", capacity: 8, establishmentId: "2", amenities: ["Weight Equipment", "Mirrors"], isActive: false },
+    { id: "6", name: "Yoga Studio", capacity: 12, establishmentId: "3", amenities: ["Yoga Mats", "Sound System", "Natural Light"], isActive: true },
+  ]);
+
+  const establishments = [
+    { id: "1", name: "FlexiWell Downtown" },
+    { id: "2", name: "FlexiWell Midtown" },
+    { id: "3", name: "FlexiWell Uptown" },
+  ];
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [newRoom, setNewRoom] = useState({ name: "", capacity: 10, establishmentId: "1", amenities: "" });
+
+  const getEstablishmentName = (id: string) => establishments.find(e => e.id === id)?.name || "Unknown";
+
+  const handleAddRoom = () => {
+    if (!newRoom.name || !newRoom.establishmentId) return;
+    const newId = String(rooms.length + 1);
+    const amenitiesArray = newRoom.amenities.split(",").map(a => a.trim()).filter(a => a);
+    setRooms([...rooms, {
+      id: newId,
+      name: newRoom.name,
+      capacity: newRoom.capacity,
+      establishmentId: newRoom.establishmentId,
+      amenities: amenitiesArray,
+      isActive: true
+    }]);
+    setNewRoom({ name: "", capacity: 10, establishmentId: "1", amenities: "" });
+    setShowAddModal(false);
+  };
+
+  const handleToggleActive = (roomId: string) => {
+    setRooms(prev => prev.map(room =>
+      room.id === roomId ? { ...room, isActive: !room.isActive } : room
+    ));
+  };
+
+  const handleDeleteRoom = (roomId: string) => {
+    if (confirm("Are you sure you want to delete this room?")) {
+      setRooms(prev => prev.filter(room => room.id !== roomId));
+    }
+  };
+
+  // Group rooms by establishment
+  const roomsByEstablishment = establishments.map(est => ({
+    ...est,
+    rooms: rooms.filter(room => room.establishmentId === est.id)
+  })).filter(est => est.rooms.length > 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Rooms</h2>
+          <p className="text-sm text-gray-600 mt-1">Manage rooms and spaces across your establishments.</p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)}>Add Room</Button>
+      </div>
+
+      {/* Rooms grouped by establishment */}
+      <div className="space-y-6">
+        {roomsByEstablishment.map((establishment) => (
+          <div key={establishment.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            {/* Establishment Header */}
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{establishment.name}</h3>
+                  <p className="text-sm text-gray-500">{establishment.rooms.length} room{establishment.rooms.length !== 1 ? "s" : ""}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Rooms List */}
+            <div className="divide-y divide-gray-100">
+              {establishment.rooms.map((room) => (
+                <div key={room.id} className={`p-4 sm:p-6 ${!room.isActive ? "bg-gray-50" : ""}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${room.isActive ? "bg-blue-100" : "bg-gray-200"}`}>
+                        <svg className={`w-6 h-6 ${room.isActive ? "text-blue-600" : "text-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-medium ${room.isActive ? "text-gray-900" : "text-gray-500"}`}>{room.name}</h4>
+                          {!room.isActive && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">Inactive</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">Capacity: {room.capacity} people</p>
+                        {room.amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {room.amenities.map((amenity, idx) => (
+                              <span key={idx} className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                {amenity}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleActive(room.id)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          room.isActive
+                            ? "text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
+                            : "text-green-700 bg-green-50 hover:bg-green-100"
+                        }`}
+                      >
+                        {room.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRoom(room.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {roomsByEstablishment.length === 0 && (
+          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No rooms yet</h3>
+            <p className="text-gray-500 mb-4">Add your first room to get started.</p>
+            <Button onClick={() => setShowAddModal(true)}>Add Room</Button>
+          </div>
+        )}
+      </div>
+
+      {/* Add Room Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Add Room</h3>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Studio A"
+                  value={newRoom.name}
+                  onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Establishment</label>
+                <select
+                  value={newRoom.establishmentId}
+                  onChange={(e) => setNewRoom({ ...newRoom, establishmentId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  {establishments.map((est) => (
+                    <option key={est.id} value={est.id}>{est.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newRoom.capacity}
+                  onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Mirrors, Sound System, Air Conditioning"
+                  value={newRoom.amenities}
+                  onChange={(e) => setNewRoom({ ...newRoom, amenities: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Separate amenities with commas</p>
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddRoom}
+                disabled={!newRoom.name}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              >
+                Add Room
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Plans Settings Component - Admin manages plans sold to clients
 function PlansSettings() {
   const [plans, setPlans] = useState([
@@ -710,45 +958,19 @@ const flexiwellPlans = [
     yearlyPrice: 79,
     description: "For growing studios",
     limits: {
-      clients: 150,
+      clients: 250,
       staff: 5,
       locations: 1,
       storage: "10GB",
     },
     features: [
-      "Up to 150 clients",
+      "Up to 250 clients",
       "5 team accounts",
       "1 location",
       "Online scheduling",
       "Email reminders",
       "Advanced reports",
       "Chat support",
-    ],
-    highlight: false,
-  },
-  {
-    id: "professional",
-    name: "Professional",
-    monthlyPrice: 199,
-    yearlyPrice: 159,
-    description: "For established studios",
-    limits: {
-      clients: 2000,
-      staff: 10,
-      locations: 5,
-      storage: "200GB",
-    },
-    features: [
-      "Up to 2,000 clients",
-      "10 team accounts",
-      "5 locations",
-      "Online scheduling",
-      "Email + SMS + WhatsApp",
-      "AI Support Pro (2,000 chats/mo)",
-      "WhatsApp Bot (5,000 msgs/month)",
-      "Instagram Bot",
-      "Advanced reports",
-      "Priority support (12h)",
     ],
     highlight: false,
   },
@@ -760,14 +982,16 @@ const flexiwellPlans = [
     description: "For established studios",
     limits: {
       clients: 500,
-      staff: 3,
+      staff: 8,
       locations: 2,
       storage: "50GB",
     },
     features: [
       "Up to 500 clients",
-      "3 team accounts",
+      "8 team accounts",
       "2 locations",
+      "Online scheduling",
+      "Email + SMS + WhatsApp",
       "AI Support Basic (500 chats/mo)",
       "WhatsApp Bot (1,000 msgs/month)",
       "AI-powered smart waitlist",
@@ -776,6 +1000,32 @@ const flexiwellPlans = [
     ],
     highlight: true,
     badge: "Most Popular",
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    monthlyPrice: 249,
+    yearlyPrice: 199,
+    description: "For large studios",
+    limits: {
+      clients: 2000,
+      staff: 15,
+      locations: 5,
+      storage: "200GB",
+    },
+    features: [
+      "Up to 2,000 clients",
+      "15 team accounts",
+      "5 locations",
+      "Online scheduling",
+      "Email + SMS + WhatsApp",
+      "AI Support Pro (2,000 chats/mo)",
+      "WhatsApp Bot (5,000 msgs/month)",
+      "Instagram Bot",
+      "Advanced reports",
+      "Priority support (12h)",
+    ],
+    highlight: false,
   },
   {
     id: "enterprise",
@@ -2690,8 +2940,8 @@ function WaitlistSettings() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-sm text-primary-800">
-              <p className="font-medium mb-1">Como a Prioridade Funciona</p>
-              <p>Quando uma vaga abre, o cliente com maior prioridade na lista de espera é notificado primeiro. Se não confirmar dentro do tempo de resposta, o próximo é notificado automaticamente.</p>
+              <p className="font-medium mb-1">How Priority Works</p>
+              <p>When a spot opens up, the client with the highest priority on the waitlist is notified first. If they don't confirm within the response time, the next person is automatically notified.</p>
             </div>
           </div>
         </div>
@@ -2700,21 +2950,21 @@ function WaitlistSettings() {
       {/* Priority Score Configuration */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <div className="mb-6">
-          <h3 className="text-base font-semibold text-gray-900">Configuração de Pontos de Prioridade</h3>
+          <h3 className="text-base font-semibold text-gray-900">Priority Points Configuration</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Configure quantos pontos cada critério adiciona à pontuação de prioridade do cliente.
+            Configure how many points each criterion adds to the client's priority score.
           </p>
         </div>
 
         {/* Plan Type Points */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos por Tipo de Plano</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Points by Plan Type</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { key: "annual" as const, label: "Anual", color: "bg-purple-100 text-purple-700" },
-              { key: "quarterly" as const, label: "Trimestral", color: "bg-blue-100 text-blue-700" },
-              { key: "monthly" as const, label: "Mensal", color: "bg-green-100 text-green-700" },
-              { key: "drop-in" as const, label: "Avulso", color: "bg-gray-100 text-gray-700" },
+              { key: "annual" as const, label: "Annual", color: "bg-purple-100 text-purple-700" },
+              { key: "quarterly" as const, label: "Quarterly", color: "bg-blue-100 text-blue-700" },
+              { key: "monthly" as const, label: "Monthly", color: "bg-green-100 text-green-700" },
+              { key: "drop-in" as const, label: "Drop-in", color: "bg-gray-100 text-gray-700" },
             ].map((plan) => (
               <div key={plan.key} className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -2744,7 +2994,7 @@ function WaitlistSettings() {
 
         {/* Bonus Points */}
         <div className="mb-6 pt-4 border-t border-gray-100">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos de Bônus</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Bonus Points</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
@@ -2758,15 +3008,15 @@ function WaitlistSettings() {
                   onChange={(e) => setPriorityConfig({ ...priorityConfig, vipBonus: parseInt(e.target.value) || 0 })}
                   className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <span className="text-xs text-gray-500">pts bônus</span>
+                <span className="text-xs text-gray-500">bonus pts</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Clientes marcados como VIP</p>
+              <p className="text-xs text-gray-400 mt-1">Clients marked as VIP</p>
             </div>
 
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">🏢</span>
-                <span className="text-sm font-medium text-gray-900">Cancelado pelo Estúdio</span>
+                <span className="text-sm font-medium text-gray-900">Cancelled by Studio</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -2775,15 +3025,15 @@ function WaitlistSettings() {
                   onChange={(e) => setPriorityConfig({ ...priorityConfig, cancelledByStudioBonus: parseInt(e.target.value) || 0 })}
                   className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <span className="text-xs text-gray-500">pts bônus</span>
+                <span className="text-xs text-gray-500">bonus pts</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Quando o estúdio cancela a aula</p>
+              <p className="text-xs text-gray-400 mt-1">When studio cancels the class</p>
             </div>
 
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">🚨</span>
-                <span className="text-sm font-medium text-gray-900">Motivo Urgente</span>
+                <span className="text-sm font-medium text-gray-900">Urgent Reason</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -2792,21 +3042,21 @@ function WaitlistSettings() {
                   onChange={(e) => setPriorityConfig({ ...priorityConfig, urgentReasonBonus: parseInt(e.target.value) || 0 })}
                   className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <span className="text-xs text-gray-500">pts bônus</span>
+                <span className="text-xs text-gray-500">bonus pts</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Solicitações marcadas como urgentes</p>
+              <p className="text-xs text-gray-400 mt-1">Requests marked as urgent</p>
             </div>
           </div>
         </div>
 
         {/* Dynamic Points */}
         <div className="pt-4 border-t border-gray-100">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Pontos Dinâmicos</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Dynamic Points</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">⏳</span>
-                <span className="text-sm font-medium text-gray-900">Tempo de Espera</span>
+                <span className="text-sm font-medium text-gray-900">Waiting Time</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -2816,15 +3066,15 @@ function WaitlistSettings() {
                   onChange={(e) => setPriorityConfig({ ...priorityConfig, waitingTimePointsPerDay: parseFloat(e.target.value) || 0 })}
                   className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <span className="text-xs text-gray-500">pts / dia esperando</span>
+                <span className="text-xs text-gray-500">pts / day waiting</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Pontos adicionados por cada dia na fila</p>
+              <p className="text-xs text-gray-400 mt-1">Points added for each day in queue</p>
             </div>
 
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">📊</span>
-                <span className="text-sm font-medium text-gray-900">Taxa de Frequência</span>
+                <span className="text-sm font-medium text-gray-900">Attendance Rate</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -2834,24 +3084,24 @@ function WaitlistSettings() {
                   onChange={(e) => setPriorityConfig({ ...priorityConfig, attendanceRateMultiplier: parseFloat(e.target.value) || 0 })}
                   className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <span className="text-xs text-gray-500">pts / 1% frequência</span>
+                <span className="text-xs text-gray-500">pts / 1% attendance</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Ex: 80% frequência = +40 pts (0.5 × 80)</p>
+              <p className="text-xs text-gray-400 mt-1">E.g.: 80% attendance = +40 pts (0.5 × 80)</p>
             </div>
           </div>
         </div>
 
         {/* Example Calculation */}
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Exemplo de Cálculo</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Calculation Example</h4>
           <div className="text-sm text-gray-600 space-y-1">
-            <p>Cliente com plano <span className="font-medium">Anual</span> ({priorityConfig.planTypePoints.annual} pts)</p>
-            <p>+ Marcado como <span className="font-medium">VIP</span> (+{priorityConfig.vipBonus} pts)</p>
-            <p>+ Esperando há <span className="font-medium">3 dias</span> (+{priorityConfig.waitingTimePointsPerDay * 3} pts)</p>
-            <p>+ Frequência de <span className="font-medium">90%</span> (+{Math.round(priorityConfig.attendanceRateMultiplier * 90)} pts)</p>
+            <p>Client with <span className="font-medium">Annual</span> plan ({priorityConfig.planTypePoints.annual} pts)</p>
+            <p>+ Marked as <span className="font-medium">VIP</span> (+{priorityConfig.vipBonus} pts)</p>
+            <p>+ Waiting for <span className="font-medium">3 days</span> (+{priorityConfig.waitingTimePointsPerDay * 3} pts)</p>
+            <p>+ <span className="font-medium">90%</span> attendance (+{Math.round(priorityConfig.attendanceRateMultiplier * 90)} pts)</p>
             <div className="pt-2 mt-2 border-t border-gray-200">
               <p className="font-semibold text-gray-900">
-                Total: {priorityConfig.planTypePoints.annual + priorityConfig.vipBonus + (priorityConfig.waitingTimePointsPerDay * 3) + Math.round(priorityConfig.attendanceRateMultiplier * 90)} pontos
+                Total: {priorityConfig.planTypePoints.annual + priorityConfig.vipBonus + (priorityConfig.waitingTimePointsPerDay * 3) + Math.round(priorityConfig.attendanceRateMultiplier * 90)} points
               </p>
             </div>
           </div>
@@ -2861,13 +3111,13 @@ function WaitlistSettings() {
       {/* Notification Timing */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <div className="mb-4">
-          <h3 className="text-base font-semibold text-gray-900">Tempo de Notificação</h3>
-          <p className="text-sm text-gray-600 mt-1">Configure quanto tempo o cliente tem para responder às notificações.</p>
+          <h3 className="text-base font-semibold text-gray-900">Notification Timing</h3>
+          <p className="text-sm text-gray-600 mt-1">Configure how long clients have to respond to notifications.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Janela de Notificação</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notification Window</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -2875,13 +3125,13 @@ function WaitlistSettings() {
                 onChange={(e) => setPriorityConfig({ ...priorityConfig, notificationWindowMinutes: parseInt(e.target.value) || 0 })}
                 className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-500">minutos</span>
+              <span className="text-sm text-gray-500">minutes</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Tempo para cliente responder</p>
+            <p className="text-xs text-gray-400 mt-1">Time for client to respond</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Auto-declínio após</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Auto-decline after</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -2889,13 +3139,13 @@ function WaitlistSettings() {
                 onChange={(e) => setPriorityConfig({ ...priorityConfig, autoDeclineAfterMinutes: parseInt(e.target.value) || 0 })}
                 className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-500">minutos</span>
+              <span className="text-sm text-gray-500">minutes</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Sem resposta = próximo na fila</p>
+            <p className="text-xs text-gray-400 mt-1">No response = next in queue</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Máx. notificações/vaga</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max notifications/slot</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -2903,9 +3153,9 @@ function WaitlistSettings() {
                 onChange={(e) => setPriorityConfig({ ...priorityConfig, maxNotificationsPerSlot: parseInt(e.target.value) || 0 })}
                 className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-500">pessoas</span>
+              <span className="text-sm text-gray-500">people</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Tentativas antes de desistir</p>
+            <p className="text-xs text-gray-400 mt-1">Attempts before giving up</p>
           </div>
         </div>
       </div>
@@ -3147,6 +3397,8 @@ export default function AdminSettingsPage() {
         return <WaitlistSettings />;
       case "establishments":
         return <EstablishmentsSettings />;
+      case "rooms":
+        return <RoomsSettings />;
       case "billing":
         return <BillingSettings />;
       case "notifications":

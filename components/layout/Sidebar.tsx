@@ -442,43 +442,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
           </div>
         )}
 
-        {/* Sign Out Confirmation Modal */}
-        {showSignOutModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
-              <div className="p-6">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <LogoutIcon className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-                  Sign out?
-                </h3>
-                <p className="text-sm text-gray-600 text-center">
-                  Are you sure you want to sign out of your account? You'll need to sign in again to access your data.
-                </p>
-              </div>
-              <div className="px-6 pb-6 flex gap-3">
-                <button
-                  onClick={() => setShowSignOutModal(false)}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Sign out
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      </div>
+    </aside>
 
-        {/* Add Account Modal */}
-        {showAddAccountModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm sm:max-w-md overflow-hidden max-h-[90vh] overflow-y-auto">
+    {/* Add Account Modal - rendered outside sidebar for proper centering */}
+    {showAddAccountModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
               {/* Header */}
               <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -632,13 +602,43 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                     "Sign in"
                   )}
                 </button>
-              </div>
-            </div>
           </div>
-        )}
-
+        </div>
       </div>
-    </aside>
+    )}
+
+    {/* Sign Out Confirmation Modal - rendered outside sidebar for proper centering */}
+    {showSignOutModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+          <div className="p-6">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogoutIcon className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              Sign out?
+            </h3>
+            <p className="text-sm text-gray-600 text-center">
+              Are you sure you want to sign out of your account? You'll need to sign in again to access your data.
+            </p>
+          </div>
+          <div className="px-6 pb-6 flex gap-3">
+            <button
+              onClick={() => setShowSignOutModal(false)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

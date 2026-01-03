@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ExternalLinkIcon,
   UserIcon,
   ClockIcon,
   CalendarIcon,
@@ -535,13 +534,7 @@ export default function ProfilePage() {
             {/* Email */}
             <div>
               <p className="text-sm text-gray-500 mb-1">Email</p>
-              <a
-                href={`mailto:${mockUser.email}`}
-                className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
-              >
-                <span>{mockUser.email}</span>
-                <ExternalLinkIcon className="w-4 h-4" />
-              </a>
+              <p className="text-gray-900">{mockUser.email}</p>
             </div>
 
             {/* Phone */}

@@ -116,6 +116,112 @@ function ProgressBar({ value, max, color = "primary" }: { value: number; max: nu
 
 type ExportFormat = "pdf" | "excel" | "csv";
 
+// Export utility functions
+function generateCSV(data: Record<string, unknown>[], headers: { key: string; label: string }[]): string {
+  const headerRow = headers.map(h => h.label).join(",");
+  const rows = data.map(item =>
+    headers.map(h => {
+      const value = item[h.key];
+      // Escape commas and quotes in values
+      const strValue = String(value ?? "");
+      if (strValue.includes(",") || strValue.includes('"') || strValue.includes("\n")) {
+        return `"${strValue.replace(/"/g, '""')}"`;
+      }
+      return strValue;
+    }).join(",")
+  );
+  return [headerRow, ...rows].join("\n");
+}
+
+function downloadFile(content: string, fileName: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function getExportData(reportType: string, dateRange: string) {
+  const periodLabel = {
+    this_month: "December 2024",
+    last_month: "November 2024",
+    this_quarter: "Q4 2024",
+    this_year: "2024",
+    all_time: "All Time",
+  }[dateRange] || dateRange;
+
+  switch (reportType) {
+    case "overview":
+      return {
+        headers: [
+          { key: "month", label: "Month" },
+          { key: "revenue", label: "Revenue (R$)" },
+          { key: "clients", label: "Clients" },
+        ],
+        data: revenueData.monthly.map(m => ({
+          month: m.month,
+          revenue: m.revenue,
+          clients: m.clients,
+        })),
+        summary: `Overview Report - ${periodLabel}\nTotal Revenue: R$ ${revenueData.total.toLocaleString()}\nGrowth: ${revenueData.growth}%`,
+      };
+    case "classes":
+      return {
+        headers: [
+          { key: "name", label: "Class Name" },
+          { key: "sessions", label: "Sessions" },
+          { key: "avgAttendance", label: "Avg Attendance (%)" },
+          { key: "revenue", label: "Revenue (R$)" },
+        ],
+        data: classMetrics.popularClasses.map(c => ({
+          name: c.name,
+          sessions: c.sessions,
+          avgAttendance: c.avgAttendance,
+          revenue: c.revenue,
+        })),
+        summary: `Classes Report - ${periodLabel}\nTotal Classes: ${classMetrics.totalClasses}\nAvg Attendance: ${classMetrics.avgAttendance}%\nCancel Rate: ${classMetrics.cancelRate}%`,
+      };
+    case "instructors":
+      return {
+        headers: [
+          { key: "name", label: "Instructor" },
+          { key: "classes", label: "Classes" },
+          { key: "students", label: "Students" },
+          { key: "rating", label: "Rating" },
+          { key: "revenue", label: "Revenue (R$)" },
+        ],
+        data: instructorMetrics.map(i => ({
+          name: i.name,
+          classes: i.classes,
+          students: i.students,
+          rating: i.rating,
+          revenue: i.revenue,
+        })),
+        summary: `Instructors Report - ${periodLabel}\nActive Instructors: ${instructorMetrics.length}\nTotal Classes: ${instructorMetrics.reduce((acc, i) => acc + i.classes, 0)}`,
+      };
+    case "clients":
+      return {
+        headers: [
+          { key: "plan", label: "Plan" },
+          { key: "count", label: "Clients" },
+          { key: "percentage", label: "Percentage (%)" },
+        ],
+        data: clientMetrics.planDistribution.map(p => ({
+          plan: p.plan,
+          count: p.count,
+          percentage: p.percentage,
+        })),
+        summary: `Clients Report - ${periodLabel}\nTotal Clients: ${clientMetrics.totalClients}\nActive Clients: ${clientMetrics.activeClients}\nRetention Rate: ${clientMetrics.retention}%`,
+      };
+    default:
+      return { headers: [], data: [], summary: "" };
+  }
+}
+
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("this_year");
   const [activeTab, setActiveTab] = useState<"overview" | "classes" | "instructors" | "clients">("overview");
@@ -626,8 +732,63 @@ export default function ReportsPage() {
                       this_year: "2024",
                       all_time: "all-time",
                     };
-                    const fileName = `flexiwell-${activeTab}-report-${periodLabels[dateRange]}.${exportFormat === "excel" ? "xlsx" : exportFormat}`;
-                    alert(`Exporting ${activeTab} report...\n\nPeriod: ${periodLabels[dateRange]}\nFormat: ${exportFormat.toUpperCase()}\nFile: ${fileName}\n\nDownload will start shortly.`);
+
+                    const exportData = getExportData(activeTab, dateRange);
+                    const fileBaseName = `flexiwell-${activeTab}-report-${periodLabels[dateRange]}`;
+
+                    if (exportFormat === "csv") {
+                      const csvContent = generateCSV(exportData.data, exportData.headers);
+                      downloadFile(csvContent, `${fileBaseName}.csv`, "text/csv;charset=utf-8;");
+                    } else if (exportFormat === "excel") {
+                      // Generate Excel-compatible CSV (Excel can open CSV files)
+                      // Add BOM for proper UTF-8 encoding in Excel
+                      const csvContent = "\uFEFF" + generateCSV(exportData.data, exportData.headers);
+                      downloadFile(csvContent, `${fileBaseName}.csv`, "text/csv;charset=utf-8;");
+                    } else if (exportFormat === "pdf") {
+                      // For PDF, we'll create a printable HTML that can be saved as PDF
+                      const printWindow = window.open("", "_blank");
+                      if (printWindow) {
+                        const tableRows = exportData.data.map(row =>
+                          `<tr>${exportData.headers.map(h => `<td style="border: 1px solid #ddd; padding: 8px;">${row[h.key]}</td>`).join("")}</tr>`
+                        ).join("");
+
+                        printWindow.document.write(`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <title>${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report - FlexiWell</title>
+                            <style>
+                              body { font-family: Arial, sans-serif; padding: 40px; }
+                              h1 { color: #333; margin-bottom: 10px; }
+                              .period { color: #666; margin-bottom: 20px; }
+                              .summary { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; white-space: pre-line; }
+                              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                              th { background: #7c3aed; color: white; padding: 12px 8px; text-align: left; }
+                              td { border: 1px solid #ddd; padding: 8px; }
+                              tr:nth-child(even) { background: #f9f9f9; }
+                              .footer { margin-top: 30px; color: #999; font-size: 12px; }
+                              @media print { body { padding: 20px; } }
+                            </style>
+                          </head>
+                          <body>
+                            <h1>${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report</h1>
+                            <p class="period">Period: ${periodLabels[dateRange].replace(/-/g, " ")}</p>
+                            <div class="summary">${exportData.summary}</div>
+                            <table>
+                              <thead>
+                                <tr>${exportData.headers.map(h => `<th>${h.label}</th>`).join("")}</tr>
+                              </thead>
+                              <tbody>${tableRows}</tbody>
+                            </table>
+                            <p class="footer">Generated by FlexiWell on ${new Date().toLocaleDateString()}</p>
+                          </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.print();
+                      }
+                    }
+
                     setShowExportModal(false);
                   }}
                   className="w-full sm:flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"

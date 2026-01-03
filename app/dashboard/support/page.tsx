@@ -13,11 +13,17 @@ interface Message {
   isRead?: boolean;
 }
 
+// Mock studio data - in production this would come from the user's context
+const mockStudio = {
+  name: "Studio Vida",
+  initials: "SV",
+};
+
 // Mock messages for support chat
 const mockMessages: Message[] = [
   {
     id: "1",
-    content: "Hello! Welcome to FlexiWell support. How can we help you today?",
+    content: `Hello! Welcome to ${mockStudio.name} support. How can we help you today?`,
     sender: "support",
     timestamp: "Yesterday 2:30 PM",
     type: "text",
@@ -156,13 +162,13 @@ export default function SupportPage() {
       <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-4">
         <div className="relative">
           <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">F</span>
+            <span className="text-white font-bold text-lg">{mockStudio.initials}</span>
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-gray-900">FlexiWell Support</h1>
+            <h1 className="text-lg font-semibold text-gray-900">{mockStudio.name}</h1>
             <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
               Online
@@ -178,7 +184,7 @@ export default function SupportPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md mx-auto text-center mb-8">
           <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">F</span>
+              <span className="text-white font-bold text-xl">{mockStudio.initials}</span>
             </div>
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">How can we help?</h2>
@@ -194,7 +200,7 @@ export default function SupportPage() {
             <div key={message.id} className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
               {!isUser && (
                 <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-xs">F</span>
+                  <span className="text-white font-bold text-xs">{mockStudio.initials}</span>
                 </div>
               )}
 
@@ -245,7 +251,7 @@ export default function SupportPage() {
         {isTyping && (
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-xs">F</span>
+              <span className="text-white font-bold text-xs">{mockStudio.initials}</span>
             </div>
             <div className="px-4 py-3 bg-white rounded-2xl rounded-tl-sm shadow-sm border border-gray-100">
               <div className="flex gap-1">

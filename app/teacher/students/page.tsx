@@ -16,6 +16,7 @@ interface Student {
   nextClass?: string;
   status: "active" | "paused" | "expired";
   joinedDate: string;
+  lastActive?: string;
 }
 
 interface Unit {
@@ -44,6 +45,7 @@ const mockUnits: Unit[] = [
         nextClass: "Today, 2:00 PM - Pilates",
         status: "active",
         joinedDate: "Jan 2024",
+        lastActive: "Just now",
       },
       {
         id: "2",
@@ -57,6 +59,7 @@ const mockUnits: Unit[] = [
         nextClass: "Tomorrow, 10:00 AM - Yoga",
         status: "active",
         joinedDate: "Nov 2023",
+        lastActive: "2 hours ago",
       },
       {
         id: "3",
@@ -69,6 +72,7 @@ const mockUnits: Unit[] = [
         classesTotal: 8,
         status: "expired",
         joinedDate: "Dec 2023",
+        lastActive: "15 days ago",
       },
       {
         id: "4",
@@ -81,6 +85,7 @@ const mockUnits: Unit[] = [
         classesTotal: 12,
         status: "paused",
         joinedDate: "Feb 2024",
+        lastActive: "7 days ago",
       },
     ],
   },
@@ -101,6 +106,7 @@ const mockUnits: Unit[] = [
         nextClass: "Today, 4:00 PM - Functional",
         status: "active",
         joinedDate: "Sep 2023",
+        lastActive: "1 hour ago",
       },
       {
         id: "6",
@@ -114,6 +120,7 @@ const mockUnits: Unit[] = [
         nextClass: "Thu, 9:00 AM - Pilates",
         status: "active",
         joinedDate: "Jan 2024",
+        lastActive: "3 hours ago",
       },
     ],
   },
@@ -134,6 +141,7 @@ const mockUnits: Unit[] = [
         nextClass: "Fri, 11:00 AM - Yoga",
         status: "active",
         joinedDate: "Dec 2023",
+        lastActive: "4 hours ago",
       },
     ],
   },
@@ -155,6 +163,87 @@ function StatusBadge({ status }: { status: Student["status"] }) {
   );
 }
 
+function StudentRow({ student, onViewProfile, onSendMessage }: {
+  student: Student;
+  onViewProfile: (student: Student) => void;
+  onSendMessage: (student: Student) => void;
+}) {
+  const progressPercent = (student.classesRemaining / student.classesTotal) * 100;
+
+  return (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+            {student.avatar ? (
+              <img src={student.avatar} alt={student.name} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{student.name}</p>
+            <p className="text-sm text-gray-500">{student.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <StatusBadge status={student.status} />
+      </td>
+      <td className="px-4 py-3">
+        <p className="text-sm text-gray-900">{student.plan}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"
+              }`}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-500">{student.classesRemaining}/{student.classesTotal}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <p className="text-sm text-gray-900">{student.phone}</p>
+      </td>
+      <td className="px-4 py-3">
+        {student.nextClass ? (
+          <p className="text-sm text-primary-600 font-medium">{student.nextClass}</p>
+        ) : (
+          <p className="text-sm text-gray-400">—</p>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        <p className="text-sm text-gray-500">{student.lastActive || "—"}</p>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onViewProfile(student)}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="View profile"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onSendMessage(student)}
+            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            title="Send message"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function StudentCard({ student, onViewProfile, onSendMessage }: {
   student: Student;
   onViewProfile: (student: Student) => void;
@@ -163,74 +252,77 @@ function StudentCard({ student, onViewProfile, onSendMessage }: {
   const progressPercent = (student.classesRemaining / student.classesTotal) * 100;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-          {student.avatar ? (
-            <img src={student.avatar} alt={student.name} className="w-full h-full rounded-full object-cover" />
+    <div className="p-4 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+            {student.avatar ? (
+              <img src={student.avatar} alt={student.name} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{student.name}</p>
+            <p className="text-xs text-gray-500">{student.email}</p>
+          </div>
+        </div>
+        <StatusBadge status={student.status} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+        <div>
+          <p className="text-gray-500 text-xs">Plan</p>
+          <p className="font-medium text-gray-900 truncate">{student.plan}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${
+                  progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-500">{student.classesRemaining}/{student.classesTotal}</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Phone</p>
+          <p className="font-medium text-gray-900">{student.phone}</p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Next Class</p>
+          {student.nextClass ? (
+            <p className="font-medium text-primary-600">{student.nextClass}</p>
           ) : (
-            <span className="text-sm font-semibold text-primary-700">{student.initials}</span>
+            <p className="text-gray-400">—</p>
           )}
         </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-gray-900 truncate">{student.name}</h3>
-            <StatusBadge status={student.status} />
-          </div>
-          <p className="text-sm text-gray-500 truncate">{student.email}</p>
+        <div>
+          <p className="text-gray-500 text-xs">Last Active</p>
+          <p className="font-medium text-gray-900">{student.lastActive || "—"}</p>
         </div>
       </div>
 
-      {/* Plan & Classes */}
-      <div className="mt-4 space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">{student.plan}</span>
-          <span className="font-medium text-gray-900">
-            {student.classesRemaining}/{student.classesTotal} classes
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"
-            }`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        {/* Next class */}
-        {student.nextClass && (
-          <div className="flex items-center gap-2 text-sm">
-            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span className="text-gray-600">Next class:</span>
-            <span className="font-medium text-primary-600">{student.nextClass}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2">
+      <div className="flex items-center justify-end gap-1">
         <button
           onClick={() => onViewProfile(student)}
-          className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          title="View profile"
         >
-          View profile
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
         </button>
         <button
           onClick={() => onSendMessage(student)}
-          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+          className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+          title="Send message"
         >
-          Send message
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
         </button>
       </div>
     </div>
@@ -257,43 +349,88 @@ function UnitSection({
       {/* Unit Header */}
       <button
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-          <svg className="w-5 h-5 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </div>
-        <div className="flex-1 text-left">
-          <h2 className="font-semibold text-gray-900">{unit.name}</h2>
-          <p className="text-sm text-gray-500">{unit.address}</p>
+        <div className="flex-1 text-left min-w-0">
+          <h2 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{unit.name}</h2>
+          <p className="text-xs sm:text-sm text-gray-500 truncate">{unit.address}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
+        <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+          <div className="text-right hidden lg:block">
             <p className="text-sm font-medium text-gray-900">{unit.students.length} students</p>
             <p className="text-xs text-gray-500">{activeCount} active</p>
           </div>
+          <div className="text-right lg:hidden">
+            <p className="text-xs font-medium text-gray-900">{unit.students.length} students</p>
+            <p className="text-xs text-gray-500">{activeCount} active</p>
+          </div>
           <ChevronIcon
-            className="w-5 h-5 text-gray-400 transition-transform"
+            className="w-5 h-5 text-gray-400 transition-transform flex-shrink-0"
             direction={isExpanded ? "up" : "down"}
           />
         </div>
       </button>
 
-      {/* Students Grid */}
+      {/* Students - Mobile Card View */}
       {isExpanded && (
-        <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {unit.students.map((student) => (
-              <StudentCard
-                key={student.id}
-                student={student}
-                onViewProfile={onViewProfile}
-                onSendMessage={onSendMessage}
-              />
-            ))}
-          </div>
+        <div className="border-t border-gray-100 lg:hidden">
+          {unit.students.map((student) => (
+            <StudentCard
+              key={student.id}
+              student={student}
+              onViewProfile={onViewProfile}
+              onSendMessage={onSendMessage}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Students - Desktop Table View */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 hidden lg:block overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Student
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Plan
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Next Class
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Active
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {unit.students.map((student) => (
+                <StudentRow
+                  key={student.id}
+                  student={student}
+                  onViewProfile={onViewProfile}
+                  onSendMessage={onSendMessage}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -311,8 +448,6 @@ function StudentProfileModal({
   onClose: () => void;
 }) {
   if (!isOpen || !student) return null;
-
-  const statusStyle = statusStyles[student.status];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -530,73 +665,77 @@ export default function TeacherStudentsPage() {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">My Students</h1>
-        <p className="text-gray-600 mt-1">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Students</h1>
+        <p className="text-sm text-gray-600 mt-1">
           Manage your students across all locations you teach at
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Total Students</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Total Students</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Active Students</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{activeStudents}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Active Students</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{activeStudents}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Locations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Locations</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Classes Today</p>
-          <p className="text-2xl font-bold text-primary-600 mt-1">4</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-600">Classes Today</p>
+          <p className="text-lg sm:text-2xl font-bold text-primary-600 mt-1">4</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 bg-white rounded-xl px-4 py-3">
+      <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
         {/* Search */}
-        <div className="flex-1 relative">
+        <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search student by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-900 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 sm:bg-transparent border border-gray-200 sm:border-0 rounded-lg sm:rounded-none focus:outline-none focus:ring-2 sm:focus:ring-0 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
           />
         </div>
 
-        {/* Status Filter */}
-        <div className="flex items-center gap-2">
-          <FilterIcon className="w-5 h-5 text-gray-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="expired">Expired</option>
-          </select>
-        </div>
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Status Filter */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
+            <FilterIcon className="w-5 h-5 text-gray-400 hidden lg:block flex-shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="expired">Expired</option>
+            </select>
+          </div>
 
-        {/* Expand/Collapse All */}
-        <button
-          onClick={() =>
-            setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
-          }
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
-        </button>
+          {/* Expand/Collapse All */}
+          <button
+            onClick={() =>
+              setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+            }
+            className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+          >
+            <span className="hidden lg:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
+            <span className="lg:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Units List */}
