@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 // AI Function Executor
 // This handles all function calls from the AI Support system
 
+// Unified result type for all AI functions
+type AIFunctionResult = {
+  success: boolean;
+  message: string;
+  data?: unknown;
+  error?: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { functionName, args } = await req.json();
@@ -28,12 +36,7 @@ export async function POST(req: NextRequest) {
 async function executeAIFunction(
   functionName: string,
   args: Record<string, unknown>
-): Promise<{
-  success: boolean;
-  message: string;
-  data?: unknown;
-  error?: string;
-}> {
+): Promise<AIFunctionResult> {
   switch (functionName) {
     case "check_available_classes":
       return await checkAvailableClasses(
@@ -89,7 +92,7 @@ async function executeAIFunction(
 async function checkAvailableClasses(
   date: string,
   modality?: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Replace with actual database query
     // const classes = await db.classes.find({
@@ -173,7 +176,7 @@ async function checkAvailableClasses(
 async function bookClass(
   classId: string,
   clientId: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Implement actual booking logic
     // 1. Check if class exists and has capacity
@@ -216,7 +219,7 @@ async function bookClass(
 
 async function cancelBooking(
   bookingId: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Implement actual cancellation logic
     // 1. Check if booking exists and belongs to client
@@ -248,7 +251,7 @@ async function cancelBooking(
 async function checkWaitlistStatus(
   clientId: string,
   classId?: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Query actual waitlist from database
     // const waitlistEntries = await db.waitlist.find({
@@ -305,7 +308,7 @@ async function checkWaitlistStatus(
 async function getClientSchedule(
   clientId: string,
   days: number
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Query actual bookings from database
     const mockSchedule = [
@@ -348,7 +351,7 @@ async function getClientSchedule(
 
 async function getPaymentStatus(
   clientId: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Query actual payment data
     const mockPaymentData = {
@@ -385,7 +388,7 @@ async function recommendClass(
   clientId: string,
   experienceLevel?: string,
   goals?: string[]
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Implement AI-based recommendation engine
     // Factors: client history, experience level, goals, instructor ratings
@@ -430,7 +433,7 @@ async function escalateToHuman(
   sessionId: string,
   reason: string,
   priority: string
-): Promise<{ success: boolean; message: string; data?: unknown }> {
+): Promise<AIFunctionResult> {
   try {
     // TODO: Create support ticket and notify staff
     // 1. Create ticket in database

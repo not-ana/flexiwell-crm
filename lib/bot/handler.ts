@@ -212,7 +212,8 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
         buttons: [{ text: "Voltar ao menu", payload: "MENU" }],
       };
       // Flag for human handoff
-      await db.collection("conversations").updateOne(
+      const supportDb = await getDatabase();
+      await supportDb.collection("conversations").updateOne(
         { platformUserId: session.platformUserId, status: "active" },
         { $set: { "context.awaitingResponse": true, "context.currentIntent": "SUPPORT" } }
       );
@@ -318,5 +319,3 @@ async function clearSessionFlow(session: BotSession) {
   delete session.flowData;
 }
 
-// Access db in support handler
-const db = await getDatabase();

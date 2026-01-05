@@ -1,47 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Button, Input, Checkbox } from "@/components/ui";
 import { GoogleIcon, CloseIcon } from "@/components/icons";
+import { useAuth } from "@/contexts/AuthContext";
 
 type UserRole = "client" | "admin" | "teacher";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>("client");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
-    // TODO: Replace with real authentication
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const result = await login({ email, password });
 
-    // Redirect based on user role
-    switch (userRole) {
-      case "admin":
-        router.push("/admin");
-        break;
-      case "teacher":
-        router.push("/teacher");
-        break;
-      default:
-        router.push("/dashboard");
+    if (!result.success) {
+      setError(result.error || "Failed to login");
+      setIsLoading(false);
     }
+    // If successful, the AuthContext will handle redirect
   };
 
   const roleLabels: Record<UserRole, string> = {
     client: "Client",
-    admin: "Admin",
-    teacher: "Teacher",
+    admin: "Owner",
+    teacher: "Staff",
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-600 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-600 flex items-center justify-center p-4">
@@ -60,9 +63,12 @@ export default function LoginPage() {
           </div>
 
           {/* Close button */}
-          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+          <Link
+            href="/"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          >
             <CloseIcon className="w-6 h-6" />
-          </button>
+          </Link>
 
           {/* Title */}
           <div className="text-center">
@@ -75,12 +81,21 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 pb-6">
           <div className="space-y-5">
             {/* User Role Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                I am a...
+              </label>
               <div className="grid grid-cols-3 gap-3">
                 {/* Client */}
                 <button
@@ -92,17 +107,37 @@ export default function LoginPage() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    userRole === "client" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      userRole === "client"
+                        ? "bg-primary-100 text-primary-600"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                   </div>
-                  <span className={`text-sm font-medium ${userRole === "client" ? "text-primary-700" : "text-gray-700"}`}>
+                  <span
+                    className={`text-sm font-medium ${
+                      userRole === "client" ? "text-primary-700" : "text-gray-700"
+                    }`}
+                  >
                     Client
                   </span>
-                  <span className="text-xs text-gray-500 text-center">Book & track</span>
+                  <span className="text-xs text-gray-500 text-center">
+                    Book sessions
+                  </span>
                 </button>
 
                 {/* Admin */}
@@ -115,17 +150,37 @@ export default function LoginPage() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    userRole === "admin" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      userRole === "admin"
+                        ? "bg-primary-100 text-primary-600"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
                     </svg>
                   </div>
-                  <span className={`text-sm font-medium ${userRole === "admin" ? "text-primary-700" : "text-gray-700"}`}>
-                    Admin
+                  <span
+                    className={`text-sm font-medium ${
+                      userRole === "admin" ? "text-primary-700" : "text-gray-700"
+                    }`}
+                  >
+                    Owner
                   </span>
-                  <span className="text-xs text-gray-500 text-center">Manage all</span>
+                  <span className="text-xs text-gray-500 text-center">
+                    Manage business
+                  </span>
                 </button>
 
                 {/* Teacher */}
@@ -138,17 +193,37 @@ export default function LoginPage() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    userRole === "teacher" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      userRole === "teacher"
+                        ? "bg-primary-100 text-primary-600"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
                     </svg>
                   </div>
-                  <span className={`text-sm font-medium ${userRole === "teacher" ? "text-primary-700" : "text-gray-700"}`}>
-                    Teacher
+                  <span
+                    className={`text-sm font-medium ${
+                      userRole === "teacher" ? "text-primary-700" : "text-gray-700"
+                    }`}
+                  >
+                    Staff
                   </span>
-                  <span className="text-xs text-gray-500 text-center">My classes</span>
+                  <span className="text-xs text-gray-500 text-center">
+                    My schedule
+                  </span>
                 </button>
               </div>
             </div>
@@ -160,15 +235,17 @@ export default function LoginPage() {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
 
             {/* Password */}
             <Input
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
 
             {/* Remember me & Forgot password */}
@@ -178,21 +255,36 @@ export default function LoginPage() {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              <a
+              <Link
                 href="/forgot-password"
                 className="text-sm font-semibold text-primary-700 hover:text-primary-800"
               >
                 Forgot password
-              </a>
+              </Link>
             </div>
 
             {/* Sign in button */}
             <Button type="submit" fullWidth size="lg" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                  <svg
+                    className="animate-spin w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      className="opacity-25"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      className="opacity-75"
+                    />
                   </svg>
                   Signing in...
                 </span>
@@ -216,12 +308,12 @@ export default function LoginPage() {
           {/* Sign up link */}
           <p className="text-center text-sm text-gray-600 mt-8">
             Don&apos;t have an account?{" "}
-            <a
+            <Link
               href="/signup"
               className="font-semibold text-primary-700 hover:text-primary-800"
             >
               Sign up
-            </a>
+            </Link>
           </p>
         </form>
       </div>

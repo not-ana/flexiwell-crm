@@ -1,191 +1,21 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { SearchIcon, FilterIcon, ChevronIcon, UploadIcon } from "@/components/icons";
+import { useStaff } from "@/hooks/useData";
+import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
+import type { Staff } from "@/lib/api/client";
 
 type StaffRole = "admin" | "teacher" | "receptionist";
 type StaffStatus = "active" | "invited" | "inactive";
-
-interface StaffMember {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: StaffRole;
-  status: StaffStatus;
-  avatar?: string;
-  initials: string;
-  unit: string;
-  joinDate: string;
-  lastActive?: string;
-  classesThisWeek?: number;
-  rating?: number;
-}
 
 interface Unit {
   id: string;
   name: string;
   address: string;
-  staff: StaffMember[];
+  staff: Staff[];
 }
-
-// Mock data - staff grouped by unit
-const mockUnits: Unit[] = [
-  {
-    id: "1",
-    name: "FlexiWell Downtown",
-    address: "123 Main Street - Downtown",
-    staff: [
-      {
-        id: "1",
-        name: "Sarah Johnson",
-        email: "sarah@flexiwell.com",
-        phone: "(555) 123-4567",
-        role: "admin",
-        status: "active",
-        initials: "SJ",
-        unit: "FlexiWell Downtown",
-        joinDate: "Jan 2023",
-        lastActive: "Just now",
-        classesThisWeek: 0,
-        rating: 4.9,
-      },
-      {
-        id: "2",
-        name: "Michael Chen",
-        email: "michael@flexiwell.com",
-        phone: "(555) 234-5678",
-        role: "teacher",
-        status: "active",
-        initials: "MC",
-        unit: "FlexiWell Downtown",
-        joinDate: "Mar 2023",
-        lastActive: "2 hours ago",
-        classesThisWeek: 12,
-        rating: 4.8,
-      },
-      {
-        id: "3",
-        name: "Emily Davis",
-        email: "emily@flexiwell.com",
-        phone: "(555) 345-6789",
-        role: "teacher",
-        status: "active",
-        initials: "ED",
-        unit: "FlexiWell Downtown",
-        joinDate: "Jun 2023",
-        lastActive: "1 day ago",
-        classesThisWeek: 8,
-        rating: 4.7,
-      },
-      {
-        id: "4",
-        name: "Robert Brown",
-        email: "robert@flexiwell.com",
-        phone: "(555) 456-7890",
-        role: "receptionist",
-        status: "active",
-        initials: "RB",
-        unit: "FlexiWell Downtown",
-        joinDate: "Sep 2023",
-        lastActive: "30 minutes ago",
-      },
-      {
-        id: "5",
-        name: "Jessica Taylor",
-        email: "jessica@flexiwell.com",
-        phone: "(555) 567-8901",
-        role: "teacher",
-        status: "invited",
-        initials: "JT",
-        unit: "FlexiWell Downtown",
-        joinDate: "Dec 2024",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "FlexiWell Westside",
-    address: "456 Park Avenue - Westside",
-    staff: [
-      {
-        id: "6",
-        name: "Rachel Green",
-        email: "rachel@flexiwell.com",
-        phone: "(555) 678-9012",
-        role: "admin",
-        status: "active",
-        initials: "RG",
-        unit: "FlexiWell Westside",
-        joinDate: "Feb 2023",
-        lastActive: "1 hour ago",
-        classesThisWeek: 0,
-        rating: 4.9,
-      },
-      {
-        id: "7",
-        name: "James Wilson",
-        email: "james@flexiwell.com",
-        phone: "(555) 789-0123",
-        role: "teacher",
-        status: "active",
-        initials: "JW",
-        unit: "FlexiWell Westside",
-        joinDate: "Apr 2023",
-        lastActive: "3 hours ago",
-        classesThisWeek: 10,
-        rating: 4.6,
-      },
-      {
-        id: "8",
-        name: "Lisa Anderson",
-        email: "lisa@flexiwell.com",
-        phone: "(555) 890-1234",
-        role: "teacher",
-        status: "inactive",
-        initials: "LA",
-        unit: "FlexiWell Westside",
-        joinDate: "May 2023",
-        lastActive: "2 weeks ago",
-        classesThisWeek: 0,
-        rating: 4.5,
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "FlexiWell Eastside",
-    address: "789 Oak Boulevard - Eastside",
-    staff: [
-      {
-        id: "9",
-        name: "Ricardo Alves",
-        email: "ricardo@flexiwell.com",
-        phone: "(555) 901-2345",
-        role: "admin",
-        status: "active",
-        initials: "RA",
-        unit: "FlexiWell Eastside",
-        joinDate: "Jan 2024",
-        lastActive: "5 hours ago",
-      },
-      {
-        id: "10",
-        name: "Camila Souza",
-        email: "camila@flexiwell.com",
-        phone: "(555) 012-3456",
-        role: "teacher",
-        status: "active",
-        initials: "CS",
-        unit: "FlexiWell Eastside",
-        joinDate: "Feb 2024",
-        lastActive: "Yesterday",
-        classesThisWeek: 15,
-        rating: 4.9,
-      },
-    ],
-  },
-];
 
 const roleStyles: Record<StaffRole, { bg: string; text: string; label: string }> = {
   admin: { bg: "bg-primary-50", text: "text-primary-700", label: "Admin" },
@@ -199,8 +29,17 @@ const statusStyles: Record<StaffStatus, { bg: string; text: string; dot: string;
   inactive: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400", label: "Inactive" },
 };
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 function RoleBadge({ role }: { role: StaffRole }) {
-  const style = roleStyles[role];
+  const style = roleStyles[role] || roleStyles.teacher;
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
       {style.label}
@@ -209,7 +48,7 @@ function RoleBadge({ role }: { role: StaffRole }) {
 }
 
 function StatusBadge({ status }: { status: StaffStatus }) {
-  const style = statusStyles[status];
+  const style = statusStyles[status] || statusStyles.active;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
@@ -219,11 +58,14 @@ function StatusBadge({ status }: { status: StaffStatus }) {
 }
 
 function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
-  staff: StaffMember;
+  staff: Staff;
   onResendInvite?: () => void;
   onEdit?: () => void;
   onDeactivate?: () => void;
 }) {
+  const role = (staff.role as StaffRole) || "teacher";
+  const status = (staff.status as StaffStatus) || "active";
+
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-4 py-3">
@@ -232,7 +74,7 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
             {staff.avatar ? (
               <img src={staff.avatar} alt={staff.name} className="w-full h-full rounded-full object-cover" />
             ) : (
-              <span className="text-xs font-semibold text-primary-700">{staff.initials}</span>
+              <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
             )}
           </div>
           <div>
@@ -242,16 +84,16 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
         </div>
       </td>
       <td className="px-4 py-3">
-        <RoleBadge role={staff.role} />
+        <RoleBadge role={role} />
       </td>
       <td className="px-4 py-3">
-        <StatusBadge status={staff.status} />
+        <StatusBadge status={status} />
       </td>
       <td className="px-4 py-3">
-        <p className="text-sm text-gray-900">{staff.phone}</p>
+        <p className="text-sm text-gray-900">{staff.phone || "—"}</p>
       </td>
       <td className="px-4 py-3">
-        {staff.role === "teacher" && staff.classesThisWeek !== undefined ? (
+        {role === "teacher" && staff.classesThisWeek !== undefined ? (
           <p className="text-sm font-medium text-gray-900">{staff.classesThisWeek} classes</p>
         ) : (
           <p className="text-sm text-gray-400">—</p>
@@ -274,7 +116,7 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-1">
-          {staff.status === "invited" && (
+          {status === "invited" && (
             <button
               onClick={onResendInvite}
               className="px-2.5 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
@@ -291,7 +133,7 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
-          {staff.status !== "inactive" && (
+          {status !== "inactive" && (
             <button
               onClick={onDeactivate}
               className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -310,11 +152,14 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
 }
 
 function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
-  staff: StaffMember;
+  staff: Staff;
   onResendInvite?: () => void;
   onEdit?: () => void;
   onDeactivate?: () => void;
 }) {
+  const role = (staff.role as StaffRole) || "teacher";
+  const status = (staff.status as StaffStatus) || "active";
+
   return (
     <div className="p-4 border-b border-gray-100 last:border-b-0">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -323,7 +168,7 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
             {staff.avatar ? (
               <img src={staff.avatar} alt={staff.name} className="w-full h-full rounded-full object-cover" />
             ) : (
-              <span className="text-xs font-semibold text-primary-700">{staff.initials}</span>
+              <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
             )}
           </div>
           <div>
@@ -331,19 +176,19 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
             <p className="text-xs text-gray-500">{staff.email}</p>
           </div>
         </div>
-        <StatusBadge status={staff.status} />
+        <StatusBadge status={status} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm mb-3">
         <div>
           <p className="text-gray-500 text-xs">Role</p>
-          <div className="mt-1"><RoleBadge role={staff.role} /></div>
+          <div className="mt-1"><RoleBadge role={role} /></div>
         </div>
         <div>
           <p className="text-gray-500 text-xs">Phone</p>
-          <p className="font-medium text-gray-900">{staff.phone}</p>
+          <p className="font-medium text-gray-900">{staff.phone || "—"}</p>
         </div>
-        {staff.role === "teacher" && (
+        {role === "teacher" && (
           <>
             <div>
               <p className="text-gray-500 text-xs">Classes This Week</p>
@@ -364,14 +209,14 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
             </div>
           </>
         )}
-        <div className={staff.role !== "teacher" ? "col-span-2" : ""}>
+        <div className={role !== "teacher" ? "col-span-2" : ""}>
           <p className="text-gray-500 text-xs">Last Active</p>
           <p className="font-medium text-gray-900">{staff.lastActive || "—"}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-end gap-1">
-        {staff.status === "invited" && (
+        {status === "invited" && (
           <button
             onClick={onResendInvite}
             className="px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
@@ -388,7 +233,7 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </button>
-        {staff.status !== "inactive" && (
+        {status !== "inactive" && (
           <button
             onClick={onDeactivate}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -405,7 +250,14 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
   );
 }
 
-function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: boolean; onToggle: () => void }) {
+function UnitSection({ unit, isExpanded, onToggle, onResendInvite, onEdit, onDeactivate }: {
+  unit: Unit;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onResendInvite: (id: string) => void;
+  onEdit: (staff: Staff) => void;
+  onDeactivate: (id: string) => void;
+}) {
   const activeCount = unit.staff.filter((s) => s.status === "active").length;
   const teacherCount = unit.staff.filter((s) => s.role === "teacher").length;
 
@@ -446,21 +298,13 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
       {/* Staff - Mobile Card View */}
       {isExpanded && (
         <div className="border-t border-gray-100 lg:hidden">
-          {unit.staff.map((staff) => (
+          {unit.staff.map((staffMember) => (
             <StaffCard
-              key={staff.id}
-              staff={staff}
-              onResendInvite={() => {
-                alert(`Invite resent to ${staff.name} (${staff.email})`);
-              }}
-              onEdit={() => {
-                alert(`Edit ${staff.name}\n\nRole: ${staff.role}\nEmail: ${staff.email}\nPhone: ${staff.phone}\nUnit: ${staff.unit}`);
-              }}
-              onDeactivate={() => {
-                if (confirm(`Are you sure you want to deactivate ${staff.name}?`)) {
-                  alert(`${staff.name} has been deactivated.`);
-                }
-              }}
+              key={staffMember._id}
+              staff={staffMember}
+              onResendInvite={() => onResendInvite(staffMember._id)}
+              onEdit={() => onEdit(staffMember)}
+              onDeactivate={() => onDeactivate(staffMember._id)}
             />
           ))}
         </div>
@@ -472,48 +316,24 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Staff Member
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Classes
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rating
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {unit.staff.map((staff) => (
+              {unit.staff.map((staffMember) => (
                 <StaffRow
-                  key={staff.id}
-                  staff={staff}
-                  onResendInvite={() => {
-                    alert(`Invite resent to ${staff.name} (${staff.email})`);
-                  }}
-                  onEdit={() => {
-                    alert(`Edit ${staff.name}\n\nRole: ${staff.role}\nEmail: ${staff.email}\nPhone: ${staff.phone}\nUnit: ${staff.unit}`);
-                  }}
-                  onDeactivate={() => {
-                    if (confirm(`Are you sure you want to deactivate ${staff.name}?`)) {
-                      alert(`${staff.name} has been deactivated.`);
-                    }
-                  }}
+                  key={staffMember._id}
+                  staff={staffMember}
+                  onResendInvite={() => onResendInvite(staffMember._id)}
+                  onEdit={() => onEdit(staffMember)}
+                  onDeactivate={() => onDeactivate(staffMember._id)}
                 />
               ))}
             </tbody>
@@ -524,14 +344,18 @@ function UnitSection({ unit, isExpanded, onToggle }: { unit: Unit; isExpanded: b
   );
 }
 
-// Add Staff Modal Component (Single Entry Only)
+// Add Staff Modal Component
 function AddStaffModal({
   isOpen,
   onClose,
+  onSubmit,
+  isSubmitting,
   units,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (data: Partial<Staff>) => Promise<void>;
+  isSubmitting: boolean;
   units: Unit[];
 }) {
   const [formData, setFormData] = useState({
@@ -542,14 +366,19 @@ function AddStaffModal({
     unit: units[0]?.name || "",
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name || !formData.email) {
       alert("Please fill in name and email");
       return;
     }
-    alert(
-      `Staff member added!\n\nName: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nRole: ${formData.role}\nUnit: ${formData.unit}\n\nAn invitation email will be sent.`
-    );
+    await onSubmit({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+      unit: formData.unit,
+      status: "invited",
+    });
     setFormData({
       name: "",
       email: "",
@@ -565,7 +394,6 @@ function AddStaffModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add Staff Member</h2>
@@ -580,7 +408,6 @@ function AddStaffModal({
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
@@ -638,11 +465,15 @@ function AddStaffModal({
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                {units.map((unit) => (
-                  <option key={unit.id} value={unit.name}>
-                    {unit.name}
-                  </option>
-                ))}
+                {units.length > 0 ? (
+                  units.map((unit) => (
+                    <option key={unit.id} value={unit.name}>
+                      {unit.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="FlexiWell Default">FlexiWell Default</option>
+                )}
               </select>
             </div>
           </div>
@@ -663,7 +494,6 @@ function AddStaffModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 bg-white">
           <button
             onClick={onClose}
@@ -673,8 +503,10 @@ function AddStaffModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            disabled={isSubmitting}
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
+            {isSubmitting ? <LoadingSpinner size="sm" className="text-white" /> : null}
             Add & Send Invite
           </button>
         </div>
@@ -699,7 +531,7 @@ function ImportStaffModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const handleImport = () => {
     if (!file) return;
     setImporting(true);
-    // Simulate import process
+    // TODO: Implement actual import via API
     setTimeout(() => {
       setImporting(false);
       setImportResult({ success: 12, failed: 1 });
@@ -817,17 +649,8 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
               disabled={!file || importing}
               className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {importing ? (
-                <>
-                  <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.25" />
-                    <path d="M4 12a8 8 0 018-8v4" stroke="currentColor" strokeWidth="4" />
-                  </svg>
-                  Importing...
-                </>
-              ) : (
-                "Import Staff"
-              )}
+              {importing ? <LoadingSpinner size="sm" className="text-white" /> : null}
+              {importing ? "Importing..." : "Import Staff"}
             </button>
           )}
         </div>
@@ -840,9 +663,51 @@ export default function AdminStaffPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | StaffRole>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | StaffStatus>("all");
-  const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
+  const [expandedUnits, setExpandedUnits] = useState<string[]>(["default"]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch staff from API
+  const { staff, total, isLoading, error, refetch, createStaff, updateStaff, deleteStaff } = useStaff({
+    role: roleFilter !== "all" ? roleFilter : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+  });
+
+  // Filter staff by search query
+  const filteredStaff = useMemo(() => {
+    if (!staff) return [];
+    if (!searchQuery) return staff;
+    const query = searchQuery.toLowerCase();
+    return staff.filter(
+      (s) =>
+        s.name.toLowerCase().includes(query) ||
+        s.email.toLowerCase().includes(query)
+    );
+  }, [staff, searchQuery]);
+
+  // Group staff by unit
+  const units = useMemo(() => {
+    if (!filteredStaff || filteredStaff.length === 0) {
+      return [];
+    }
+
+    const unitMap = new Map<string, Staff[]>();
+    filteredStaff.forEach((staffMember) => {
+      const unitName = staffMember.unit || "FlexiWell Default";
+      if (!unitMap.has(unitName)) {
+        unitMap.set(unitName, []);
+      }
+      unitMap.get(unitName)!.push(staffMember);
+    });
+
+    return Array.from(unitMap.entries()).map(([name, staffList], index) => ({
+      id: `unit-${index}`,
+      name,
+      address: `Location ${index + 1}`,
+      staff: staffList,
+    }));
+  }, [filteredStaff]);
 
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) =>
@@ -850,34 +715,50 @@ export default function AdminStaffPage() {
     );
   };
 
-  // Filter staff
-  const filteredUnits = mockUnits
-    .map((unit) => ({
-      ...unit,
-      staff: unit.staff.filter((staff) => {
-        const matchesSearch =
-          staff.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          staff.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRole = roleFilter === "all" || staff.role === roleFilter;
-        const matchesStatus = statusFilter === "all" || staff.status === statusFilter;
-        return matchesSearch && matchesRole && matchesStatus;
-      }),
-    }))
-    .filter((unit) => unit.staff.length > 0);
+  const handleAddStaff = async (data: Partial<Staff>) => {
+    setIsSubmitting(true);
+    try {
+      const result = await createStaff(data);
+      if (!result.success) {
+        alert(result.error || "Failed to add staff member");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  const totalStaff = mockUnits.reduce((acc, unit) => acc + unit.staff.length, 0);
-  const activeStaff = mockUnits.reduce(
-    (acc, unit) => acc + unit.staff.filter((s) => s.status === "active").length,
-    0
-  );
-  const teacherCount = mockUnits.reduce(
-    (acc, unit) => acc + unit.staff.filter((s) => s.role === "teacher").length,
-    0
-  );
-  const pendingInvites = mockUnits.reduce(
-    (acc, unit) => acc + unit.staff.filter((s) => s.status === "invited").length,
-    0
-  );
+  const handleResendInvite = async (id: string) => {
+    // TODO: Implement resend invite API
+    alert(`Invitation resent to staff member ${id}`);
+  };
+
+  const handleEdit = (staffMember: Staff) => {
+    // TODO: Open edit modal
+    alert(`Edit staff: ${staffMember.name}`);
+  };
+
+  const handleDeactivate = async (id: string) => {
+    if (confirm("Are you sure you want to deactivate this staff member?")) {
+      const result = await updateStaff(id, { status: "inactive" });
+      if (!result.success) {
+        alert(result.error || "Failed to deactivate staff member");
+      }
+    }
+  };
+
+  // Calculate stats
+  const totalStaff = staff?.length || 0;
+  const activeStaff = staff?.filter((s) => s.status === "active").length || 0;
+  const teacherCount = staff?.filter((s) => s.role === "teacher").length || 0;
+  const pendingInvites = staff?.filter((s) => s.status === "invited").length || 0;
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <ErrorMessage message={error} onRetry={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -914,20 +795,20 @@ export default function AdminStaffPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Total Staff</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totalStaff}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{isLoading ? "—" : totalStaff}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Active Staff</p>
-          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{activeStaff}</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{isLoading ? "—" : activeStaff}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Teachers</p>
-          <p className="text-lg sm:text-2xl font-bold text-blue-600 mt-1">{teacherCount}</p>
+          <p className="text-lg sm:text-2xl font-bold text-blue-600 mt-1">{isLoading ? "—" : teacherCount}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Pending Invites</p>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-lg sm:text-2xl font-bold text-yellow-600">{pendingInvites}</p>
+            <p className="text-lg sm:text-2xl font-bold text-yellow-600">{isLoading ? "—" : pendingInvites}</p>
             {pendingInvites > 0 && (
               <span className="px-1.5 sm:px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
                 Awaiting
@@ -937,13 +818,12 @@ export default function AdminStaffPage() {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
           <p className="text-xs sm:text-sm text-gray-600">Locations</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{isLoading ? "—" : units.length}</p>
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
-        {/* Search */}
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -955,9 +835,7 @@ export default function AdminStaffPage() {
           />
         </div>
 
-        {/* Filter Row */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Role Filter */}
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
@@ -969,7 +847,6 @@ export default function AdminStaffPage() {
             <option value="receptionist">Receptionist</option>
           </select>
 
-          {/* Status Filter */}
           <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
             <FilterIcon className="w-5 h-5 text-gray-400 hidden lg:block flex-shrink-0" />
             <select
@@ -984,52 +861,59 @@ export default function AdminStaffPage() {
             </select>
           </div>
 
-          {/* Expand/Collapse All */}
           <button
             onClick={() =>
-              setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+              setExpandedUnits(expandedUnits.length === units.length ? [] : units.map((u) => u.id))
             }
             className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
-            <span className="hidden lg:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
-            <span className="lg:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+            <span className="hidden lg:inline">{expandedUnits.length === units.length ? "Collapse all" : "Expand all"}</span>
+            <span className="lg:hidden">{expandedUnits.length === units.length ? "Collapse" : "Expand"}</span>
           </button>
         </div>
       </div>
 
-      {/* Units List */}
-      <div className="space-y-4">
-        {filteredUnits.length > 0 ? (
-          filteredUnits.map((unit) => (
+      {/* Content */}
+      {isLoading ? (
+        <LoadingTable rows={5} />
+      ) : units.length > 0 ? (
+        <div className="space-y-4">
+          {units.map((unit) => (
             <UnitSection
               key={unit.id}
               unit={unit}
               isExpanded={expandedUnits.includes(unit.id)}
               onToggle={() => toggleUnit(unit.id)}
+              onResendInvite={handleResendInvite}
+              onEdit={handleEdit}
+              onDeactivate={handleDeactivate}
             />
-          ))
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="No staff found"
+          description={searchQuery || roleFilter !== "all" || statusFilter !== "all" ? "Try adjusting your search filters" : "Add your first staff member to get started"}
+          icon={
+            <svg className="w-12 h-12 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No staff found</h3>
-            <p className="text-gray-500">Try adjusting your search filters</p>
-          </div>
-        )}
-      </div>
+          }
+          action={!searchQuery && roleFilter === "all" && statusFilter === "all" ? { label: "Add Staff", onClick: () => setShowAddStaffModal(true) } : undefined}
+        />
+      )}
 
-      {/* Add Staff Modal */}
+      {/* Modals */}
       <AddStaffModal
         isOpen={showAddStaffModal}
         onClose={() => setShowAddStaffModal(false)}
-        units={mockUnits}
+        onSubmit={handleAddStaff}
+        isSubmitting={isSubmitting}
+        units={units}
       />
-
-      {/* Import Staff Modal */}
       <ImportStaffModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}

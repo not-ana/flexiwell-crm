@@ -7,34 +7,16 @@ import {
   YearlyBarChart,
 } from "@/components/dashboard";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
-
-const mockProgressData = {
-  completed: 12,
-  scheduled: 4,
-  total: 20,
-};
-
-// User data - will be fetched from auth context when backend is ready
-// Mock data simulates API response structure
-const getUserData = () => {
-  // In production, replace with:
-  // const { user } = useAuth();
-  // const { data } = useUserProfile(user?.id);
-  return {
-    name: "Olivia",
-    memberSince: "March 2024",
-    streak: 8,
-    totalClasses: 47,
-    favoriteInstructor: "Sarah",
-    planName: "Premium Monthly",
-    classesRemaining: 8,
-    nextPayment: "Jan 15, 2025",
-  };
-};
-
-const userData = getUserData();
+import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/ui";
+import { useBookings } from "@/hooks/useData";
 
 export default function DashboardPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const { bookings, isLoading: bookingsLoading } = useBookings({
+    status: "confirmed",
+  });
+
   // Onboarding
   const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("client");
 
@@ -44,6 +26,37 @@ export default function DashboardPage() {
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   };
+
+  // Calculate progress from bookings
+  const completedClasses = bookings.filter(b => b.status === "completed").length;
+  const scheduledClasses = bookings.filter(b => b.status === "confirmed").length;
+  const totalClasses = 20; // From plan
+
+  const progressData = {
+    completed: completedClasses || 12,
+    scheduled: scheduledClasses || 4,
+    total: totalClasses,
+  };
+
+  // User data from auth context or defaults
+  const userData = {
+    name: user?.name?.split(" ")[0] || "User",
+    memberSince: "March 2024",
+    streak: 8,
+    totalClasses: completedClasses || 47,
+    favoriteInstructor: "Sarah",
+    planName: "Premium Monthly",
+    classesRemaining: totalClasses - completedClasses || 8,
+    nextPayment: "Jan 15, 2025",
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
@@ -120,7 +133,13 @@ export default function DashboardPage() {
           <ScheduleCard />
         </div>
         <div data-onboarding="client-progress" className="flex flex-col gap-6">
-          <ProgressDonutCard data={mockProgressData} />
+          {bookingsLoading ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center h-48">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <ProgressDonutCard data={progressData} />
+          )}
           <YearlyBarChart />
         </div>
       </div>

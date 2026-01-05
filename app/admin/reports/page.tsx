@@ -749,7 +749,7 @@ export default function ReportsPage() {
                       const printWindow = window.open("", "_blank");
                       if (printWindow) {
                         const tableRows = exportData.data.map(row =>
-                          `<tr>${exportData.headers.map(h => `<td style="border: 1px solid #ddd; padding: 8px;">${row[h.key]}</td>`).join("")}</tr>`
+                          `<tr>${exportData.headers.map(h => `<td style="border: 1px solid #ddd; padding: 8px;">${(row as Record<string, unknown>)[h.key]}</td>`).join("")}</tr>`
                         ).join("");
 
                         printWindow.document.write(`
