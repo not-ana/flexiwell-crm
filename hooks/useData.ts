@@ -75,6 +75,9 @@ export function useClients(params?: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchClients = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -89,7 +92,8 @@ export function useClients(params?: {
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchClients();
@@ -174,6 +178,9 @@ export function useStaff(params?: { role?: string; status?: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -188,7 +195,8 @@ export function useStaff(params?: { role?: string; status?: string }) {
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchStaff();
@@ -246,6 +254,9 @@ export function useClasses(params?: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchClasses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -260,7 +271,8 @@ export function useClasses(params?: {
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchClasses();
@@ -318,6 +330,9 @@ export function useBookings(params?: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -332,7 +347,8 @@ export function useBookings(params?: {
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchBookings();
@@ -385,6 +401,9 @@ export function usePayments(params?: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchPayments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -400,7 +419,8 @@ export function usePayments(params?: {
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchPayments();
@@ -540,6 +560,9 @@ export function useTeacherClasses(params?: { startDate?: string; endDate?: strin
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Serialize params to avoid infinite loop
+  const paramsKey = JSON.stringify(params || {});
+
   const fetchClasses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -553,7 +576,8 @@ export function useTeacherClasses(params?: { startDate?: string; endDate?: strin
     }
 
     setIsLoading(false);
-  }, [params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
     fetchClasses();

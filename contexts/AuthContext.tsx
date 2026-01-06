@@ -82,43 +82,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If authenticated, check role-based access
-    if (user) {
-      const userAllowedPrefixes = roleRoutes[user.role] || [];
-      const isAccessingRoleRoute = Object.values(roleRoutes)
-        .flat()
-        .some((prefix) => pathname.startsWith(prefix));
-
-      if (isAccessingRoleRoute) {
-        const hasAccess = userAllowedPrefixes.some((prefix) =>
-          pathname.startsWith(prefix)
-        );
-
-        if (!hasAccess) {
-          // Redirect to user's default dashboard
-          const defaultRoute =
-            user.role === "admin"
-              ? "/admin"
-              : user.role === "teacher"
-              ? "/teacher"
-              : "/dashboard";
-          router.push(defaultRoute);
-        }
-      }
-    }
+    // Note: Role-based access check disabled to allow demo switching between dashboards
+    // In production, you would enable this to restrict access based on user role
   }, [user, isLoading, pathname, router]);
 
   const login = useCallback(
     async (credentials: LoginRequest) => {
       try {
+        console.log("[Auth] Attempting login with:", credentials.email);
         const response = await authApi.login(credentials);
+        console.log("[Auth] Login response:", response);
 
         if (response.error) {
+          console.log("[Auth] Login error:", response.error);
           return { success: false, error: response.error.error };
         }
 
         if (response.data) {
           const { user, tokens } = response.data;
+          console.log("[Auth] Login successful, user:", user);
           storeTokens(tokens.accessToken, tokens.refreshToken);
           setUser(user);
 
@@ -129,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               : user.role === "teacher"
               ? "/teacher"
               : "/dashboard";
+          console.log("[Auth] Redirecting to:", redirectPath);
           router.push(redirectPath);
 
           return { success: true };
@@ -136,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return { success: false, error: "Unknown error occurred" };
       } catch (error) {
+        console.error("[Auth] Login exception:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Login failed",

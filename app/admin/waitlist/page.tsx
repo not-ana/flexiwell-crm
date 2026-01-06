@@ -9,11 +9,11 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
   {
     id: "1",
     clientId: "c1",
-    clientName: "Maria Santos",
-    clientEmail: "maria@email.com",
-    clientPhone: "+55 11 99999-1111",
+    clientName: "Sarah Johnson",
+    clientEmail: "sarah.johnson@email.com",
+    clientPhone: "+1 555-123-4567",
     requestType: "reschedule",
-    reason: "Viagem de trabalho",
+    reason: "Business travel conflict",
     isUrgent: false,
     preferredClassTypes: ["yoga", "pilates"],
     preferredDays: ["monday", "wednesday", "friday"],
@@ -36,11 +36,11 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
   {
     id: "2",
     clientId: "c2",
-    clientName: "João Silva",
-    clientEmail: "joao@email.com",
-    clientPhone: "+55 11 99999-2222",
+    clientName: "Michael Chen",
+    clientEmail: "michael.chen@email.com",
+    clientPhone: "+1 555-234-5678",
     requestType: "extra_class",
-    reason: "Quer compensar mês anterior",
+    reason: "Wants to make up for last month",
     isUrgent: false,
     preferredClassTypes: ["pilates"],
     preferredInstructorIds: ["t1"],
@@ -60,11 +60,11 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
   {
     id: "3",
     clientId: "c3",
-    clientName: "Ana Oliveira",
-    clientEmail: "ana@email.com",
-    clientPhone: "+55 11 99999-3333",
+    clientName: "Emily Davis",
+    clientEmail: "emily.davis@email.com",
+    clientPhone: "+1 555-345-6789",
     requestType: "cancelled_by_studio",
-    reason: "Aula cancelada por falta de instrutor",
+    reason: "Class cancelled due to instructor absence",
     isUrgent: true,
     preferredClassName: "Evening Stretch",
     preferredDays: ["tuesday", "thursday"],
@@ -86,10 +86,10 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
   {
     id: "4",
     clientId: "c4",
-    clientName: "Carlos Lima",
-    clientEmail: "carlos@email.com",
+    clientName: "James Wilson",
+    clientEmail: "james.wilson@email.com",
     requestType: "reschedule",
-    reason: "Problema de saúde",
+    reason: "Health issue recovery",
     isUrgent: true,
     preferredClassTypes: ["yoga"],
     priorityScore: 110,
@@ -108,10 +108,10 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
   {
     id: "5",
     clientId: "c5",
-    clientName: "Fernanda Costa",
-    clientEmail: "fernanda@email.com",
+    clientName: "Ashley Martinez",
+    clientEmail: "ashley.martinez@email.com",
     requestType: "extra_class",
-    reason: "Quer aumentar frequência",
+    reason: "Wants to increase attendance frequency",
     isUrgent: false,
     priorityScore: 45,
     priorityBreakdown: {
@@ -133,9 +133,9 @@ const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
 // Mock available classes for assignment
 const mockAvailableClasses = [
   { id: "cl1", name: "Morning Yoga", date: new Date("2024-12-21T08:00:00"), instructor: "Ana Silva", spotsAvailable: 2 },
-  { id: "cl2", name: "Pilates Basic", date: new Date("2024-12-21T10:00:00"), instructor: "Maria Santos", spotsAvailable: 1 },
-  { id: "cl3", name: "Evening Stretch", date: new Date("2024-12-21T18:00:00"), instructor: "Carlos Lima", spotsAvailable: 3 },
-  { id: "cl4", name: "Power Pilates", date: new Date("2024-12-22T09:00:00"), instructor: "Julia Costa", spotsAvailable: 2 },
+  { id: "cl2", name: "Pilates Basic", date: new Date("2024-12-21T10:00:00"), instructor: "Jessica Thompson", spotsAvailable: 1 },
+  { id: "cl3", name: "Evening Stretch", date: new Date("2024-12-21T18:00:00"), instructor: "David Brown", spotsAvailable: 3 },
+  { id: "cl4", name: "Power Pilates", date: new Date("2024-12-22T09:00:00"), instructor: "Rachel Green", spotsAvailable: 2 },
 ];
 
 const requestTypeLabels: Record<WaitlistRequestType, { label: string; color: string }> = {
@@ -191,7 +191,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    alert("Configurações de prioridade salvas!");
+    alert("Priority settings saved!");
     onClose();
   };
 
@@ -201,8 +201,8 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Configuração de Prioridade</h2>
-              <p className="text-sm text-gray-600 mt-1">Configure como a pontuação de prioridade é calculada</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Priority Settings</h2>
+              <p className="text-sm text-gray-600 mt-1">Configure how priority scores are calculated</p>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -215,13 +215,13 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
           {/* Plan Type Points */}
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Pontos por Tipo de Plano</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Plan Type Points</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { key: "annual" as const, label: "Anual", color: "bg-purple-100 text-purple-700" },
-                { key: "quarterly" as const, label: "Trimestral", color: "bg-blue-100 text-blue-700" },
-                { key: "monthly" as const, label: "Mensal", color: "bg-green-100 text-green-700" },
-                { key: "drop-in" as const, label: "Avulso", color: "bg-gray-100 text-gray-700" },
+                { key: "annual" as const, label: "Annual", color: "bg-purple-100 text-purple-700" },
+                { key: "quarterly" as const, label: "Quarterly", color: "bg-blue-100 text-blue-700" },
+                { key: "monthly" as const, label: "Monthly", color: "bg-green-100 text-green-700" },
+                { key: "drop-in" as const, label: "Drop-in", color: "bg-gray-100 text-gray-700" },
               ].map((plan) => (
                 <div key={plan.key} className="p-3 border border-gray-200 rounded-lg">
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${plan.color}`}>
@@ -246,7 +246,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
           {/* Bonus Points */}
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Pontos de Bônus</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Bonus Points</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -266,7 +266,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🏢</span>
-                  <span className="text-sm font-medium text-gray-900">Cancelado Estúdio</span>
+                  <span className="text-sm font-medium text-gray-900">Studio Cancelled</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -281,7 +281,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🚨</span>
-                  <span className="text-sm font-medium text-gray-900">Urgente</span>
+                  <span className="text-sm font-medium text-gray-900">Urgent</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -298,12 +298,12 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
           {/* Dynamic Points */}
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Pontos Dinâmicos</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Dynamic Points</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">⏳</span>
-                  <span className="text-sm font-medium text-gray-900">Tempo de Espera</span>
+                  <span className="text-sm font-medium text-gray-900">Waiting Time</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -313,13 +313,13 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                     onChange={(e) => setConfig({ ...config, waitingTimePointsPerDay: parseFloat(e.target.value) || 0 })}
                     className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
-                  <span className="text-xs text-gray-500">pts/dia</span>
+                  <span className="text-xs text-gray-500">pts/day</span>
                 </div>
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">📊</span>
-                  <span className="text-sm font-medium text-gray-900">Taxa de Frequência</span>
+                  <span className="text-sm font-medium text-gray-900">Attendance Rate</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -337,10 +337,10 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
           {/* Notification Timing */}
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Tempo de Notificação</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Notification Timing</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 border border-gray-200 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Janela de Resposta</p>
+                <p className="text-xs text-gray-500 mb-1">Response Window</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -352,7 +352,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 </div>
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Auto-declínio após</p>
+                <p className="text-xs text-gray-500 mb-1">Auto-decline after</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -364,7 +364,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 </div>
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Máx. notificações</p>
+                <p className="text-xs text-gray-500 mb-1">Max notifications</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -372,7 +372,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                     onChange={(e) => setConfig({ ...config, maxNotificationsPerSlot: parseInt(e.target.value) || 0 })}
                     className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
-                  <span className="text-xs text-gray-500">/vaga</span>
+                  <span className="text-xs text-gray-500">/slot</span>
                 </div>
               </div>
             </div>
@@ -380,11 +380,11 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
           {/* Example Calculation */}
           <div className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Exemplo de Cálculo</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Example Calculation</h4>
             <div className="text-xs text-gray-600 space-y-1">
-              <p>Plano Anual ({config.planTypePoints.annual} pts) + VIP (+{config.vipBonus} pts) + 3 dias esperando (+{config.waitingTimePointsPerDay * 3} pts) + 90% frequência (+{Math.round(config.attendanceRateMultiplier * 90)} pts)</p>
+              <p>Annual Plan ({config.planTypePoints.annual} pts) + VIP (+{config.vipBonus} pts) + 3 days waiting (+{config.waitingTimePointsPerDay * 3} pts) + 90% attendance (+{Math.round(config.attendanceRateMultiplier * 90)} pts)</p>
               <p className="font-semibold text-gray-900 pt-1">
-                Total: {config.planTypePoints.annual + config.vipBonus + (config.waitingTimePointsPerDay * 3) + Math.round(config.attendanceRateMultiplier * 90)} pontos
+                Total: {config.planTypePoints.annual + config.vipBonus + (config.waitingTimePointsPerDay * 3) + Math.round(config.attendanceRateMultiplier * 90)} points
               </p>
             </div>
           </div>
@@ -392,10 +392,10 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
         <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col-reverse sm:flex-row gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            Cancelar
+            Cancel
           </button>
           <button onClick={handleSave} className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
-            Salvar Configurações
+            Save Settings
           </button>
         </div>
       </div>

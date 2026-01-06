@@ -5,55 +5,59 @@ import { ChevronIcon, CalendarIcon } from "@/components/icons";
 
 // Mock data for reports
 const revenueData = {
-  total: 45680,
-  growth: 12.5,
+  total: 187450,
+  growth: 23.8,
   monthly: [
-    { month: "Jan", revenue: 3200, clients: 42 },
-    { month: "Feb", revenue: 3500, clients: 45 },
-    { month: "Mar", revenue: 4100, clients: 52 },
-    { month: "Apr", revenue: 3800, clients: 48 },
-    { month: "May", revenue: 4500, clients: 56 },
-    { month: "Jun", revenue: 4200, clients: 54 },
-    { month: "Jul", revenue: 4800, clients: 61 },
-    { month: "Aug", revenue: 5100, clients: 65 },
-    { month: "Sep", revenue: 4600, clients: 58 },
-    { month: "Oct", revenue: 5200, clients: 68 },
-    { month: "Nov", revenue: 5400, clients: 72 },
-    { month: "Dec", revenue: 5680, clients: 76 },
+    { month: "Jan", revenue: 12400, clients: 89 },
+    { month: "Feb", revenue: 13200, clients: 94 },
+    { month: "Mar", revenue: 14800, clients: 102 },
+    { month: "Apr", revenue: 13900, clients: 98 },
+    { month: "May", revenue: 15600, clients: 112 },
+    { month: "Jun", revenue: 14200, clients: 108 },
+    { month: "Jul", revenue: 16400, clients: 118 },
+    { month: "Aug", revenue: 17800, clients: 126 },
+    { month: "Sep", revenue: 15200, clients: 114 },
+    { month: "Oct", revenue: 18200, clients: 132 },
+    { month: "Nov", revenue: 19400, clients: 142 },
+    { month: "Dec", revenue: 26350, clients: 156 },
   ],
 };
 
 const classMetrics = {
-  totalClasses: 324,
-  avgAttendance: 87,
-  cancelRate: 8.2,
+  totalClasses: 847,
+  avgAttendance: 89,
+  cancelRate: 5.4,
   popularClasses: [
-    { name: "Morning Yoga", sessions: 48, avgAttendance: 92, revenue: 4200 },
-    { name: "Pilates Basic", sessions: 42, avgAttendance: 88, revenue: 3800 },
-    { name: "Evening Stretch", sessions: 36, avgAttendance: 85, revenue: 3200 },
-    { name: "Power Pilates", sessions: 32, avgAttendance: 90, revenue: 2900 },
-    { name: "Meditation", sessions: 28, avgAttendance: 78, revenue: 2100 },
+    { name: "Morning Yoga", sessions: 124, avgAttendance: 94, revenue: 18600 },
+    { name: "Pilates Reformer", sessions: 108, avgAttendance: 96, revenue: 21600 },
+    { name: "Evening Stretch", sessions: 96, avgAttendance: 88, revenue: 11520 },
+    { name: "Power Pilates", sessions: 84, avgAttendance: 91, revenue: 15120 },
+    { name: "Functional Training", sessions: 72, avgAttendance: 85, revenue: 10080 },
+    { name: "Mat Pilates", sessions: 68, avgAttendance: 87, revenue: 8160 },
+    { name: "Meditation & Breathwork", sessions: 56, avgAttendance: 82, revenue: 5600 },
   ],
 };
 
 const instructorMetrics = [
-  { name: "Ana Silva", classes: 86, students: 245, rating: 4.9, revenue: 12400 },
-  { name: "Maria Santos", classes: 72, students: 198, rating: 4.8, revenue: 10800 },
-  { name: "Carlos Lima", classes: 64, students: 176, rating: 4.7, revenue: 9200 },
-  { name: "Julia Costa", classes: 58, students: 156, rating: 4.6, revenue: 8400 },
+  { name: "Ana Silva", classes: 186, students: 412, rating: 4.9, revenue: 42800 },
+  { name: "Maria Santos", classes: 164, students: 356, rating: 4.8, revenue: 38200 },
+  { name: "Carlos Lima", classes: 148, students: 298, rating: 4.7, revenue: 32400 },
+  { name: "Julia Costa", classes: 132, students: 267, rating: 4.9, revenue: 28600 },
+  { name: "Roberto Mendes", classes: 118, students: 234, rating: 4.6, revenue: 24800 },
+  { name: "Fernanda Oliveira", classes: 99, students: 198, rating: 4.8, revenue: 20650 },
 ];
 
 const clientMetrics = {
-  totalClients: 76,
-  activeClients: 68,
-  newThisMonth: 12,
-  churnRate: 3.2,
-  retention: 96.8,
+  totalClients: 312,
+  activeClients: 287,
+  newThisMonth: 34,
+  churnRate: 2.8,
+  retention: 97.2,
   planDistribution: [
-    { plan: "Monthly - 8 classes", count: 32, percentage: 42 },
-    { plan: "Monthly - 12 classes", count: 24, percentage: 32 },
-    { plan: "Quarterly", count: 12, percentage: 16 },
-    { plan: "Annual", count: 8, percentage: 10 },
+    { plan: "Monthly - 8 classes", count: 98, percentage: 31 },
+    { plan: "Monthly - 12 classes", count: 112, percentage: 36 },
+    { plan: "Quarterly", count: 62, percentage: 20 },
+    { plan: "Annual", count: 40, percentage: 13 },
   ],
 };
 
@@ -81,18 +85,29 @@ function StatCard({ title, value, change, changeType, suffix = "" }: {
 
 function BarChart({ data, height = 200 }: { data: { label: string; value: number }[]; height?: number }) {
   const maxValue = Math.max(...data.map(d => d.value));
+  const barAreaHeight = height - 24; // Reserve space for labels
 
   return (
-    <div className="flex items-end justify-between gap-2" style={{ height }}>
-      {data.map((item, index) => (
-        <div key={index} className="flex-1 flex flex-col items-center gap-2">
-          <div
-            className="w-full bg-primary-500 rounded-t-lg transition-all hover:bg-primary-600"
-            style={{ height: `${(item.value / maxValue) * 100}%`, minHeight: 4 }}
-          />
-          <span className="text-xs text-gray-500">{item.label}</span>
-        </div>
-      ))}
+    <div style={{ height }}>
+      <div className="flex items-end gap-3" style={{ height: barAreaHeight }}>
+        {data.map((item, index) => {
+          const barHeight = Math.max((item.value / maxValue) * 100, 2);
+          return (
+            <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
+              <div
+                className="w-[60%] bg-primary-500 rounded-t-lg transition-all hover:bg-primary-600 cursor-pointer"
+                style={{ height: `${barHeight}%` }}
+                title={`${item.label}: R$ ${item.value.toLocaleString()}`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-3 mt-2">
+        {data.map((item, index) => (
+          <span key={index} className="flex-1 text-xs text-gray-500 text-center">{item.label}</span>
+        ))}
+      </div>
     </div>
   );
 }
