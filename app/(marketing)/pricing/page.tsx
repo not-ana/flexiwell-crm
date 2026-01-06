@@ -21,6 +21,7 @@ interface PricingPlan {
   yearlyTotal: number;
   highlighted?: boolean;
   badge?: string;
+  customPricing?: boolean; // For enterprise - contact sales instead of showing price
   features: {
     category: string;
     items: { name: string; included: boolean; note?: string }[];
@@ -282,10 +283,11 @@ const plans: PricingPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "For studio networks and franchises requiring unlimited scale and customization.",
-    monthlyPrice: 399,
-    yearlyPrice: 319,
-    yearlyTotal: 3828,
+    monthlyPrice: 0, // Custom pricing - contact sales
+    yearlyPrice: 0,
+    yearlyTotal: 0,
     badge: "White Label Included",
+    customPricing: true,
     features: [
       {
         category: "Client Management",
@@ -478,7 +480,7 @@ export default function PricingPage() {
           )}
 
           <span className="inline-block px-4 py-1.5 bg-primary-100 text-primary-700 text-sm font-medium rounded-full mb-6">
-            30-day free trial • No credit card required
+            30-day free trial • Cancel anytime
           </span>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
             Invest in technology that<br />
@@ -550,16 +552,29 @@ export default function PricingPage() {
                   <p className="text-sm text-gray-600 mt-2 min-h-[40px]">{plan.description}</p>
 
                   <div className="mt-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-gray-900">
-                        ${billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice}
-                      </span>
-                      <span className="text-gray-500">/month</span>
-                    </div>
-                    {billingCycle === "yearly" && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        ${plan.yearlyTotal.toLocaleString()}/year (save ${((plan.monthlyPrice - plan.yearlyPrice) * 12).toLocaleString()})
-                      </p>
+                    {plan.customPricing ? (
+                      <>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-gray-900">Custom</span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Tailored pricing for your needs
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-gray-900">
+                            ${billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice}
+                          </span>
+                          <span className="text-gray-500">/month</span>
+                        </div>
+                        {billingCycle === "yearly" && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            ${plan.yearlyTotal.toLocaleString()}/year (save ${((plan.monthlyPrice - plan.yearlyPrice) * 12).toLocaleString()})
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -745,7 +760,7 @@ export default function PricingPage() {
               },
               {
                 q: "How does the 30-day free trial work?",
-                a: "Start using FlexiWell immediately with full access to all features in your chosen plan. No credit card required. After 30 days, you can subscribe to continue or cancel with no obligations.",
+                a: "Add your payment method and start using FlexiWell immediately with full access to all features in your chosen plan. You won't be charged during the 30-day trial. Cancel anytime before the trial ends to avoid charges.",
               },
               {
                 q: "What if I need more clients or locations?",

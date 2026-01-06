@@ -158,7 +158,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             Ready to try FlexiWell?
           </h2>
           <p className="text-primary-100 text-lg mb-8">
-            Start your 30-day free trial today. No credit card required.
+            Start your 30-day free trial today. Cancel anytime.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

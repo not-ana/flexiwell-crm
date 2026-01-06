@@ -16,6 +16,7 @@ export interface PricingPlan {
     annual: number; // per month when billed annually
     annualTotal: number;
     currency: Currency;
+    customPricing?: boolean; // For enterprise - contact sales
   };
   limits: {
     clients: number | "unlimited";
@@ -252,12 +253,13 @@ export const pricingPlans: PricingPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "For studio networks.",
-    tagline: "Unlimited",
+    tagline: "Custom Pricing",
     pricing: {
-      monthly: 399,
-      annual: 319,
-      annualTotal: 3828,
+      monthly: 0, // Custom pricing - contact sales
+      annual: 0,
+      annualTotal: 0,
       currency: "USD",
+      customPricing: true,
     },
     limits: {
       clients: "unlimited",
@@ -491,7 +493,7 @@ export function getPlanRecommendation(
 // Free trial configuration
 export const trialConfig = {
   durationDays: 30,
-  requiresCreditCard: false,
+  requiresCreditCard: true,
   features: "full", // Full access to selected plan features during trial
 };
 

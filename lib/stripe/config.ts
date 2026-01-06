@@ -81,7 +81,7 @@ export function isDowngrade(fromTier: PlanTier, toTier: PlanTier): boolean {
 // Trial configuration for Stripe
 export const stripeTrialConfig = {
   trialPeriodDays: 30,
-  requirePaymentMethod: false, // Set to true if you want card upfront
+  requirePaymentMethod: true, // Requires credit card upfront
 };
 
 // Subscription behavior on plan changes

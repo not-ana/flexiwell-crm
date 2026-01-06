@@ -107,7 +107,7 @@ export default function BlogPage() {
             Ready to try FlexiWell?
           </h2>
           <p className="text-primary-100 text-lg mb-8">
-            Start your 30-day free trial today. No credit card required.
+            Start your 30-day free trial today. Cancel anytime.
           </p>
           <Link
             href="/signup"
