@@ -45,7 +45,10 @@ interface MakeupRequest {
   status: "pending" | "scheduled" | "completed";
 }
 
-const mockTodaySchedule: TodaySchedule[] = [
+// Set to true to show empty states (for new users)
+const DEMO_MODE = false;
+
+const mockTodaySchedule: TodaySchedule[] = DEMO_MODE ? [] : [
   { id: "1", name: "Morning Yoga", time: "07:00 - 08:00", status: "completed", students: 12, room: "Studio A" },
   { id: "2", name: "Pilates Basics", time: "09:00 - 10:00", status: "completed", students: 8, room: "Studio B" },
   { id: "3", name: "Core Training", time: "11:00 - 12:00", status: "in-progress", students: 15, room: "Studio A" },
@@ -54,14 +57,14 @@ const mockTodaySchedule: TodaySchedule[] = [
   { id: "6", name: "Evening Relaxation", time: "19:00 - 20:00", status: "upcoming", students: 6, room: "Studio B" },
 ];
 
-const mockUpcomingClasses: UpcomingClass[] = [
+const mockUpcomingClasses: UpcomingClass[] = DEMO_MODE ? [] : [
   { id: "1", name: "Morning Yoga", time: "Tomorrow, 07:00", duration: "1h", students: 10, maxStudents: 15, room: "Studio A" },
   { id: "2", name: "Pilates Advanced", time: "Tomorrow, 10:00", duration: "1h", students: 8, maxStudents: 10, room: "Studio B" },
   { id: "3", name: "Core Training", time: "Wed, 11:00", duration: "1h", students: 12, maxStudents: 15, room: "Studio A" },
   { id: "4", name: "Power Yoga", time: "Wed, 17:00", duration: "1.5h", students: 14, maxStudents: 20, room: "Main Hall" },
 ];
 
-const mockStudentAttendance: StudentAttendance[] = [
+const mockStudentAttendance: StudentAttendance[] = DEMO_MODE ? [] : [
   { id: "1", name: "Lucas Brooks", initials: "LB", classesAttended: 18, totalClasses: 20, lastClass: "Today", needsMakeup: false },
   { id: "2", name: "Camille Stone", initials: "CS", classesAttended: 15, totalClasses: 20, lastClass: "Yesterday", needsMakeup: true },
   { id: "3", name: "Ryan Lewis", initials: "RL", classesAttended: 12, totalClasses: 20, lastClass: "2 days ago", needsMakeup: true },
@@ -69,7 +72,7 @@ const mockStudentAttendance: StudentAttendance[] = [
   { id: "5", name: "Patrick Adams", initials: "PA", classesAttended: 8, totalClasses: 20, lastClass: "1 week ago", needsMakeup: true },
 ];
 
-const mockMakeupRequests: MakeupRequest[] = [
+const mockMakeupRequests: MakeupRequest[] = DEMO_MODE ? [] : [
   { id: "1", studentName: "Camille Stone", studentInitials: "CS", originalClass: "Morning Yoga", originalDate: "Dec 20", status: "pending" },
   { id: "2", studentName: "Ryan Lewis", studentInitials: "RL", originalClass: "Core Training", originalDate: "Dec 18", requestedDate: "Dec 28, 10:00 AM", status: "scheduled" },
   { id: "3", studentName: "Patrick Adams", studentInitials: "PA", originalClass: "Pilates Basics", originalDate: "Dec 15", status: "pending" },
@@ -377,7 +380,17 @@ export default function TeacherDashboard() {
 
               {activeTab === "today" ? (
                 <div className="divide-y divide-gray-200">
-                  {(showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
+                  {mockTodaySchedule.length === 0 ? (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No classes today</h3>
+                      <p className="text-sm text-gray-500">Your schedule is clear for today. Enjoy your day off!</p>
+                    </div>
+                  ) : (showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
                     <div
                       key={classItem.id}
                       className={`px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors ${
@@ -429,7 +442,17 @@ export default function TeacherDashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {mockMakeupRequests.map((request) => (
+                  {mockMakeupRequests.length === 0 ? (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">No makeup requests</h3>
+                      <p className="text-sm text-gray-500">All students are up to date with their classes.</p>
+                    </div>
+                  ) : mockMakeupRequests.map((request) => (
                     <div key={request.id} className="px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3 lg:gap-4">
                         <StudentAvatar name={request.studentName} initials={request.studentInitials} />
@@ -489,7 +512,17 @@ export default function TeacherDashboard() {
                 <p className="text-xs sm:text-sm text-gray-500">Next few days</p>
               </div>
               <div className="divide-y divide-gray-200">
-                {mockUpcomingClasses.map((classItem) => (
+                {mockUpcomingClasses.length === 0 ? (
+                  <div className="py-10 px-4 text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No upcoming classes</h3>
+                    <p className="text-xs text-gray-500">Classes will appear here once scheduled.</p>
+                  </div>
+                ) : mockUpcomingClasses.map((classItem) => (
                   <div key={classItem.id} className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-semibold text-gray-900">{classItem.name}</p>
@@ -527,7 +560,17 @@ export default function TeacherDashboard() {
                 <p className="text-xs sm:text-sm text-gray-500">Track your regular students</p>
               </div>
               <div className="divide-y divide-gray-200">
-                {mockStudentAttendance.map((student) => (
+                {mockStudentAttendance.length === 0 ? (
+                  <div className="py-10 px-4 text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No students yet</h3>
+                    <p className="text-xs text-gray-500">Students will appear here after their first class.</p>
+                  </div>
+                ) : mockStudentAttendance.map((student) => (
                   <div key={student.id} className="px-4 sm:px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
                     <StudentAvatar name={student.name} initials={student.initials} />
                     <div className="flex-1 min-w-0">

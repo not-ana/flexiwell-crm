@@ -1,0 +1,74 @@
+<svg width="600" height="450" viewBox="0 0 600 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="600" height="450" rx="16" fill="#1e1e2e"/>
+
+  <!-- Chat bubble from user (top right) -->
+  <rect x="280" y="30" width="280" height="60" rx="12" fill="#3a3a4d"/>
+  <text x="300" y="55" fill="#e0e0e0" font-size="11" font-family="Arial">Need help with booking</text>
+  <text x="300" y="72" fill="#e0e0e0" font-size="11" font-family="Arial">integration...</text>
+
+  <!-- User avatar -->
+  <circle cx="580" y="60" r="18" fill="#a78bfa"/>
+  <text x="580" y="65" text-anchor="middle" fill="white" font-size="11" font-family="Arial" font-weight="bold">Y</text>
+
+  <!-- Support response bubble (green) -->
+  <rect x="40" y="120" width="260" height="80" rx="16" fill="#22c55e"/>
+  <text x="60" y="148" fill="white" font-size="12" font-family="Arial" font-weight="500">Hi! I'm here to help.</text>
+  <text x="60" y="168" fill="white" font-size="12" font-family="Arial" font-weight="500">Let me walk you through</text>
+  <text x="60" y="188" fill="white" font-size="12" font-family="Arial" font-weight="500">the setup right now!</text>
+
+  <!-- FlexiWell avatar -->
+  <circle cx="60" cy="225" r="16" fill="#22c55e"/>
+  <text x="60" y="230" text-anchor="middle" fill="white" font-size="9" font-family="Arial" font-weight="bold">FW</text>
+
+  <!-- Response time card -->
+  <rect x="360" y="140" width="180" height="70" rx="12" fill="#3a3a4d"/>
+  <text x="380" y="168" fill="#9ca3af" font-size="10" font-family="Arial">Response time</text>
+  <text x="380" y="192" fill="#22c55e" font-size="20" font-family="Arial" font-weight="bold">&lt; 30 min</text>
+
+  <!-- Bottom cards row -->
+  <!-- Direct Slack card -->
+  <rect x="40" y="280" width="160" height="70" rx="12" fill="#3a3a4d"/>
+  <rect x="60" y="300" width="24" height="24" rx="4" fill="#4A154B"/>
+  <text x="66" y="317" fill="white" font-size="12" font-family="Arial" font-weight="bold">#</text>
+  <text x="95" y="317" fill="white" font-size="12" font-family="Arial" font-weight="500">Direct Slack</text>
+
+  <!-- VIP Support badge -->
+  <rect x="220" y="280" width="160" height="70" rx="12" fill="#3a3a4d"/>
+  <rect x="240" y="295" width="120" height="40" rx="8" fill="#7c3aed"/>
+  <text x="300" y="312" text-anchor="middle" fill="white" font-size="9" font-family="Arial">VIP</text>
+  <text x="300" y="326" text-anchor="middle" fill="white" font-size="11" font-family="Arial" font-weight="bold">SUPPORT</text>
+
+  <!-- Online indicator card -->
+  <rect x="400" y="280" width="160" height="70" rx="12" fill="#3a3a4d"/>
+  <circle cx="430" cy="315" r="8" fill="#22c55e"/>
+  <text x="450" y="312" fill="#9ca3af" font-size="10" font-family="Arial">Team Status</text>
+  <text x="450" y="328" fill="#22c55e" font-size="12" font-family="Arial" font-weight="bold">Online Now</text>
+
+  <!-- Decorative elements -->
+  <!-- Small dots pattern -->
+  <circle cx="520" cy="250" r="3" fill="#4a4a5e" opacity="0.5"/>
+  <circle cx="540" cy="250" r="3" fill="#4a4a5e" opacity="0.5"/>
+  <circle cx="560" cy="250" r="3" fill="#4a4a5e" opacity="0.5"/>
+
+  <!-- Connection lines -->
+  <path d="M300 200 Q350 230 360 175" stroke="#4a4a5e" stroke-width="1.5" fill="none" stroke-dasharray="4,4"/>
+
+  <!-- Feature highlights at bottom -->
+  <rect x="40" y="380" width="520" height="50" rx="10" fill="#2a2a3e"/>
+  <circle cx="80" cy="405" r="12" fill="#22c55e" opacity="0.2"/>
+  <text x="80" y="409" text-anchor="middle" fill="#22c55e" font-size="12" font-family="Arial">1</text>
+  <text x="105" y="409" fill="#e0e0e0" font-size="11" font-family="Arial">Setup Call</text>
+
+  <circle cx="200" cy="405" r="12" fill="#22c55e" opacity="0.2"/>
+  <text x="200" y="409" text-anchor="middle" fill="#22c55e" font-size="12" font-family="Arial">2</text>
+  <text x="225" y="409" fill="#e0e0e0" font-size="11" font-family="Arial">Migration</text>
+
+  <circle cx="330" cy="405" r="12" fill="#22c55e" opacity="0.2"/>
+  <text x="330" y="409" text-anchor="middle" fill="#22c55e" font-size="12" font-family="Arial">3</text>
+  <text x="355" y="409" fill="#e0e0e0" font-size="11" font-family="Arial">Training</text>
+
+  <circle cx="460" cy="405" r="12" fill="#22c55e" opacity="0.2"/>
+  <text x="460" y="409" text-anchor="middle" fill="#22c55e" font-size="12" font-family="Arial">4</text>
+  <text x="485" y="409" fill="#e0e0e0" font-size="11" font-family="Arial">Go Live!</text>
+</svg>

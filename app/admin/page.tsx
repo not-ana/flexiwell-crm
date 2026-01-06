@@ -32,7 +32,10 @@ interface OverviewStat {
   color: string;
 }
 
-const mockStaffPerformance: StaffPerformance[] = [
+// Set to true to show empty states (for new users)
+const DEMO_MODE = false;
+
+const mockStaffPerformance: StaffPerformance[] = DEMO_MODE ? [] : [
   {
     id: "1",
     name: "Sarah Johnson",
@@ -200,7 +203,7 @@ const getOverviewStats = (period: string, year: number): OverviewStat[] => {
   ];
 };
 
-const recentActivity = [
+const recentActivity = DEMO_MODE ? [] : [
   { id: 1, action: "New client registration", name: "Lucas Brooks", time: "5 min ago", type: "client" },
   { id: 2, action: "Class completed", name: "Morning Yoga", time: "1 hour ago", type: "class" },
   { id: 3, action: "Payment received", name: "$350.00", time: "2 hours ago", type: "payment" },
@@ -208,7 +211,7 @@ const recentActivity = [
   { id: 5, action: "Class canceled", name: "Evening Stretch", time: "5 hours ago", type: "cancel" },
 ];
 
-const upcomingClasses = [
+const upcomingClasses = DEMO_MODE ? [] : [
   { id: 1, name: "Morning Pilates", time: "9:00 AM", instructor: "Sarah Johnson", enrolled: 8, capacity: 12 },
   { id: 2, name: "Yoga Flow", time: "10:30 AM", instructor: "James Wilson", enrolled: 10, capacity: 10 },
   { id: 3, name: "Stretch & Relax", time: "2:00 PM", instructor: "Emily Davis", enrolled: 6, capacity: 15 },
@@ -509,6 +512,23 @@ export default function AdminDashboard() {
                 </Link>
               </div>
               <div className="overflow-x-auto">
+                {mockStaffPerformance.length === 0 ? (
+                  <div className="py-12 px-4 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No staff members yet</h3>
+                    <p className="text-sm text-gray-500 mb-4">Add your first instructor or staff member to see their performance here.</p>
+                    <Link href="/admin/staff" className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Staff
+                    </Link>
+                  </div>
+                ) : (
                 <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
@@ -586,6 +606,7 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+                )}
               </div>
             </div>
 
@@ -605,7 +626,17 @@ export default function AdminDashboard() {
                 </Link>
               </div>
               <div className="divide-y divide-gray-200">
-                {upcomingClasses.map((cls) => (
+                {upcomingClasses.length === 0 ? (
+                  <div className="py-12 px-4 text-center">
+                    <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">No classes scheduled</h3>
+                    <p className="text-sm text-gray-500">Create your first class to see it here.</p>
+                  </div>
+                ) : upcomingClasses.map((cls) => (
                   <div key={cls.id} className="px-4 sm:px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
                     <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
                       <span className="text-sm font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
@@ -673,7 +704,17 @@ export default function AdminDashboard() {
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">Latest updates from your studio</p>
               </div>
               <div className="divide-y divide-gray-200">
-                {recentActivity.map((activity) => (
+                {recentActivity.length === 0 ? (
+                  <div className="py-10 px-4 text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No activity yet</h3>
+                    <p className="text-xs text-gray-500">Activity from your studio will appear here.</p>
+                  </div>
+                ) : recentActivity.map((activity) => (
                   <div key={activity.id} className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${

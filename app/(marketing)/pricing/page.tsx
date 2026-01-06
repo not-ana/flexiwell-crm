@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { createCheckoutForPlan, redirectToCheckout } from "@/lib/stripe/client";
+import type { PlanTier, BillingPeriod } from "@/lib/config/pricing";
 
 // FlexiWell CRM Premium Pricing
 // Target: Studios with 50+ active clients, established businesses, tech-savvy owners
@@ -395,6 +398,43 @@ function XIcon({ className }: { className?: string }) {
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  const canceled = searchParams.get("canceled") === "true";
+
+  const handleSubscribe = async (planId: string) => {
+    // Enterprise plan goes to contact sales
+    if (planId === "enterprise") {
+      window.location.href = "/contact?plan=enterprise";
+      return;
+    }
+
+    setLoadingPlan(planId);
+    setError(null);
+
+    try {
+      const billingPeriod: BillingPeriod = billingCycle === "yearly" ? "annual" : "monthly";
+      const response = await createCheckoutForPlan({
+        planTier: planId as PlanTier,
+        billingPeriod,
+      });
+
+      if (response.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.url;
+      } else if (response.sessionId) {
+        // Fallback to client-side redirect
+        await redirectToCheckout(response.sessionId);
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setError(err instanceof Error ? err.message : "Failed to start checkout. Please try again.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -423,6 +463,20 @@ export default function PricingPage() {
       {/* Hero */}
       <section className="bg-gradient-to-b from-white to-gray-50 py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {canceled && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-md mx-auto">
+              <p className="text-yellow-800 text-sm">
+                Checkout was canceled. Feel free to try again when you're ready.
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl max-w-md mx-auto">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+
           <span className="inline-block px-4 py-1.5 bg-primary-100 text-primary-700 text-sm font-medium rounded-full mb-6">
             30-day free trial • No credit card required
           </span>
@@ -510,13 +564,25 @@ export default function PricingPage() {
                   </div>
 
                   <button
-                    className={`w-full mt-6 px-6 py-3 text-sm font-medium rounded-xl transition-colors ${
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={loadingPlan !== null}
+                    className={`w-full mt-6 px-6 py-3 text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       plan.highlighted
                         ? "bg-primary-600 text-white hover:bg-primary-700"
                         : "bg-gray-900 text-white hover:bg-gray-800"
                     }`}
                   >
-                    {plan.cta}
+                    {loadingPlan === plan.id ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      plan.cta
+                    )}
                   </button>
 
                   {/* Limits */}
