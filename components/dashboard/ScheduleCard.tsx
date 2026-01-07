@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UpcomingClass {
   id: string;
@@ -10,39 +11,146 @@ interface UpcomingClass {
   dayOfWeek: string;
   time: string;
   instructor: string;
-  type: "pilates" | "yoga" | "reformer" | "stretch";
+  type: "pilates" | "yoga" | "reformer" | "stretch" | "generic";
   confirmed: boolean;
+  bookingId?: string;
 }
 
-const classTypeColors = {
+const classTypeColors: Record<string, string> = {
   pilates: "bg-purple-500",
   yoga: "bg-green-500",
   reformer: "bg-blue-500",
   stretch: "bg-orange-500",
+  generic: "bg-primary-500",
 };
 
-const upcomingClasses: UpcomingClass[] = [
-  { id: "c1", title: "Morning Pilates", date: "Dec 27", dayOfWeek: "Today", time: "9:00 AM", instructor: "Sarah", type: "pilates", confirmed: false },
-  { id: "c2", title: "Afternoon Yoga", date: "Dec 28", dayOfWeek: "Tomorrow", time: "4:00 PM", instructor: "Emily", type: "yoga", confirmed: false },
-  { id: "c3", title: "Reformer Session", date: "Dec 29", dayOfWeek: "Sunday", time: "10:00 AM", instructor: "Sarah", type: "reformer", confirmed: true },
-  { id: "c4", title: "Yoga Flow", date: "Dec 31", dayOfWeek: "Tuesday", time: "10:00 AM", instructor: "Emily", type: "yoga", confirmed: false },
-];
+function formatDayOfWeek(date: Date): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  if (targetDate.getTime() === today.getTime()) {
+    return "Today";
+  } else if (targetDate.getTime() === tomorrow.getTime()) {
+    return "Tomorrow";
+  }
+  return date.toLocaleDateString("en-US", { weekday: "long" });
+}
+
+function getClassType(className: string): UpcomingClass["type"] {
+  const lower = className.toLowerCase();
+  if (lower.includes("pilates")) return "pilates";
+  if (lower.includes("yoga")) return "yoga";
+  if (lower.includes("reformer")) return "reformer";
+  if (lower.includes("stretch") || lower.includes("alongamento")) return "stretch";
+  return "generic";
+}
 
 export default function ScheduleCard() {
-  const [classes, setClasses] = useState<UpcomingClass[]>(upcomingClasses);
+  const { user } = useAuth();
+  const [classes, setClasses] = useState<UpcomingClass[]>([]);
+  const [loading, setLoading] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  const handleConfirmClass = (classId: string) => {
+  const fetchUpcomingClasses = useCallback(async () => {
+    if (!user?.id) {
+      setClasses([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/bookings?clientId=${user.id}&status=confirmed`);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+
+      const now = new Date();
+      const upcomingBookings = (data.bookings || [])
+        .filter((b: { scheduledDate: string }) => new Date(b.scheduledDate) >= now)
+        .sort((a: { scheduledDate: string }, b: { scheduledDate: string }) =>
+          new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
+        )
+        .slice(0, 5);
+
+      const formattedClasses: UpcomingClass[] = upcomingBookings.map((booking: {
+        _id: string;
+        className: string;
+        scheduledDate: string;
+        startTime: string;
+        instructorName: string;
+        status: string;
+      }) => {
+        const scheduledDate = new Date(booking.scheduledDate);
+        const monthDay = scheduledDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return {
+          id: booking._id,
+          bookingId: booking._id,
+          title: booking.className,
+          date: monthDay,
+          dayOfWeek: formatDayOfWeek(scheduledDate),
+          time: booking.startTime,
+          instructor: booking.instructorName,
+          type: getClassType(booking.className),
+          confirmed: booking.status === "confirmed",
+        };
+      });
+
+      setClasses(formattedClasses);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      setClasses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchUpcomingClasses();
+  }, [fetchUpcomingClasses]);
+
+  const handleConfirmClass = async (classId: string) => {
     setConfirmingId(classId);
-    setTimeout(() => {
+    try {
+      // The class is already confirmed in the booking status
+      // This is for the client to acknowledge/confirm attendance
       setClasses((prev) =>
         prev.map((cls) => (cls.id === classId ? { ...cls, confirmed: true } : cls))
       );
-      setConfirmingId(null);
-    }, 500);
+    } finally {
+      setTimeout(() => setConfirmingId(null), 500);
+    }
   };
 
   const pendingCount = classes.filter((cls) => !cls.confirmed).length;
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+            <p className="text-sm text-gray-500">Loading...</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-4 rounded-xl border border-gray-200 animate-pulse">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -51,7 +159,11 @@ export default function ScheduleCard() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
           <p className="text-sm text-gray-500">
-            {pendingCount > 0 ? `${pendingCount} pending confirmation` : "All confirmed"}
+            {classes.length === 0
+              ? "No upcoming classes"
+              : pendingCount > 0
+              ? `${pendingCount} pending confirmation`
+              : "All confirmed"}
           </p>
         </div>
         <Link

@@ -1,170 +1,54 @@
 "use client";
 
-import { useState } from "react";
-import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
+import { useState, useEffect, useCallback } from "react";
+import { SearchIcon } from "@/components/icons";
 
-type PaymentStatus = "paid" | "pending" | "overdue" | "failed";
+type PaymentStatus = "paid" | "pending" | "overdue" | "failed" | "refunded";
 type PaymentFilter = "all" | PaymentStatus;
 
-interface ClientPayment {
-  id: string;
+interface Payment {
+  _id: string;
   clientId: string;
   clientName: string;
-  clientEmail: string;
-  clientInitials: string;
-  planName: string;
   amount: number;
-  dueDate: string;
-  paidDate?: string;
-  status: PaymentStatus;
-  paymentMethod?: string;
-  daysOverdue?: number;
-  unit: string;
+  currency: string;
+  type: "subscription" | "drop-in" | "package";
+  planDetails?: {
+    type: string;
+    classes: number;
+    period: string;
+  };
+  status: "pending" | "completed" | "failed" | "refunded";
+  paymentMethod: "credit_card" | "pix" | "bank_transfer" | "cash";
+  transactionId?: string;
+  invoiceUrl?: string;
+  createdAt: string;
+  paidAt?: string;
 }
 
-// Mock data - payments for the current billing cycle
-const mockPayments: ClientPayment[] = [
-  // Paid
-  {
-    id: "p1",
-    clientId: "1",
-    clientName: "Olivia Rhye",
-    clientEmail: "olivia@email.com",
-    clientInitials: "OR",
-    planName: "Monthly - 8 classes",
-    amount: 129,
-    dueDate: "Dec 15, 2024",
-    paidDate: "Dec 14, 2024",
-    status: "paid",
-    paymentMethod: "Visa •••• 4242",
-    unit: "FlexiWell Downtown",
-  },
-  {
-    id: "p2",
-    clientId: "5",
-    clientName: "Candice Wu",
-    clientEmail: "candice@email.com",
-    clientInitials: "CW",
-    planName: "Semi-annual - 48 classes",
-    amount: 599,
-    dueDate: "Dec 10, 2024",
-    paidDate: "Dec 10, 2024",
-    status: "paid",
-    paymentMethod: "Mastercard •••• 5555",
-    unit: "FlexiWell Midtown",
-  },
-  {
-    id: "p3",
-    clientId: "7",
-    clientName: "Orlando Diggs",
-    clientEmail: "orlando@email.com",
-    clientInitials: "OD",
-    planName: "Annual - 96 classes",
-    amount: 999,
-    dueDate: "Dec 1, 2024",
-    paidDate: "Nov 30, 2024",
-    status: "paid",
-    paymentMethod: "Visa •••• 1234",
-    unit: "FlexiWell Midtown",
-  },
-  // Pending (due soon)
-  {
-    id: "p4",
-    clientId: "2",
-    clientName: "Phoenix Baker",
-    clientEmail: "phoenix@email.com",
-    clientInitials: "PB",
-    planName: "Quarterly - 24 classes",
-    amount: 329,
-    dueDate: "Dec 28, 2024",
-    status: "pending",
-    unit: "FlexiWell Downtown",
-  },
-  {
-    id: "p5",
-    clientId: "6",
-    clientName: "Natali Craig",
-    clientEmail: "natali@email.com",
-    clientInitials: "NC",
-    planName: "Monthly - 8 classes",
-    amount: 129,
-    dueDate: "Dec 30, 2024",
-    status: "pending",
-    unit: "FlexiWell Midtown",
-  },
-  {
-    id: "p6",
-    clientId: "9",
-    clientName: "Kate Morrison",
-    clientEmail: "kate@email.com",
-    clientInitials: "KM",
-    planName: "Monthly - 12 classes",
-    amount: 199,
-    dueDate: "Jan 2, 2025",
-    status: "pending",
-    unit: "FlexiWell Uptown",
-  },
-  // Overdue
-  {
-    id: "p7",
-    clientId: "3",
-    clientName: "Lana Steiner",
-    clientEmail: "lana@email.com",
-    clientInitials: "LS",
-    planName: "Monthly - 8 classes",
-    amount: 129,
-    dueDate: "Dec 15, 2024",
-    status: "overdue",
-    daysOverdue: 12,
-    unit: "FlexiWell Downtown",
-  },
-  {
-    id: "p8",
-    clientId: "11",
-    clientName: "Marcus Johnson",
-    clientEmail: "marcus@email.com",
-    clientInitials: "MJ",
-    planName: "Monthly - 12 classes",
-    amount: 199,
-    dueDate: "Dec 20, 2024",
-    status: "overdue",
-    daysOverdue: 7,
-    unit: "FlexiWell Uptown",
-  },
-  {
-    id: "p9",
-    clientId: "12",
-    clientName: "Sophie Turner",
-    clientEmail: "sophie@email.com",
-    clientInitials: "ST",
-    planName: "Quarterly - 24 classes",
-    amount: 329,
-    dueDate: "Dec 18, 2024",
-    status: "overdue",
-    daysOverdue: 9,
-    unit: "FlexiWell Downtown",
-  },
-  // Failed
-  {
-    id: "p10",
-    clientId: "4",
-    clientName: "Demi Wilkinson",
-    clientEmail: "demi@email.com",
-    clientInitials: "DW",
-    planName: "Monthly - 12 classes",
-    amount: 199,
-    dueDate: "Dec 22, 2024",
-    status: "failed",
-    paymentMethod: "Visa •••• 9999",
-    unit: "FlexiWell Downtown",
-  },
-];
+interface DisplayPayment extends Omit<Payment, "status"> {
+  status: PaymentStatus;
+  clientInitials: string;
+  clientEmail: string;
+  dueDate: string;
+  paidDate?: string;
+  daysOverdue?: number;
+  planName: string;
+}
+
+interface ApiStats {
+  pending: { count: number; total: number };
+  completed: { count: number; total: number };
+  failed: { count: number; total: number };
+  refunded: { count: number; total: number };
+}
 
 const statusConfig: Record<PaymentStatus, { bg: string; text: string; dot: string; label: string }> = {
   paid: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Paid" },
   pending: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Pending" },
   overdue: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Overdue" },
   failed: { bg: "bg-gray-50", text: "text-gray-700", dot: "bg-gray-500", label: "Failed" },
+  refunded: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Refunded" },
 };
 
 function StatusBadge({ status, daysOverdue }: { status: PaymentStatus; daysOverdue?: number }) {
@@ -180,58 +64,176 @@ function StatusBadge({ status, daysOverdue }: { status: PaymentStatus; daysOverd
   );
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+function formatCurrency(value: number, currency: string = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 }
 
-type PeriodFilter = "this_month" | "last_month" | "this_quarter" | "this_year" | "custom";
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function transformPayment(payment: Payment): DisplayPayment {
+  const createdAt = new Date(payment.createdAt);
+  const now = new Date();
+
+  // Due date is 30 days from creation for subscriptions, 7 days for others
+  const daysToAdd = payment.type === "subscription" ? 30 : 7;
+  const dueDate = new Date(createdAt);
+  dueDate.setDate(dueDate.getDate() + daysToAdd);
+
+  // Calculate overdue status
+  let displayStatus: PaymentStatus;
+  let daysOverdue: number | undefined;
+
+  if (payment.status === "completed") {
+    displayStatus = "paid";
+  } else if (payment.status === "refunded") {
+    displayStatus = "refunded";
+  } else if (payment.status === "failed") {
+    displayStatus = "failed";
+  } else if (payment.status === "pending" && dueDate < now) {
+    displayStatus = "overdue";
+    daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+  } else {
+    displayStatus = "pending";
+  }
+
+  const planName = payment.planDetails
+    ? `${payment.planDetails.period} - ${payment.planDetails.classes} classes`
+    : payment.type.charAt(0).toUpperCase() + payment.type.slice(1);
+
+  return {
+    ...payment,
+    status: displayStatus,
+    clientInitials: getInitials(payment.clientName),
+    clientEmail: `${payment.clientName.toLowerCase().replace(/\s+/g, ".")}@email.com`,
+    dueDate: formatDate(dueDate.toISOString()),
+    paidDate: payment.paidAt ? formatDate(payment.paidAt) : undefined,
+    daysOverdue,
+    planName,
+  };
+}
+
+type PeriodFilter = "this_month" | "last_month" | "this_quarter" | "this_year";
 
 export default function PaymentsPage() {
+  const [payments, setPayments] = useState<DisplayPayment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [apiStats, setApiStats] = useState<ApiStats | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentFilter>("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("this_month");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [reminderTarget, setReminderTarget] = useState<ClientPayment | null>(null);
+  const [reminderTarget, setReminderTarget] = useState<DisplayPayment | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
   const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
-  const [markPaidTarget, setMarkPaidTarget] = useState<ClientPayment | null>(null);
+  const [markPaidTarget, setMarkPaidTarget] = useState<DisplayPayment | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [recordPaymentForm, setRecordPaymentForm] = useState({
-    clientId: "",
+    clientName: "",
     amount: "",
-    paymentMethod: "cash" as "cash" | "pix" | "bank_transfer",
+    paymentMethod: "cash" as "cash" | "pix" | "bank_transfer" | "credit_card",
     reference: "",
     notes: "",
+    type: "subscription" as "subscription" | "drop-in" | "package",
   });
 
-  // Filter payments
-  const filteredPayments = mockPayments.filter((payment) => {
-    const matchesSearch =
-      payment.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.clientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.planName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Calculate date range based on period filter
+      const now = new Date();
+      let dateFrom: Date;
+
+      switch (periodFilter) {
+        case "last_month":
+          dateFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          break;
+        case "this_quarter":
+          const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+          dateFrom = new Date(now.getFullYear(), quarterMonth, 1);
+          break;
+        case "this_year":
+          dateFrom = new Date(now.getFullYear(), 0, 1);
+          break;
+        default: // this_month
+          dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+
+      const params = new URLSearchParams({
+        dateFrom: dateFrom.toISOString(),
+        limit: "100",
+      });
+
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/payments?${params}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch payments");
+      }
+
+      const data = await response.json();
+
+      // Transform payments to display format
+      const transformedPayments = data.payments.map(transformPayment);
+      setPayments(transformedPayments);
+      setApiStats(data.stats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load payments");
+    } finally {
+      setLoading(false);
+    }
+  }, [periodFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
+
+  // Filter payments client-side for status
+  const filteredPayments = payments.filter((payment) => {
+    if (statusFilter === "all") return true;
+    return payment.status === statusFilter;
   });
 
-  // Stats
+  // Calculate display stats from transformed payments
   const stats = {
-    totalRevenue: mockPayments.filter(p => p.status === "paid").reduce((acc, p) => acc + p.amount, 0),
-    pendingAmount: mockPayments.filter(p => p.status === "pending").reduce((acc, p) => acc + p.amount, 0),
-    overdueAmount: mockPayments.filter(p => p.status === "overdue").reduce((acc, p) => acc + p.amount, 0),
-    failedAmount: mockPayments.filter(p => p.status === "failed").reduce((acc, p) => acc + p.amount, 0),
-    paidCount: mockPayments.filter(p => p.status === "paid").length,
-    pendingCount: mockPayments.filter(p => p.status === "pending").length,
-    overdueCount: mockPayments.filter(p => p.status === "overdue").length,
-    failedCount: mockPayments.filter(p => p.status === "failed").length,
+    totalRevenue: payments.filter(p => p.status === "paid").reduce((acc, p) => acc + p.amount, 0),
+    pendingAmount: payments.filter(p => p.status === "pending").reduce((acc, p) => acc + p.amount, 0),
+    overdueAmount: payments.filter(p => p.status === "overdue").reduce((acc, p) => acc + p.amount, 0),
+    failedAmount: payments.filter(p => p.status === "failed").reduce((acc, p) => acc + p.amount, 0),
+    paidCount: payments.filter(p => p.status === "paid").length,
+    pendingCount: payments.filter(p => p.status === "pending").length,
+    overdueCount: payments.filter(p => p.status === "overdue").length,
+    failedCount: payments.filter(p => p.status === "failed").length,
   };
 
   const toggleSelectAll = () => {
     if (selectedPayments.length === filteredPayments.length) {
       setSelectedPayments([]);
     } else {
-      setSelectedPayments(filteredPayments.map(p => p.id));
+      setSelectedPayments(filteredPayments.map(p => p._id));
     }
   };
 
@@ -241,41 +243,113 @@ export default function PaymentsPage() {
     );
   };
 
-  const handleSendReminder = (payment: ClientPayment) => {
+  const handleSendReminder = (payment: DisplayPayment) => {
     setReminderTarget(payment);
     setShowReminderModal(true);
   };
 
-  const handleMarkPaid = (payment: ClientPayment) => {
+  const handleMarkPaid = (payment: DisplayPayment) => {
     setMarkPaidTarget(payment);
     setShowMarkPaidModal(true);
   };
 
-  const handleRecordPayment = () => {
-    // TODO: Implement API call to record payment
-    alert(`Payment recorded!\n\nClient: ${recordPaymentForm.clientId}\nAmount: ${recordPaymentForm.amount}\nMethod: ${recordPaymentForm.paymentMethod}\nReference: ${recordPaymentForm.reference}`);
-    setShowRecordPaymentModal(false);
-    setRecordPaymentForm({
-      clientId: "",
-      amount: "",
-      paymentMethod: "cash",
-      reference: "",
-      notes: "",
-    });
+  const handleRecordPayment = async () => {
+    if (!recordPaymentForm.clientName || !recordPaymentForm.amount) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: `client-${Date.now()}`,
+          clientName: recordPaymentForm.clientName,
+          amount: parseFloat(recordPaymentForm.amount),
+          currency: "USD",
+          type: recordPaymentForm.type,
+          paymentMethod: recordPaymentForm.paymentMethod,
+          transactionId: recordPaymentForm.reference || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to record payment");
+      }
+
+      setShowRecordPaymentModal(false);
+      setRecordPaymentForm({
+        clientName: "",
+        amount: "",
+        paymentMethod: "cash",
+        reference: "",
+        notes: "",
+        type: "subscription",
+      });
+
+      // Refresh payments list
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to record payment");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleConfirmMarkPaid = () => {
-    if (markPaidTarget) {
-      // TODO: Implement API call to mark payment as paid
-      alert(`Payment marked as paid!\n\nClient: ${markPaidTarget.clientName}\nAmount: ${formatCurrency(markPaidTarget.amount)}`);
+  const handleConfirmMarkPaid = async () => {
+    if (!markPaidTarget) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/payments/${markPaidTarget._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "mark_paid",
+          transactionId: recordPaymentForm.reference || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to mark payment as paid");
+      }
+
       setShowMarkPaidModal(false);
       setMarkPaidTarget(null);
+      setRecordPaymentForm(prev => ({ ...prev, reference: "" }));
+
+      // Refresh payments list
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to mark as paid");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRetryPayment = async (payment: DisplayPayment) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/payments/${payment._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "retry" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to retry payment");
+      }
+
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to retry payment");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleBulkReminder = () => {
     const unpaidSelected = selectedPayments
-      .map(id => mockPayments.find(p => p.id === id))
+      .map(id => payments.find(p => p._id === id))
       .filter(p => p && (p.status === "pending" || p.status === "overdue"));
 
     if (unpaidSelected.length > 0) {
@@ -283,6 +357,36 @@ export default function PaymentsPage() {
       // TODO: Implement bulk reminder API call
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+          <svg className="w-12 h-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading payments</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={fetchPayments}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -409,7 +513,7 @@ export default function PaymentsPage() {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by client name, email, or plan..."
+            placeholder="Search by client name or transaction ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 placeholder-gray-500"
@@ -454,16 +558,16 @@ export default function PaymentsPage() {
           ) : (
             filteredPayments.map((payment) => (
               <div
-                key={payment.id}
-                className={`px-4 py-4 ${selectedPayments.includes(payment.id) ? "bg-primary-50" : ""}`}
+                key={payment._id}
+                className={`px-4 py-4 ${selectedPayments.includes(payment._id) ? "bg-primary-50" : ""}`}
               >
                 {/* Row 1: Checkbox + Avatar + Name + Status */}
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedPayments.includes(payment.id)}
-                      onChange={() => toggleSelectPayment(payment.id)}
+                      checked={selectedPayments.includes(payment._id)}
+                      onChange={() => toggleSelectPayment(payment._id)}
                       className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       aria-label={`Select payment for ${payment.clientName}`}
                     />
@@ -482,7 +586,7 @@ export default function PaymentsPage() {
                 <div className="mt-3 pl-[4.25rem] grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-0.5">Amount</p>
-                    <p className="text-lg font-bold text-primary-600">{formatCurrency(payment.amount)}</p>
+                    <p className="text-lg font-bold text-primary-600">{formatCurrency(payment.amount, payment.currency)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-0.5">Due Date</p>
@@ -498,7 +602,8 @@ export default function PaymentsPage() {
                   <div className="mt-3 ml-[4.25rem] flex gap-2">
                     <button
                       onClick={() => handleMarkPaid(payment)}
-                      className="flex-1 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                      disabled={actionLoading}
+                      className="flex-1 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
                       aria-label={`Mark payment as paid for ${payment.clientName}`}
                     >
                       Mark Paid
@@ -514,7 +619,9 @@ export default function PaymentsPage() {
                 )}
                 {payment.status === "failed" && (
                   <button
-                    className="mt-3 ml-[4.25rem] w-[calc(100%-4.25rem)] py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
+                    onClick={() => handleRetryPayment(payment)}
+                    disabled={actionLoading}
+                    className="mt-3 ml-[4.25rem] w-[calc(100%-4.25rem)] py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                     aria-label={`Retry payment for ${payment.clientName}`}
                   >
                     Retry Payment
@@ -553,7 +660,7 @@ export default function PaymentsPage() {
                 Status
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Location
+                Method
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -561,96 +668,103 @@ export default function PaymentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredPayments.map((payment) => (
-              <tr
-                key={payment.id}
-                className={`hover:bg-gray-50 transition-colors ${
-                  selectedPayments.includes(payment.id) ? "bg-primary-50" : ""
-                }`}
-              >
-                <td className="px-4 py-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedPayments.includes(payment.id)}
-                    onChange={() => toggleSelectPayment(payment.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-semibold text-primary-700">{payment.clientInitials}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{payment.clientName}</p>
-                      <p className="text-sm text-gray-500">{payment.clientEmail}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-gray-900">{payment.planName}</p>
-                </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount)}</p>
-                </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-gray-600">{payment.dueDate}</p>
-                  {payment.paidDate && (
-                    <p className="text-xs text-green-600">Paid {payment.paidDate}</p>
-                  )}
-                </td>
-                <td className="px-4 py-4">
-                  <StatusBadge status={payment.status} daysOverdue={payment.daysOverdue} />
-                </td>
-                <td className="px-4 py-4">
-                  <p className="text-sm text-gray-600">{payment.unit}</p>
-                </td>
-                <td className="px-4 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {(payment.status === "pending" || payment.status === "overdue") && (
-                      <>
-                        <button
-                          onClick={() => handleMarkPaid(payment)}
-                          className="px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                        >
-                          Mark Paid
-                        </button>
-                        <button
-                          onClick={() => handleSendReminder(payment)}
-                          className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-                        >
-                          Reminder
-                        </button>
-                      </>
-                    )}
-                    {payment.status === "failed" && (
-                      <button className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                        Retry
-                      </button>
-                    )}
-                    <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="19" cy="12" r="1" />
-                        <circle cx="5" cy="12" r="1" />
-                      </svg>
-                    </button>
-                  </div>
+            {filteredPayments.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-12 text-center">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">No payments found</h3>
+                  <p className="text-gray-500">Try adjusting your search or filter</p>
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredPayments.map((payment) => (
+                <tr
+                  key={payment._id}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    selectedPayments.includes(payment._id) ? "bg-primary-50" : ""
+                  }`}
+                >
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedPayments.includes(payment._id)}
+                      onChange={() => toggleSelectPayment(payment._id)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-primary-700">{payment.clientInitials}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{payment.clientName}</p>
+                        <p className="text-sm text-gray-500">{payment.clientEmail}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-sm text-gray-900">{payment.planName}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount, payment.currency)}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-sm text-gray-600">{payment.dueDate}</p>
+                    {payment.paidDate && (
+                      <p className="text-xs text-green-600">Paid {payment.paidDate}</p>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <StatusBadge status={payment.status} daysOverdue={payment.daysOverdue} />
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-sm text-gray-600 capitalize">{payment.paymentMethod.replace("_", " ")}</p>
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {(payment.status === "pending" || payment.status === "overdue") && (
+                        <>
+                          <button
+                            onClick={() => handleMarkPaid(payment)}
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                          >
+                            Mark Paid
+                          </button>
+                          <button
+                            onClick={() => handleSendReminder(payment)}
+                            className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                          >
+                            Reminder
+                          </button>
+                        </>
+                      )}
+                      {payment.status === "failed" && (
+                        <button
+                          onClick={() => handleRetryPayment(payment)}
+                          disabled={actionLoading}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        >
+                          Retry
+                        </button>
+                      )}
+                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="1" />
+                          <circle cx="19" cy="12" r="1" />
+                          <circle cx="5" cy="12" r="1" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-
-        {filteredPayments.length === 0 && (
-          <div className="hidden lg:block py-12 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No payments found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter</p>
-          </div>
-        )}
       </div>
 
       {/* Reminder Modal */}
@@ -689,7 +803,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Amount Due</span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(reminderTarget.amount)}</span>
+                  <span className="font-semibold text-gray-900">{formatCurrency(reminderTarget.amount, reminderTarget.currency)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm gap-2">
                   <span className="text-gray-500">Due Date</span>
@@ -767,10 +881,10 @@ export default function PaymentsPage() {
                   onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
                   className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="this_month">This Month (December 2024)</option>
-                  <option value="last_month">Last Month (November 2024)</option>
-                  <option value="this_quarter">This Quarter (Q4 2024)</option>
-                  <option value="this_year">This Year (2024)</option>
+                  <option value="this_month">This Month</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="this_quarter">This Quarter</option>
+                  <option value="this_year">This Year</option>
                 </select>
               </div>
 
@@ -847,11 +961,10 @@ export default function PaymentsPage() {
               <button
                 onClick={() => {
                   const periodLabels: Record<PeriodFilter, string> = {
-                    this_month: "December-2024",
-                    last_month: "November-2024",
-                    this_quarter: "Q4-2024",
-                    this_year: "2024",
-                    custom: "custom",
+                    this_month: "This-Month",
+                    last_month: "Last-Month",
+                    this_quarter: "This-Quarter",
+                    this_year: "This-Year",
                   };
                   const fileName = `payments-${periodLabels[periodFilter]}-${statusFilter}.pdf`;
                   alert(`Exporting ${filteredPayments.length} payments...\n\nFile: ${fileName}\n\nDownload will start shortly.`);
@@ -888,23 +1001,16 @@ export default function PaymentsPage() {
             </div>
 
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Client Selection */}
+              {/* Client Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Client</label>
-                <select
-                  value={recordPaymentForm.clientId}
-                  onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, clientId: e.target.value })}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Client Name</label>
+                <input
+                  type="text"
+                  value={recordPaymentForm.clientName}
+                  onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, clientName: e.target.value })}
+                  placeholder="Enter client name..."
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="">Select a client...</option>
-                  {mockPayments
-                    .filter((p) => p.status === "pending" || p.status === "overdue")
-                    .map((p) => (
-                      <option key={p.clientId} value={p.clientId}>
-                        {p.clientName} - {p.planName} ({formatCurrency(p.amount)})
-                      </option>
-                    ))}
-                </select>
+                />
               </div>
 
               {/* Amount */}
@@ -922,52 +1028,38 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
+              {/* Payment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Type</label>
+                <select
+                  value={recordPaymentForm.type}
+                  onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, type: e.target.value as "subscription" | "drop-in" | "package" })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="subscription">Subscription</option>
+                  <option value="drop-in">Drop-in</option>
+                  <option value="package">Package</option>
+                </select>
+              </div>
+
               {/* Payment Method */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "cash" })}
-                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "cash"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Cash
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "pix" })}
-                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "pix"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    PIX
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "bank_transfer" })}
-                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "bank_transfer"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    <svg className="w-5 h-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                    </svg>
-                    Transfer
-                  </button>
+                <div className="grid grid-cols-4 gap-2">
+                  {(["cash", "pix", "bank_transfer", "credit_card"] as const).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: method })}
+                      className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
+                        recordPaymentForm.paymentMethod === method
+                          ? "border-green-500 bg-green-50 text-green-700"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : method.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1005,13 +1097,19 @@ export default function PaymentsPage() {
               </button>
               <button
                 onClick={handleRecordPayment}
-                disabled={!recordPaymentForm.clientId || !recordPaymentForm.amount}
+                disabled={!recordPaymentForm.clientName || !recordPaymentForm.amount || actionLoading}
                 className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Record Payment
+                {actionLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Record Payment
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1054,7 +1152,7 @@ export default function PaymentsPage() {
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Amount</span>
-                  <span className="text-xl font-bold text-green-600">{formatCurrency(markPaidTarget.amount)}</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(markPaidTarget.amount, markPaidTarget.currency)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Due Date</span>
@@ -1065,40 +1163,21 @@ export default function PaymentsPage() {
               {/* Payment Method Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">How was it paid?</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "cash" })}
-                    className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "cash"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    Cash
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "pix" })}
-                    className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "pix"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    PIX
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: "bank_transfer" })}
-                    className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
-                      recordPaymentForm.paymentMethod === "bank_transfer"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    Transfer
-                  </button>
+                <div className="grid grid-cols-4 gap-2">
+                  {(["cash", "pix", "bank_transfer", "credit_card"] as const).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: method })}
+                      className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
+                        recordPaymentForm.paymentMethod === method
+                          ? "border-green-500 bg-green-50 text-green-700"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : method.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1127,12 +1206,19 @@ export default function PaymentsPage() {
               </button>
               <button
                 onClick={handleConfirmMarkPaid}
-                className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Confirm Payment
+                {actionLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Confirm Payment
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -398,7 +398,7 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-export default function PricingPage() {
+function PricingContent() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -830,5 +830,13 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <PricingContent />
+    </Suspense>
   );
 }

@@ -10,7 +10,7 @@ import {
 } from "@/lib/stripe/server";
 import { getStripeAddOnPriceId, checkoutConfig } from "@/lib/stripe/config";
 import { addOns } from "@/lib/config/pricing";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;

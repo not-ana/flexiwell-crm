@@ -1,129 +1,236 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
+import type { Class, Booking, Client } from "@/lib/db/schemas";
 
-// Mock data for teacher's students grouped by unit
-const mockUnits = [
-  {
-    id: "1",
-    name: "FlexiWell Downtown",
-    address: "123 Main Street - Downtown",
-    students: [
-      {
-        id: "1",
-        name: "Olivia Rhye",
-        email: "olivia@email.com",
-        phone: "(555) 123-4567",
-        initials: "OR",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 5,
-        classesTotal: 8,
-        nextClass: "Today, 2:00 PM - Pilates",
-        status: "active" as const,
-        joinedDate: "Jan 2024",
-        lastActive: "Just now",
-      },
-      {
-        id: "2",
-        name: "Phoenix Baker",
-        email: "phoenix@email.com",
-        phone: "(555) 234-5678",
-        initials: "PB",
-        plan: "Quarterly - 24 classes",
-        classesRemaining: 18,
-        classesTotal: 24,
-        nextClass: "Tomorrow, 10:00 AM - Yoga",
-        status: "active" as const,
-        joinedDate: "Nov 2023",
-        lastActive: "2 hours ago",
-      },
-      {
-        id: "3",
-        name: "Lana Steiner",
-        email: "lana@email.com",
-        phone: "(555) 345-6789",
-        initials: "LS",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 0,
-        classesTotal: 8,
-        status: "expired" as const,
-        joinedDate: "Dec 2023",
-        lastActive: "15 days ago",
-      },
-      {
-        id: "4",
-        name: "Demi Wilkinson",
-        email: "demi@email.com",
-        phone: "(555) 456-7890",
-        initials: "DW",
-        plan: "Monthly - 12 classes",
-        classesRemaining: 12,
-        classesTotal: 12,
-        status: "paused" as const,
-        joinedDate: "Feb 2024",
-        lastActive: "7 days ago",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "FlexiWell Westside",
-    address: "456 Park Avenue - Westside",
-    students: [
-      {
-        id: "5",
-        name: "Candice Wu",
-        email: "candice@email.com",
-        phone: "(555) 567-8901",
-        initials: "CW",
-        plan: "Semi-annual - 48 classes",
-        classesRemaining: 32,
-        classesTotal: 48,
-        nextClass: "Today, 4:00 PM - Functional",
-        status: "active" as const,
-        joinedDate: "Sep 2023",
-        lastActive: "1 hour ago",
-      },
-      {
-        id: "6",
-        name: "Natali Craig",
-        email: "natali@email.com",
-        phone: "(555) 678-9012",
-        initials: "NC",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 3,
-        classesTotal: 8,
-        nextClass: "Thu, 9:00 AM - Pilates",
-        status: "active" as const,
-        joinedDate: "Jan 2024",
-        lastActive: "3 hours ago",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "FlexiWell Eastside",
-    address: "789 Oak Boulevard - Eastside",
-    students: [
-      {
-        id: "7",
-        name: "Drew Cano",
-        email: "drew@email.com",
-        phone: "(555) 789-0123",
-        initials: "DC",
-        plan: "Quarterly - 24 classes",
-        classesRemaining: 20,
-        classesTotal: 24,
-        nextClass: "Fri, 11:00 AM - Yoga",
-        status: "active" as const,
-        joinedDate: "Dec 2023",
-        lastActive: "4 hours ago",
-      },
-    ],
-  },
-];
+interface JWTPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
 
-export async function GET() {
-  // In production, this would fetch real data from the database
-  // filtered by the logged-in teacher's assigned students/classes
+async function getUser(): Promise<JWTPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
 
-  return NextResponse.json({ units: mockUnits });
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret"
+    ) as JWTPayload;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const db = await getDatabase();
+    const teacherId = user.userId;
+
+    // Get all bookings for this teacher's classes
+    const bookings = await db.collection<Booking>("bookings")
+      .find({ instructorId: teacherId })
+      .toArray();
+
+    // Get unique client IDs
+    const uniqueClientIds = [...new Set(bookings.map(b => b.clientId))];
+
+    // Get client details
+    const clients = await db.collection<Client>("clients")
+      .find({
+        _id: { $in: uniqueClientIds.map(id => {
+          try {
+            return new ObjectId(id);
+          } catch {
+            return null;
+          }
+        }).filter(Boolean) as ObjectId[] }
+      })
+      .toArray();
+
+    // Get establishments/units
+    const establishments = await db.collection("establishments")
+      .find({ status: "active" })
+      .toArray();
+
+    // Calculate stats for each client
+    const clientStats: Record<string, {
+      bookings: Booking[];
+      lastClass: Date | null;
+      nextClass: string | null;
+    }> = {};
+
+    for (const booking of bookings) {
+      if (!clientStats[booking.clientId]) {
+        clientStats[booking.clientId] = {
+          bookings: [],
+          lastClass: null,
+          nextClass: null
+        };
+      }
+      clientStats[booking.clientId].bookings.push(booking);
+
+      if (booking.status === "completed" && booking.scheduledDate) {
+        const bookingDate = new Date(booking.scheduledDate);
+        if (!clientStats[booking.clientId].lastClass ||
+            bookingDate > clientStats[booking.clientId].lastClass!) {
+          clientStats[booking.clientId].lastClass = bookingDate;
+        }
+      }
+    }
+
+    // Get upcoming classes for next class info
+    const now = new Date();
+    const upcomingBookings = await db.collection<Booking>("bookings")
+      .find({
+        instructorId: teacherId,
+        scheduledDate: { $gte: now },
+        status: { $in: ["confirmed", "pending"] }
+      })
+      .sort({ scheduledDate: 1 })
+      .toArray();
+
+    // Map upcoming bookings to clients
+    for (const booking of upcomingBookings) {
+      if (clientStats[booking.clientId] && !clientStats[booking.clientId].nextClass) {
+        const classDate = new Date(booking.scheduledDate);
+        const isToday = classDate.toDateString() === now.toDateString();
+        const isTomorrow = classDate.toDateString() === new Date(now.getTime() + 86400000).toDateString();
+
+        let dateStr: string;
+        if (isToday) {
+          dateStr = "Today";
+        } else if (isTomorrow) {
+          dateStr = "Tomorrow";
+        } else {
+          dateStr = classDate.toLocaleDateString("en-US", { weekday: "short" });
+        }
+
+        clientStats[booking.clientId].nextClass =
+          `${dateStr}, ${booking.startTime} - ${booking.className}`;
+      }
+    }
+
+    // Group students by establishment
+    const unitMap: Record<string, {
+      id: string;
+      name: string;
+      address: string;
+      students: unknown[];
+    }> = {};
+
+    // Create a default unit if no establishments
+    if (establishments.length === 0) {
+      unitMap["default"] = {
+        id: "default",
+        name: "FlexiWell Studio",
+        address: "Main Location",
+        students: []
+      };
+    } else {
+      for (const est of establishments) {
+        unitMap[est._id.toString()] = {
+          id: est._id.toString(),
+          name: est.name,
+          address: est.address || "",
+          students: []
+        };
+      }
+    }
+
+    // Format students
+    for (const client of clients) {
+      const clientId = client._id?.toString() || "";
+      const stats = clientStats[clientId];
+      if (!stats) continue;
+
+      const initials = client.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+      // Determine status
+      let status: "active" | "paused" | "expired" = "active";
+      if (client.status === "inactive") {
+        status = "paused";
+      }
+      if (client.plan.remainingClasses === 0 || new Date(client.plan.endDate) < now) {
+        status = "expired";
+      }
+
+      // Calculate last active
+      let lastActive = "Never";
+      if (stats.lastClass) {
+        const diff = Math.floor((now.getTime() - stats.lastClass.getTime()) / (1000 * 60 * 60));
+        if (diff < 1) lastActive = "Just now";
+        else if (diff < 24) lastActive = `${diff} hours ago`;
+        else if (diff < 48) lastActive = "Yesterday";
+        else lastActive = `${Math.floor(diff / 24)} days ago`;
+      }
+
+      // Plan type
+      const planTypes: Record<string, string> = {
+        monthly: "Monthly",
+        quarterly: "Quarterly",
+        annual: "Annual",
+        "drop-in": "Drop-in"
+      };
+
+      const student = {
+        id: clientId,
+        name: client.name,
+        email: client.email,
+        phone: client.phone || "",
+        initials,
+        plan: `${planTypes[client.plan.type] || client.plan.type} - ${client.plan.totalClasses} classes`,
+        classesRemaining: client.plan.remainingClasses,
+        classesTotal: client.plan.totalClasses,
+        nextClass: stats.nextClass || undefined,
+        status,
+        joinedDate: client.createdAt
+          ? new Date(client.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+          : "Unknown",
+        lastActive
+      };
+
+      // Add to appropriate unit (for now, add to first or default)
+      const unitKey = Object.keys(unitMap)[0];
+      unitMap[unitKey].students.push(student);
+    }
+
+    const units = Object.values(unitMap).filter(u => u.students.length > 0);
+
+    // If no students found in any unit, return empty with default unit
+    if (units.length === 0) {
+      return NextResponse.json({
+        units: [{
+          id: "default",
+          name: "FlexiWell Studio",
+          address: "Main Location",
+          students: []
+        }]
+      });
+    }
+
+    return NextResponse.json({ units });
+  } catch (error) {
+    console.error("Teacher students error:", error);
+    return NextResponse.json(
+      { error: "Failed to load students" },
+      { status: 500 }
+    );
+  }
 }

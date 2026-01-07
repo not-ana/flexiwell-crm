@@ -12,7 +12,7 @@ import {
 } from "@/lib/stripe/server";
 import { stripeAddOnPriceIds } from "@/lib/stripe/config";
 import { addOns } from "@/lib/config/pricing";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 import { getAddOnIdFromPriceId } from "../helpers";
 
 interface JWTPayload {
@@ -239,12 +239,13 @@ export async function DELETE(request: NextRequest) {
     await removeSubscriptionItem(itemToRemove.id);
 
     // Update user's active add-ons
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await db.collection("users").updateOne(
       { email: user.email },
       {
         $pull: { activeAddOns: addOnId },
         $set: { updatedAt: new Date() },
-      }
+      } as any
     );
 
     // Get add-on name for message

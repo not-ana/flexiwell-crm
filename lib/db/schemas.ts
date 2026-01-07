@@ -143,6 +143,7 @@ export interface SupportTicket {
   _id?: ObjectId;
   clientId: string;
   clientName: string;
+  clientEmail?: string;
   subject: string;
   category: "billing" | "classes" | "technical" | "feedback" | "other";
   priority: "low" | "medium" | "high" | "urgent";
@@ -333,4 +334,76 @@ export interface BotSession {
   lastInteraction: Date;
   createdAt: Date;
   expiresAt: Date;
+}
+
+// Settings types
+export interface StudioSettings {
+  _id?: ObjectId;
+  // General settings
+  general: {
+    studioName: string;
+    email: string;
+    phone: string;
+    address: string;
+    timezone: string;
+    currency: string;
+    language: string;
+    businessType: string;
+  };
+  // Branding settings
+  branding?: {
+    primaryColor: string;
+    logo?: string;
+    favicon?: string;
+  };
+  // Notification preferences
+  notifications?: {
+    emailEnabled: boolean;
+    whatsappEnabled: boolean;
+    smsEnabled: boolean;
+    reminderHours: number;
+    confirmationEmail: boolean;
+    marketingEmails: boolean;
+  };
+  // Waitlist configuration
+  waitlist?: {
+    enabled: boolean;
+    maxSize: number;
+    autoNotify: boolean;
+    notificationWindowMinutes: number;
+    priorityByPlanType: boolean;
+  };
+  // Integration settings (API keys stored separately for security)
+  integrations?: {
+    stripeConnected: boolean;
+    whatsappConnected: boolean;
+    googleCalendarConnected: boolean;
+    resendConnected: boolean;
+  };
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export interface Establishment {
+  _id?: ObjectId;
+  name: string;
+  location: string;
+  address?: string;
+  phone?: string;
+  assignedTeachers: string[];
+  rooms?: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Room {
+  _id?: ObjectId;
+  name: string;
+  establishmentId: string;
+  capacity: number;
+  equipment?: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

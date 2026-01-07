@@ -10,7 +10,7 @@ import {
 } from "@/lib/stripe/server";
 import { getStripePriceId } from "@/lib/stripe/config";
 import { PlanTier, BillingPeriod, pricingPlans } from "@/lib/config/pricing";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;
@@ -103,9 +103,12 @@ export async function POST(request: NextRequest) {
 
     // Calculate immediate charge (if any)
     // This is the difference between what's already paid and the new amount
+    // In Stripe v20.x, proration is nested in parent.invoice_item_details or parent.subscription_item_details
     let immediateCharge = 0;
     for (const line of preview.lines.data) {
-      if (line.proration) {
+      const isProration = line.parent?.invoice_item_details?.proration ||
+                          line.parent?.subscription_item_details?.proration || false;
+      if (isProration) {
         immediateCharge += line.amount;
       }
     }
@@ -118,7 +121,8 @@ export async function POST(request: NextRequest) {
       lines: preview.lines.data.map(line => ({
         description: line.description,
         amount: line.amount / 100,
-        proration: line.proration,
+        proration: line.parent?.invoice_item_details?.proration ||
+                   line.parent?.subscription_item_details?.proration || false,
       })),
     });
   } catch (error) {

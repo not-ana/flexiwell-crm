@@ -15,7 +15,7 @@ import {
   subscriptionBehavior
 } from "@/lib/stripe/config";
 import { PlanTier, BillingPeriod, pricingPlans } from "@/lib/config/pricing";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 import { getPlanTierFromPriceId } from "../helpers";
 
 interface JWTPayload {
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         status: updatedSubscription.status,
         planTier: newPlanTier,
         billingPeriod: newBillingPeriod,
-        currentPeriodEnd: updatedSubscription.current_period_end,
+        currentPeriodEnd: updatedSubscription.items.data[0]?.current_period_end,
       },
     });
   } catch (error) {

@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { createPortalSession } from "@/lib/stripe/server";
 import { portalConfig } from "@/lib/stripe/config";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;

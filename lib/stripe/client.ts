@@ -21,24 +21,15 @@ export function getStripe(): Promise<Stripe | null> {
   return stripePromise;
 }
 
-// Redirect to Stripe Checkout using URL (preferred method)
-export async function redirectToCheckout(sessionId: string): Promise<void> {
-  // The preferred approach is to use the URL returned by the API
-  // This function is a fallback if URL is not available
-  const stripe = await getStripe();
-
-  if (!stripe) {
-    throw new Error("Stripe not initialized");
+// Redirect to Stripe Checkout using URL (modern method)
+// In newer versions of Stripe.js, use the checkout session URL directly
+export async function redirectToCheckout(url: string): Promise<void> {
+  if (!url) {
+    throw new Error("Checkout URL is required");
   }
 
-  // Use the modern checkout redirect
-  const result = await stripe.redirectToCheckout({
-    sessionId,
-  });
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
+  // Redirect to the Stripe hosted checkout page
+  window.location.href = url;
 }
 
 // Types for API responses
@@ -54,19 +45,33 @@ export interface PortalResponse {
 export interface SubscriptionResponse {
   id: string;
   status: string;
+  currentPeriodStart: number;
   currentPeriodEnd: number;
   cancelAtPeriodEnd: boolean;
+  cancelAt: number | null;
+  trialStart: number | null;
+  trialEnd: number | null;
   plan: {
     id: string;
+    priceId: string;
     name: string;
     amount: number;
+    currency: string;
     interval: string;
+    intervalCount: number;
   };
   addOns: Array<{
     id: string;
+    stripeItemId: string;
     name: string;
     amount: number;
+    quantity: number;
   }>;
+  upcomingInvoice: {
+    amount: number;
+    currency: string;
+    date: number | null;
+  } | null;
 }
 
 // API call helpers
@@ -174,7 +179,13 @@ export async function previewPlanChange(params: {
 }): Promise<{
   immediateCharge: number;
   nextInvoiceAmount: number;
-  nextInvoiceDate: number;
+  nextInvoiceDate: number | null;
+  currency: string;
+  lines: Array<{
+    description: string;
+    amount: number;
+    proration: boolean;
+  }>;
 }> {
   const response = await fetch("/api/stripe/subscription/preview", {
     method: "POST",
@@ -275,14 +286,25 @@ export async function removeAddOnFromSubscription(params: {
 }
 
 // Get invoice history
-export async function getInvoices(): Promise<Array<{
+export interface InvoiceResponse {
   id: string;
   number: string;
   amount: number;
+  amountDue: number;
+  currency: string;
   status: string;
   date: number;
+  periodStart: number;
+  periodEnd: number;
   pdfUrl: string | null;
-}>> {
+  hostedUrl: string | null;
+  description: string;
+}
+
+export async function getInvoices(): Promise<{
+  invoices: InvoiceResponse[];
+  hasMore: boolean;
+}> {
   const response = await fetch("/api/stripe/invoices");
 
   if (!response.ok) {

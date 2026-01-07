@@ -8,7 +8,7 @@ import {
   getActiveSubscription,
   reactivateSubscription
 } from "@/lib/stripe/server";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;
@@ -103,7 +103,7 @@ export async function POST() {
         id: updatedSubscription.id,
         status: updatedSubscription.status,
         cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
-        currentPeriodEnd: updatedSubscription.current_period_end,
+        currentPeriodEnd: updatedSubscription.items.data[0]?.current_period_end,
       },
     });
   } catch (error) {

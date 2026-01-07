@@ -1,65 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronIcon, CalendarIcon } from "@/components/icons";
+import { useState, useEffect, useCallback } from "react";
 
-// Mock data for reports
-const revenueData = {
-  total: 187450,
-  growth: 23.8,
-  monthly: [
-    { month: "Jan", revenue: 12400, clients: 89 },
-    { month: "Feb", revenue: 13200, clients: 94 },
-    { month: "Mar", revenue: 14800, clients: 102 },
-    { month: "Apr", revenue: 13900, clients: 98 },
-    { month: "May", revenue: 15600, clients: 112 },
-    { month: "Jun", revenue: 14200, clients: 108 },
-    { month: "Jul", revenue: 16400, clients: 118 },
-    { month: "Aug", revenue: 17800, clients: 126 },
-    { month: "Sep", revenue: 15200, clients: 114 },
-    { month: "Oct", revenue: 18200, clients: 132 },
-    { month: "Nov", revenue: 19400, clients: 142 },
-    { month: "Dec", revenue: 26350, clients: 156 },
-  ],
-};
+// Types for API response
+interface RevenueData {
+  total: number;
+  growth: number;
+  monthly: { month: string; year: number; revenue: number; clients: number }[];
+  paymentCount: number;
+}
 
-const classMetrics = {
-  totalClasses: 847,
-  avgAttendance: 89,
-  cancelRate: 5.4,
-  popularClasses: [
-    { name: "Morning Yoga", sessions: 124, avgAttendance: 94, revenue: 18600 },
-    { name: "Pilates Reformer", sessions: 108, avgAttendance: 96, revenue: 21600 },
-    { name: "Evening Stretch", sessions: 96, avgAttendance: 88, revenue: 11520 },
-    { name: "Power Pilates", sessions: 84, avgAttendance: 91, revenue: 15120 },
-    { name: "Functional Training", sessions: 72, avgAttendance: 85, revenue: 10080 },
-    { name: "Mat Pilates", sessions: 68, avgAttendance: 87, revenue: 8160 },
-    { name: "Meditation & Breathwork", sessions: 56, avgAttendance: 82, revenue: 5600 },
-  ],
-};
+interface ClassMetrics {
+  totalClasses: number;
+  completedClasses: number;
+  cancelledClasses: number;
+  avgAttendance: number;
+  cancelRate: number;
+  popularClasses: { name: string; sessions: number; avgAttendance: number; revenue: number }[];
+}
 
-const instructorMetrics = [
-  { name: "Ana Silva", classes: 186, students: 412, rating: 4.9, revenue: 42800 },
-  { name: "Maria Santos", classes: 164, students: 356, rating: 4.8, revenue: 38200 },
-  { name: "Carlos Lima", classes: 148, students: 298, rating: 4.7, revenue: 32400 },
-  { name: "Julia Costa", classes: 132, students: 267, rating: 4.9, revenue: 28600 },
-  { name: "Roberto Mendes", classes: 118, students: 234, rating: 4.6, revenue: 24800 },
-  { name: "Fernanda Oliveira", classes: 99, students: 198, rating: 4.8, revenue: 20650 },
-];
+interface InstructorData {
+  id: string;
+  name: string;
+  classes: number;
+  students: number;
+  rating: number;
+  revenue: number;
+}
 
-const clientMetrics = {
-  totalClients: 312,
-  activeClients: 287,
-  newThisMonth: 34,
-  churnRate: 2.8,
-  retention: 97.2,
-  planDistribution: [
-    { plan: "Monthly - 8 classes", count: 98, percentage: 31 },
-    { plan: "Monthly - 12 classes", count: 112, percentage: 36 },
-    { plan: "Quarterly", count: 62, percentage: 20 },
-    { plan: "Annual", count: 40, percentage: 13 },
-  ],
-};
+interface InstructorMetrics {
+  totalInstructors: number;
+  totalClassesTaught: number;
+  avgRating: number;
+  satisfaction: number;
+  instructors: InstructorData[];
+}
+
+interface PlanDistribution {
+  plan: string;
+  type: string;
+  count: number;
+  percentage: number;
+}
+
+interface ClientMetrics {
+  totalClients: number;
+  activeClients: number;
+  inactiveClients: number;
+  newThisMonth: number;
+  churnRate: number;
+  retention: number;
+  planDistribution: PlanDistribution[];
+  clientGrowth: { month: string; year: number; clients: number }[];
+}
+
+interface ReportsData {
+  revenue?: RevenueData;
+  classes?: ClassMetrics;
+  instructors?: InstructorMetrics;
+  clients?: ClientMetrics;
+}
 
 function StatCard({ title, value, change, changeType, suffix = "" }: {
   title: string;
@@ -73,7 +73,7 @@ function StatCard({ title, value, change, changeType, suffix = "" }: {
       <p className="text-xs sm:text-sm font-medium text-gray-500">{title}</p>
       <div className="flex items-end gap-2 mt-1 sm:mt-2">
         <p className="text-xl sm:text-3xl font-bold text-gray-900">{value}{suffix}</p>
-        {change !== undefined && (
+        {change !== undefined && change !== 0 && (
           <span className={`text-xs sm:text-sm font-medium ${changeType === "positive" ? "text-green-600" : "text-red-600"}`}>
             {changeType === "positive" ? "↑" : "↓"} {Math.abs(change)}%
           </span>
@@ -84,8 +84,8 @@ function StatCard({ title, value, change, changeType, suffix = "" }: {
 }
 
 function BarChart({ data, height = 200 }: { data: { label: string; value: number }[]; height?: number }) {
-  const maxValue = Math.max(...data.map(d => d.value));
-  const barAreaHeight = height - 24; // Reserve space for labels
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const barAreaHeight = height - 24;
 
   return (
     <div style={{ height }}>
@@ -113,7 +113,7 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
 }
 
 function ProgressBar({ value, max, color = "primary" }: { value: number; max: number; color?: string }) {
-  const percentage = (value / max) * 100;
+  const percentage = max > 0 ? (value / max) * 100 : 0;
   const colors: Record<string, string> = {
     primary: "bg-primary-500",
     green: "bg-green-500",
@@ -131,13 +131,11 @@ function ProgressBar({ value, max, color = "primary" }: { value: number; max: nu
 
 type ExportFormat = "pdf" | "excel" | "csv";
 
-// Export utility functions
 function generateCSV(data: Record<string, unknown>[], headers: { key: string; label: string }[]): string {
   const headerRow = headers.map(h => h.label).join(",");
   const rows = data.map(item =>
     headers.map(h => {
       const value = item[h.key];
-      // Escape commas and quotes in values
       const strValue = String(value ?? "");
       if (strValue.includes(",") || strValue.includes('"') || strValue.includes("\n")) {
         return `"${strValue.replace(/"/g, '""')}"`;
@@ -160,88 +158,143 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function getExportData(reportType: string, dateRange: string) {
-  const periodLabel = {
-    this_month: "December 2024",
-    last_month: "November 2024",
-    this_quarter: "Q4 2024",
-    this_year: "2024",
-    all_time: "All Time",
-  }[dateRange] || dateRange;
-
-  switch (reportType) {
-    case "overview":
-      return {
-        headers: [
-          { key: "month", label: "Month" },
-          { key: "revenue", label: "Revenue (R$)" },
-          { key: "clients", label: "Clients" },
-        ],
-        data: revenueData.monthly.map(m => ({
-          month: m.month,
-          revenue: m.revenue,
-          clients: m.clients,
-        })),
-        summary: `Overview Report - ${periodLabel}\nTotal Revenue: R$ ${revenueData.total.toLocaleString()}\nGrowth: ${revenueData.growth}%`,
-      };
-    case "classes":
-      return {
-        headers: [
-          { key: "name", label: "Class Name" },
-          { key: "sessions", label: "Sessions" },
-          { key: "avgAttendance", label: "Avg Attendance (%)" },
-          { key: "revenue", label: "Revenue (R$)" },
-        ],
-        data: classMetrics.popularClasses.map(c => ({
-          name: c.name,
-          sessions: c.sessions,
-          avgAttendance: c.avgAttendance,
-          revenue: c.revenue,
-        })),
-        summary: `Classes Report - ${periodLabel}\nTotal Classes: ${classMetrics.totalClasses}\nAvg Attendance: ${classMetrics.avgAttendance}%\nCancel Rate: ${classMetrics.cancelRate}%`,
-      };
-    case "instructors":
-      return {
-        headers: [
-          { key: "name", label: "Instructor" },
-          { key: "classes", label: "Classes" },
-          { key: "students", label: "Students" },
-          { key: "rating", label: "Rating" },
-          { key: "revenue", label: "Revenue (R$)" },
-        ],
-        data: instructorMetrics.map(i => ({
-          name: i.name,
-          classes: i.classes,
-          students: i.students,
-          rating: i.rating,
-          revenue: i.revenue,
-        })),
-        summary: `Instructors Report - ${periodLabel}\nActive Instructors: ${instructorMetrics.length}\nTotal Classes: ${instructorMetrics.reduce((acc, i) => acc + i.classes, 0)}`,
-      };
-    case "clients":
-      return {
-        headers: [
-          { key: "plan", label: "Plan" },
-          { key: "count", label: "Clients" },
-          { key: "percentage", label: "Percentage (%)" },
-        ],
-        data: clientMetrics.planDistribution.map(p => ({
-          plan: p.plan,
-          count: p.count,
-          percentage: p.percentage,
-        })),
-        summary: `Clients Report - ${periodLabel}\nTotal Clients: ${clientMetrics.totalClients}\nActive Clients: ${clientMetrics.activeClients}\nRetention Rate: ${clientMetrics.retention}%`,
-      };
-    default:
-      return { headers: [], data: [], summary: "" };
-  }
-}
-
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("this_year");
   const [activeTab, setActiveTab] = useState<"overview" | "classes" | "instructors" | "clients">("overview");
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+
+  const [data, setData] = useState<ReportsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchReports = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/reports?period=${dateRange}&type=all`);
+      if (!response.ok) throw new Error("Failed to fetch reports");
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load reports");
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  const getExportData = (reportType: string) => {
+    const periodLabel = {
+      this_month: "This Month",
+      last_month: "Last Month",
+      this_quarter: "This Quarter",
+      this_year: "This Year",
+      all_time: "All Time",
+    }[dateRange] || dateRange;
+
+    switch (reportType) {
+      case "overview":
+        return {
+          headers: [
+            { key: "month", label: "Month" },
+            { key: "revenue", label: "Revenue (R$)" },
+            { key: "clients", label: "Clients" },
+          ],
+          data: (data?.revenue?.monthly || []).map(m => ({
+            month: m.month,
+            revenue: m.revenue,
+            clients: m.clients,
+          })),
+          summary: `Overview Report - ${periodLabel}\nTotal Revenue: R$ ${(data?.revenue?.total || 0).toLocaleString()}\nGrowth: ${data?.revenue?.growth || 0}%`,
+        };
+      case "classes":
+        return {
+          headers: [
+            { key: "name", label: "Class Name" },
+            { key: "sessions", label: "Sessions" },
+            { key: "avgAttendance", label: "Avg Attendance (%)" },
+            { key: "revenue", label: "Revenue (R$)" },
+          ],
+          data: (data?.classes?.popularClasses || []).map(c => ({
+            name: c.name,
+            sessions: c.sessions,
+            avgAttendance: c.avgAttendance,
+            revenue: c.revenue,
+          })),
+          summary: `Classes Report - ${periodLabel}\nTotal Classes: ${data?.classes?.totalClasses || 0}\nAvg Attendance: ${data?.classes?.avgAttendance || 0}%\nCancel Rate: ${data?.classes?.cancelRate || 0}%`,
+        };
+      case "instructors":
+        return {
+          headers: [
+            { key: "name", label: "Instructor" },
+            { key: "classes", label: "Classes" },
+            { key: "students", label: "Students" },
+            { key: "rating", label: "Rating" },
+            { key: "revenue", label: "Revenue (R$)" },
+          ],
+          data: (data?.instructors?.instructors || []).map(i => ({
+            name: i.name,
+            classes: i.classes,
+            students: i.students,
+            rating: i.rating,
+            revenue: i.revenue,
+          })),
+          summary: `Instructors Report - ${periodLabel}\nActive Instructors: ${data?.instructors?.totalInstructors || 0}\nTotal Classes: ${data?.instructors?.totalClassesTaught || 0}`,
+        };
+      case "clients":
+        return {
+          headers: [
+            { key: "plan", label: "Plan" },
+            { key: "count", label: "Clients" },
+            { key: "percentage", label: "Percentage (%)" },
+          ],
+          data: (data?.clients?.planDistribution || []).map(p => ({
+            plan: p.plan,
+            count: p.count,
+            percentage: p.percentage,
+          })),
+          summary: `Clients Report - ${periodLabel}\nTotal Clients: ${data?.clients?.totalClients || 0}\nActive Clients: ${data?.clients?.activeClients || 0}\nRetention Rate: ${data?.clients?.retention || 0}%`,
+        };
+      default:
+        return { headers: [], data: [], summary: "" };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchReports}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const revenue = data?.revenue || { total: 0, growth: 0, monthly: [], paymentCount: 0 };
+  const classes = data?.classes || { totalClasses: 0, avgAttendance: 0, cancelRate: 0, popularClasses: [] };
+  const instructors = data?.instructors || { totalInstructors: 0, totalClassesTaught: 0, avgRating: 0, satisfaction: 0, instructors: [] };
+  const clients = data?.clients || { totalClients: 0, activeClients: 0, newThisMonth: 0, churnRate: 0, retention: 0, planDistribution: [], clientGrowth: [] };
 
   return (
     <div className="h-full overflow-auto">
@@ -300,28 +353,24 @@ export default function ReportsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
               <StatCard
                 title="Total Revenue"
-                value={`R$ ${revenueData.total.toLocaleString()}`}
-                change={revenueData.growth}
-                changeType="positive"
+                value={`R$ ${revenue.total.toLocaleString()}`}
+                change={revenue.growth}
+                changeType={revenue.growth >= 0 ? "positive" : "negative"}
               />
               <StatCard
                 title="Active Clients"
-                value={clientMetrics.activeClients}
-                change={18}
+                value={clients.activeClients}
+                change={clients.newThisMonth > 0 ? Math.round((clients.newThisMonth / Math.max(clients.activeClients - clients.newThisMonth, 1)) * 100) : 0}
                 changeType="positive"
               />
               <StatCard
-                title="Classes This Month"
-                value={classMetrics.totalClasses}
-                change={8}
-                changeType="positive"
+                title="Total Classes"
+                value={classes.totalClasses}
               />
               <StatCard
                 title="Avg. Attendance"
-                value={classMetrics.avgAttendance}
+                value={classes.avgAttendance}
                 suffix="%"
-                change={2.3}
-                changeType="positive"
               />
             </div>
 
@@ -330,7 +379,7 @@ export default function ReportsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-4 sm:mb-6">
                 <div>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900">Revenue Overview</h2>
-                  <p className="text-xs sm:text-sm text-gray-500">Monthly revenue for {dateRange === "this_year" ? "2024" : "selected period"}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Monthly revenue for selected period</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-2">
@@ -341,10 +390,16 @@ export default function ReportsPage() {
               </div>
               <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                 <div className="min-w-[500px]">
-                  <BarChart
-                    data={revenueData.monthly.map(m => ({ label: m.month, value: m.revenue }))}
-                    height={250}
-                  />
+                  {revenue.monthly.length > 0 ? (
+                    <BarChart
+                      data={revenue.monthly.map(m => ({ label: m.month, value: m.revenue }))}
+                      height={250}
+                    />
+                  ) : (
+                    <div className="h-[250px] flex items-center justify-center text-gray-500">
+                      No revenue data for selected period
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -354,45 +409,53 @@ export default function ReportsPage() {
               {/* Popular Classes */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Popular Classes</h2>
-                <div className="space-y-3 sm:space-y-4">
-                  {classMetrics.popularClasses.map((cls, index) => (
-                    <div key={cls.name} className="flex items-center gap-3 sm:gap-4">
-                      <span className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs sm:text-sm font-semibold flex items-center justify-center flex-shrink-0">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1 gap-2">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{cls.name}</p>
-                          <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{cls.avgAttendance}% att.</span>
+                {classes.popularClasses.length > 0 ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {classes.popularClasses.slice(0, 7).map((cls, index) => (
+                      <div key={cls.name} className="flex items-center gap-3 sm:gap-4">
+                        <span className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs sm:text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{cls.name}</p>
+                            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{cls.avgAttendance}% att.</span>
+                          </div>
+                          <ProgressBar value={cls.sessions} max={Math.max(...classes.popularClasses.map(c => c.sessions))} />
                         </div>
-                        <ProgressBar value={cls.sessions} max={50} />
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No class data available</p>
+                )}
               </div>
 
               {/* Client Plan Distribution */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Plan Distribution</h2>
-                <div className="space-y-3 sm:space-y-4">
-                  {clientMetrics.planDistribution.map((plan, index) => {
-                    const colors = ["primary", "blue", "green", "orange"];
-                    return (
-                      <div key={plan.plan}>
-                        <div className="flex items-center justify-between mb-1 gap-2">
-                          <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{plan.plan}</p>
-                          <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{plan.count} ({plan.percentage}%)</span>
+                {clients.planDistribution.length > 0 ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {clients.planDistribution.map((plan, index) => {
+                      const colors = ["primary", "blue", "green", "orange"];
+                      return (
+                        <div key={plan.plan}>
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{plan.plan}</p>
+                            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{plan.count} ({plan.percentage}%)</span>
+                          </div>
+                          <ProgressBar value={plan.percentage} max={100} color={colors[index % colors.length]} />
                         </div>
-                        <ProgressBar value={plan.percentage} max={100} color={colors[index]} />
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">No plan distribution data</p>
+                )}
                 <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-gray-600">Client Retention Rate</span>
-                    <span className="text-base sm:text-lg font-bold text-green-600">{clientMetrics.retention}%</span>
+                    <span className="text-base sm:text-lg font-bold text-green-600">{clients.retention}%</span>
                   </div>
                 </div>
               </div>
@@ -403,10 +466,10 @@ export default function ReportsPage() {
         {activeTab === "classes" && (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Total Classes" value={classMetrics.totalClasses} />
-              <StatCard title="Avg. Attendance" value={classMetrics.avgAttendance} suffix="%" />
-              <StatCard title="Cancel Rate" value={classMetrics.cancelRate} suffix="%" changeType="negative" change={1.2} />
-              <StatCard title="Waitlist Conv." value={72} suffix="%" />
+              <StatCard title="Total Classes" value={classes.totalClasses} />
+              <StatCard title="Avg. Attendance" value={classes.avgAttendance} suffix="%" />
+              <StatCard title="Cancel Rate" value={classes.cancelRate} suffix="%" changeType="negative" />
+              <StatCard title="Completed" value={data?.classes?.completedClasses || 0} />
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -414,65 +477,68 @@ export default function ReportsPage() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Class Performance</h2>
               </div>
 
-              {/* Mobile/Tablet Card View */}
-              <div className="lg:hidden divide-y divide-gray-100">
-                {classMetrics.popularClasses.map((cls) => (
-                  <div key={cls.name} className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-gray-900">{cls.name}</p>
-                      <span className="text-green-600 text-sm font-medium">↑ 5%</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <p className="text-gray-500">Sessions</p>
-                        <p className="font-medium text-gray-900">{cls.sessions}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Attendance</p>
-                        <p className="font-medium text-gray-900">{cls.avgAttendance}%</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Revenue</p>
-                        <p className="font-medium text-gray-900">R$ {cls.revenue.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <ProgressBar value={cls.avgAttendance} max={100} color="green" />
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop Table View */}
-              <table className="w-full hidden lg:table">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sessions</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Avg. Attendance</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Revenue</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Trend</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {classMetrics.popularClasses.map((cls) => (
-                    <tr key={cls.name} className="hover:bg-gray-50">
-                      <td className="px-4 sm:px-6 py-4 font-medium text-gray-900">{cls.name}</td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-600">{cls.sessions}</td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">{cls.avgAttendance}%</span>
-                          <div className="w-20">
-                            <ProgressBar value={cls.avgAttendance} max={100} color="green" />
+              {classes.popularClasses.length > 0 ? (
+                <>
+                  {/* Mobile/Tablet Card View */}
+                  <div className="lg:hidden divide-y divide-gray-100">
+                    {classes.popularClasses.map((cls) => (
+                      <div key={cls.name} className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-900">{cls.name}</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <p className="text-gray-500">Sessions</p>
+                            <p className="font-medium text-gray-900">{cls.sessions}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Attendance</p>
+                            <p className="font-medium text-gray-900">{cls.avgAttendance}%</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Revenue</p>
+                            <p className="font-medium text-gray-900">R$ {cls.revenue.toLocaleString()}</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {cls.revenue.toLocaleString()}</td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <span className="text-green-600 text-sm font-medium">↑ 5%</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <ProgressBar value={cls.avgAttendance} max={100} color="green" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <table className="w-full hidden lg:table">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sessions</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Avg. Attendance</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {classes.popularClasses.map((cls) => (
+                        <tr key={cls.name} className="hover:bg-gray-50">
+                          <td className="px-4 sm:px-6 py-4 font-medium text-gray-900">{cls.name}</td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">{cls.sessions}</td>
+                          <td className="px-4 sm:px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">{cls.avgAttendance}%</span>
+                              <div className="w-20">
+                                <ProgressBar value={cls.avgAttendance} max={100} color="green" />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {cls.revenue.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  No class performance data available
+                </div>
+              )}
             </div>
           </>
         )}
@@ -480,10 +546,10 @@ export default function ReportsPage() {
         {activeTab === "instructors" && (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Active Instructors" value={4} />
-              <StatCard title="Classes Taught" value={280} />
-              <StatCard title="Avg. Rating" value={4.75} suffix="/5" />
-              <StatCard title="Satisfaction" value={94} suffix="%" />
+              <StatCard title="Active Instructors" value={instructors.totalInstructors} />
+              <StatCard title="Classes Taught" value={instructors.totalClassesTaught} />
+              <StatCard title="Avg. Rating" value={instructors.avgRating} suffix="/5" />
+              <StatCard title="Satisfaction" value={instructors.satisfaction} suffix="%" />
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -491,83 +557,91 @@ export default function ReportsPage() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Instructor Performance</h2>
               </div>
 
-              {/* Mobile/Tablet Card View */}
-              <div className="lg:hidden divide-y divide-gray-100">
-                {instructorMetrics.map((instructor) => (
-                  <div key={instructor.name} className="p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary-700">
-                          {instructor.name.split(" ").map(n => n[0]).join("")}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{instructor.name}</p>
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          <span className="text-sm text-gray-600">{instructor.rating}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <p className="text-gray-500">Classes</p>
-                        <p className="font-medium text-gray-900">{instructor.classes}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Students</p>
-                        <p className="font-medium text-gray-900">{instructor.students}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Revenue</p>
-                        <p className="font-medium text-gray-900">R$ {instructor.revenue.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop Table View */}
-              <table className="w-full hidden lg:table">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Instructor</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Classes</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Students</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Rating</th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Revenue Generated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {instructorMetrics.map((instructor) => (
-                    <tr key={instructor.name} className="hover:bg-gray-50">
-                      <td className="px-4 sm:px-6 py-4">
+              {instructors.instructors.length > 0 ? (
+                <>
+                  {/* Mobile/Tablet Card View */}
+                  <div className="lg:hidden divide-y divide-gray-100">
+                    {instructors.instructors.map((instructor) => (
+                      <div key={instructor.id} className="p-4 space-y-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
                             <span className="text-sm font-semibold text-primary-700">
                               {instructor.name.split(" ").map(n => n[0]).join("")}
                             </span>
                           </div>
-                          <span className="font-medium text-gray-900">{instructor.name}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{instructor.name}</p>
+                            <div className="flex items-center gap-1">
+                              <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              <span className="text-sm text-gray-600">{instructor.rating}</span>
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.classes}</td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.students}</td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          <span className="font-medium text-gray-900">{instructor.rating}</span>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <p className="text-gray-500">Classes</p>
+                            <p className="font-medium text-gray-900">{instructor.classes}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Students</p>
+                            <p className="font-medium text-gray-900">{instructor.students}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Revenue</p>
+                            <p className="font-medium text-gray-900">R$ {instructor.revenue.toLocaleString()}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {instructor.revenue.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <table className="w-full hidden lg:table">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Instructor</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Classes</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Students</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Rating</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Revenue Generated</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {instructors.instructors.map((instructor) => (
+                        <tr key={instructor.id} className="hover:bg-gray-50">
+                          <td className="px-4 sm:px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                                <span className="text-sm font-semibold text-primary-700">
+                                  {instructor.name.split(" ").map(n => n[0]).join("")}
+                                </span>
+                              </div>
+                              <span className="font-medium text-gray-900">{instructor.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.classes}</td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.students}</td>
+                          <td className="px-4 sm:px-6 py-4">
+                            <div className="flex items-center gap-1">
+                              <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              <span className="font-medium text-gray-900">{instructor.rating}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {instructor.revenue.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  No instructor data available
+                </div>
+              )}
             </div>
           </>
         )}
@@ -575,10 +649,10 @@ export default function ReportsPage() {
         {activeTab === "clients" && (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Total Clients" value={clientMetrics.totalClients} />
-              <StatCard title="Active Clients" value={clientMetrics.activeClients} />
-              <StatCard title="New This Month" value={clientMetrics.newThisMonth} change={25} changeType="positive" />
-              <StatCard title="Churn Rate" value={clientMetrics.churnRate} suffix="%" changeType="negative" />
+              <StatCard title="Total Clients" value={clients.totalClients} />
+              <StatCard title="Active Clients" value={clients.activeClients} />
+              <StatCard title="New This Month" value={clients.newThisMonth} change={clients.newThisMonth > 0 ? 25 : 0} changeType="positive" />
+              <StatCard title="Churn Rate" value={clients.churnRate} suffix="%" changeType="negative" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -586,10 +660,16 @@ export default function ReportsPage() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Client Growth</h2>
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                   <div className="min-w-[400px]">
-                    <BarChart
-                      data={revenueData.monthly.map(m => ({ label: m.month, value: m.clients }))}
-                      height={200}
-                    />
+                    {clients.clientGrowth.length > 0 ? (
+                      <BarChart
+                        data={clients.clientGrowth.map(m => ({ label: m.month, value: m.clients }))}
+                        height={200}
+                      />
+                    ) : (
+                      <div className="h-[200px] flex items-center justify-center text-gray-500">
+                        No client growth data available
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -600,23 +680,25 @@ export default function ReportsPage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs sm:text-sm text-gray-600">Retention Rate</span>
-                      <span className="text-sm sm:text-base font-semibold text-green-600">{clientMetrics.retention}%</span>
+                      <span className="text-sm sm:text-base font-semibold text-green-600">{clients.retention}%</span>
                     </div>
-                    <ProgressBar value={clientMetrics.retention} max={100} color="green" />
+                    <ProgressBar value={clients.retention} max={100} color="green" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs sm:text-sm text-gray-600">Active Rate</span>
-                      <span className="text-sm sm:text-base font-semibold text-blue-600">{Math.round((clientMetrics.activeClients / clientMetrics.totalClients) * 100)}%</span>
+                      <span className="text-sm sm:text-base font-semibold text-blue-600">
+                        {clients.totalClients > 0 ? Math.round((clients.activeClients / clients.totalClients) * 100) : 0}%
+                      </span>
                     </div>
-                    <ProgressBar value={clientMetrics.activeClients} max={clientMetrics.totalClients} color="blue" />
+                    <ProgressBar value={clients.activeClients} max={clients.totalClients || 1} color="blue" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs sm:text-sm text-gray-600">Avg. Classes/Client</span>
-                      <span className="text-sm sm:text-base font-semibold text-primary-600">8.2</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Churn Rate</span>
+                      <span className="text-sm sm:text-base font-semibold text-red-600">{clients.churnRate}%</span>
                     </div>
-                    <ProgressBar value={82} max={120} color="primary" />
+                    <ProgressBar value={clients.churnRate} max={100} color="orange" />
                   </div>
                 </div>
               </div>
@@ -666,10 +748,10 @@ export default function ReportsPage() {
                     onChange={(e) => setDateRange(e.target.value)}
                     className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 rounded-lg text-sm sm:text-base focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
-                    <option value="this_month">This Month (December 2024)</option>
-                    <option value="last_month">Last Month (November 2024)</option>
-                    <option value="this_quarter">This Quarter (Q4 2024)</option>
-                    <option value="this_year">This Year (2024)</option>
+                    <option value="this_month">This Month</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="this_quarter">This Quarter</option>
+                    <option value="this_year">This Year</option>
                     <option value="all_time">All Time</option>
                   </select>
                 </div>
@@ -719,10 +801,10 @@ export default function ReportsPage() {
                   <p className="text-xs sm:text-sm text-gray-600">
                     <span className="font-medium text-gray-900 capitalize">{activeTab}</span> report for{" "}
                     <span className="font-medium text-gray-900">
-                      {dateRange === "this_month" ? "December 2024" :
-                       dateRange === "last_month" ? "November 2024" :
-                       dateRange === "this_quarter" ? "Q4 2024" :
-                       dateRange === "this_year" ? "2024" : "All Time"}
+                      {dateRange === "this_month" ? "This Month" :
+                       dateRange === "last_month" ? "Last Month" :
+                       dateRange === "this_quarter" ? "This Quarter" :
+                       dateRange === "this_year" ? "This Year" : "All Time"}
                     </span>
                   </p>
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
@@ -741,26 +823,23 @@ export default function ReportsPage() {
                 <button
                   onClick={() => {
                     const periodLabels: Record<string, string> = {
-                      this_month: "December-2024",
-                      last_month: "November-2024",
-                      this_quarter: "Q4-2024",
-                      this_year: "2024",
+                      this_month: "this-month",
+                      last_month: "last-month",
+                      this_quarter: "this-quarter",
+                      this_year: "this-year",
                       all_time: "all-time",
                     };
 
-                    const exportData = getExportData(activeTab, dateRange);
+                    const exportData = getExportData(activeTab);
                     const fileBaseName = `flexiwell-${activeTab}-report-${periodLabels[dateRange]}`;
 
                     if (exportFormat === "csv") {
                       const csvContent = generateCSV(exportData.data, exportData.headers);
                       downloadFile(csvContent, `${fileBaseName}.csv`, "text/csv;charset=utf-8;");
                     } else if (exportFormat === "excel") {
-                      // Generate Excel-compatible CSV (Excel can open CSV files)
-                      // Add BOM for proper UTF-8 encoding in Excel
                       const csvContent = "\uFEFF" + generateCSV(exportData.data, exportData.headers);
                       downloadFile(csvContent, `${fileBaseName}.csv`, "text/csv;charset=utf-8;");
                     } else if (exportFormat === "pdf") {
-                      // For PDF, we'll create a printable HTML that can be saved as PDF
                       const printWindow = window.open("", "_blank");
                       if (printWindow) {
                         const tableRows = exportData.data.map(row =>

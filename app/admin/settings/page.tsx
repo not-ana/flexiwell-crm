@@ -1,8 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { BusinessType, businessTypes, getBusinessTypeOptions } from "@/lib/config/business-types";
+
+// Toast notification helper
+function showToast(message: string, type: "success" | "error" = "success") {
+  // Simple toast - in production, use a proper toast library
+  const toast = document.createElement("div");
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 transition-opacity ${
+    type === "success" ? "bg-green-600" : "bg-red-600"
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
 
 type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "rooms" | "billing" | "notifications" | "team" | "integrations" | "whatsapp";
 
@@ -49,13 +64,64 @@ function GeneralSettings() {
     language: "en-US",
     businessType: "pilates" as BusinessType,
   });
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load settings from API
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/settings?section=general");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.general) {
+            setSettings(prev => ({ ...prev, ...data.general }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
 
   const updateSetting = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "general", data: settings }),
+      });
+      if (res.ok) {
+        showToast("Settings saved successfully");
+      } else {
+        showToast("Failed to save settings", "error");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save settings", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const businessTypeOptions = getBusinessTypeOptions();
   const selectedBusinessType = businessTypes[settings.businessType];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -211,7 +277,9 @@ function GeneralSettings() {
 
         <div className="flex items-center justify-end gap-3 pt-4">
           <Button variant="secondary">Cancel</Button>
-          <Button>Save changes</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
         </div>
       </div>
     </div>
@@ -457,54 +525,146 @@ interface Room {
 }
 
 function RoomsSettings() {
-  const [rooms, setRooms] = useState<Room[]>([
-    { id: "1", name: "Studio A", capacity: 15, establishmentId: "1", amenities: ["Mirrors", "Sound System", "Air Conditioning"], isActive: true },
-    { id: "2", name: "Studio B", capacity: 20, establishmentId: "1", amenities: ["Mirrors", "Sound System", "Yoga Mats"], isActive: true },
-    { id: "3", name: "Pilates Room", capacity: 10, establishmentId: "1", amenities: ["Reformers", "Air Conditioning"], isActive: true },
-    { id: "4", name: "Main Studio", capacity: 25, establishmentId: "2", amenities: ["Mirrors", "Sound System", "Air Conditioning", "Ballet Barre"], isActive: true },
-    { id: "5", name: "Training Room", capacity: 8, establishmentId: "2", amenities: ["Weight Equipment", "Mirrors"], isActive: false },
-    { id: "6", name: "Yoga Studio", capacity: 12, establishmentId: "3", amenities: ["Yoga Mats", "Sound System", "Natural Light"], isActive: true },
-  ]);
-
-  const establishments = [
-    { id: "1", name: "FlexiWell Downtown" },
-    { id: "2", name: "FlexiWell Midtown" },
-    { id: "3", name: "FlexiWell Uptown" },
-  ];
-
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [establishments, setEstablishments] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [newRoom, setNewRoom] = useState({ name: "", capacity: 10, establishmentId: "1", amenities: "" });
+  const [newRoom, setNewRoom] = useState({ name: "", capacity: 10, establishmentId: "", amenities: "" });
+  const [saving, setSaving] = useState(false);
+
+  // Load rooms and establishments from API
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [roomsRes, establishmentsRes] = await Promise.all([
+          fetch("/api/rooms"),
+          fetch("/api/establishments"),
+        ]);
+
+        if (roomsRes.ok) {
+          const roomsData = await roomsRes.json();
+          setRooms(roomsData.rooms?.map((r: { _id: { toString: () => string }; name: string; capacity: number; establishmentId: string; equipment?: string[]; isActive: boolean }) => ({
+            id: r._id?.toString() || "",
+            name: r.name,
+            capacity: r.capacity,
+            establishmentId: r.establishmentId,
+            amenities: r.equipment || [],
+            isActive: r.isActive,
+          })) || []);
+        }
+
+        if (establishmentsRes.ok) {
+          const establishmentsData = await establishmentsRes.json();
+          const estList = establishmentsData.establishments?.map((e: { _id: { toString: () => string }; name: string }) => ({
+            id: e._id?.toString() || "",
+            name: e.name,
+          })) || [];
+          setEstablishments(estList);
+          if (estList.length > 0 && !newRoom.establishmentId) {
+            setNewRoom(prev => ({ ...prev, establishmentId: estList[0].id }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const getEstablishmentName = (id: string) => establishments.find(e => e.id === id)?.name || "Unknown";
 
-  const handleAddRoom = () => {
+  const handleAddRoom = async () => {
     if (!newRoom.name || !newRoom.establishmentId) return;
-    const newId = String(rooms.length + 1);
-    const amenitiesArray = newRoom.amenities.split(",").map(a => a.trim()).filter(a => a);
-    setRooms([...rooms, {
-      id: newId,
-      name: newRoom.name,
-      capacity: newRoom.capacity,
-      establishmentId: newRoom.establishmentId,
-      amenities: amenitiesArray,
-      isActive: true
-    }]);
-    setNewRoom({ name: "", capacity: 10, establishmentId: "1", amenities: "" });
-    setShowAddModal(false);
-  };
+    setSaving(true);
+    try {
+      const amenitiesArray = newRoom.amenities.split(",").map(a => a.trim()).filter(a => a);
+      const res = await fetch("/api/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newRoom.name,
+          establishmentId: newRoom.establishmentId,
+          capacity: newRoom.capacity,
+          equipment: amenitiesArray,
+        }),
+      });
 
-  const handleToggleActive = (roomId: string) => {
-    setRooms(prev => prev.map(room =>
-      room.id === roomId ? { ...room, isActive: !room.isActive } : room
-    ));
-  };
-
-  const handleDeleteRoom = (roomId: string) => {
-    if (confirm("Are you sure you want to delete this room?")) {
-      setRooms(prev => prev.filter(room => room.id !== roomId));
+      if (res.ok) {
+        const data = await res.json();
+        setRooms([...rooms, {
+          id: data.room._id?.toString() || "",
+          name: data.room.name,
+          capacity: data.room.capacity,
+          establishmentId: data.room.establishmentId,
+          amenities: data.room.equipment || [],
+          isActive: data.room.isActive,
+        }]);
+        setNewRoom({ name: "", capacity: 10, establishmentId: establishments[0]?.id || "", amenities: "" });
+        setShowAddModal(false);
+        showToast("Room created successfully");
+      } else {
+        showToast("Failed to create room", "error");
+      }
+    } catch (error) {
+      console.error("Create room error:", error);
+      showToast("Failed to create room", "error");
+    } finally {
+      setSaving(false);
     }
   };
+
+  const handleToggleActive = async (roomId: string) => {
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    try {
+      const res = await fetch(`/api/rooms/${roomId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: room.isActive ? "deactivate" : "activate" }),
+      });
+
+      if (res.ok) {
+        setRooms(prev => prev.map(r =>
+          r.id === roomId ? { ...r, isActive: !r.isActive } : r
+        ));
+        showToast(`Room ${room.isActive ? "deactivated" : "activated"}`);
+      } else {
+        showToast("Failed to update room", "error");
+      }
+    } catch (error) {
+      console.error("Toggle room error:", error);
+      showToast("Failed to update room", "error");
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!confirm("Are you sure you want to delete this room?")) return;
+
+    try {
+      const res = await fetch(`/api/rooms/${roomId}`, { method: "DELETE" });
+      if (res.ok) {
+        setRooms(prev => prev.filter(room => room.id !== roomId));
+        showToast("Room deleted");
+      } else {
+        showToast("Failed to delete room", "error");
+      }
+    } catch (error) {
+      console.error("Delete room error:", error);
+      showToast("Failed to delete room", "error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   // Group rooms by establishment
   const roomsByEstablishment = establishments.map(est => ({
@@ -1707,9 +1867,48 @@ function NotificationsSettings() {
     paymentAlerts: true,
     classReminders: true,
   });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        const res = await fetch("/api/settings?section=notifications");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.notifications) {
+            setSettings(prev => ({ ...prev, ...data.notifications }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load notifications:", error);
+      }
+    }
+    loadNotifications();
+  }, []);
 
   const updateSetting = (key: string, value: boolean) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "notifications", data: settings }),
+      });
+      if (res.ok) {
+        showToast("Notification settings saved");
+      } else {
+        showToast("Failed to save settings", "error");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save settings", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1783,7 +1982,9 @@ function NotificationsSettings() {
 
         <div className="flex items-center justify-end gap-3 pt-4">
           <Button variant="secondary">Cancel</Button>
-          <Button>Save changes</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
         </div>
       </div>
     </div>
@@ -1803,26 +2004,50 @@ interface TeamMember {
 function InviteMemberModal({
   isOpen,
   onClose,
+  onSuccess,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     role: "Teacher" as TeamMember["role"],
   });
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name || !formData.email) {
-      alert("Please fill in name and email");
+      showToast("Please fill in name and email", "error");
       return;
     }
-    alert(
-      `Invitation sent!\n\nName: ${formData.name}\nEmail: ${formData.email}\nRole: ${formData.role}\n\nAn invitation email has been sent to ${formData.email}.`
-    );
-    setFormData({ name: "", email: "", role: "Teacher" });
-    onClose();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role.toLowerCase(),
+        }),
+      });
+      if (res.ok) {
+        showToast(`Team member ${formData.name} added successfully`);
+        setFormData({ name: "", email: "", role: "Teacher" });
+        onSuccess();
+        onClose();
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to add team member", "error");
+      }
+    } catch (error) {
+      console.error("Add member error:", error);
+      showToast("Failed to add team member", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -1899,15 +2124,17 @@ function InviteMemberModal({
         <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            disabled={saving}
+            className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            disabled={saving}
+            className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
-            Send Invitation
+            {saving ? "Adding..." : "Add Member"}
           </button>
         </div>
       </div>
@@ -1998,26 +2225,67 @@ function MemberActionMenu({
 // Team Settings Component
 function TeamSettings() {
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [teamMembers] = useState<TeamMember[]>([
-    { id: "1", name: "Alex Thompson", email: "alex@flexiwell.com", role: "Admin", status: "Active" },
-    { id: "2", name: "Sarah Johnson", email: "sarah@flexiwell.com", role: "Teacher", status: "Active" },
-    { id: "3", name: "Michael Chen", email: "michael@flexiwell.com", role: "Teacher", status: "Active" },
-    { id: "4", name: "James Wilson", email: "james@flexiwell.com", role: "Receptionist", status: "Pending" },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load team members from API
+  const loadTeamMembers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/staff");
+      if (res.ok) {
+        const data = await res.json();
+        setTeamMembers(data.staff?.map((s: { _id: { toString: () => string }; name: string; email: string; role: string; status: string }) => ({
+          id: s._id?.toString() || "",
+          name: s.name,
+          email: s.email,
+          role: (s.role.charAt(0).toUpperCase() + s.role.slice(1)) as TeamMember["role"],
+          status: s.status === "active" ? "Active" : "Pending",
+        })) || []);
+      }
+    } catch (error) {
+      console.error("Failed to load team members:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
 
   const handleEditMember = (member: TeamMember) => {
-    alert(`Edit Member\n\nName: ${member.name}\nEmail: ${member.email}\nRole: ${member.role}\n\nThis would open an edit dialog.`);
+    // For simplicity, we'll just show an alert. In production, this would open an edit modal.
+    showToast(`Edit functionality for ${member.name} - coming soon`);
   };
 
   const handleResendInvite = (member: TeamMember) => {
-    alert(`Invitation resent to ${member.email}!`);
+    showToast(`Invitation reminder sent to ${member.email}`);
   };
 
-  const handleRemoveMember = (member: TeamMember) => {
-    if (confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
-      alert(`${member.name} has been removed from the team.`);
+  const handleRemoveMember = async (member: TeamMember) => {
+    if (!confirm(`Are you sure you want to remove ${member.name} from the team?`)) return;
+
+    try {
+      const res = await fetch(`/api/staff/${member.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setTeamMembers(prev => prev.filter(m => m.id !== member.id));
+        showToast(`${member.name} has been removed from the team`);
+      } else {
+        showToast("Failed to remove team member", "error");
+      }
+    } catch (error) {
+      console.error("Remove member error:", error);
+      showToast("Failed to remove team member", "error");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -2068,6 +2336,7 @@ function TeamSettings() {
       <InviteMemberModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
+        onSuccess={loadTeamMembers}
       />
     </div>
   );
@@ -2410,12 +2679,51 @@ function BrandingSettings() {
   });
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Mock: Check if white label is available in current plan
   const isWhiteLabelAvailable = false; // Would come from plan context
 
+  useEffect(() => {
+    async function loadBranding() {
+      try {
+        const res = await fetch("/api/settings?section=branding");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.branding) {
+            setBranding(prev => ({ ...prev, ...data.branding }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load branding:", error);
+      }
+    }
+    loadBranding();
+  }, []);
+
   const updateBranding = (key: string, value: string | boolean) => {
     setBranding((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveBranding = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "branding", data: branding }),
+      });
+      if (res.ok) {
+        showToast("Branding saved successfully");
+      } else {
+        showToast("Failed to save branding", "error");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save branding", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -2673,7 +2981,9 @@ function BrandingSettings() {
       {isWhiteLabelAvailable && (
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary">Cancel</Button>
-          <Button>Save Branding</Button>
+          <Button onClick={handleSaveBranding} disabled={saving}>
+            {saving ? "Saving..." : "Save Branding"}
+          </Button>
         </div>
       )}
 
@@ -2772,6 +3082,7 @@ function WaitlistSettings() {
       boostPercentage: 20,
     },
   });
+  const [saving, setSaving] = useState(false);
 
   // Priority Score Configuration (matches WaitlistPriorityConfig schema)
   const [priorityConfig, setPriorityConfig] = useState({
@@ -2830,12 +3141,59 @@ function WaitlistSettings() {
     },
   ]);
 
+  useEffect(() => {
+    async function loadWaitlistSettings() {
+      try {
+        const res = await fetch("/api/settings?section=waitlist");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.waitlist) {
+            if (data.waitlist.settings) setSettings(prev => ({ ...prev, ...data.waitlist.settings }));
+            if (data.waitlist.priorityConfig) setPriorityConfig(prev => ({ ...prev, ...data.waitlist.priorityConfig }));
+            if (data.waitlist.priorityTiers) setPriorityTiers(data.waitlist.priorityTiers);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load waitlist settings:", error);
+      }
+    }
+    loadWaitlistSettings();
+  }, []);
+
   const updateTier = (tierId: string, field: string, value: number | boolean) => {
     setPriorityTiers(prev =>
       prev.map(tier =>
         tier.id === tierId ? { ...tier, [field]: value } : tier
       )
     );
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          section: "waitlist",
+          data: {
+            settings,
+            priorityConfig,
+            priorityTiers,
+          },
+        }),
+      });
+      if (res.ok) {
+        showToast("Waitlist settings saved");
+      } else {
+        showToast("Failed to save settings", "error");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save settings", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -3322,7 +3680,9 @@ function WaitlistSettings() {
 
       <div className="flex items-center justify-end gap-3">
         <Button variant="secondary">Cancel</Button>
-        <Button>Save Waitlist Settings</Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Waitlist Settings"}
+        </Button>
       </div>
     </div>
   );

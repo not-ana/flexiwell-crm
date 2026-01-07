@@ -1,62 +1,343 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
+import type { Class, Booking, Client } from "@/lib/db/schemas";
 
-// Mock data for teacher dashboard
-const mockDashboardData = {
-  stats: {
-    classesCompleted: 18,
-    totalClasses: 24,
-    studentsServed: 142,
-    avgAttendance: 92,
-    rating: 4.8,
-    hoursTeaching: 22,
-    makeupPending: 3,
-  },
-  todaySchedule: [
-    { id: "1", name: "Morning Yoga", time: "07:00 - 08:00", status: "completed" as const, students: 12, room: "Studio A" },
-    { id: "2", name: "Pilates Basics", time: "09:00 - 10:00", status: "completed" as const, students: 8, room: "Studio B" },
-    { id: "3", name: "Core Training", time: "11:00 - 12:00", status: "in-progress" as const, students: 15, room: "Studio A" },
-    { id: "4", name: "Afternoon Stretch", time: "14:00 - 15:00", status: "upcoming" as const, students: 10, room: "Main Hall" },
-    { id: "5", name: "Power Yoga", time: "17:00 - 18:00", status: "upcoming" as const, students: 14, room: "Studio A" },
-    { id: "6", name: "Evening Relaxation", time: "19:00 - 20:00", status: "upcoming" as const, students: 6, room: "Studio B" },
-  ],
-  upcomingClasses: [
-    { id: "1", name: "Morning Yoga", time: "Tomorrow, 07:00", duration: "1h", students: 10, maxStudents: 15, room: "Studio A" },
-    { id: "2", name: "Pilates Advanced", time: "Tomorrow, 10:00", duration: "1h", students: 8, maxStudents: 10, room: "Studio B" },
-    { id: "3", name: "Core Training", time: "Wed, 11:00", duration: "1h", students: 12, maxStudents: 15, room: "Studio A" },
-    { id: "4", name: "Power Yoga", time: "Wed, 17:00", duration: "1.5h", students: 14, maxStudents: 20, room: "Main Hall" },
-  ],
-  makeupRequests: [
-    { id: "1", studentName: "Camille Stone", studentInitials: "CS", originalClass: "Morning Yoga", originalDate: "Dec 20", status: "pending" as const },
-    { id: "2", studentName: "Ryan Lewis", studentInitials: "RL", originalClass: "Core Training", originalDate: "Dec 18", requestedDate: "Dec 28, 10:00 AM", status: "scheduled" as const },
-    { id: "3", studentName: "Patrick Adams", studentInitials: "PA", originalClass: "Pilates Basics", originalDate: "Dec 15", status: "pending" as const },
-  ],
-  weeklyClassData: [
-    { day: "Mon", classes: 4, students: 42 },
-    { day: "Tue", classes: 5, students: 58 },
-    { day: "Wed", classes: 3, students: 32 },
-    { day: "Thu", classes: 5, students: 54 },
-    { day: "Fri", classes: 4, students: 48 },
-    { day: "Sat", classes: 2, students: 24 },
-    { day: "Sun", classes: 1, students: 12 },
-  ],
-  classTypeData: [
-    { name: "Yoga", value: 35, color: "#7C3AED" },
-    { name: "Pilates", value: 30, color: "#8B5CF6" },
-    { name: "Core", value: 20, color: "#A78BFA" },
-    { name: "Stretch", value: 15, color: "#C4B5FD" },
-  ],
-  studentAttendance: [
-    { id: "1", name: "Lucas Brooks", initials: "LB", classesAttended: 18, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-    { id: "2", name: "Camille Stone", initials: "CS", classesAttended: 15, totalClasses: 20, lastClass: "Yesterday", needsMakeup: true },
-    { id: "3", name: "Ryan Lewis", initials: "RL", classesAttended: 12, totalClasses: 20, lastClass: "2 days ago", needsMakeup: true },
-    { id: "4", name: "Julia Martin", initials: "JM", classesAttended: 19, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-    { id: "5", name: "Patrick Adams", initials: "PA", classesAttended: 8, totalClasses: 20, lastClass: "1 week ago", needsMakeup: true },
-  ],
-};
+interface JWTPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
 
-export async function GET() {
-  // In production, this would fetch real data from the database
-  // filtered by the logged-in teacher's ID
+async function getUser(): Promise<JWTPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
 
-  return NextResponse.json(mockDashboardData);
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret"
+    ) as JWTPayload;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const db = await getDatabase();
+    const teacherId = user.userId;
+
+    // Get date ranges
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Get teacher's classes for today
+    const todayClasses = await db.collection<Class>("classes")
+      .find({
+        instructorId: teacherId,
+        scheduledDate: { $gte: today, $lt: tomorrow }
+      })
+      .sort({ startTime: 1 })
+      .toArray();
+
+    // Get upcoming classes (next 7 days excluding today)
+    const upcomingClasses = await db.collection<Class>("classes")
+      .find({
+        instructorId: teacherId,
+        scheduledDate: { $gte: tomorrow, $lt: weekEnd },
+        status: "scheduled"
+      })
+      .sort({ scheduledDate: 1, startTime: 1 })
+      .limit(10)
+      .toArray();
+
+    // Get this month's bookings for stats
+    const monthBookings = await db.collection<Booking>("bookings")
+      .find({
+        instructorId: teacherId,
+        scheduledDate: { $gte: monthStart }
+      })
+      .toArray();
+
+    // Get completed classes this month
+    const completedClasses = await db.collection<Class>("classes")
+      .countDocuments({
+        instructorId: teacherId,
+        scheduledDate: { $gte: monthStart },
+        status: "completed"
+      });
+
+    const totalClassesMonth = await db.collection<Class>("classes")
+      .countDocuments({
+        instructorId: teacherId,
+        scheduledDate: { $gte: monthStart }
+      });
+
+    // Calculate stats
+    const completedBookings = monthBookings.filter(b => b.status === "completed");
+    const noShowBookings = monthBookings.filter(b => b.status === "no-show");
+    const totalAttended = completedBookings.length;
+    const totalBooked = monthBookings.filter(b => b.status !== "cancelled").length;
+    const avgAttendance = totalBooked > 0 ? Math.round((totalAttended / totalBooked) * 100) : 0;
+
+    // Get unique students served
+    const uniqueStudents = new Set(monthBookings.map(b => b.clientId));
+
+    // Calculate teaching hours
+    const teachingMinutes = await db.collection<Class>("classes")
+      .aggregate([
+        {
+          $match: {
+            instructorId: teacherId,
+            scheduledDate: { $gte: monthStart },
+            status: "completed"
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalMinutes: { $sum: "$duration" }
+          }
+        }
+      ])
+      .toArray();
+    const hoursTeaching = Math.round((teachingMinutes[0]?.totalMinutes || 0) / 60);
+
+    // Get pending makeup requests (from waitlist with type reschedule)
+    const makeupRequests = await db.collection("waitlist")
+      .find({
+        type: { $in: ["reschedule", "makeup"] },
+        status: "pending"
+      })
+      .toArray();
+
+    // Filter makeup requests related to this teacher's classes
+    const teacherClassIds = todayClasses.map(c => c._id?.toString());
+    const pendingMakeups = makeupRequests.filter(r =>
+      teacherClassIds.includes(r.classId) || r.instructorId === teacherId
+    );
+
+    // Get weekly class data
+    const weeklyData = [];
+    for (let i = 0; i < 7; i++) {
+      const dayStart = new Date(weekStart);
+      dayStart.setDate(dayStart.getDate() + i);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const dayClasses = await db.collection<Class>("classes")
+        .find({
+          instructorId: teacherId,
+          scheduledDate: { $gte: dayStart, $lt: dayEnd }
+        })
+        .toArray();
+
+      const dayStudents = dayClasses.reduce((sum, c) => sum + c.currentEnrollment, 0);
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      weeklyData.push({
+        day: days[i],
+        classes: dayClasses.length,
+        students: dayStudents
+      });
+    }
+
+    // Get class type distribution
+    const classTypeAgg = await db.collection<Class>("classes")
+      .aggregate([
+        {
+          $match: {
+            instructorId: teacherId,
+            scheduledDate: { $gte: monthStart }
+          }
+        },
+        {
+          $group: {
+            _id: "$type",
+            count: { $sum: 1 }
+          }
+        }
+      ])
+      .toArray();
+
+    const typeColors: Record<string, string> = {
+      yoga: "#7C3AED",
+      pilates: "#8B5CF6",
+      stretching: "#A78BFA",
+      meditation: "#C4B5FD",
+      other: "#DDD6FE"
+    };
+
+    const totalTypeCount = classTypeAgg.reduce((sum, t) => sum + t.count, 0);
+    const classTypeData = classTypeAgg.map(t => ({
+      name: t._id.charAt(0).toUpperCase() + t._id.slice(1),
+      value: totalTypeCount > 0 ? Math.round((t.count / totalTypeCount) * 100) : 0,
+      color: typeColors[t._id] || "#DDD6FE"
+    }));
+
+    // Get student attendance data (students from recent classes)
+    const recentBookings = await db.collection<Booking>("bookings")
+      .find({
+        instructorId: teacherId,
+        scheduledDate: { $gte: monthStart }
+      })
+      .toArray();
+
+    const studentStats: Record<string, {
+      name: string;
+      attended: number;
+      total: number;
+      lastClass: Date | null;
+      needsMakeup: boolean;
+    }> = {};
+
+    for (const booking of recentBookings) {
+      if (!studentStats[booking.clientId]) {
+        studentStats[booking.clientId] = {
+          name: booking.clientName,
+          attended: 0,
+          total: 0,
+          lastClass: null,
+          needsMakeup: false
+        };
+      }
+      studentStats[booking.clientId].total++;
+      if (booking.status === "completed") {
+        studentStats[booking.clientId].attended++;
+        if (!studentStats[booking.clientId].lastClass ||
+            booking.scheduledDate > studentStats[booking.clientId].lastClass!) {
+          studentStats[booking.clientId].lastClass = booking.scheduledDate;
+        }
+      }
+      if (booking.status === "no-show" || booking.status === "cancelled") {
+        studentStats[booking.clientId].needsMakeup = true;
+      }
+    }
+
+    const studentAttendance = Object.entries(studentStats)
+      .map(([id, data]) => {
+        const initials = data.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+        let lastClassText = "Never";
+        if (data.lastClass) {
+          const diff = Math.floor((today.getTime() - data.lastClass.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff === 0) lastClassText = "Today";
+          else if (diff === 1) lastClassText = "Yesterday";
+          else lastClassText = `${diff} days ago`;
+        }
+        return {
+          id,
+          name: data.name,
+          initials,
+          classesAttended: data.attended,
+          totalClasses: data.total,
+          lastClass: lastClassText,
+          needsMakeup: data.needsMakeup
+        };
+      })
+      .sort((a, b) => b.totalClasses - a.totalClasses)
+      .slice(0, 10);
+
+    // Format today's schedule
+    const todaySchedule = todayClasses.map(c => {
+      const now = new Date();
+      const classStart = new Date(c.scheduledDate);
+      const [startH, startM] = c.startTime.split(":").map(Number);
+      classStart.setHours(startH, startM);
+      const classEnd = new Date(classStart);
+      classEnd.setMinutes(classEnd.getMinutes() + c.duration);
+
+      let status: "completed" | "in-progress" | "upcoming" = "upcoming";
+      if (c.status === "completed") status = "completed";
+      else if (now >= classStart && now <= classEnd) status = "in-progress";
+      else if (now > classEnd) status = "completed";
+
+      return {
+        id: c._id?.toString() || "",
+        name: c.title,
+        time: `${c.startTime} - ${c.endTime}`,
+        status,
+        students: c.currentEnrollment,
+        room: c.location || "TBD"
+      };
+    });
+
+    // Format upcoming classes
+    const formattedUpcoming = upcomingClasses.map(c => {
+      const classDate = new Date(c.scheduledDate);
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const isNextDay = classDate.getDate() === tomorrow.getDate();
+      const timeStr = isNextDay
+        ? `Tomorrow, ${c.startTime}`
+        : `${dayNames[classDate.getDay()]}, ${c.startTime}`;
+
+      return {
+        id: c._id?.toString() || "",
+        name: c.title,
+        time: timeStr,
+        duration: `${c.duration}min`,
+        students: c.currentEnrollment,
+        maxStudents: c.maxCapacity,
+        room: c.location || "TBD"
+      };
+    });
+
+    // Format makeup requests
+    const formattedMakeups = pendingMakeups.slice(0, 5).map(r => ({
+      id: r._id?.toString() || "",
+      studentName: r.clientName || "Unknown",
+      studentInitials: (r.clientName || "UN").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+      originalClass: r.className || "Class",
+      originalDate: r.originalDate ? new Date(r.originalDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "N/A",
+      requestedDate: r.preferredDate ? new Date(r.preferredDate).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : undefined,
+      status: r.status as "pending" | "scheduled" | "completed"
+    }));
+
+    const response = {
+      stats: {
+        classesCompleted: completedClasses,
+        totalClasses: totalClassesMonth,
+        studentsServed: uniqueStudents.size,
+        avgAttendance,
+        rating: 4.8, // TODO: Implement rating system
+        hoursTeaching,
+        makeupPending: pendingMakeups.length,
+      },
+      todaySchedule,
+      upcomingClasses: formattedUpcoming,
+      makeupRequests: formattedMakeups,
+      weeklyClassData: weeklyData,
+      classTypeData,
+      studentAttendance,
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("Teacher dashboard error:", error);
+    return NextResponse.json(
+      { error: "Failed to load dashboard data" },
+      { status: 500 }
+    );
+  }
 }

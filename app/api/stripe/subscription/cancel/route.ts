@@ -9,7 +9,7 @@ import {
   cancelSubscriptionAtPeriodEnd,
   cancelSubscriptionImmediately
 } from "@/lib/stripe/server";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Cancel at period end
       updatedSubscription = await cancelSubscriptionAtPeriodEnd(subscription.id);
-      const periodEndDate = new Date(subscription.current_period_end * 1000);
+      const periodEndDate = new Date(subscription.items.data[0].current_period_end * 1000);
       message = `Your subscription will be canceled at the end of your billing period on ${periodEndDate.toLocaleDateString()}. You'll continue to have access until then.`;
 
       // Update user status
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       event: immediately ? "subscription_canceled_immediately" : "subscription_scheduled_cancel",
       subscriptionId: subscription.id,
       reason: reason || "Not provided",
-      cancelAt: immediately ? new Date() : new Date(subscription.current_period_end * 1000),
+      cancelAt: immediately ? new Date() : new Date(subscription.items.data[0].current_period_end * 1000),
       timestamp: new Date(),
     });
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         status: updatedSubscription.status,
         cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
         cancelAt: updatedSubscription.cancel_at,
-        currentPeriodEnd: updatedSubscription.current_period_end,
+        currentPeriodEnd: updatedSubscription.items.data[0]?.current_period_end,
       },
     });
   } catch (error) {

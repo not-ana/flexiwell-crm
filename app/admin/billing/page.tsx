@@ -12,6 +12,8 @@ import {
   addAddOnToSubscription,
   removeAddOnFromSubscription,
   getInvoices,
+  type SubscriptionResponse,
+  type InvoiceResponse,
 } from "@/lib/stripe/client";
 import { pricingPlans, addOns, type PlanTier, type BillingPeriod } from "@/lib/config/pricing";
 import {
@@ -31,57 +33,10 @@ import {
   Download,
 } from "lucide-react";
 
-interface Subscription {
-  id: string;
-  status: string;
-  currentPeriodStart: number;
-  currentPeriodEnd: number;
-  cancelAtPeriodEnd: boolean;
-  cancelAt: number | null;
-  trialStart: number | null;
-  trialEnd: number | null;
-  plan: {
-    id: string;
-    priceId: string;
-    name: string;
-    amount: number;
-    currency: string;
-    interval: string;
-    intervalCount: number;
-  };
-  addOns: Array<{
-    id: string;
-    stripeItemId: string;
-    name: string;
-    amount: number;
-    quantity: number;
-  }>;
-  upcomingInvoice: {
-    amount: number;
-    currency: string;
-    date: number | null;
-  } | null;
-}
-
-interface Invoice {
-  id: string;
-  number: string;
-  amount: number;
-  amountDue: number;
-  currency: string;
-  status: string;
-  date: number;
-  periodStart: number;
-  periodEnd: number;
-  pdfUrl: string | null;
-  hostedUrl: string | null;
-  description: string;
-}
-
 function BillingContent() {
   const searchParams = useSearchParams();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -92,7 +47,13 @@ function BillingContent() {
   const [planChangePreview, setPlanChangePreview] = useState<{
     immediateCharge: number;
     nextInvoiceAmount: number;
+    nextInvoiceDate: number | null;
     currency: string;
+    lines: Array<{
+      description: string;
+      amount: number;
+      proration: boolean;
+    }>;
   } | null>(null);
 
   const success = searchParams.get("success") === "true";
@@ -107,7 +68,7 @@ function BillingContent() {
       setLoading(true);
       const [subData, invoiceData] = await Promise.all([
         getCurrentSubscription().catch(() => null),
-        getInvoices().catch(() => ({ invoices: [] })),
+        getInvoices().catch(() => ({ invoices: [], hasMore: false })),
       ]);
       setSubscription(subData);
       setInvoices(invoiceData.invoices || []);

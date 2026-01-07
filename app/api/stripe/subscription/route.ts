@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { getActiveSubscription, getCustomerSubscriptions, getUpcomingInvoice } from "@/lib/stripe/server";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 import { getPlanTierFromPriceId, getAddOnIdFromPriceId } from "./helpers";
 
 interface JWTPayload {
@@ -91,8 +91,8 @@ export async function GET() {
     const response = {
       id: activeSubscription.id,
       status: activeSubscription.status,
-      currentPeriodStart: activeSubscription.current_period_start,
-      currentPeriodEnd: activeSubscription.current_period_end,
+      currentPeriodStart: mainItem.current_period_start,
+      currentPeriodEnd: mainItem.current_period_end,
       cancelAtPeriodEnd: activeSubscription.cancel_at_period_end,
       cancelAt: activeSubscription.cancel_at,
       trialStart: activeSubscription.trial_start,

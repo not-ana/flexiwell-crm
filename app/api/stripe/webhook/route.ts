@@ -3,9 +3,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { constructWebhookEvent, stripe } from "@/lib/stripe/server";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 import { stripePlanPriceIds, stripeAddOnPriceIds } from "@/lib/stripe/config";
 import type { PlanTier } from "@/lib/config/pricing";
+import { EmailService } from "@/lib/email";
 import Stripe from "stripe";
 
 // Disable body parsing - we need raw body for webhook verification
@@ -126,7 +127,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
         trialEnd: subscription.trial_end
           ? new Date(subscription.trial_end * 1000)
           : null,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodEnd: new Date(subscription.items.data[0].current_period_end * 1000),
         updatedAt: new Date(),
       },
     }
@@ -164,7 +165,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const updateData: Record<string, unknown> = {
     subscriptionStatus: subscription.status,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+    currentPeriodEnd: new Date(subscription.items.data[0].current_period_end * 1000),
     activeAddOns: addOns,
     updatedAt: new Date(),
   };
@@ -239,20 +240,36 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   const user = await db.collection("users").findOne({ stripeCustomerId: customerId });
 
   if (user) {
+    const trialEndDate = subscription.trial_end
+      ? new Date(subscription.trial_end * 1000)
+      : null;
+
     // Log trial ending event
     await db.collection("subscriptionEvents").insertOne({
       userId: user._id.toString(),
       event: "trial_will_end",
       customerId,
       subscriptionId: subscription.id,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
+      trialEnd: trialEndDate,
       timestamp: new Date(),
     });
 
-    // TODO: Send email notification about trial ending
-    console.log("Trial ending soon for user:", user.email);
+    // Send email notification about trial ending
+    if (user.email && trialEndDate) {
+      const daysRemaining = Math.ceil((trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      try {
+        await EmailService.sendTrialEndingNotification(user.email, {
+          clientName: user.name || "Valued Customer",
+          trialEndDate: trialEndDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+          daysRemaining,
+          planName: user.planTier || "Starter",
+          upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://flexiwell.com"}/dashboard/subscription`,
+        });
+        console.log("Trial ending email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send trial ending email:", emailError);
+      }
+    }
   }
 }
 
@@ -270,19 +287,40 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   // Log payment
   const user = await db.collection("users").findOne({ stripeCustomerId: customerId });
   if (user) {
+    // Get payment intent ID from payments array (Stripe v20.x structure)
+    const paymentIntentId = invoice.payments?.data?.[0]?.payment?.payment_intent;
+    const paidAt = new Date((invoice.status_transitions?.paid_at || Date.now() / 1000) * 1000);
+
     await db.collection("payments").insertOne({
       userId: user._id.toString(),
       type: "subscription",
       stripeInvoiceId: invoice.id,
-      stripePaymentIntentId: invoice.payment_intent,
+      stripePaymentIntentId: typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId?.id || null,
       amount: invoice.amount_paid / 100, // Convert from cents
       currency: invoice.currency.toUpperCase(),
       status: "completed",
-      paidAt: new Date((invoice.status_transitions?.paid_at || Date.now() / 1000) * 1000),
+      paidAt,
       invoiceUrl: invoice.hosted_invoice_url,
       invoicePdf: invoice.invoice_pdf,
       createdAt: new Date(),
     });
+
+    // Send payment confirmation email
+    if (user.email && invoice.amount_paid > 0) {
+      try {
+        await EmailService.sendPaymentConfirmation(user.email, {
+          clientName: user.name || "Valued Customer",
+          amount: invoice.amount_paid / 100,
+          currency: invoice.currency?.toUpperCase() || "USD",
+          planName: user.planTier || "Subscription",
+          transactionId: invoice.id,
+          date: paidAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+        });
+        console.log("Payment confirmation email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send payment confirmation email:", emailError);
+      }
+    }
   }
 }
 
@@ -308,8 +346,21 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       timestamp: new Date(),
     });
 
-    // TODO: Send email notification about payment failure
-    console.log("Payment failed for user:", user.email);
+    // Send email notification about payment failure
+    if (user.email) {
+      try {
+        await EmailService.sendPaymentFailedNotification(user.email, {
+          clientName: user.name || "Valued Customer",
+          amount: invoice.amount_due / 100,
+          currency: invoice.currency?.toUpperCase() || "USD",
+          failureReason: "Please update your payment method",
+          updatePaymentUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://flexiwell.com"}/dashboard/subscription`,
+        });
+        console.log("Payment failed email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send payment failed email:", emailError);
+      }
+    }
   }
 }
 
@@ -328,8 +379,25 @@ async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
       timestamp: new Date(),
     });
 
-    // TODO: Send email about upcoming charge
-    console.log("Upcoming invoice for user:", user.email);
+    // Send email about upcoming charge
+    if (user.email) {
+      const chargeDate = invoice.due_date
+        ? new Date(invoice.due_date * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+        : "within 24 hours";
+
+      try {
+        await EmailService.sendUpcomingInvoiceNotification(user.email, {
+          clientName: user.name || "Valued Customer",
+          amount: invoice.amount_due / 100,
+          currency: invoice.currency?.toUpperCase() || "USD",
+          chargeDate,
+          planName: user.planTier || "Subscription",
+        });
+        console.log("Upcoming invoice email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send upcoming invoice email:", emailError);
+      }
+    }
   }
 }
 

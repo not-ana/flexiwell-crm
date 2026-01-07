@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeftIcon, UploadIcon } from "@/components/icons";
@@ -11,11 +12,31 @@ import {
   getClientFormConfig,
 } from "@/lib/formConfig";
 
+// Toast notification helper
+function showToast(message: string, type: "success" | "error" = "success") {
+  const toast = document.createElement("div");
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 transition-opacity ${
+    type === "success" ? "bg-green-600" : "bg-red-600"
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 export default function AddClientPage() {
+  const router = useRouter();
   const [formConfig, setFormConfig] = useState<FormConfig | null>(null);
   const [activeSection, setActiveSection] = useState<string>("");
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({
+    name: "",
+    email: "",
+    phone: "",
+  });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const config = getClientFormConfig();
@@ -24,6 +45,44 @@ export default function AddClientPage() {
       setActiveSection(config.sections[0].id);
     }
   }, []);
+
+  const handleSubmit = async () => {
+    // Validate required fields
+    const name = formData["public-profile"] || formData.name;
+    const email = formData.email;
+
+    if (!name || !email) {
+      showToast("Name and email are required", "error");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          phone: formData.phone || "",
+          instagramId: formData["social-instagram"],
+        }),
+      });
+
+      if (res.ok) {
+        showToast("Client created successfully");
+        router.push("/dashboard/clients");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to create client", "error");
+      }
+    } catch (error) {
+      console.error("Create client error:", error);
+      showToast("Failed to create client", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleInputChange = useCallback((fieldId: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
@@ -318,15 +377,84 @@ export default function AddClientPage() {
                 {/* Section Header */}
                 <div className="mb-8 pb-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Company profile
+                    Client Information
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Update your company photo and details here.
+                    Add your client's details here.
                   </p>
+                </div>
+
+                {/* Required fields first */}
+                <div className="space-y-6 mb-8">
+                  <div className="grid grid-cols-[200px_1fr] gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        Name <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-sm text-gray-500 mt-1">Client's full name</p>
+                    </div>
+                    <input
+                      type="text"
+                      value={(formData.name as string) || (formData["public-profile"] as string) || ""}
+                      onChange={(e) => {
+                        handleInputChange("name", e.target.value);
+                        handleInputChange("public-profile", e.target.value);
+                      }}
+                      placeholder="Enter client name"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-[200px_1fr] gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-sm text-gray-500 mt-1">Primary contact email</p>
+                    </div>
+                    <input
+                      type="email"
+                      value={(formData.email as string) || ""}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      placeholder="email@example.com"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-[200px_1fr] gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Phone</label>
+                      <p className="text-sm text-gray-500 mt-1">Contact phone number</p>
+                    </div>
+                    <input
+                      type="tel"
+                      value={(formData.phone as string) || ""}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      placeholder="+1 (555) 123-4567"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Form Fields */}
                 {renderSection(currentSection)}
+
+                {/* Save Button */}
+                <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                  <Link
+                    href="/dashboard/clients"
+                    className="px-4 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Cancel
+                  </Link>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save Client"}
+                  </button>
+                </div>
               </>
             )}
           </div>

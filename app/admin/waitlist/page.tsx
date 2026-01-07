@@ -1,142 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronIcon } from "@/components/icons";
+import { useState, useEffect, useCallback } from "react";
 import type { WaitlistEntry, WaitlistRequestType, WaitlistStatus } from "@/lib/db/schemas";
 
-// Mock data for waitlist entries
-const mockWaitlistEntries: (WaitlistEntry & { id: string })[] = [
-  {
-    id: "1",
-    clientId: "c1",
-    clientName: "Sarah Johnson",
-    clientEmail: "sarah.johnson@email.com",
-    clientPhone: "+1 555-123-4567",
-    requestType: "reschedule",
-    reason: "Business travel conflict",
-    isUrgent: false,
-    preferredClassTypes: ["yoga", "pilates"],
-    preferredDays: ["monday", "wednesday", "friday"],
-    preferredTimeSlots: [{ start: "07:00", end: "10:00" }],
-    originalClassName: "Morning Yoga",
-    originalDate: new Date("2024-12-20T08:00:00"),
-    priorityScore: 85,
-    priorityBreakdown: {
-      planTypePoints: 30,
-      waitingTimePoints: 15,
-      attendancePoints: 25,
-      vipPoints: 0,
-      cancelledByStudioPoints: 0,
-      urgentReasonPoints: 0,
-    },
-    status: "waiting",
-    createdAt: new Date("2024-12-15T10:00:00"),
-    updatedAt: new Date("2024-12-15T10:00:00"),
-  },
-  {
-    id: "2",
-    clientId: "c2",
-    clientName: "Michael Chen",
-    clientEmail: "michael.chen@email.com",
-    clientPhone: "+1 555-234-5678",
-    requestType: "extra_class",
-    reason: "Wants to make up for last month",
-    isUrgent: false,
-    preferredClassTypes: ["pilates"],
-    preferredInstructorIds: ["t1"],
-    priorityScore: 65,
-    priorityBreakdown: {
-      planTypePoints: 20,
-      waitingTimePoints: 10,
-      attendancePoints: 35,
-      vipPoints: 0,
-      cancelledByStudioPoints: 0,
-      urgentReasonPoints: 0,
-    },
-    status: "waiting",
-    createdAt: new Date("2024-12-16T14:00:00"),
-    updatedAt: new Date("2024-12-16T14:00:00"),
-  },
-  {
-    id: "3",
-    clientId: "c3",
-    clientName: "Emily Davis",
-    clientEmail: "emily.davis@email.com",
-    clientPhone: "+1 555-345-6789",
-    requestType: "cancelled_by_studio",
-    reason: "Class cancelled due to instructor absence",
-    isUrgent: true,
-    preferredClassName: "Evening Stretch",
-    preferredDays: ["tuesday", "thursday"],
-    priorityScore: 150,
-    priorityBreakdown: {
-      planTypePoints: 30,
-      waitingTimePoints: 5,
-      attendancePoints: 15,
-      vipPoints: 0,
-      cancelledByStudioPoints: 100,
-      urgentReasonPoints: 0,
-    },
-    status: "notified",
-    notifiedAt: new Date("2024-12-20T09:00:00"),
-    notificationExpiresAt: new Date("2024-12-20T09:30:00"),
-    createdAt: new Date("2024-12-18T16:00:00"),
-    updatedAt: new Date("2024-12-20T09:00:00"),
-  },
-  {
-    id: "4",
-    clientId: "c4",
-    clientName: "James Wilson",
-    clientEmail: "james.wilson@email.com",
-    requestType: "reschedule",
-    reason: "Health issue recovery",
-    isUrgent: true,
-    preferredClassTypes: ["yoga"],
-    priorityScore: 110,
-    priorityBreakdown: {
-      planTypePoints: 20,
-      waitingTimePoints: 20,
-      attendancePoints: 30,
-      vipPoints: 20,
-      cancelledByStudioPoints: 0,
-      urgentReasonPoints: 20,
-    },
-    status: "waiting",
-    createdAt: new Date("2024-12-10T08:00:00"),
-    updatedAt: new Date("2024-12-10T08:00:00"),
-  },
-  {
-    id: "5",
-    clientId: "c5",
-    clientName: "Ashley Martinez",
-    clientEmail: "ashley.martinez@email.com",
-    requestType: "extra_class",
-    reason: "Wants to increase attendance frequency",
-    isUrgent: false,
-    priorityScore: 45,
-    priorityBreakdown: {
-      planTypePoints: 10,
-      waitingTimePoints: 5,
-      attendancePoints: 30,
-      vipPoints: 0,
-      cancelledByStudioPoints: 0,
-      urgentReasonPoints: 0,
-    },
-    status: "confirmed",
-    confirmedClassName: "Pilates Basic",
-    confirmedDate: new Date("2024-12-22T10:00:00"),
-    createdAt: new Date("2024-12-19T11:00:00"),
-    updatedAt: new Date("2024-12-20T08:00:00"),
-  },
-];
+interface DisplayEntry extends Omit<WaitlistEntry, "_id"> {
+  _id: string;
+}
 
-// Mock available classes for assignment
-const mockAvailableClasses = [
-  { id: "cl1", name: "Morning Yoga", date: new Date("2024-12-21T08:00:00"), instructor: "Ana Silva", spotsAvailable: 2 },
-  { id: "cl2", name: "Pilates Basic", date: new Date("2024-12-21T10:00:00"), instructor: "Jessica Thompson", spotsAvailable: 1 },
-  { id: "cl3", name: "Evening Stretch", date: new Date("2024-12-21T18:00:00"), instructor: "David Brown", spotsAvailable: 3 },
-  { id: "cl4", name: "Power Pilates", date: new Date("2024-12-22T09:00:00"), instructor: "Rachel Green", spotsAvailable: 2 },
-];
+interface AvailableClass {
+  _id: string;
+  title: string;
+  scheduledDate: string;
+  instructorName: string;
+  maxCapacity: number;
+  currentEnrollment: number;
+}
 
 const requestTypeLabels: Record<WaitlistRequestType, { label: string; color: string }> = {
   reschedule: { label: "Reschedule", color: "bg-blue-100 text-blue-700" },
@@ -152,7 +30,7 @@ const statusLabels: Record<WaitlistStatus, { label: string; color: string }> = {
   declined: { label: "Declined", color: "bg-red-100 text-red-700" },
 };
 
-function formatDate(date: Date) {
+function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -161,7 +39,7 @@ function formatDate(date: Date) {
   });
 }
 
-function formatDaysAgo(date: Date) {
+function formatDaysAgo(date: Date | string) {
   const now = new Date();
   const diff = Math.floor((now.getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24));
   if (diff === 0) return "Today";
@@ -191,6 +69,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   if (!isOpen) return null;
 
   const handleSave = () => {
+    // TODO: Save to database
     alert("Priority settings saved!");
     onClose();
   };
@@ -250,7 +129,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">⭐</span>
+                  <span className="text-lg">VIP</span>
                   <span className="text-sm font-medium text-gray-900">VIP</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -265,7 +144,6 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🏢</span>
                   <span className="text-sm font-medium text-gray-900">Studio Cancelled</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -280,7 +158,6 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🚨</span>
                   <span className="text-sm font-medium text-gray-900">Urgent</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -302,7 +179,6 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">⏳</span>
                   <span className="text-sm font-medium text-gray-900">Waiting Time</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -318,7 +194,6 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               </div>
               <div className="p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📊</span>
                   <span className="text-sm font-medium text-gray-900">Attendance Rate</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -404,73 +279,159 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 }
 
 export default function WaitlistPage() {
-  const [entries, setEntries] = useState(mockWaitlistEntries);
-  const [selectedEntry, setSelectedEntry] = useState<(WaitlistEntry & { id: string }) | null>(null);
+  const [entries, setEntries] = useState<DisplayEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [stats, setStats] = useState({ waiting: 0, notified: 0, confirmed: 0, expired: 0, declined: 0 });
+
+  const [selectedEntry, setSelectedEntry] = useState<DisplayEntry | null>(null);
   const [filterStatus, setFilterStatus] = useState<WaitlistStatus | "all">("all");
   const [filterType, setFilterType] = useState<WaitlistRequestType | "all">("all");
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState("");
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [showPrioritySettings, setShowPrioritySettings] = useState(false);
+  const [availableClasses, setAvailableClasses] = useState<AvailableClass[]>([]);
 
-  const filteredEntries = entries
-    .filter((e) => filterStatus === "all" || e.status === filterStatus)
-    .filter((e) => filterType === "all" || e.requestType === filterType)
-    .sort((a, b) => b.priorityScore - a.priorityScore);
+  const fetchWaitlist = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  const handleAssignClass = () => {
+    try {
+      const params = new URLSearchParams();
+      if (filterStatus !== "all") params.set("status", filterStatus);
+      if (filterType !== "all") params.set("requestType", filterType);
+
+      const response = await fetch(`/api/waitlist?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch waitlist");
+
+      const data = await response.json();
+      setEntries(data.entries.map((e: WaitlistEntry & { _id: { toString: () => string } }) => ({
+        ...e,
+        _id: e._id.toString(),
+      })));
+      setStats(data.stats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load waitlist");
+    } finally {
+      setLoading(false);
+    }
+  }, [filterStatus, filterType]);
+
+  const fetchAvailableClasses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/classes?hasAvailability=true&limit=20");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableClasses(data.classes.map((c: AvailableClass & { _id: { toString: () => string } }) => ({
+          ...c,
+          _id: c._id.toString(),
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch classes:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWaitlist();
+    fetchAvailableClasses();
+  }, [fetchWaitlist, fetchAvailableClasses]);
+
+  const filteredEntries = entries.sort((a, b) => b.priorityScore - a.priorityScore);
+
+  const handleAssignClass = async () => {
     if (!selectedEntry || !selectedClassId) return;
-    const selectedClass = mockAvailableClasses.find((c) => c.id === selectedClassId);
+    const selectedClass = availableClasses.find((c) => c._id === selectedClassId);
     if (!selectedClass) return;
 
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === selectedEntry.id
-          ? {
-              ...e,
-              status: "confirmed" as WaitlistStatus,
-              confirmedClassId: selectedClassId,
-              confirmedClassName: selectedClass.name,
-              confirmedDate: selectedClass.date,
-              updatedAt: new Date(),
-            }
-          : e
-      )
-    );
-    setShowAssignModal(false);
-    setSelectedEntry(null);
-    setSelectedClassId("");
-  };
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/waitlist/${selectedEntry._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "confirm",
+          classId: selectedClassId,
+          className: selectedClass.title,
+          classDate: selectedClass.scheduledDate,
+        }),
+      });
 
-  const handleNotify = (entry: WaitlistEntry & { id: string }) => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entry.id
-          ? {
-              ...e,
-              status: "notified" as WaitlistStatus,
-              notifiedAt: new Date(),
-              notificationExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
-              updatedAt: new Date(),
-            }
-          : e
-      )
-    );
-  };
+      if (!response.ok) throw new Error("Failed to assign class");
 
-  const handleRemove = (entryId: string) => {
-    if (confirm("Are you sure you want to remove this entry from the waitlist?")) {
-      setEntries((prev) => prev.filter((e) => e.id !== entryId));
-      if (selectedEntry?.id === entryId) {
-        setSelectedEntry(null);
-        setShowDetailsPanel(false);
-      }
+      setShowAssignModal(false);
+      setSelectedEntry(null);
+      setSelectedClassId("");
+      fetchWaitlist();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to assign class");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const waitingCount = entries.filter((e) => e.status === "waiting").length;
-  const notifiedCount = entries.filter((e) => e.status === "notified").length;
-  const confirmedCount = entries.filter((e) => e.status === "confirmed").length;
+  const handleNotify = async (entry: DisplayEntry) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/waitlist/${entry._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "notify" }),
+      });
+
+      if (!response.ok) throw new Error("Failed to notify");
+      fetchWaitlist();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to send notification");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemove = async (entryId: string) => {
+    if (!confirm("Are you sure you want to remove this entry from the waitlist?")) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/waitlist/${entryId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to remove");
+
+      if (selectedEntry?._id === entryId) {
+        setSelectedEntry(null);
+        setShowDetailsPanel(false);
+      }
+      fetchWaitlist();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to remove entry");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center p-4">
+        <svg className="w-12 h-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading waitlist</h3>
+        <p className="text-gray-500 mb-4">{error}</p>
+        <button onClick={fetchWaitlist} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -494,15 +455,15 @@ export default function WaitlistPage() {
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <p className="text-sm font-medium text-yellow-700">Waiting</p>
-            <p className="text-2xl font-bold text-yellow-900">{waitingCount}</p>
+            <p className="text-2xl font-bold text-yellow-900">{stats.waiting}</p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm font-medium text-blue-700">Notified</p>
-            <p className="text-2xl font-bold text-blue-900">{notifiedCount}</p>
+            <p className="text-2xl font-bold text-blue-900">{stats.notified}</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
             <p className="text-sm font-medium text-green-700">Confirmed</p>
-            <p className="text-2xl font-bold text-green-900">{confirmedCount}</p>
+            <p className="text-2xl font-bold text-green-900">{stats.confirmed}</p>
           </div>
         </div>
 
@@ -540,14 +501,17 @@ export default function WaitlistPage() {
           <div className="p-4 sm:p-6 space-y-3">
             {filteredEntries.length === 0 ? (
               <div className="text-center py-12">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
                 <p className="text-gray-500">No waitlist entries found</p>
               </div>
             ) : (
               filteredEntries.map((entry, index) => (
                 <div
-                  key={entry.id}
+                  key={entry._id}
                   className={`bg-white border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer ${
-                    selectedEntry?.id === entry.id ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-200"
+                    selectedEntry?._id === entry._id ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-200"
                   }`}
                   onClick={() => {
                     setSelectedEntry(entry);
@@ -606,7 +570,8 @@ export default function WaitlistPage() {
                               e.stopPropagation();
                               handleNotify(entry);
                             }}
-                            className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200"
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-50"
                           >
                             Notify
                           </button>
@@ -622,9 +587,9 @@ export default function WaitlistPage() {
                           </button>
                         </>
                       )}
-                      {entry.status === "notified" && (
+                      {entry.status === "notified" && entry.notificationExpiresAt && (
                         <span className="text-xs text-gray-500">
-                          Expires {formatDate(entry.notificationExpiresAt!)}
+                          Expires {formatDate(entry.notificationExpiresAt)}
                         </span>
                       )}
                       {entry.status === "confirmed" && (
@@ -812,21 +777,24 @@ export default function WaitlistPage() {
                       <>
                         <button
                           onClick={() => setShowAssignModal(true)}
-                          className="w-full px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
+                          disabled={actionLoading}
+                          className="w-full px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50"
                         >
                           Assign to Class
                         </button>
                         <button
                           onClick={() => handleNotify(selectedEntry)}
-                          className="w-full px-4 py-2.5 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200"
+                          disabled={actionLoading}
+                          className="w-full px-4 py-2.5 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 disabled:opacity-50"
                         >
                           Send Notification
                         </button>
                       </>
                     )}
                     <button
-                      onClick={() => handleRemove(selectedEntry.id)}
-                      className="w-full px-4 py-2.5 text-red-600 font-medium rounded-lg border border-red-200 hover:bg-red-50"
+                      onClick={() => handleRemove(selectedEntry._id)}
+                      disabled={actionLoading}
+                      className="w-full px-4 py-2.5 text-red-600 font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
                     >
                       Remove from Waitlist
                     </button>
@@ -870,28 +838,32 @@ export default function WaitlistPage() {
             </div>
 
             <div className="p-4 sm:p-6 space-y-3">
-              {mockAvailableClasses.map((cls) => (
-                <button
-                  key={cls.id}
-                  onClick={() => setSelectedClassId(cls.id)}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    selectedClassId === cls.id
-                      ? "border-primary-600 bg-primary-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">{cls.name}</p>
-                      <p className="text-sm text-gray-500">{cls.instructor}</p>
+              {availableClasses.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">No available classes found</p>
+              ) : (
+                availableClasses.map((cls) => (
+                  <button
+                    key={cls._id}
+                    onClick={() => setSelectedClassId(cls._id)}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      selectedClassId === cls._id
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{cls.title}</p>
+                        <p className="text-sm text-gray-500">{cls.instructorName}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">{formatDate(cls.scheduledDate)}</p>
+                        <p className="text-xs text-green-600">{cls.maxCapacity - cls.currentEnrollment} spots</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{formatDate(cls.date)}</p>
-                      <p className="text-xs text-green-600">{cls.spotsAvailable} spots</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))
+              )}
             </div>
 
             <div className="p-4 sm:p-6 border-t border-gray-200 flex gap-3">
@@ -906,10 +878,10 @@ export default function WaitlistPage() {
               </button>
               <button
                 onClick={handleAssignClass}
-                disabled={!selectedClassId}
+                disabled={!selectedClassId || actionLoading}
                 className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Assign
+                {actionLoading ? "Assigning..." : "Assign"}
               </button>
             </div>
           </div>

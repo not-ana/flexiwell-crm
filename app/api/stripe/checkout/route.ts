@@ -14,7 +14,7 @@ import {
   stripeTrialConfig
 } from "@/lib/stripe/config";
 import { PlanTier, BillingPeriod, pricingPlans } from "@/lib/config/pricing";
-import { getDb } from "@/lib/db/mongodb";
+import { getDatabase as getDb } from "@/lib/db/mongodb";
 
 interface JWTPayload {
   userId: string;

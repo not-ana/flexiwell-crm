@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ScheduleCard,
@@ -9,16 +10,36 @@ import {
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/ui";
-import { useBookings } from "@/hooks/useData";
+
+interface ClientPlan {
+  type: string;
+  totalClasses: number;
+  remainingClasses: number;
+  usedClasses: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface ClientData {
+  name: string;
+  memberSince: string;
+  streak: number;
+  totalClasses: number;
+  favoriteInstructor: string;
+  planName: string;
+  classesRemaining: number;
+  nextPayment: string;
+  plan: ClientPlan;
+}
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { bookings, isLoading: bookingsLoading } = useBookings({
-    status: "confirmed",
-  });
 
   // Onboarding
   const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("client");
+
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -27,36 +48,174 @@ export default function DashboardPage() {
     return "Good evening";
   };
 
-  // Calculate progress from bookings
-  const completedClasses = bookings.filter(b => b.status === "completed").length;
-  const scheduledClasses = bookings.filter(b => b.status === "confirmed").length;
-  const totalClasses = 20; // From plan
+  const fetchClientData = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
-  const progressData = {
-    completed: completedClasses || 12,
-    scheduled: scheduledClasses || 4,
-    total: totalClasses,
-  };
+    try {
+      // Fetch client details
+      const [clientRes, bookingsRes, paymentsRes] = await Promise.all([
+        fetch(`/api/clients/${user.id}`),
+        fetch(`/api/bookings?clientId=${user.id}`),
+        fetch(`/api/payments?clientId=${user.id}&status=pending`),
+      ]);
 
-  // User data from auth context or defaults
-  const userData = {
-    name: user?.name?.split(" ")[0] || "User",
-    memberSince: "March 2024",
-    streak: 8,
-    totalClasses: completedClasses || 47,
-    favoriteInstructor: "Sarah",
-    planName: "Premium Monthly",
-    classesRemaining: totalClasses - completedClasses || 8,
-    nextPayment: "Jan 15, 2025",
-  };
+      const clientJson = clientRes.ok ? await clientRes.json() : null;
+      const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : { bookings: [] };
+      const paymentsJson = paymentsRes.ok ? await paymentsRes.json() : { payments: [] };
 
-  if (authLoading) {
+      const client = clientJson?.client;
+
+      if (client) {
+        // Calculate streak (consecutive weeks with classes)
+        const bookings = bookingsJson.bookings || [];
+        let streak = 0;
+        if (bookings.length > 0) {
+          const completedBookings = bookings.filter((b: { status: string }) => b.status === "completed");
+          // Simplified streak: count weeks with completed classes
+          const weeksWithClasses = new Set<string>();
+          completedBookings.forEach((b: { scheduledDate: string }) => {
+            const date = new Date(b.scheduledDate);
+            const weekStart = new Date(date);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            weeksWithClasses.add(weekStart.toISOString().split("T")[0]);
+          });
+          streak = weeksWithClasses.size;
+        }
+
+        // Find favorite instructor
+        const instructorCounts: Record<string, { count: number; name: string }> = {};
+        bookings.forEach((b: { instructorName: string; instructorId: string }) => {
+          if (b.instructorName) {
+            if (!instructorCounts[b.instructorId]) {
+              instructorCounts[b.instructorId] = { count: 0, name: b.instructorName };
+            }
+            instructorCounts[b.instructorId].count++;
+          }
+        });
+        const favoriteInstructor = Object.values(instructorCounts).sort((a, b) => b.count - a.count)[0]?.name || "Not assigned";
+
+        // Get next payment date
+        const pendingPayments = paymentsJson.payments || [];
+        const nextPayment = pendingPayments.length > 0
+          ? new Date(pendingPayments[0].dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : client.plan?.endDate
+            ? new Date(client.plan.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "N/A";
+
+        // Calculate total completed classes
+        const completedClasses = bookings.filter((b: { status: string }) => b.status === "completed").length;
+
+        // Format plan name
+        const planTypes: Record<string, string> = {
+          monthly: "Monthly Plan",
+          quarterly: "Quarterly Plan",
+          annual: "Annual Plan",
+          "drop-in": "Drop-in",
+        };
+        const planName = planTypes[client.plan?.type] || "Basic Plan";
+
+        setClientData({
+          name: client.name?.split(" ")[0] || user.name?.split(" ")[0] || "User",
+          memberSince: client.createdAt
+            ? new Date(client.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+            : "Recently",
+          streak: Math.min(streak, 52), // Cap at 52 weeks
+          totalClasses: completedClasses,
+          favoriteInstructor,
+          planName,
+          classesRemaining: client.plan?.remainingClasses || 0,
+          nextPayment,
+          plan: client.plan || {
+            type: "monthly",
+            totalClasses: 0,
+            remainingClasses: 0,
+            usedClasses: 0,
+            startDate: new Date().toISOString(),
+            endDate: new Date().toISOString(),
+          },
+        });
+      } else {
+        // Fallback for user without client record
+        setClientData({
+          name: user.name?.split(" ")[0] || "User",
+          memberSince: "Recently",
+          streak: 0,
+          totalClasses: 0,
+          favoriteInstructor: "Not assigned",
+          planName: "No Plan",
+          classesRemaining: 0,
+          nextPayment: "N/A",
+          plan: {
+            type: "none",
+            totalClasses: 0,
+            remainingClasses: 0,
+            usedClasses: 0,
+            startDate: new Date().toISOString(),
+            endDate: new Date().toISOString(),
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching client data:", error);
+      setClientData({
+        name: user?.name?.split(" ")[0] || "User",
+        memberSince: "Recently",
+        streak: 0,
+        totalClasses: 0,
+        favoriteInstructor: "Not assigned",
+        planName: "No Plan",
+        classesRemaining: 0,
+        nextPayment: "N/A",
+        plan: {
+          type: "none",
+          totalClasses: 0,
+          remainingClasses: 0,
+          usedClasses: 0,
+          startDate: new Date().toISOString(),
+          endDate: new Date().toISOString(),
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, user?.name]);
+
+  useEffect(() => {
+    if (!authLoading) {
+      fetchClientData();
+    }
+  }, [authLoading, fetchClientData]);
+
+  // Calculate progress data from client plan
+  const progressData = clientData
+    ? {
+        completed: clientData.plan.usedClasses,
+        scheduled: 0, // Will be calculated by ProgressDonutCard if needed
+        total: clientData.plan.totalClasses || 20,
+      }
+    : { completed: 0, scheduled: 0, total: 20 };
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
+
+  const userData = clientData || {
+    name: "User",
+    memberSince: "Recently",
+    streak: 0,
+    totalClasses: 0,
+    favoriteInstructor: "Not assigned",
+    planName: "No Plan",
+    classesRemaining: 0,
+    nextPayment: "N/A",
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
@@ -133,13 +292,7 @@ export default function DashboardPage() {
           <ScheduleCard />
         </div>
         <div data-onboarding="client-progress" className="flex flex-col gap-6">
-          {bookingsLoading ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center h-48">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <ProgressDonutCard data={progressData} />
-          )}
+          <ProgressDonutCard data={progressData} />
           <YearlyBarChart />
         </div>
       </div>
