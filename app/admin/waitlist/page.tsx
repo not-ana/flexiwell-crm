@@ -68,10 +68,23 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    // TODO: Save to database
-    alert("Priority settings saved!");
-    onClose();
+  const handleSave = async () => {
+    try {
+      const response = await fetch("/api/waitlist/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      if (response.ok) {
+        alert("Priority settings saved!");
+        onClose();
+      } else {
+        alert("Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings");
+    }
   };
 
   return (

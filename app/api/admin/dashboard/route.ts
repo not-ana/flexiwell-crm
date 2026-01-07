@@ -305,6 +305,55 @@ export async function GET(request: NextRequest) {
       ? (currentAttendanceNum - previousAttendanceRate).toFixed(1)
       : "0";
 
+    // Get monthly revenue data for chart (last 12 months)
+    const monthlyRevenueData = [];
+    for (let i = 11; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const lastYearMonthStart = new Date(now.getFullYear() - 1, now.getMonth() - i, 1);
+      const lastYearMonthEnd = new Date(now.getFullYear() - 1, now.getMonth() - i + 1, 0);
+
+      const [currentMonthRevenue, lastYearMonthRevenue] = await Promise.all([
+        db.collection("payments").aggregate([
+          { $match: { status: "completed", createdAt: { $gte: monthStart, $lte: monthEnd } } },
+          { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]).toArray(),
+        db.collection("payments").aggregate([
+          { $match: { status: "completed", createdAt: { $gte: lastYearMonthStart, $lte: lastYearMonthEnd } } },
+          { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]).toArray()
+      ]);
+
+      monthlyRevenueData.push({
+        month: monthStart.toLocaleString("en-US", { month: "short" }),
+        revenue: currentMonthRevenue[0]?.total || 0,
+        lastYear: lastYearMonthRevenue[0]?.total || 0,
+      });
+    }
+
+    // Get weekly attendance data for chart (last 8 weeks)
+    const weeklyAttendanceData = [];
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+
+      const [weekBookings, weekCompleted] = await Promise.all([
+        db.collection("bookings").countDocuments({
+          scheduledDate: { $gte: weekStart, $lt: weekEnd }
+        }),
+        db.collection("bookings").countDocuments({
+          status: "completed",
+          scheduledDate: { $gte: weekStart, $lt: weekEnd }
+        })
+      ]);
+
+      const weekRate = weekBookings > 0 ? Math.round((weekCompleted / weekBookings) * 100) : 0;
+      weeklyAttendanceData.push({
+        week: `W${8 - i}`,
+        rate: weekRate,
+      });
+    }
+
     // Calculate retention rate
     // Retention = clients who had bookings in both previous and current period / clients in previous period
     const previousPeriodClients = await db.collection("bookings").aggregate([
@@ -364,6 +413,8 @@ export async function GET(request: NextRequest) {
         retentionRate,
         revenueGrowth: revenueChange,
       },
+      revenueData: monthlyRevenueData,
+      attendanceData: weeklyAttendanceData,
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);

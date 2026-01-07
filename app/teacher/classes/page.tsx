@@ -440,12 +440,43 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       return;
     }
     setIsCreating(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    console.log("Creating class:", formData);
-    setCreatedClass({ ...formData });
-    setShowSuccess(true);
-    setIsCreating(false);
+    try {
+      // Calculate end time based on duration
+      const [hours, minutes] = formData.time.split(":").map(Number);
+      const durationMinutes = parseInt(formData.duration);
+      const endHours = Math.floor((hours * 60 + minutes + durationMinutes) / 60);
+      const endMinutes = (hours * 60 + minutes + durationMinutes) % 60;
+      const endTime = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
+
+      const response = await fetch("/api/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.name,
+          type: formData.type.toLowerCase(),
+          scheduledDate: formData.date,
+          startTime: formData.time,
+          endTime: endTime,
+          duration: parseInt(formData.duration),
+          maxCapacity: parseInt(formData.capacity),
+          roomId: formData.room,
+          location: `${formData.unit} - ${formData.room}`,
+        }),
+      });
+
+      if (response.ok) {
+        setCreatedClass({ ...formData });
+        setShowSuccess(true);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to create class");
+      }
+    } catch (error) {
+      console.error("Error creating class:", error);
+      alert("Failed to create class");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleClose = () => {

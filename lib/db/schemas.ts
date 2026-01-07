@@ -76,6 +76,7 @@ export interface Class {
   }[];
   status: "scheduled" | "completed" | "cancelled";
   location?: string;
+  roomId?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -61,34 +61,42 @@ interface DashboardData {
     retentionRate: number;
     revenueGrowth: string;
   };
+  revenueData: Array<{
+    month: string;
+    revenue: number;
+    lastYear: number;
+  }>;
+  attendanceData: Array<{
+    week: string;
+    rate: number;
+  }>;
 }
 
-// Revenue trend data for the chart (will be replaced with real data later)
-const revenueData = [
-  { month: "Jan", revenue: 18500, lastYear: 15200 },
-  { month: "Feb", revenue: 21200, lastYear: 17800 },
-  { month: "Mar", revenue: 19800, lastYear: 16500 },
-  { month: "Apr", revenue: 23400, lastYear: 19200 },
-  { month: "May", revenue: 25600, lastYear: 21000 },
-  { month: "Jun", revenue: 24500, lastYear: 20800 },
-  { month: "Jul", revenue: 27800, lastYear: 22500 },
-  { month: "Aug", revenue: 26200, lastYear: 23100 },
-  { month: "Sep", revenue: 28900, lastYear: 24200 },
-  { month: "Oct", revenue: 30500, lastYear: 25800 },
-  { month: "Nov", revenue: 29100, lastYear: 26400 },
-  { month: "Dec", revenue: 32400, lastYear: 27900 },
+// Default chart data (used when API data is empty)
+const defaultRevenueData = [
+  { month: "Jan", revenue: 0, lastYear: 0 },
+  { month: "Feb", revenue: 0, lastYear: 0 },
+  { month: "Mar", revenue: 0, lastYear: 0 },
+  { month: "Apr", revenue: 0, lastYear: 0 },
+  { month: "May", revenue: 0, lastYear: 0 },
+  { month: "Jun", revenue: 0, lastYear: 0 },
+  { month: "Jul", revenue: 0, lastYear: 0 },
+  { month: "Aug", revenue: 0, lastYear: 0 },
+  { month: "Sep", revenue: 0, lastYear: 0 },
+  { month: "Oct", revenue: 0, lastYear: 0 },
+  { month: "Nov", revenue: 0, lastYear: 0 },
+  { month: "Dec", revenue: 0, lastYear: 0 },
 ];
 
-// Attendance trend data
-const attendanceData = [
-  { week: "W1", rate: 92 },
-  { week: "W2", rate: 88 },
-  { week: "W3", rate: 95 },
-  { week: "W4", rate: 91 },
-  { week: "W5", rate: 94 },
-  { week: "W6", rate: 97 },
-  { week: "W7", rate: 93 },
-  { week: "W8", rate: 96 },
+const defaultAttendanceData = [
+  { week: "W1", rate: 0 },
+  { week: "W2", rate: 0 },
+  { week: "W3", rate: 0 },
+  { week: "W4", rate: 0 },
+  { week: "W5", rate: 0 },
+  { week: "W6", rate: 0 },
+  { week: "W7", rate: 0 },
+  { week: "W8", rate: 0 },
 ];
 
 function StaffAvatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
@@ -199,6 +207,10 @@ export default function AdminDashboard() {
     retentionRate: 0,
     revenueGrowth: "0",
   };
+
+  // Use real data from API or defaults
+  const revenueData = dashboardData?.revenueData?.length ? dashboardData.revenueData : defaultRevenueData;
+  const attendanceData = dashboardData?.attendanceData?.length ? dashboardData.attendanceData : defaultAttendanceData;
 
   return (
     <div className="h-full overflow-auto bg-gray-50">

@@ -3,10 +3,7 @@ import { aiSupportConfig } from "@/lib/config/ai-support";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import type { Client, Booking } from "@/lib/db/schemas";
-
-// OpenAI integration
-// You'll need to: npm install openai
-// And add OPENAI_API_KEY to your .env.local
+import OpenAI from "openai";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant" | "function";
@@ -767,27 +764,47 @@ export async function POST(req: NextRequest) {
       { role: "user", content: message },
     ];
 
-    // TODO: Uncomment when OpenAI is installed and configured
-    /*
+    // Check if OpenAI is configured
+    if (!process.env.OPENAI_API_KEY) {
+      // Fallback to mock response if OpenAI is not configured
+      const mockResponse = generateMockResponse(message, context);
+      messages.push({ role: "assistant", content: mockResponse });
+      saveConversation(sessionId, messages.slice(1));
+
+      return NextResponse.json({
+        type: "message",
+        content: mockResponse,
+        sessionId,
+        note: "OpenAI not configured. Set OPENAI_API_KEY to enable AI features.",
+      });
+    }
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: messages as any,
-      functions: availableFunctions,
-      function_call: "auto",
+      messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
+      tools: availableFunctions.map(fn => ({
+        type: "function" as const,
+        function: fn,
+      })),
+      tool_choice: "auto",
       temperature: 0.7,
       max_tokens: 500,
     });
 
     const choice = response.choices[0];
 
-    // Check if AI wants to call a function
-    if (choice.finish_reason === "function_call" && choice.message.function_call) {
-      const functionName = choice.message.function_call.name;
-      const functionArgs = JSON.parse(choice.message.function_call.arguments);
+    // Check if AI wants to call a function (tool)
+    if (choice.finish_reason === "tool_calls" && choice.message.tool_calls) {
+      const toolCall = choice.message.tool_calls[0] as OpenAI.Chat.ChatCompletionMessageToolCall;
+      if (toolCall.type !== "function") {
+        throw new Error("Unsupported tool call type");
+      }
+      const functionName = toolCall.function.name;
+      const functionArgs = JSON.parse(toolCall.function.arguments);
 
       // Execute the function
       const functionResult = await executeFunction(functionName, functionArgs);
@@ -795,15 +812,15 @@ export async function POST(req: NextRequest) {
       // Add function call and result to history
       messages.push(choice.message as any);
       messages.push({
-        role: "function",
-        name: functionName,
+        role: "tool",
+        tool_call_id: toolCall.id,
         content: JSON.stringify(functionResult),
-      });
+      } as any);
 
       // Get final response from AI
       const finalResponse = await openai.chat.completions.create({
         model: "gpt-4o",
-        messages: messages as any,
+        messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
         temperature: 0.7,
         max_tokens: 500,
       });
@@ -832,19 +849,6 @@ export async function POST(req: NextRequest) {
       type: "message",
       content: aiMessage,
       sessionId,
-    });
-    */
-
-    // Mock response until OpenAI is configured
-    const mockResponse = generateMockResponse(message, context);
-    messages.push({ role: "assistant", content: mockResponse });
-    saveConversation(sessionId, messages.slice(1));
-
-    return NextResponse.json({
-      type: "message",
-      content: mockResponse,
-      sessionId,
-      note: "This is a mock response. Configure OpenAI to enable AI features.",
     });
   } catch (error) {
     console.error("AI Chat Error:", error);

@@ -190,12 +190,49 @@ function ConfigureModal({
   integration,
   isOpen,
   onClose,
+  onSave,
 }: {
   integration: Integration | null;
   isOpen: boolean;
   onClose: () => void;
+  onSave: () => void;
 }) {
+  const [autoSync, setAutoSync] = useState(true);
+  const [importClients, setImportClients] = useState(false);
+  const [revenueReports, setRevenueReports] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   if (!isOpen || !integration) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/admin/integrations/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          integrationId: integration.id,
+          settings: {
+            autoSync,
+            importClients,
+            revenueReports,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        onSave();
+        onClose();
+      } else {
+        alert("Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -203,7 +240,7 @@ function ConfigureModal({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${logoColors[integration.id]} rounded-lg flex items-center justify-center`}>
+              <div className={`w-10 h-10 ${logoColors[integration.id] || "bg-gray-500"} rounded-lg flex items-center justify-center`}>
                 <span className="text-white font-bold">{integration.logo}</span>
               </div>
               <h2 className="text-xl font-semibold text-gray-900">{integration.name} Settings</h2>
@@ -222,27 +259,36 @@ function ConfigureModal({
           <div>
             <h3 className="font-medium text-gray-900 mb-3">Sync Settings</h3>
             <div className="space-y-3">
-              <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer">
-                <div>
+              <button
+                onClick={() => setAutoSync(!autoSync)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-left">
                   <p className="font-medium text-gray-900">Auto-sync classes</p>
                   <p className="text-sm text-gray-500">Automatically sync class schedules</p>
                 </div>
-                <ToggleIcon className="w-10 h-6 text-primary-600" active />
-              </label>
-              <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer">
-                <div>
+                <ToggleIcon className={`w-10 h-6 ${autoSync ? "text-primary-600" : "text-gray-300"}`} active={autoSync} />
+              </button>
+              <button
+                onClick={() => setImportClients(!importClients)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-left">
                   <p className="font-medium text-gray-900">Import client profiles</p>
                   <p className="text-sm text-gray-500">Sync client data from this platform</p>
                 </div>
-                <ToggleIcon className="w-10 h-6 text-gray-300" active={false} />
-              </label>
-              <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer">
-                <div>
+                <ToggleIcon className={`w-10 h-6 ${importClients ? "text-primary-600" : "text-gray-300"}`} active={importClients} />
+              </button>
+              <button
+                onClick={() => setRevenueReports(!revenueReports)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-left">
                   <p className="font-medium text-gray-900">Revenue reports</p>
                   <p className="text-sm text-gray-500">Include in financial reports</p>
                 </div>
-                <ToggleIcon className="w-10 h-6 text-primary-600" active />
-              </label>
+                <ToggleIcon className={`w-10 h-6 ${revenueReports ? "text-primary-600" : "text-gray-300"}`} active={revenueReports} />
+              </button>
             </div>
           </div>
 
@@ -252,7 +298,11 @@ function ConfigureModal({
               <CheckCircleIcon className="w-5 h-5 text-green-600" />
               <p className="text-sm font-medium text-green-800">Connection is active and healthy</p>
             </div>
-            <p className="text-sm text-green-600 mt-1">Last synced: 5 minutes ago</p>
+            {integration.connectedAt && (
+              <p className="text-sm text-green-600 mt-1">
+                Connected on {new Date(integration.connectedAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
         </div>
 
@@ -264,13 +314,11 @@ function ConfigureModal({
             Cancel
           </button>
           <button
-            onClick={() => {
-              alert("Integration settings saved successfully!");
-              onClose();
-            }}
-            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -610,6 +658,7 @@ export default function IntegrationsPage() {
         integration={configureModal}
         isOpen={!!configureModal}
         onClose={() => setConfigureModal(null)}
+        onSave={() => fetchIntegrations()}
       />
       <ConnectModal
         integration={connectModal}

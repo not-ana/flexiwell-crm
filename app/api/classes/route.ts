@@ -1,6 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { Class } from "@/lib/db/schemas";
+import { ObjectId } from "mongodb";
+import type { Class, Staff } from "@/lib/db/schemas";
+
+interface JWTPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
+
+async function getUser(): Promise<JWTPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret"
+    ) as JWTPayload;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
 
 // GET /api/classes - List all classes with filters
 export async function GET(request: NextRequest) {
@@ -84,26 +112,35 @@ export async function GET(request: NextRequest) {
 // POST /api/classes - Create a new class
 export async function POST(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       title,
       description,
       type,
-      instructorId,
-      instructorName,
+      instructorId: providedInstructorId,
+      instructorName: providedInstructorName,
       scheduledDate,
       startTime,
       endTime,
       duration,
       maxCapacity,
       location,
+      roomId,
       notes,
     } = body;
 
     // Validation
-    if (!title || !type || !instructorId || !instructorName || !scheduledDate || !startTime || !endTime) {
+    if (!title || !type || !scheduledDate || !startTime || !endTime) {
       return NextResponse.json(
-        { error: "Title, type, instructor details, scheduled date, start time, and end time are required" },
+        { error: "Title, type, scheduled date, start time, and end time are required" },
         { status: 400 }
       );
     }
@@ -117,6 +154,34 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase();
+
+    // Get instructor info from logged in user if not provided
+    let instructorId = providedInstructorId;
+    let instructorName = providedInstructorName;
+
+    if (!instructorId || !instructorName) {
+      // Try to get from staff collection
+      let staff: Staff | null = null;
+      if (ObjectId.isValid(user.userId)) {
+        staff = await db.collection<Staff>("staff").findOne({
+          _id: new ObjectId(user.userId),
+        });
+      }
+      if (!staff) {
+        staff = await db.collection<Staff>("staff").findOne({
+          email: user.email,
+        });
+      }
+
+      if (staff) {
+        instructorId = staff._id?.toString() || user.userId;
+        instructorName = staff.name;
+      } else {
+        // Use user info from token
+        instructorId = user.userId;
+        instructorName = user.email.split("@")[0];
+      }
+    }
 
     const newClass: Omit<Class, "_id"> = {
       title,
@@ -134,6 +199,7 @@ export async function POST(request: NextRequest) {
       waitlist: [],
       status: "scheduled",
       location: location || "",
+      roomId: roomId || "",
       notes: notes || "",
       createdAt: new Date(),
       updatedAt: new Date(),

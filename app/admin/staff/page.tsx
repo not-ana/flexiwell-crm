@@ -761,6 +761,8 @@ export default function AdminStaffPage() {
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
   // Fetch staff from API
   const { staff, total, isLoading, error, refetch, createStaff, updateStaff, deleteStaff } = useStaff({
@@ -822,13 +824,24 @@ export default function AdminStaffPage() {
   };
 
   const handleResendInvite = async (id: string) => {
-    // TODO: Implement resend invite API
-    alert(`Invitation resent to staff member ${id}`);
+    try {
+      const response = await fetch(`/api/staff/${id}/resend-invite`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        alert("Invitation resent successfully!");
+      } else {
+        alert("Failed to resend invitation");
+      }
+    } catch (error) {
+      console.error("Error resending invite:", error);
+      alert("Failed to resend invitation");
+    }
   };
 
   const handleEdit = (staffMember: Staff) => {
-    // TODO: Open edit modal
-    alert(`Edit staff: ${staffMember.name}`);
+    setSelectedStaff(staffMember);
+    setIsEditModalOpen(true);
   };
 
   const handleDeactivate = async (id: string) => {
