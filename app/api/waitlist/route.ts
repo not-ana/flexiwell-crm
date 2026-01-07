@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { WaitlistEntry } from "@/lib/db/schemas";
+import { ObjectId } from "mongodb";
+import type { WaitlistEntry, Client, Booking } from "@/lib/db/schemas";
 
 // GET /api/waitlist - List all waitlist entries
 export async function GET(request: NextRequest) {
@@ -119,15 +120,13 @@ export async function POST(request: NextRequest) {
 
     const db = await getDatabase();
 
-    // Calculate priority score (simplified version)
-    const priorityBreakdown = {
-      planTypePoints: 20, // TODO: Get from client's actual plan
-      waitingTimePoints: 0, // Starts at 0
-      attendancePoints: 30, // TODO: Calculate from client's attendance
-      vipPoints: 0, // TODO: Check if client is VIP
-      cancelledByStudioPoints: requestType === "cancelled_by_studio" ? 100 : 0,
-      urgentReasonPoints: isUrgent ? 25 : 0,
-    };
+    // Calculate priority score with real data from database
+    const priorityBreakdown = await calculatePriorityScore(
+      db,
+      clientId,
+      requestType,
+      isUrgent
+    );
 
     const priorityScore = Object.values(priorityBreakdown).reduce((a, b) => a + b, 0);
 
@@ -175,4 +174,128 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Calculate priority score based on real client data
+async function calculatePriorityScore(
+  db: Awaited<ReturnType<typeof getDatabase>>,
+  clientId: string,
+  requestType: string,
+  isUrgent: boolean
+): Promise<WaitlistEntry["priorityBreakdown"]> {
+  const breakdown: WaitlistEntry["priorityBreakdown"] = {
+    planTypePoints: 0,
+    waitingTimePoints: 0,
+    attendancePoints: 0,
+    vipPoints: 0,
+    cancelledByStudioPoints: 0,
+    urgentReasonPoints: 0,
+  };
+
+  try {
+    // 1. Get client info for plan type
+    let client: Client | null = null;
+    if (ObjectId.isValid(clientId)) {
+      client = await db.collection<Client>("clients").findOne({
+        _id: new ObjectId(clientId),
+      });
+    }
+
+    if (client) {
+      // Plan type points based on plan value
+      const planPoints: Record<string, number> = {
+        "drop-in": 5,
+        "monthly": 20,
+        "quarterly": 35,
+        "annual": 50,
+      };
+      breakdown.planTypePoints = planPoints[client.plan.type] || 15;
+
+      // VIP points - check if client has high revenue or is marked as VIP
+      const totalPayments = await db.collection("payments").aggregate([
+        { $match: { clientId: clientId, status: "completed" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]).toArray();
+
+      const totalSpent = totalPayments[0]?.total || 0;
+      if (totalSpent >= 5000 || client.plan.type === "annual") {
+        breakdown.vipPoints = 30;
+      } else if (totalSpent >= 2000 || client.plan.type === "quarterly") {
+        breakdown.vipPoints = 15;
+      }
+    }
+
+    // 2. Calculate attendance score (last 30 days)
+    if (ObjectId.isValid(clientId)) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const bookingStats = await db.collection<Booking>("bookings").aggregate([
+        {
+          $match: {
+            clientId: clientId,
+            scheduledDate: { $gte: thirtyDaysAgo },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            completed: {
+              $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+            },
+            noShows: {
+              $sum: { $cond: [{ $eq: ["$status", "no-show"] }, 1, 0] },
+            },
+          },
+        },
+      ]).toArray();
+
+      if (bookingStats.length > 0) {
+        const stats = bookingStats[0];
+        const total = stats.total || 0;
+        const completed = stats.completed || 0;
+
+        if (total > 0) {
+          const attendanceRate = (completed / total) * 100;
+          // Higher attendance = higher priority
+          if (attendanceRate >= 90) {
+            breakdown.attendancePoints = 40;
+          } else if (attendanceRate >= 75) {
+            breakdown.attendancePoints = 30;
+          } else if (attendanceRate >= 50) {
+            breakdown.attendancePoints = 20;
+          } else {
+            breakdown.attendancePoints = 10;
+          }
+        } else {
+          // New client with no history
+          breakdown.attendancePoints = 25;
+        }
+      } else {
+        // New client
+        breakdown.attendancePoints = 25;
+      }
+    }
+
+    // 3. Cancelled by studio gets highest priority
+    if (requestType === "cancelled_by_studio") {
+      breakdown.cancelledByStudioPoints = 100;
+    }
+
+    // 4. Urgent reason bonus
+    if (isUrgent) {
+      breakdown.urgentReasonPoints = 25;
+    }
+
+    // 5. Waiting time starts at 0 - will increase over time via scheduled job
+
+  } catch (error) {
+    console.error("Error calculating priority score:", error);
+    // Return default values on error
+    breakdown.planTypePoints = 15;
+    breakdown.attendancePoints = 25;
+  }
+
+  return breakdown;
 }

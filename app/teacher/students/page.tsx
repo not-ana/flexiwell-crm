@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
 
 interface Student {
@@ -25,127 +25,6 @@ interface Unit {
   address: string;
   students: Student[];
 }
-
-// Mock data - students grouped by unit
-const mockUnits: Unit[] = [
-  {
-    id: "1",
-    name: "FlexiWell Downtown",
-    address: "123 Main Street - Downtown",
-    students: [
-      {
-        id: "1",
-        name: "Olivia Rhye",
-        email: "olivia@email.com",
-        phone: "(555) 123-4567",
-        initials: "OR",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 5,
-        classesTotal: 8,
-        nextClass: "Today, 2:00 PM - Pilates",
-        status: "active",
-        joinedDate: "Jan 2024",
-        lastActive: "Just now",
-      },
-      {
-        id: "2",
-        name: "Phoenix Baker",
-        email: "phoenix@email.com",
-        phone: "(555) 234-5678",
-        initials: "PB",
-        plan: "Quarterly - 24 classes",
-        classesRemaining: 18,
-        classesTotal: 24,
-        nextClass: "Tomorrow, 10:00 AM - Yoga",
-        status: "active",
-        joinedDate: "Nov 2023",
-        lastActive: "2 hours ago",
-      },
-      {
-        id: "3",
-        name: "Lana Steiner",
-        email: "lana@email.com",
-        phone: "(555) 345-6789",
-        initials: "LS",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 0,
-        classesTotal: 8,
-        status: "expired",
-        joinedDate: "Dec 2023",
-        lastActive: "15 days ago",
-      },
-      {
-        id: "4",
-        name: "Demi Wilkinson",
-        email: "demi@email.com",
-        phone: "(555) 456-7890",
-        initials: "DW",
-        plan: "Monthly - 12 classes",
-        classesRemaining: 12,
-        classesTotal: 12,
-        status: "paused",
-        joinedDate: "Feb 2024",
-        lastActive: "7 days ago",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "FlexiWell Westside",
-    address: "456 Park Avenue - Westside",
-    students: [
-      {
-        id: "5",
-        name: "Candice Wu",
-        email: "candice@email.com",
-        phone: "(555) 567-8901",
-        initials: "CW",
-        plan: "Semi-annual - 48 classes",
-        classesRemaining: 32,
-        classesTotal: 48,
-        nextClass: "Today, 4:00 PM - Functional",
-        status: "active",
-        joinedDate: "Sep 2023",
-        lastActive: "1 hour ago",
-      },
-      {
-        id: "6",
-        name: "Natali Craig",
-        email: "natali@email.com",
-        phone: "(555) 678-9012",
-        initials: "NC",
-        plan: "Monthly - 8 classes",
-        classesRemaining: 3,
-        classesTotal: 8,
-        nextClass: "Thu, 9:00 AM - Pilates",
-        status: "active",
-        joinedDate: "Jan 2024",
-        lastActive: "3 hours ago",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "FlexiWell Eastside",
-    address: "789 Oak Boulevard - Eastside",
-    students: [
-      {
-        id: "7",
-        name: "Drew Cano",
-        email: "drew@email.com",
-        phone: "(555) 789-0123",
-        initials: "DC",
-        plan: "Quarterly - 24 classes",
-        classesRemaining: 20,
-        classesTotal: 24,
-        nextClass: "Fri, 11:00 AM - Yoga",
-        status: "active",
-        joinedDate: "Dec 2023",
-        lastActive: "4 hours ago",
-      },
-    ],
-  },
-];
 
 const statusStyles = {
   active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Active" },
@@ -623,12 +502,34 @@ function SendMessageModal({
 }
 
 export default function TeacherStudentsPage() {
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Student["status"]>("all");
-  const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
+  const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
+
+  // Fetch students from API
+  const fetchStudents = useCallback(async () => {
+    try {
+      const response = await fetch("/api/teacher/students");
+      if (response.ok) {
+        const data = await response.json();
+        setUnits(data.units);
+        setExpandedUnits(data.units.map((u: Unit) => u.id));
+      }
+    } catch (error) {
+      console.error("Failed to fetch students:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
 
   const handleViewProfile = (student: Student) => {
     setSelectedStudent(student);
@@ -647,7 +548,7 @@ export default function TeacherStudentsPage() {
   };
 
   // Filter students
-  const filteredUnits = mockUnits.map((unit) => ({
+  const filteredUnits = units.map((unit) => ({
     ...unit,
     students: unit.students.filter((student) => {
       const matchesSearch =
@@ -658,11 +559,20 @@ export default function TeacherStudentsPage() {
     }),
   })).filter((unit) => unit.students.length > 0);
 
-  const totalStudents = mockUnits.reduce((acc, unit) => acc + unit.students.length, 0);
-  const activeStudents = mockUnits.reduce(
+  const totalStudents = units.reduce((acc, unit) => acc + unit.students.length, 0);
+  const activeStudents = units.reduce(
     (acc, unit) => acc + unit.students.filter((s) => s.status === "active").length,
     0
   );
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -686,7 +596,7 @@ export default function TeacherStudentsPage() {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Locations</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{units.length}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Classes Today</p>
@@ -728,12 +638,12 @@ export default function TeacherStudentsPage() {
           {/* Expand/Collapse All */}
           <button
             onClick={() =>
-              setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+              setExpandedUnits(expandedUnits.length === units.length ? [] : units.map((u) => u.id))
             }
             className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
-            <span className="hidden lg:inline">{expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}</span>
-            <span className="lg:hidden">{expandedUnits.length === mockUnits.length ? "Collapse" : "Expand"}</span>
+            <span className="hidden lg:inline">{expandedUnits.length === units.length ? "Collapse all" : "Expand all"}</span>
+            <span className="lg:hidden">{expandedUnits.length === units.length ? "Collapse" : "Expand"}</span>
           </button>
         </div>
       </div>

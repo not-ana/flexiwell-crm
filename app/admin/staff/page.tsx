@@ -516,10 +516,10 @@ function AddStaffModal({
 }
 
 // Import Staff Modal Component
-function ImportStaffModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function ImportStaffModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors?: { row: number; email: string; error: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -528,14 +528,78 @@ function ImportStaffModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     }
   };
 
-  const handleImport = () => {
+  const parseCSV = (content: string): Record<string, string>[] => {
+    const lines = content.trim().split("\n");
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const data: Record<string, string>[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map(v => v.trim());
+      const row: Record<string, string> = {};
+
+      headers.forEach((header, index) => {
+        row[header] = values[index] || "";
+      });
+
+      // Map CSV columns to expected API fields
+      const mappedRow: Record<string, string> = {
+        name: row.name || "",
+        email: row.email || "",
+        phone: row.phone || "",
+        role: row.role || "teacher",
+        unit: row.location || row.unit || "",
+      };
+
+      data.push(mappedRow);
+    }
+
+    return data;
+  };
+
+  const handleImport = async () => {
     if (!file) return;
     setImporting(true);
-    // TODO: Implement actual import via API
-    setTimeout(() => {
+
+    try {
+      // Read and parse CSV file
+      const content = await file.text();
+      const staffData = parseCSV(content);
+
+      if (staffData.length === 0) {
+        setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "No valid data found in CSV file" }] });
+        setImporting(false);
+        return;
+      }
+
+      // Send to API
+      const response = await fetch("/api/staff/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffData }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setImportResult({
+          success: result.results.success,
+          failed: result.results.failed,
+          errors: result.results.errors,
+        });
+        if (result.results.success > 0 && onSuccess) {
+          onSuccess();
+        }
+      } else {
+        setImportResult({ success: 0, failed: staffData.length, errors: [{ row: 0, email: "", error: result.error || "Import failed" }] });
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "Failed to process import" }] });
+    } finally {
       setImporting(false);
-      setImportResult({ success: 12, failed: 1 });
-    }, 2000);
+    }
   };
 
   const resetModal = () => {
@@ -622,19 +686,49 @@ Sarah Williams,sarah.w@email.com,(555) 456-7890,Receptionist,FlexiWell Downtown`
               </div>
             </>
           ) : (
-            <div className="text-center py-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+            <div className="py-4">
+              <div className="text-center">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${importResult.success > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  {importResult.success > 0 ? (
+                    <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg className="w-7 h-7 sm:w-8 sm:h-8 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  )}
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                  {importResult.success > 0 ? "Import Complete" : "Import Failed"}
+                </h3>
+                <p className="text-sm sm:text-base text-gray-600">
+                  {importResult.success > 0 && (
+                    <>Successfully imported <span className="font-semibold text-green-600">{importResult.success}</span> staff members</>
+                  )}
+                  {importResult.failed > 0 && (
+                    <>{importResult.success > 0 ? ". " : ""}<span className="font-semibold text-red-600">{importResult.failed}</span> failed.</>
+                  )}
+                </p>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Import Complete</h3>
-              <p className="text-sm sm:text-base text-gray-600">
-                Successfully imported <span className="font-semibold text-green-600">{importResult.success}</span> staff members
-                {importResult.failed > 0 && (
-                  <>. <span className="font-semibold text-red-600">{importResult.failed}</span> failed.</>
-                )}
-              </p>
+
+              {/* Show errors if any */}
+              {importResult.errors && importResult.errors.length > 0 && (
+                <div className="mt-4 max-h-32 overflow-y-auto">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Errors:</p>
+                  <div className="space-y-1">
+                    {importResult.errors.slice(0, 5).map((err, idx) => (
+                      <p key={idx} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                        {err.row > 0 ? `Row ${err.row}` : ""}{err.email ? ` (${err.email})` : ""}: {err.error}
+                      </p>
+                    ))}
+                    {importResult.errors.length > 5 && (
+                      <p className="text-xs text-gray-500">...and {importResult.errors.length - 5} more errors</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -917,6 +1011,7 @@ export default function AdminStaffPage() {
       <ImportStaffModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
+        onSuccess={refetch}
       />
     </div>
   );

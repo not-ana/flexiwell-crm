@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import {
@@ -61,28 +61,6 @@ interface ImportResult {
   total: number;
 }
 
-// Mock data
-const mockFiles: ClientFile[] = [
-  {
-    id: "1",
-    name: "clientes_janeiro.csv",
-    size: "200 KB",
-    dateUploaded: "Jan 4, 2025",
-    lastUpdated: "Jan 4, 2025",
-    recordCount: 145,
-    uploadedBy: { name: "Olivia Rhye", email: "olivia@flexiwell.com", initials: "OR" },
-  },
-  {
-    id: "2",
-    name: "leads_novos.csv",
-    size: "720 KB",
-    dateUploaded: "Jan 4, 2025",
-    lastUpdated: "Jan 4, 2025",
-    recordCount: 523,
-    uploadedBy: { name: "Phoenix Baker", email: "phoenix@flexiwell.com", initials: "PB" },
-  },
-];
-
 const systemFields = [
   { id: "name", label: "Name", required: true },
   { id: "email", label: "Email", required: true },
@@ -103,9 +81,29 @@ function DownloadIcon({ className = "w-6 h-6" }: { className?: string }) {
 }
 
 export default function ImportClientsPage() {
-  const [files, setFiles] = useState<ClientFile[]>(mockFiles);
+  const [files, setFiles] = useState<ClientFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch import history
+  const fetchImportHistory = useCallback(async () => {
+    try {
+      const response = await fetch("/api/dashboard/imports");
+      if (response.ok) {
+        const data = await response.json();
+        setFiles(data.files || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch import history:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchImportHistory();
+  }, [fetchImportHistory]);
 
   // Import modal state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);

@@ -497,11 +497,11 @@ function AddClientModal({
 }
 
 // Import Modal Component
-function ImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function ImportModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors?: { row: number; email: string; error: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -529,14 +529,77 @@ function ImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     }
   };
 
-  const handleImport = () => {
+  const parseCSV = (content: string): Record<string, string>[] => {
+    const lines = content.trim().split("\n");
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const data: Record<string, string>[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map(v => v.trim());
+      const row: Record<string, string> = {};
+
+      headers.forEach((header, index) => {
+        row[header] = values[index] || "";
+      });
+
+      // Map CSV columns to expected API fields
+      const mappedRow: Record<string, string> = {
+        name: row.name || "",
+        email: row.email || "",
+        phone: row.phone || "",
+        planType: row.plan?.includes("quarterly") ? "quarterly" : row.plan?.includes("annual") ? "annual" : "monthly",
+      };
+
+      data.push(mappedRow);
+    }
+
+    return data;
+  };
+
+  const handleImport = async () => {
     if (!file) return;
     setImporting(true);
-    // TODO: Implement actual import via API
-    setTimeout(() => {
+
+    try {
+      // Read and parse CSV file
+      const content = await file.text();
+      const clientsData = parseCSV(content);
+
+      if (clientsData.length === 0) {
+        setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "No valid data found in CSV file" }] });
+        setImporting(false);
+        return;
+      }
+
+      // Send to API
+      const response = await fetch("/api/clients/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientsData }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setImportResult({
+          success: result.results.success,
+          failed: result.results.failed,
+          errors: result.results.errors,
+        });
+        if (result.results.success > 0 && onSuccess) {
+          onSuccess();
+        }
+      } else {
+        setImportResult({ success: 0, failed: clientsData.length, errors: [{ row: 0, email: "", error: result.error || "Import failed" }] });
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "Failed to process import" }] });
+    } finally {
       setImporting(false);
-      setImportResult({ success: 45, failed: 2 });
-    }, 2000);
+    }
   };
 
   const resetModal = () => {
@@ -659,25 +722,55 @@ Jane Doe,jane.doe@email.com,(555) 234-5678,Quarterly - 24 classes,FlexiWell Midt
               </div>
             </>
           ) : (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Import Complete!</h3>
-              <div className="flex items-center justify-center gap-6 mb-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">{importResult.success}</p>
-                  <p className="text-sm text-gray-500">Imported</p>
+            <div className="py-4">
+              <div className="text-center">
+                <div className={`w-16 h-16 ${importResult.success > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  {importResult.success > 0 ? (
+                    <svg className="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  )}
                 </div>
-                {importResult.failed > 0 && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
-                    <p className="text-sm text-gray-500">Failed</p>
-                  </div>
-                )}
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {importResult.success > 0 ? "Import Complete!" : "Import Failed"}
+                </h3>
+                <div className="flex items-center justify-center gap-6 mb-4">
+                  {importResult.success > 0 && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">{importResult.success}</p>
+                      <p className="text-sm text-gray-500">Imported</p>
+                    </div>
+                  )}
+                  {importResult.failed > 0 && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{importResult.failed}</p>
+                      <p className="text-sm text-gray-500">Failed</p>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Show errors if any */}
+              {importResult.errors && importResult.errors.length > 0 && (
+                <div className="mt-4 max-h-32 overflow-y-auto">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Errors:</p>
+                  <div className="space-y-1">
+                    {importResult.errors.slice(0, 5).map((err, idx) => (
+                      <p key={idx} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                        {err.row > 0 ? `Row ${err.row}` : ""}{err.email ? ` (${err.email})` : ""}: {err.error}
+                      </p>
+                    ))}
+                    {importResult.errors.length > 5 && (
+                      <p className="text-xs text-gray-500">...and {importResult.errors.length - 5} more errors</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -958,7 +1051,7 @@ export default function AdminClientsPage() {
       )}
 
       {/* Modals */}
-      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
+      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onSuccess={refetch} />
       <AddClientModal
         isOpen={showAddClientModal}
         onClose={() => setShowAddClientModal(false)}

@@ -39,6 +39,7 @@ export interface Staff {
   phone: string;
   role: "admin" | "teacher" | "receptionist";
   avatar?: string;
+  bio?: string;
   specialties?: string[];
   schedule?: {
     day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";

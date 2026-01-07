@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiSupportConfig } from "@/lib/config/ai-support";
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
+import type { Client, Booking } from "@/lib/db/schemas";
 
 // OpenAI integration
 // You'll need to: npm install openai
@@ -70,34 +73,84 @@ function shouldEscalate(message: string): boolean {
 
 // Get client context from database
 async function getClientContext(clientId: string): Promise<ClientContext | null> {
-  // TODO: Replace with actual database call
-  // For now, return mock data
-  return {
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+1234567890",
-    plan: {
-      name: "Growth Plan",
-      remainingClasses: 8,
-      expiresAt: "2025-01-30",
-    },
-    lastPayment: {
-      date: "2024-12-28",
-      amount: 99,
-      status: "paid",
-    },
-    upcomingClasses: [
-      {
-        name: "Pilates Reformer",
-        date: "2025-12-30 10:00",
-        instructor: "Sarah Smith",
+  try {
+    if (!ObjectId.isValid(clientId)) {
+      return null;
+    }
+
+    const db = await getDatabase();
+
+    // Get client data
+    const client = await db.collection<Client>("clients").findOne({
+      _id: new ObjectId(clientId),
+    });
+
+    if (!client) {
+      return null;
+    }
+
+    // Get last payment
+    const lastPayment = await db.collection("payments").findOne(
+      { clientId: clientId, status: "completed" },
+      { sort: { createdAt: -1 } }
+    );
+
+    // Get upcoming bookings
+    const now = new Date();
+    const upcomingBookings = await db.collection<Booking>("bookings")
+      .find({
+        clientId: clientId,
+        scheduledDate: { $gte: now },
+        status: { $in: ["confirmed", "pending"] },
+      })
+      .sort({ scheduledDate: 1 })
+      .limit(5)
+      .toArray();
+
+    // Map plan type to display name
+    const planTypeNames: Record<string, string> = {
+      "monthly": "Plano Mensal",
+      "quarterly": "Plano Trimestral",
+      "annual": "Plano Anual",
+      "drop-in": "Avulso",
+    };
+
+    return {
+      name: client.name,
+      email: client.email,
+      phone: client.phone || "",
+      plan: {
+        name: planTypeNames[client.plan.type] || client.plan.type,
+        remainingClasses: client.plan.remainingClasses,
+        expiresAt: client.plan.endDate
+          ? new Date(client.plan.endDate).toISOString().split("T")[0]
+          : "N/A",
       },
-    ],
-    preferences: {
-      language: "en",
-      timezone: "America/New_York",
-    },
-  };
+      lastPayment: lastPayment
+        ? {
+            date: new Date(lastPayment.createdAt).toISOString().split("T")[0],
+            amount: lastPayment.amount,
+            status: lastPayment.status,
+          }
+        : {
+            date: "N/A",
+            amount: 0,
+            status: "none",
+          },
+      upcomingClasses: upcomingBookings.map((booking) => ({
+        name: booking.className,
+        date: `${new Date(booking.scheduledDate).toISOString().split("T")[0]} ${booking.startTime}`,
+        instructor: booking.instructorName,
+      })),
+      preferences: {
+        language: "pt",
+        timezone: "America/Sao_Paulo",
+      },
+    };
+  } catch (error) {
+    console.error("Error getting client context:", error);
+    return null;
+  }
 }
 
 // Get conversation history
@@ -283,93 +336,378 @@ async function executeFunction(
   functionName: string,
   args: Record<string, unknown>
 ): Promise<{ success: boolean; message: string; data?: unknown }> {
-  // TODO: Implement actual function logic with database calls
-  // For now, return mock responses
+  const db = await getDatabase();
 
   switch (functionName) {
-    case "check_available_classes":
-      return {
-        success: true,
-        message: "Found 5 available classes",
-        data: [
-          {
-            id: "class_1",
-            name: "Pilates Reformer",
-            date: args.date,
-            time: "10:00 AM",
-            instructor: "Sarah Smith",
-            spotsAvailable: 3,
-          },
-          {
-            id: "class_2",
-            name: "Yoga Flow",
-            date: args.date,
-            time: "2:00 PM",
-            instructor: "Mike Johnson",
-            spotsAvailable: 5,
-          },
-        ],
+    case "check_available_classes": {
+      const dateStr = args.date as string;
+      const modality = args.modality as string | undefined;
+
+      // Parse date range for the given day
+      const startDate = new Date(dateStr);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateStr);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Build query
+      const query: Record<string, unknown> = {
+        scheduledDate: { $gte: startDate, $lte: endDate },
+        status: "active",
       };
 
-    case "book_class":
+      if (modality) {
+        query.title = { $regex: modality, $options: "i" };
+      }
+
+      const classes = await db.collection("classes")
+        .find(query)
+        .sort({ startTime: 1 })
+        .toArray();
+
+      // Filter classes with available spots
+      const availableClasses = classes.filter(
+        (c) => (c.currentEnrollment || 0) < (c.capacity || 10)
+      );
+
+      if (availableClasses.length === 0) {
+        return {
+          success: true,
+          message: `No classes available on ${dateStr}${modality ? ` for ${modality}` : ""}`,
+          data: [],
+        };
+      }
+
       return {
         success: true,
-        message: "Class booked successfully! Confirmation sent via email.",
+        message: `Found ${availableClasses.length} available class(es)`,
+        data: availableClasses.map((c) => ({
+          id: c._id.toString(),
+          name: c.title,
+          date: dateStr,
+          time: c.startTime,
+          instructor: c.instructorName,
+          spotsAvailable: (c.capacity || 10) - (c.currentEnrollment || 0),
+        })),
+      };
+    }
+
+    case "book_class": {
+      const classId = args.classId as string;
+      const clientId = args.clientId as string;
+
+      if (!ObjectId.isValid(classId) || !ObjectId.isValid(clientId)) {
+        return { success: false, message: "Invalid class or client ID" };
+      }
+
+      // Get class and client
+      const [classDoc, client] = await Promise.all([
+        db.collection("classes").findOne({ _id: new ObjectId(classId) }),
+        db.collection<Client>("clients").findOne({ _id: new ObjectId(clientId) }),
+      ]);
+
+      if (!classDoc) {
+        return { success: false, message: "Class not found" };
+      }
+
+      if (!client) {
+        return { success: false, message: "Client not found" };
+      }
+
+      // Check capacity
+      if ((classDoc.currentEnrollment || 0) >= (classDoc.capacity || 10)) {
+        return { success: false, message: "Class is full. Would you like to be added to the waitlist?" };
+      }
+
+      // Check credits
+      if (client.plan.remainingClasses <= 0) {
+        return { success: false, message: "No classes remaining in your plan. Please upgrade or purchase more credits." };
+      }
+
+      // Check for existing booking
+      const existingBooking = await db.collection<Booking>("bookings").findOne({
+        clientId: clientId,
+        classId: classId,
+        status: { $in: ["confirmed", "pending"] },
+      });
+
+      if (existingBooking) {
+        return { success: false, message: "You already have a booking for this class" };
+      }
+
+      // Create booking
+      const now = new Date();
+      const booking: Omit<Booking, "_id"> = {
+        clientId: clientId,
+        clientName: client.name,
+        classId: classId,
+        className: classDoc.title,
+        instructorId: classDoc.instructorId,
+        instructorName: classDoc.instructorName,
+        scheduledDate: new Date(classDoc.scheduledDate),
+        startTime: classDoc.startTime,
+        endTime: classDoc.endTime,
+        status: "confirmed",
+        source: "bot",
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const result = await db.collection<Booking>("bookings").insertOne(booking as Booking);
+
+      // Update class enrollment
+      await db.collection("classes").updateOne(
+        { _id: new ObjectId(classId) },
+        { $inc: { currentEnrollment: 1 } }
+      );
+
+      // Update client credits
+      await db.collection<Client>("clients").updateOne(
+        { _id: new ObjectId(clientId) },
+        {
+          $inc: { "plan.remainingClasses": -1 },
+          $set: { updatedAt: now },
+        }
+      );
+
+      return {
+        success: true,
+        message: `Class booked successfully! You're confirmed for ${classDoc.title} on ${new Date(classDoc.scheduledDate).toLocaleDateString()} at ${classDoc.startTime}.`,
         data: {
-          bookingId: "booking_123",
-          classId: args.classId,
-          clientId: args.clientId,
+          bookingId: result.insertedId.toString(),
+          classId,
+          clientId,
+          className: classDoc.title,
+          date: classDoc.scheduledDate,
+          time: classDoc.startTime,
         },
       };
+    }
 
-    case "cancel_booking":
-      return {
-        success: true,
-        message: "Booking cancelled successfully. Your class credit has been restored.",
-      };
+    case "cancel_booking": {
+      const bookingId = args.bookingId as string;
 
-    case "check_waitlist_status":
-      return {
-        success: true,
-        message: "You are #2 in the waitlist for Pilates Reformer on Dec 30",
-        data: {
-          position: 2,
-          estimatedWaitTime: "2-3 hours",
-        },
-      };
+      if (!ObjectId.isValid(bookingId)) {
+        return { success: false, message: "Invalid booking ID" };
+      }
 
-    case "get_client_schedule":
-      return {
-        success: true,
-        message: "Here's your upcoming schedule",
-        data: [
-          {
-            className: "Pilates Reformer",
-            date: "2025-12-30",
-            time: "10:00 AM",
-            instructor: "Sarah Smith",
+      const booking = await db.collection<Booking>("bookings").findOne({
+        _id: new ObjectId(bookingId),
+      });
+
+      if (!booking) {
+        return { success: false, message: "Booking not found" };
+      }
+
+      if (booking.status === "cancelled") {
+        return { success: false, message: "This booking is already cancelled" };
+      }
+
+      const now = new Date();
+
+      // Cancel booking
+      await db.collection<Booking>("bookings").updateOne(
+        { _id: new ObjectId(bookingId) },
+        {
+          $set: {
+            status: "cancelled",
+            cancelledAt: now,
+            cancellationReason: "Cancelled via chat",
+            updatedAt: now,
           },
-        ],
-      };
+        }
+      );
 
-    case "get_payment_status":
+      // Restore class enrollment count
+      await db.collection("classes").updateOne(
+        { _id: new ObjectId(booking.classId) },
+        { $inc: { currentEnrollment: -1 } }
+      );
+
+      // Restore client credit
+      await db.collection<Client>("clients").updateOne(
+        { _id: new ObjectId(booking.clientId) },
+        {
+          $inc: { "plan.remainingClasses": 1 },
+          $set: { updatedAt: now },
+        }
+      );
+
       return {
         success: true,
-        message: "Your account is in good standing",
+        message: `Booking for ${booking.className} has been cancelled. Your class credit has been restored.`,
+      };
+    }
+
+    case "check_waitlist_status": {
+      const clientId = args.clientId as string;
+      const classId = args.classId as string | undefined;
+
+      if (!ObjectId.isValid(clientId)) {
+        return { success: false, message: "Invalid client ID" };
+      }
+
+      const query: Record<string, unknown> = {
+        clientId: clientId,
+        status: "waiting",
+      };
+
+      if (classId && ObjectId.isValid(classId)) {
+        query.preferredClassId = classId;
+      }
+
+      const waitlistEntries = await db.collection("waitlist")
+        .find(query)
+        .sort({ createdAt: 1 })
+        .toArray();
+
+      if (waitlistEntries.length === 0) {
+        return {
+          success: true,
+          message: "You are not on any waitlists",
+          data: [],
+        };
+      }
+
+      // Get position for each entry
+      const entriesWithPosition = await Promise.all(
+        waitlistEntries.map(async (entry) => {
+          const position = await db.collection("waitlist").countDocuments({
+            preferredClassId: entry.preferredClassId,
+            status: "waiting",
+            createdAt: { $lt: entry.createdAt },
+          });
+          return {
+            className: entry.preferredClassName || "Any class",
+            position: position + 1,
+            requestType: entry.requestType,
+            createdAt: entry.createdAt,
+          };
+        })
+      );
+
+      return {
+        success: true,
+        message: `You are on ${entriesWithPosition.length} waitlist(s)`,
+        data: entriesWithPosition,
+      };
+    }
+
+    case "get_client_schedule": {
+      const clientId = args.clientId as string;
+      const days = (args.days as number) || 7;
+
+      if (!ObjectId.isValid(clientId)) {
+        return { success: false, message: "Invalid client ID" };
+      }
+
+      const now = new Date();
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + days);
+
+      const bookings = await db.collection<Booking>("bookings")
+        .find({
+          clientId: clientId,
+          scheduledDate: { $gte: now, $lte: futureDate },
+          status: { $in: ["confirmed", "pending"] },
+        })
+        .sort({ scheduledDate: 1 })
+        .toArray();
+
+      if (bookings.length === 0) {
+        return {
+          success: true,
+          message: `No upcoming classes in the next ${days} days`,
+          data: [],
+        };
+      }
+
+      return {
+        success: true,
+        message: `You have ${bookings.length} upcoming class(es)`,
+        data: bookings.map((b) => ({
+          bookingId: b._id?.toString(),
+          className: b.className,
+          date: new Date(b.scheduledDate).toISOString().split("T")[0],
+          time: b.startTime,
+          instructor: b.instructorName,
+          status: b.status,
+        })),
+      };
+    }
+
+    case "get_payment_status": {
+      const clientId = args.clientId as string;
+
+      if (!ObjectId.isValid(clientId)) {
+        return { success: false, message: "Invalid client ID" };
+      }
+
+      // Get client for plan info
+      const client = await db.collection<Client>("clients").findOne({
+        _id: new ObjectId(clientId),
+      });
+
+      if (!client) {
+        return { success: false, message: "Client not found" };
+      }
+
+      // Get recent payments
+      const payments = await db.collection("payments")
+        .find({ clientId: clientId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .toArray();
+
+      const lastPayment = payments[0];
+      const pendingPayment = payments.find((p) => p.status === "pending");
+
+      return {
+        success: true,
+        message: pendingPayment
+          ? `You have a pending payment of R$${pendingPayment.amount}`
+          : "Your account is in good standing",
         data: {
-          lastPayment: "2024-12-28",
-          nextPayment: "2025-01-28",
-          amount: 99,
-          status: "paid",
+          plan: client.plan.type,
+          classesRemaining: client.plan.remainingClasses,
+          planExpiresAt: client.plan.endDate
+            ? new Date(client.plan.endDate).toISOString().split("T")[0]
+            : null,
+          lastPayment: lastPayment
+            ? {
+                date: new Date(lastPayment.createdAt).toISOString().split("T")[0],
+                amount: lastPayment.amount,
+                status: lastPayment.status,
+              }
+            : null,
+          pendingPayment: pendingPayment
+            ? {
+                amount: pendingPayment.amount,
+                dueDate: pendingPayment.dueDate
+                  ? new Date(pendingPayment.dueDate).toISOString().split("T")[0]
+                  : null,
+              }
+            : null,
         },
       };
+    }
 
-    case "escalate_to_human":
+    case "escalate_to_human": {
+      const reason = args.reason as string;
+      const priority = args.priority as string;
+
+      // Log escalation to database
+      await db.collection("escalations").insertOne({
+        reason,
+        priority,
+        status: "pending",
+        createdAt: new Date(),
+      });
+
       return {
         success: true,
-        message:
-          "I'm connecting you with a human agent. Someone will be with you shortly.",
+        message: "I'm connecting you with a human agent. Someone will be with you shortly.",
       };
+    }
 
     default:
       return {

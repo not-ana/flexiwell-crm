@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
@@ -24,98 +24,6 @@ interface Client {
   initials: string;
   classes: number;
 }
-
-// Mock data
-const mockClients: Client[] = [
-  {
-    id: "1",
-    name: "Olivia Rhye",
-    email: "olivia@email.com",
-    phone: "+1 (555) 123-4567",
-    status: "active",
-    joinDate: "Jan 4, 2025",
-    lastActivity: "2 hours ago",
-    initials: "OR",
-    classes: 12,
-  },
-  {
-    id: "2",
-    name: "Phoenix Baker",
-    email: "phoenix@email.com",
-    phone: "+1 (555) 234-5678",
-    status: "active",
-    joinDate: "Jan 2, 2025",
-    lastActivity: "1 day ago",
-    initials: "PB",
-    classes: 8,
-  },
-  {
-    id: "3",
-    name: "Lana Steiner",
-    email: "lana@email.com",
-    phone: "+1 (555) 345-6789",
-    status: "pending",
-    joinDate: "Jan 6, 2025",
-    lastActivity: "3 days ago",
-    initials: "LS",
-    classes: 0,
-  },
-  {
-    id: "4",
-    name: "Demi Wilkinson",
-    email: "demi@email.com",
-    phone: "+1 (555) 456-7890",
-    status: "active",
-    joinDate: "Dec 28, 2024",
-    lastActivity: "5 hours ago",
-    initials: "DW",
-    classes: 15,
-  },
-  {
-    id: "5",
-    name: "Candice Wu",
-    email: "candice@email.com",
-    phone: "+1 (555) 567-8901",
-    status: "inactive",
-    joinDate: "Dec 15, 2024",
-    lastActivity: "2 weeks ago",
-    initials: "CW",
-    classes: 3,
-  },
-  {
-    id: "6",
-    name: "Natali Craig",
-    email: "natali@email.com",
-    phone: "+1 (555) 678-9012",
-    status: "active",
-    joinDate: "Jan 8, 2025",
-    lastActivity: "Just now",
-    initials: "NC",
-    classes: 6,
-  },
-  {
-    id: "7",
-    name: "Drew Cano",
-    email: "drew@email.com",
-    phone: "+1 (555) 789-0123",
-    status: "active",
-    joinDate: "Jan 1, 2025",
-    lastActivity: "4 hours ago",
-    initials: "DC",
-    classes: 10,
-  },
-  {
-    id: "8",
-    name: "Orlando Diggs",
-    email: "orlando@email.com",
-    phone: "+1 (555) 890-1234",
-    status: "pending",
-    joinDate: "Jan 10, 2025",
-    lastActivity: "1 hour ago",
-    initials: "OD",
-    classes: 0,
-  },
-];
 
 function Avatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
   const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
@@ -152,19 +60,80 @@ function StatusBadge({ status }: { status: Client["status"] }) {
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [clients] = useState<Client[]>(mockClients);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Client["status"]>("all");
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || client.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch clients from API
+  const fetchClients = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (searchQuery) params.append("search", searchQuery);
+
+      const response = await fetch(`/api/clients?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Format clients for display
+        const formattedClients: Client[] = data.clients.map((c: {
+          _id?: { toString(): string };
+          name: string;
+          email: string;
+          phone?: string;
+          status: "active" | "inactive" | "pending";
+          avatar?: string;
+          plan?: { usedClasses?: number };
+          createdAt?: string | Date;
+          updatedAt?: string | Date;
+        }) => ({
+          id: c._id?.toString() || "",
+          name: c.name,
+          email: c.email,
+          phone: c.phone || "",
+          status: c.status,
+          avatar: c.avatar,
+          initials: c.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+          classes: c.plan?.usedClasses || 0,
+          joinDate: c.createdAt
+            ? new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "N/A",
+          lastActivity: c.updatedAt
+            ? formatLastActivity(new Date(c.updatedAt))
+            : "N/A",
+        }));
+        setClients(formattedClients);
+      }
+    } catch (error) {
+      console.error("Failed to fetch clients:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  // Helper to format last activity
+  function formatLastActivity(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return `${Math.floor(diffDays / 7)} weeks ago`;
+  }
+
+  const filteredClients = clients;
 
   const toggleSelectAll = () => {
     if (selectedClients.size === filteredClients.length) {
@@ -190,6 +159,15 @@ export default function ClientsPage() {
     inactive: clients.filter((c) => c.status === "inactive").length,
     pending: clients.filter((c) => c.status === "pending").length,
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto">

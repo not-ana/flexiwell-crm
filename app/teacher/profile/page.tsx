@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,59 +11,54 @@ import {
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
 
-// Teacher user data (matching Sidebar mockAccountsData)
-const teacherUser = {
-  name: "Maria Santos",
-  avatar: undefined,
-  initials: "MS",
-  location: "São Paulo, Brazil",
+interface TeacherUser {
+  name: string;
+  avatar?: string;
+  initials: string;
+  location: string;
+  locationFlag: string;
+  email: string;
+  phone: string;
+  role: string;
+  specialties: string[];
+  about: string;
+}
+
+interface UpcomingClass {
+  id: string;
+  title: string;
+  time: string;
+  date: string;
+  students: number;
+  maxStudents: number;
+}
+
+interface TeacherStats {
+  totalStudents: number;
+  classesThisWeek: number;
+  avgRating: number;
+  yearsExperience: number;
+}
+
+// Default values
+const defaultUser: TeacherUser = {
+  name: "Loading...",
+  initials: "...",
+  location: "Brasil",
   locationFlag: "🇧🇷",
-  email: "maria@flexiwell.com",
-  phone: "55 11 98888 7777",
+  email: "",
+  phone: "",
   role: "Instructor",
-  specialties: ["Pilates", "Yoga", "Stretching"],
-  about: `I'm a certified Pilates and Yoga instructor with over 8 years of experience helping clients improve their flexibility, strength, and overall well-being.
-
-I specialize in personalized training programs that adapt to each client's needs and fitness level. My approach combines traditional techniques with modern methods to deliver effective results.
-
-I hold certifications from the Pilates Method Alliance and Yoga Alliance, and I'm constantly updating my skills through workshops and continuing education.`,
+  specialties: [],
+  about: "",
 };
 
-// Upcoming classes for teacher
-const upcomingClasses = [
-  {
-    id: "1",
-    title: "Morning Pilates",
-    time: "8:00 AM - 9:00 AM",
-    date: "Today",
-    students: 8,
-    maxStudents: 10,
-  },
-  {
-    id: "2",
-    title: "Afternoon Yoga",
-    time: "2:00 PM - 3:30 PM",
-    date: "Today",
-    students: 6,
-    maxStudents: 8,
-  },
-  {
-    id: "3",
-    title: "Evening Stretching",
-    time: "6:00 PM - 7:00 PM",
-    date: "Tomorrow",
-    students: 10,
-    maxStudents: 12,
-  },
-];
-
-// Teacher stats
-const teacherStats = [
-  { label: "Total Students", value: "45" },
-  { label: "Classes This Week", value: "12" },
-  { label: "Avg. Rating", value: "4.9" },
-  { label: "Years Experience", value: "8" },
-];
+const defaultStats: TeacherStats = {
+  totalStudents: 0,
+  classesThisWeek: 0,
+  avgRating: 0,
+  yearsExperience: 0,
+};
 
 // Avatar component
 function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; size?: "sm" | "md" | "lg" | "xl" }) {
@@ -86,9 +81,42 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 
 export default function TeacherProfilePage() {
   const router = useRouter();
+  const [teacherUser, setTeacherUser] = useState<TeacherUser>(defaultUser);
+  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+  const [stats, setStats] = useState<TeacherStats>(defaultStats);
+  const [loading, setLoading] = useState(true);
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const aboutPreviewLength = 300;
   const shouldTruncate = teacherUser.about.length > aboutPreviewLength;
+
+  // Fetch profile data
+  const fetchProfileData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/teacher/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setTeacherUser(data.user);
+        setUpcomingClasses(data.upcomingClasses);
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
+
+  // Format stats for display
+  const teacherStats = [
+    { label: "Total Students", value: String(stats.totalStudents) },
+    { label: "Classes This Week", value: String(stats.classesThisWeek) },
+    { label: "Avg. Rating", value: stats.avgRating.toFixed(1) },
+    { label: "Years Experience", value: String(stats.yearsExperience) },
+  ];
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("teacher");
@@ -98,6 +126,15 @@ export default function TeacherProfilePage() {
     // Redirect to teacher dashboard where the onboarding elements are
     router.push("/teacher");
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto">

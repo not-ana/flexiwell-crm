@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 interface Message {
   id: string;
@@ -13,60 +13,16 @@ interface Message {
   isRead?: boolean;
 }
 
-// Mock studio data - in production this would come from the user's context
-const mockStudio = {
-  name: "Studio Vida",
-  initials: "SV",
-};
+interface StudioInfo {
+  name: string;
+  initials: string;
+}
 
-// Mock messages for support chat
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    content: `Hello! Welcome to ${mockStudio.name} support. How can we help you today?`,
-    sender: "support",
-    timestamp: "Yesterday 2:30 PM",
-    type: "text",
-  },
-  {
-    id: "2",
-    content: "Hi! I have questions about how to book a class.",
-    sender: "user",
-    timestamp: "Yesterday 2:32 PM",
-    type: "text",
-  },
-  {
-    id: "3",
-    content: "Of course! To book a class, just go to the 'Classes' tab and choose an available time slot. You'll see all classes open for enrollment.",
-    sender: "support",
-    timestamp: "Yesterday 2:35 PM",
-    type: "text",
-  },
-  {
-    id: "4",
-    content: "We've prepared a quick guide for you:",
-    sender: "support",
-    timestamp: "Yesterday 2:36 PM",
-    type: "text",
-  },
-  {
-    id: "5",
-    content: "",
-    sender: "support",
-    timestamp: "Yesterday 2:36 PM",
-    type: "file",
-    fileName: "Class_Booking_Guide.pdf",
-    fileSize: "856 KB",
-  },
-  {
-    id: "6",
-    content: "Thank you so much! I'll take a look.",
-    sender: "user",
-    timestamp: "Yesterday 2:40 PM",
-    type: "text",
-    isRead: true,
-  },
-];
+// Default studio info
+const defaultStudio: StudioInfo = {
+  name: "FlexiWell",
+  initials: "FW",
+};
 
 function SendIcon({ className = "w-6 h-6" }: { className?: string }) {
   return (
@@ -106,47 +62,82 @@ function DoubleCheckIcon({ className = "w-6 h-6" }: { className?: string }) {
 }
 
 export default function SupportPage() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [studio, setStudio] = useState<StudioInfo>(defaultStudio);
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Fetch support data
+  const fetchSupportData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/dashboard/support");
+      if (response.ok) {
+        const data = await response.json();
+        setStudio(data.studio);
+        setMessages(data.messages);
+      }
+    } catch (error) {
+      console.error("Failed to fetch support data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSupportData();
+  }, [fetchSupportData]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const message: Message = {
+    const tempMessage: Message = {
       id: String(Date.now()),
       content: newMessage,
       sender: "user",
-      timestamp: "Just now",
+      timestamp: "Agora",
       type: "text",
       isRead: false,
     };
 
-    setMessages([...messages, message]);
+    setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
 
-    // Simulate support typing
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const supportResponse: Message = {
-        id: String(Date.now() + 1),
-        content: "Thank you for your message! Our team will respond shortly.",
-        sender: "support",
-        timestamp: "Just now",
-        type: "text",
-      };
-      setMessages((prev) => [...prev, supportResponse]);
-    }, 2000);
+    // Send to API
+    try {
+      const response = await fetch("/api/dashboard/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newMessage, type: "text" }),
+      });
+
+      if (response.ok) {
+        // Simulate support typing response
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+          const supportResponse: Message = {
+            id: String(Date.now() + 1),
+            content: "Obrigado pela sua mensagem! Nossa equipe responderá em breve.",
+            sender: "support",
+            timestamp: "Agora",
+            type: "text",
+          };
+          setMessages((prev) => [...prev, supportResponse]);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -156,19 +147,28 @@ export default function SupportPage() {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-4">
         <div className="relative">
           <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">{mockStudio.initials}</span>
+            <span className="text-white font-bold text-lg">{studio.initials}</span>
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-gray-900">{mockStudio.name}</h1>
+            <h1 className="text-lg font-semibold text-gray-900">{studio.name}</h1>
             <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
               Online
@@ -184,7 +184,7 @@ export default function SupportPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-md mx-auto text-center mb-8">
           <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">{mockStudio.initials}</span>
+              <span className="text-white font-bold text-xl">{studio.initials}</span>
             </div>
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">How can we help?</h2>
@@ -200,7 +200,7 @@ export default function SupportPage() {
             <div key={message.id} className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
               {!isUser && (
                 <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-xs">{mockStudio.initials}</span>
+                  <span className="text-white font-bold text-xs">{studio.initials}</span>
                 </div>
               )}
 
@@ -251,7 +251,7 @@ export default function SupportPage() {
         {isTyping && (
           <div className="flex gap-3">
             <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-xs">{mockStudio.initials}</span>
+              <span className="text-white font-bold text-xs">{studio.initials}</span>
             </div>
             <div className="px-4 py-3 bg-white rounded-2xl rounded-tl-sm shadow-sm border border-gray-100">
               <div className="flex gap-1">

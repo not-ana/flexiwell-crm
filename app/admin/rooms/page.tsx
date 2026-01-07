@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, PlusIcon, ChevronIcon } from "@/components/icons";
 
 interface Room {
@@ -18,103 +18,6 @@ interface Unit {
   address: string;
   rooms: Room[];
 }
-
-// Mock data - rooms grouped by unit
-const mockUnits: Unit[] = [
-  {
-    id: "1",
-    name: "FlexiWell Centro",
-    address: "123 Main Street - Downtown",
-    rooms: [
-      {
-        id: "1",
-        name: "Room 1",
-        capacity: 8,
-        equipment: ["Reformer (8)", "Mat", "Mirror Wall"],
-        status: "active",
-        color: "bg-purple-500",
-      },
-      {
-        id: "2",
-        name: "Room 2",
-        capacity: 10,
-        equipment: ["Yoga Mats (10)", "Blocks", "Straps", "Sound System"],
-        status: "active",
-        color: "bg-green-500",
-      },
-      {
-        id: "3",
-        name: "Room 3",
-        capacity: 12,
-        equipment: ["Functional Equipment", "TRX", "Kettlebells", "Dumbbells"],
-        status: "active",
-        color: "bg-blue-500",
-      },
-      {
-        id: "4",
-        name: "Studio A",
-        capacity: 6,
-        equipment: ["Cadillac (2)", "Chair (4)", "Barrel"],
-        status: "maintenance",
-        color: "bg-orange-500",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "FlexiWell Jardins",
-    address: "456 Park Avenue - Jardins",
-    rooms: [
-      {
-        id: "5",
-        name: "Room 1",
-        capacity: 6,
-        equipment: ["Reformer (6)", "Mat", "Mirror Wall"],
-        status: "active",
-        color: "bg-purple-500",
-      },
-      {
-        id: "6",
-        name: "Room 2",
-        capacity: 8,
-        equipment: ["Yoga Mats (8)", "Bolsters", "Blankets"],
-        status: "active",
-        color: "bg-green-500",
-      },
-      {
-        id: "7",
-        name: "Studio B",
-        capacity: 4,
-        equipment: ["Reformer (4)", "Tower"],
-        status: "inactive",
-        color: "bg-red-500",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "FlexiWell Moema",
-    address: "789 Oak Boulevard - Moema",
-    rooms: [
-      {
-        id: "8",
-        name: "Main Studio",
-        capacity: 10,
-        equipment: ["Reformer (10)", "Mat Area", "Sound System"],
-        status: "active",
-        color: "bg-purple-500",
-      },
-      {
-        id: "9",
-        name: "Yoga Room",
-        capacity: 15,
-        equipment: ["Yoga Mats (15)", "Props", "Aerial Silks (6)"],
-        status: "active",
-        color: "bg-green-500",
-      },
-    ],
-  },
-];
 
 const statusStyles = {
   active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Active" },
@@ -441,11 +344,33 @@ function RoomModal({
 }
 
 export default function AdminRoomsPage() {
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedUnits, setExpandedUnits] = useState<string[]>(mockUnits.map((u) => u.id));
+  const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string>("");
   const [showRoomModal, setShowRoomModal] = useState(false);
+
+  // Fetch rooms from API
+  const fetchRooms = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/rooms");
+      if (response.ok) {
+        const data = await response.json();
+        setUnits(data.units);
+        setExpandedUnits(data.units.map((u: Unit) => u.id));
+      }
+    } catch (error) {
+      console.error("Failed to fetch rooms:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
 
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) =>
@@ -461,7 +386,7 @@ export default function AdminRoomsPage() {
 
   const handleEditRoom = (room: Room) => {
     // Find which unit this room belongs to
-    const unit = mockUnits.find((u) => u.rooms.some((r) => r.id === room.id));
+    const unit = units.find((u) => u.rooms.some((r) => r.id === room.id));
     setSelectedRoom(room);
     setSelectedUnitId(unit?.id || "");
     setShowRoomModal(true);
@@ -486,7 +411,7 @@ export default function AdminRoomsPage() {
   };
 
   // Filter units based on search
-  const filteredUnits = mockUnits
+  const filteredUnits = units
     .map((unit) => ({
       ...unit,
       rooms: unit.rooms.filter(
@@ -501,17 +426,26 @@ export default function AdminRoomsPage() {
         unit.rooms.length > 0
     );
 
-  const totalRooms = mockUnits.reduce((acc, unit) => acc + unit.rooms.length, 0);
-  const activeRooms = mockUnits.reduce(
+  const totalRooms = units.reduce((acc, unit) => acc + unit.rooms.length, 0);
+  const activeRooms = units.reduce(
     (acc, unit) => acc + unit.rooms.filter((r) => r.status === "active").length,
     0
   );
-  const totalCapacity = mockUnits.reduce(
+  const totalCapacity = units.reduce(
     (acc, unit) => acc + unit.rooms.reduce((a, r) => a + r.capacity, 0),
     0
   );
 
-  const selectedUnit = mockUnits.find((u) => u.id === selectedUnitId);
+  const selectedUnit = units.find((u) => u.id === selectedUnitId);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -523,8 +457,8 @@ export default function AdminRoomsPage() {
         </div>
         <button
           onClick={() => {
-            if (mockUnits.length > 0) {
-              handleAddRoom(mockUnits[0].id);
+            if (units.length > 0) {
+              handleAddRoom(units[0].id);
             } else {
               alert("Please add a location first before adding rooms.");
             }
@@ -552,7 +486,7 @@ export default function AdminRoomsPage() {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-600">Locations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mockUnits.length}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{units.length}</p>
         </div>
       </div>
 
@@ -571,11 +505,11 @@ export default function AdminRoomsPage() {
 
         <button
           onClick={() =>
-            setExpandedUnits(expandedUnits.length === mockUnits.length ? [] : mockUnits.map((u) => u.id))
+            setExpandedUnits(expandedUnits.length === units.length ? [] : units.map((u) => u.id))
           }
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          {expandedUnits.length === mockUnits.length ? "Collapse all" : "Expand all"}
+          {expandedUnits.length === units.length ? "Collapse all" : "Expand all"}
         </button>
       </div>
 

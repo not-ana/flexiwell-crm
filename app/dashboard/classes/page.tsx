@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -24,55 +24,6 @@ interface ClassEvent {
   color: "purple" | "gray" | "pink" | "orange" | "green" | "blue" | "red";
   status: "scheduled" | "completed" | "cancelled";
 }
-
-// Mock data - client's enrolled classes
-const mockEvents: ClassEvent[] = [
-  {
-    id: "1",
-    title: "Morning Yoga",
-    instructor: "Ana",
-    start: new Date(2024, 11, 26, 9, 0),
-    end: new Date(2024, 11, 26, 10, 0),
-    color: "purple",
-    status: "scheduled",
-  },
-  {
-    id: "2",
-    title: "Pilates",
-    instructor: "Maria",
-    start: new Date(2024, 11, 26, 14, 0),
-    end: new Date(2024, 11, 26, 15, 0),
-    color: "pink",
-    status: "scheduled",
-  },
-  {
-    id: "3",
-    title: "Evening Stretch",
-    instructor: "Ana",
-    start: new Date(2024, 11, 27, 18, 0),
-    end: new Date(2024, 11, 27, 19, 0),
-    color: "green",
-    status: "scheduled",
-  },
-  {
-    id: "4",
-    title: "Reformer Session",
-    instructor: "Maria",
-    start: new Date(2024, 11, 28, 10, 0),
-    end: new Date(2024, 11, 28, 11, 0),
-    color: "blue",
-    status: "scheduled",
-  },
-  {
-    id: "5",
-    title: "Yoga Flow",
-    instructor: "Ana",
-    start: new Date(2024, 11, 30, 9, 0),
-    end: new Date(2024, 11, 30, 10, 0),
-    color: "purple",
-    status: "scheduled",
-  },
-];
 
 const colorStyles: Record<ClassEvent["color"], { bg: string; border: string; text: string }> = {
   purple: { bg: "bg-primary-50", border: "border-l-primary-500", text: "text-primary-700" },
@@ -691,13 +642,47 @@ function EventDetailsSidebar({
 }
 
 export default function ClassesPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date(2024, 11, 26));
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ClassEvent | null>(null);
-  const [events] = useState<ClassEvent[]>(mockEvents);
+  const [events, setEvents] = useState<ClassEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
   const [requestModal, setRequestModal] = useState<{ type: RequestType; event?: ClassEvent } | null>(null);
+
+  // Fetch classes from API
+  const fetchClasses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/dashboard/classes");
+      if (response.ok) {
+        const data = await response.json();
+        // Convert ISO strings to Date objects
+        const formattedEvents: ClassEvent[] = data.events.map((e: {
+          id: string;
+          title: string;
+          instructor?: string;
+          start: string;
+          end: string;
+          color: ClassEvent["color"];
+          status: ClassEvent["status"];
+        }) => ({
+          ...e,
+          start: new Date(e.start),
+          end: new Date(e.end),
+        }));
+        setEvents(formattedEvents);
+      }
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
 
   const goToToday = () => setSelectedDate(new Date());
   const goToPrev = () => {
@@ -731,6 +716,15 @@ export default function ClassesPage() {
   };
 
   const viewModeLabels: Record<ViewMode, string> = { day: "Day", week: "Week", month: "Month" };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

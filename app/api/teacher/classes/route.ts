@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       const endDate = new Date(classDate);
       endDate.setMinutes(endDate.getMinutes() + c.duration);
 
-      let displayStatus = c.status;
+      let displayStatus: string = c.status;
       if (c.status === "scheduled") {
         if (now >= classDate && now <= endDate) {
           displayStatus = "in-progress";

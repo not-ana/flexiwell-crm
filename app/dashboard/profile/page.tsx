@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserIcon,
@@ -32,61 +32,45 @@ interface Instructor {
   nextAvailable: string;
 }
 
-// Mock user data (client - Olivia)
-const mockUser = {
-  name: "Olivia Rhye",
+// Profile data interface
+interface ProfileData {
+  user: {
+    name: string;
+    avatar?: string;
+    initials: string;
+    location: string;
+    locationFlag: string;
+    email: string;
+    phone: string;
+    plan: string;
+    classesRemaining: number;
+    classesUsed: number;
+  };
+  scheduledClasses: ScheduledClass[];
+  currentInstructor: Instructor | null;
+}
+
+// Default user data (shown while loading)
+const defaultUser: ProfileData["user"] = {
+  name: "Loading...",
   avatar: undefined,
-  initials: "OR",
-  location: "Rio de Janeiro, Brazil",
+  initials: "--",
+  location: "Brasil",
   locationFlag: "🇧🇷",
-  email: "olivia@flexitrack.net",
-  phone: "55 21 99999 1234",
-  plan: "Monthly - 8 classes",
-  classesRemaining: 6,
-  classesUsed: 2,
+  email: "",
+  phone: "",
+  plan: "Loading...",
+  classesRemaining: 0,
+  classesUsed: 0,
 };
 
-// Mock scheduled classes
-const mockClasses: ScheduledClass[] = [
-  {
-    id: "1",
-    title: "Pilates",
-    instructor: "Maria Santos",
-    date: "Dec 27, 2024",
-    dayOfWeek: "Friday",
-    time: "2:00 PM - 3:00 PM",
-    location: "FlexiWell Centro",
-    status: "confirmed",
-  },
-  {
-    id: "2",
-    title: "Pilates",
-    instructor: "Maria Santos",
-    date: "Dec 30, 2024",
-    dayOfWeek: "Monday",
-    time: "2:00 PM - 3:00 PM",
-    location: "FlexiWell Centro",
-    status: "confirmed",
-  },
-  {
-    id: "3",
-    title: "Yoga",
-    instructor: "Ana Silva",
-    date: "Jan 2, 2025",
-    dayOfWeek: "Thursday",
-    time: "10:00 AM - 11:00 AM",
-    location: "FlexiWell Botafogo",
-    status: "pending",
-  },
-];
-
-// Mock instructor data - Maria Santos is Olivia's instructor
-const currentInstructor: Instructor = {
-  id: "2",
-  name: "Maria Santos",
-  initials: "MS",
-  specialties: ["Pilates", "Yoga", "Stretching"],
-  nextAvailable: "Dec 28, 2024 - 3:00 PM",
+// Default instructor
+const defaultInstructor: Instructor = {
+  id: "",
+  name: "No instructor assigned",
+  initials: "--",
+  specialties: [],
+  nextAvailable: "Contact support",
 };
 
 // Avatar component
@@ -444,13 +428,41 @@ export default function ProfilePage() {
   const [modalType, setModalType] = useState<"cancel" | "reschedule" | "change-instructor" | null>(null);
   const [selectedClass, setSelectedClass] = useState<ScheduledClass | undefined>();
   const [showInstructorSchedule, setShowInstructorSchedule] = useState(false);
-  const [classes, setClasses] = useState<ScheduledClass[]>(mockClasses);
+  const [classes, setClasses] = useState<ScheduledClass[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+
+  // Profile data states
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(defaultUser);
+  const [currentInstructor, setCurrentInstructor] = useState<Instructor>(defaultInstructor);
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("client");
   const router = useRouter();
+
+  // Fetch profile data
+  const fetchProfileData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/dashboard/profile");
+      if (response.ok) {
+        const data: ProfileData = await response.json();
+        setUserData(data.user);
+        setClasses(data.scheduledClasses);
+        if (data.currentInstructor) {
+          setCurrentInstructor(data.currentInstructor);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
 
   const handleReplayOnboarding = () => {
     resetOnboarding();
@@ -504,16 +516,25 @@ export default function ProfilePage() {
     }, 500);
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full overflow-auto">
       <div className="p-8 max-w-5xl">
         {/* Header with Avatar and Name */}
         <div className="flex items-center gap-4 mb-8">
-          <Avatar name={mockUser.name} avatar={mockUser.avatar} initials={mockUser.initials} size="xl" />
+          <Avatar name={userData.name} avatar={userData.avatar} initials={userData.initials} size="xl" />
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">{mockUser.name}</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{userData.name}</h1>
             <span className="inline-block mt-1 px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {mockUser.plan}
+              {userData.plan}
             </span>
           </div>
         </div>
@@ -526,25 +547,25 @@ export default function ProfilePage() {
             <div>
               <p className="text-sm text-gray-500 mb-1">Location</p>
               <div className="flex items-center gap-2">
-                <span className="text-lg">{mockUser.locationFlag}</span>
-                <span className="text-gray-900">{mockUser.location}</span>
+                <span className="text-lg">{userData.locationFlag}</span>
+                <span className="text-gray-900">{userData.location}</span>
               </div>
             </div>
 
             {/* Email */}
             <div>
               <p className="text-sm text-gray-500 mb-1">Email</p>
-              <p className="text-gray-900">{mockUser.email}</p>
+              <p className="text-gray-900">{userData.email}</p>
             </div>
 
             {/* Phone */}
             <div>
               <p className="text-sm text-gray-500 mb-1">Phone</p>
               <a
-                href={`tel:${mockUser.phone.replace(/\s/g, "")}`}
+                href={`tel:${userData.phone.replace(/\s/g, "")}`}
                 className="text-primary-600 hover:text-primary-700"
               >
-                {mockUser.phone}
+                {userData.phone}
               </a>
             </div>
 
@@ -554,12 +575,12 @@ export default function ProfilePage() {
               <div className="bg-gray-100 rounded-full h-2 mb-2">
                 <div
                   className="bg-primary-600 rounded-full h-2 transition-all"
-                  style={{ width: `${(mockUser.classesUsed / (mockUser.classesUsed + mockUser.classesRemaining)) * 100}%` }}
+                  style={{ width: `${(userData.classesUsed / (userData.classesUsed + userData.classesRemaining)) * 100}%` }}
                 />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{mockUser.classesUsed} used</span>
-                <span className="font-medium text-gray-900">{mockUser.classesRemaining} remaining</span>
+                <span className="text-gray-600">{userData.classesUsed} used</span>
+                <span className="font-medium text-gray-900">{userData.classesRemaining} remaining</span>
               </div>
             </div>
 

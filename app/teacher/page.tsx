@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronIcon } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+
+// Toast notification helper
+function showToast(message: string, type: "success" | "error" = "success") {
+  const toast = document.createElement("div");
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 transition-opacity ${
+    type === "success" ? "bg-green-600" : "bg-red-600"
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
 
 interface UpcomingClass {
   id: string;
@@ -45,66 +60,50 @@ interface MakeupRequest {
   status: "pending" | "scheduled" | "completed";
 }
 
-// Set to true to show empty states (for new users)
-const DEMO_MODE = false;
+// Dashboard data interface
+interface DashboardData {
+  stats: {
+    classesCompleted: number;
+    totalClasses: number;
+    studentsServed: number;
+    avgAttendance: number;
+    rating: number;
+    hoursTeaching: number;
+    makeupPending: number;
+  };
+  todaySchedule: TodaySchedule[];
+  upcomingClasses: UpcomingClass[];
+  makeupRequests: MakeupRequest[];
+  weeklyClassData: { day: string; classes: number; students: number }[];
+  classTypeData: { name: string; value: number; color: string }[];
+  studentAttendance: StudentAttendance[];
+}
 
-const mockTodaySchedule: TodaySchedule[] = DEMO_MODE ? [] : [
-  { id: "1", name: "Morning Yoga", time: "07:00 - 08:00", status: "completed", students: 12, room: "Studio A" },
-  { id: "2", name: "Pilates Basics", time: "09:00 - 10:00", status: "completed", students: 8, room: "Studio B" },
-  { id: "3", name: "Core Training", time: "11:00 - 12:00", status: "in-progress", students: 15, room: "Studio A" },
-  { id: "4", name: "Afternoon Stretch", time: "14:00 - 15:00", status: "upcoming", students: 10, room: "Main Hall" },
-  { id: "5", name: "Power Yoga", time: "17:00 - 18:00", status: "upcoming", students: 14, room: "Studio A" },
-  { id: "6", name: "Evening Relaxation", time: "19:00 - 20:00", status: "upcoming", students: 6, room: "Studio B" },
-];
-
-const mockUpcomingClasses: UpcomingClass[] = DEMO_MODE ? [] : [
-  { id: "1", name: "Morning Yoga", time: "Tomorrow, 07:00", duration: "1h", students: 10, maxStudents: 15, room: "Studio A" },
-  { id: "2", name: "Pilates Advanced", time: "Tomorrow, 10:00", duration: "1h", students: 8, maxStudents: 10, room: "Studio B" },
-  { id: "3", name: "Core Training", time: "Wed, 11:00", duration: "1h", students: 12, maxStudents: 15, room: "Studio A" },
-  { id: "4", name: "Power Yoga", time: "Wed, 17:00", duration: "1.5h", students: 14, maxStudents: 20, room: "Main Hall" },
-];
-
-const mockStudentAttendance: StudentAttendance[] = DEMO_MODE ? [] : [
-  { id: "1", name: "Lucas Brooks", initials: "LB", classesAttended: 18, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-  { id: "2", name: "Camille Stone", initials: "CS", classesAttended: 15, totalClasses: 20, lastClass: "Yesterday", needsMakeup: true },
-  { id: "3", name: "Ryan Lewis", initials: "RL", classesAttended: 12, totalClasses: 20, lastClass: "2 days ago", needsMakeup: true },
-  { id: "4", name: "Julia Martin", initials: "JM", classesAttended: 19, totalClasses: 20, lastClass: "Today", needsMakeup: false },
-  { id: "5", name: "Patrick Adams", initials: "PA", classesAttended: 8, totalClasses: 20, lastClass: "1 week ago", needsMakeup: true },
-];
-
-const mockMakeupRequests: MakeupRequest[] = DEMO_MODE ? [] : [
-  { id: "1", studentName: "Camille Stone", studentInitials: "CS", originalClass: "Morning Yoga", originalDate: "Dec 20", status: "pending" },
-  { id: "2", studentName: "Ryan Lewis", studentInitials: "RL", originalClass: "Core Training", originalDate: "Dec 18", requestedDate: "Dec 28, 10:00 AM", status: "scheduled" },
-  { id: "3", studentName: "Patrick Adams", studentInitials: "PA", originalClass: "Pilates Basics", originalDate: "Dec 15", status: "pending" },
-];
-
-const weeklyStats = {
-  classesCompleted: 18,
-  totalClasses: 24,
-  studentsServed: 142,
-  avgAttendance: 92,
+// Default empty stats
+const defaultStats = {
+  classesCompleted: 0,
+  totalClasses: 0,
+  studentsServed: 0,
+  avgAttendance: 0,
   rating: 4.8,
-  hoursTeaching: 22,
-  makeupPending: 3,
+  hoursTeaching: 0,
+  makeupPending: 0,
 };
 
-// Weekly class data for chart
-const weeklyClassData = [
-  { day: "Mon", classes: 4, students: 42 },
-  { day: "Tue", classes: 5, students: 58 },
-  { day: "Wed", classes: 3, students: 32 },
-  { day: "Thu", classes: 5, students: 54 },
-  { day: "Fri", classes: 4, students: 48 },
-  { day: "Sat", classes: 2, students: 24 },
-  { day: "Sun", classes: 1, students: 12 },
+// Default empty chart data
+const defaultWeeklyClassData = [
+  { day: "Mon", classes: 0, students: 0 },
+  { day: "Tue", classes: 0, students: 0 },
+  { day: "Wed", classes: 0, students: 0 },
+  { day: "Thu", classes: 0, students: 0 },
+  { day: "Fri", classes: 0, students: 0 },
+  { day: "Sat", classes: 0, students: 0 },
+  { day: "Sun", classes: 0, students: 0 },
 ];
 
-// Class type distribution - Using primary theme colors (purple)
-const classTypeData = [
-  { name: "Yoga", value: 35, color: "#7C3AED" },   // primary-600
-  { name: "Pilates", value: 30, color: "#8B5CF6" }, // primary-500
-  { name: "Core", value: 20, color: "#A78BFA" },    // primary-400
-  { name: "Stretch", value: 15, color: "#C4B5FD" }, // primary-300
+const defaultClassTypeData = [
+  { name: "Yoga", value: 0, color: "#7C3AED" },
+  { name: "Pilates", value: 0, color: "#8B5CF6" },
 ];
 
 function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
@@ -155,9 +154,13 @@ function MakeupStatusBadge({ status }: { status: MakeupRequest["status"] }) {
 }
 
 export default function TeacherDashboard() {
+  const router = useRouter();
   const [showAllSchedule, setShowAllSchedule] = useState(false);
   const [activeTab, setActiveTab] = useState<"today" | "makeups">("today");
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [isSubmittingWalkIn, setIsSubmittingWalkIn] = useState(false);
+  const [showScheduleMakeupModal, setShowScheduleMakeupModal] = useState(false);
+  const [selectedMakeupRequest, setSelectedMakeupRequest] = useState<MakeupRequest | null>(null);
   const [walkInData, setWalkInData] = useState({
     name: "",
     email: "",
@@ -165,8 +168,89 @@ export default function TeacherDashboard() {
     classId: "",
   });
 
+  // Dashboard data states
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(defaultStats);
+  const [todaySchedule, setTodaySchedule] = useState<TodaySchedule[]>([]);
+  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+  const [makeupRequests, setMakeupRequests] = useState<MakeupRequest[]>([]);
+  const [weeklyClassData, setWeeklyClassData] = useState(defaultWeeklyClassData);
+  const [classTypeData, setClassTypeData] = useState(defaultClassTypeData);
+  const [studentAttendance, setStudentAttendance] = useState<StudentAttendance[]>([]);
+
   // Onboarding
   const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("teacher");
+
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/teacher/dashboard");
+      if (response.ok) {
+        const data: DashboardData = await response.json();
+        setStats(data.stats);
+        setTodaySchedule(data.todaySchedule);
+        setUpcomingClasses(data.upcomingClasses);
+        setMakeupRequests(data.makeupRequests);
+        setWeeklyClassData(data.weeklyClassData.length > 0 ? data.weeklyClassData : defaultWeeklyClassData);
+        setClassTypeData(data.classTypeData.length > 0 ? data.classTypeData : defaultClassTypeData);
+        setStudentAttendance(data.studentAttendance);
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Handle walk-in submission
+  const handleAddWalkIn = async () => {
+    if (!walkInData.name || !walkInData.classId) return;
+
+    setIsSubmittingWalkIn(true);
+    try {
+      const response = await fetch("/api/teacher/walk-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(walkInData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast(result.message);
+        setShowWalkInModal(false);
+        setWalkInData({ name: "", email: "", phone: "", classId: "" });
+      } else {
+        showToast(result.error || "Failed to add walk-in student", "error");
+      }
+    } catch (error) {
+      console.error("Walk-in error:", error);
+      showToast("Failed to add walk-in student", "error");
+    } finally {
+      setIsSubmittingWalkIn(false);
+    }
+  };
+
+  // Handle take attendance - navigate to attendance page
+  const handleTakeAttendance = (classItem: TodaySchedule) => {
+    router.push(`/teacher/attendance?classId=${classItem.id}&className=${encodeURIComponent(classItem.name)}`);
+  };
+
+  // Handle schedule makeup
+  const handleScheduleMakeup = (request: MakeupRequest) => {
+    setSelectedMakeupRequest(request);
+    setShowScheduleMakeupModal(true);
+  };
+
+  // Handle reschedule makeup
+  const handleRescheduleMakeup = (request: MakeupRequest) => {
+    setSelectedMakeupRequest(request);
+    setShowScheduleMakeupModal(true);
+  };
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -175,8 +259,17 @@ export default function TeacherDashboard() {
     day: "numeric",
   });
 
-  const completedClasses = mockTodaySchedule.filter(c => c.status === "completed").length;
-  const inProgressClass = mockTodaySchedule.find(c => c.status === "in-progress");
+  const completedClasses = todaySchedule.filter(c => c.status === "completed").length;
+  const inProgressClass = todaySchedule.find(c => c.status === "in-progress");
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
@@ -219,21 +312,21 @@ export default function TeacherDashboard() {
             {/* Classes */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Classes This Week</p>
-              <p className="text-2xl font-bold text-gray-900">{weeklyStats.classesCompleted}/{weeklyStats.totalClasses}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.classesCompleted}/{stats.totalClasses}</p>
               <p className="text-sm text-gray-600">completed</p>
             </div>
 
             {/* Students */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Students Served</p>
-              <p className="text-2xl font-bold text-gray-900">{weeklyStats.studentsServed}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.studentsServed}</p>
               <p className="text-sm text-gray-600">this week</p>
             </div>
 
             {/* Attendance */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Avg. Attendance</p>
-              <p className="text-2xl font-bold text-green-600">{weeklyStats.avgAttendance}%</p>
+              <p className="text-2xl font-bold text-green-600">{stats.avgAttendance}%</p>
               <p className="text-sm text-gray-600">this week</p>
             </div>
 
@@ -245,7 +338,7 @@ export default function TeacherDashboard() {
                 </svg>
                 <p className="text-xs text-gray-500">Your Rating</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{weeklyStats.rating}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.rating}</p>
               <p className="text-sm text-gray-600">86 reviews</p>
             </div>
           </div>
@@ -360,9 +453,9 @@ export default function TeacherDashboard() {
                   >
                     <span className="hidden lg:inline">Makeup Classes</span>
                     <span className="lg:hidden">Makeups</span>
-                    {mockMakeupRequests.filter(r => r.status === "pending").length > 0 && (
+                    {makeupRequests.filter(r => r.status === "pending").length > 0 && (
                       <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                        {mockMakeupRequests.filter(r => r.status === "pending").length}
+                        {makeupRequests.filter(r => r.status === "pending").length}
                       </span>
                     )}
                   </button>
@@ -380,7 +473,7 @@ export default function TeacherDashboard() {
 
               {activeTab === "today" ? (
                 <div className="divide-y divide-gray-200">
-                  {mockTodaySchedule.length === 0 ? (
+                  {todaySchedule.length === 0 ? (
                     <div className="py-12 px-4 text-center">
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -390,7 +483,7 @@ export default function TeacherDashboard() {
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No classes today</h3>
                       <p className="text-sm text-gray-500">Your schedule is clear for today. Enjoy your day off!</p>
                     </div>
-                  ) : (showAllSchedule ? mockTodaySchedule : mockTodaySchedule.slice(0, 4)).map((classItem) => (
+                  ) : (showAllSchedule ? todaySchedule : todaySchedule.slice(0, 4)).map((classItem) => (
                     <div
                       key={classItem.id}
                       className={`px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors ${
@@ -417,10 +510,7 @@ export default function TeacherDashboard() {
                         <StatusBadge status={classItem.status} />
                         {classItem.status === "in-progress" && (
                           <button
-                            onClick={() => {
-                              // In production: navigate to attendance page or open modal
-                              alert(`Taking attendance for ${classItem.name}`);
-                            }}
+                            onClick={() => handleTakeAttendance(classItem)}
                             className="px-3 lg:px-4 py-1.5 lg:py-2 bg-primary-600 text-white text-xs lg:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
                           >
                             <span className="hidden lg:inline">Take Attendance</span>
@@ -442,7 +532,7 @@ export default function TeacherDashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {mockMakeupRequests.length === 0 ? (
+                  {makeupRequests.length === 0 ? (
                     <div className="py-12 px-4 text-center">
                       <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -452,7 +542,7 @@ export default function TeacherDashboard() {
                       <h3 className="text-base font-semibold text-gray-900 mb-1">No makeup requests</h3>
                       <p className="text-sm text-gray-500">All students are up to date with their classes.</p>
                     </div>
-                  ) : mockMakeupRequests.map((request) => (
+                  ) : makeupRequests.map((request) => (
                     <div key={request.id} className="px-4 lg:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3 lg:gap-4">
                         <StudentAvatar name={request.studentName} initials={request.studentInitials} />
@@ -470,10 +560,7 @@ export default function TeacherDashboard() {
                         <MakeupStatusBadge status={request.status} />
                         {request.status === "pending" && (
                           <button
-                            onClick={() => {
-                              // In production: open scheduling modal
-                              alert(`Scheduling makeup class for ${request.studentName}\nOriginal: ${request.originalClass} on ${request.originalDate}`);
-                            }}
+                            onClick={() => handleScheduleMakeup(request)}
                             className="px-3 py-1.5 bg-orange-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
                           >
                             Schedule
@@ -481,10 +568,7 @@ export default function TeacherDashboard() {
                         )}
                         {request.status === "scheduled" && (
                           <button
-                            onClick={() => {
-                              // In production: open rescheduling modal
-                              alert(`Rescheduling makeup for ${request.studentName}\nCurrently scheduled: ${request.requestedDate}`);
-                            }}
+                            onClick={() => handleRescheduleMakeup(request)}
                             className="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             Reschedule
@@ -493,7 +577,7 @@ export default function TeacherDashboard() {
                       </div>
                     </div>
                   ))}
-                  {mockMakeupRequests.length === 0 && (
+                  {makeupRequests.length === 0 && (
                     <div className="px-4 sm:px-6 py-12 text-center">
                       <p className="text-gray-500">No makeup requests at the moment</p>
                     </div>
@@ -512,7 +596,7 @@ export default function TeacherDashboard() {
                 <p className="text-xs sm:text-sm text-gray-500">Next few days</p>
               </div>
               <div className="divide-y divide-gray-200">
-                {mockUpcomingClasses.length === 0 ? (
+                {upcomingClasses.length === 0 ? (
                   <div className="py-10 px-4 text-center">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -522,7 +606,7 @@ export default function TeacherDashboard() {
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">No upcoming classes</h3>
                     <p className="text-xs text-gray-500">Classes will appear here once scheduled.</p>
                   </div>
-                ) : mockUpcomingClasses.map((classItem) => (
+                ) : upcomingClasses.map((classItem) => (
                   <div key={classItem.id} className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-semibold text-gray-900">{classItem.name}</p>
@@ -560,7 +644,7 @@ export default function TeacherDashboard() {
                 <p className="text-xs sm:text-sm text-gray-500">Track your regular students</p>
               </div>
               <div className="divide-y divide-gray-200">
-                {mockStudentAttendance.length === 0 ? (
+                {studentAttendance.length === 0 ? (
                   <div className="py-10 px-4 text-center">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -570,7 +654,7 @@ export default function TeacherDashboard() {
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">No students yet</h3>
                     <p className="text-xs text-gray-500">Students will appear here after their first class.</p>
                   </div>
-                ) : mockStudentAttendance.map((student) => (
+                ) : studentAttendance.map((student) => (
                   <div key={student.id} className="px-4 sm:px-6 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
                     <StudentAvatar name={student.name} initials={student.initials} />
                     <div className="flex-1 min-w-0">
@@ -644,7 +728,7 @@ export default function TeacherDashboard() {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Select a class...</option>
-                  {mockTodaySchedule
+                  {todaySchedule
                     .filter(c => c.status === "in-progress" || c.status === "upcoming")
                     .map(c => (
                       <option key={c.id} value={c.id}>
@@ -715,23 +799,160 @@ export default function TeacherDashboard() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // In production: await api.addWalkInStudent(walkInData);
-                  const selectedClass = mockTodaySchedule.find(c => c.id === walkInData.classId);
-                  console.log("Adding walk-in:", walkInData);
-                  alert(`Walk-in student "${walkInData.name}" added to ${selectedClass?.name || "class"}!`);
-                  setShowWalkInModal(false);
-                  setWalkInData({ name: "", email: "", phone: "", classId: "" });
-                }}
-                disabled={!walkInData.name || !walkInData.classId}
+                onClick={handleAddWalkIn}
+                disabled={!walkInData.name || !walkInData.classId || isSubmittingWalkIn}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Walk-in
+                {isSubmittingWalkIn ? "Adding..." : "Add Walk-in"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Schedule Makeup Modal */}
+      {showScheduleMakeupModal && selectedMakeupRequest && (
+        <ScheduleMakeupModal
+          request={selectedMakeupRequest}
+          availableClasses={upcomingClasses}
+          onClose={() => {
+            setShowScheduleMakeupModal(false);
+            setSelectedMakeupRequest(null);
+          }}
+          onSchedule={async (classId) => {
+            try {
+              const response = await fetch("/api/teacher/makeup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  requestId: selectedMakeupRequest.id,
+                  classId,
+                  action: "schedule",
+                }),
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                showToast(result.message);
+                setShowScheduleMakeupModal(false);
+                setSelectedMakeupRequest(null);
+              } else {
+                showToast(result.error || "Failed to schedule makeup", "error");
+              }
+            } catch (error) {
+              console.error("Schedule makeup error:", error);
+              showToast("Failed to schedule makeup", "error");
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Schedule Makeup Modal Component
+function ScheduleMakeupModal({
+  request,
+  availableClasses,
+  onClose,
+  onSchedule,
+}: {
+  request: MakeupRequest;
+  availableClasses: UpcomingClass[];
+  onClose: () => void;
+  onSchedule: (classId: string) => Promise<void>;
+}) {
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!selectedClassId) return;
+    setIsSubmitting(true);
+    await onSchedule(selectedClassId);
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Schedule Makeup Class</h3>
+              <p className="text-sm text-gray-500 mt-1">For {request.studentName}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Original class info */}
+          <div className="p-3 bg-orange-50 rounded-lg">
+            <p className="text-sm font-medium text-orange-800">Original Class:</p>
+            <p className="text-sm text-orange-700">{request.originalClass} on {request.originalDate}</p>
+          </div>
+
+          {/* Select class */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Makeup Class</label>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {availableClasses.map((cls) => (
+                <label
+                  key={cls.id}
+                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedClassId === cls.id
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="makeupClass"
+                    value={cls.id}
+                    checked={selectedClassId === cls.id}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    className="sr-only"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{cls.name}</p>
+                    <p className="text-xs text-gray-500">{cls.time} • {cls.room}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">{cls.students}/{cls.maxStudents} spots</p>
+                    {cls.students >= cls.maxStudents && (
+                      <span className="text-xs text-red-600">Full</span>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!selectedClassId || isSubmitting}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Scheduling..." : "Schedule Makeup"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

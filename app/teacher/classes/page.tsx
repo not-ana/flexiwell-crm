@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -37,111 +37,6 @@ interface ClassEvent {
   enrolled: number;
   students: Student[];
 }
-
-// Mock data - teacher's classes
-const mockEvents: ClassEvent[] = [
-  {
-    id: "1",
-    title: "Morning Yoga",
-    type: "Yoga",
-    start: new Date(2024, 11, 26, 9, 0),
-    end: new Date(2024, 11, 26, 10, 0),
-    color: "green",
-    status: "completed",
-    room: "Studio A",
-    unit: "FlexiWell Centro",
-    capacity: 15,
-    enrolled: 12,
-    students: [
-      { id: "s1", name: "Ana Silva", initials: "AS", attended: true },
-      { id: "s2", name: "Maria Santos", initials: "MS", attended: true },
-      { id: "s3", name: "João Costa", initials: "JC", attended: false },
-    ],
-  },
-  {
-    id: "2",
-    title: "Pilates",
-    type: "Pilates",
-    start: new Date(2024, 11, 26, 14, 0),
-    end: new Date(2024, 11, 26, 15, 0),
-    color: "purple",
-    status: "completed",
-    room: "Studio B",
-    unit: "FlexiWell Centro",
-    capacity: 10,
-    enrolled: 8,
-    students: [
-      { id: "s4", name: "Pedro Lima", initials: "PL", attended: true },
-      { id: "s5", name: "Carla Reis", initials: "CR", attended: true },
-    ],
-  },
-  {
-    id: "3",
-    title: "Morning Yoga",
-    type: "Yoga",
-    start: new Date(2024, 11, 27, 9, 0),
-    end: new Date(2024, 11, 27, 10, 0),
-    color: "green",
-    status: "in-progress",
-    room: "Studio A",
-    unit: "FlexiWell Centro",
-    capacity: 15,
-    enrolled: 14,
-    students: [
-      { id: "s1", name: "Ana Silva", initials: "AS" },
-      { id: "s2", name: "Maria Santos", initials: "MS" },
-      { id: "s6", name: "Lucas Oliveira", initials: "LO" },
-    ],
-  },
-  {
-    id: "4",
-    title: "Reformer Session",
-    type: "Pilates",
-    start: new Date(2024, 11, 28, 10, 0),
-    end: new Date(2024, 11, 28, 11, 0),
-    color: "blue",
-    status: "scheduled",
-    room: "Reformer Room",
-    unit: "FlexiWell Jardins",
-    capacity: 8,
-    enrolled: 6,
-    students: [
-      { id: "s7", name: "Fernanda Gomes", initials: "FG" },
-      { id: "s8", name: "Ricardo Alves", initials: "RA" },
-    ],
-  },
-  {
-    id: "5",
-    title: "Evening Stretch",
-    type: "Stretching",
-    start: new Date(2024, 11, 27, 18, 0),
-    end: new Date(2024, 11, 27, 19, 0),
-    color: "orange",
-    status: "scheduled",
-    room: "Main Hall",
-    unit: "FlexiWell Centro",
-    capacity: 20,
-    enrolled: 15,
-    students: [
-      { id: "s9", name: "Juliana Mendes", initials: "JM" },
-      { id: "s10", name: "Bruno Costa", initials: "BC" },
-    ],
-  },
-  {
-    id: "6",
-    title: "Power Pilates",
-    type: "Pilates",
-    start: new Date(2024, 11, 28, 14, 0),
-    end: new Date(2024, 11, 28, 15, 0),
-    color: "purple",
-    status: "scheduled",
-    room: "Studio B",
-    unit: "FlexiWell Centro",
-    capacity: 12,
-    enrolled: 10,
-    students: [],
-  },
-];
 
 const colorStyles: Record<ClassEvent["color"], { bg: string; border: string; text: string }> = {
   purple: { bg: "bg-purple-50", border: "border-l-purple-500", text: "text-purple-700" },
@@ -1460,9 +1355,10 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
 }
 
 export default function TeacherClassesPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date(2024, 11, 26));
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ClassEvent | null>(null);
-  const [events] = useState<ClassEvent[]>(mockEvents);
+  const [events, setEvents] = useState<ClassEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
@@ -1471,6 +1367,46 @@ export default function TeacherClassesPage() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showStudentsModal, setShowStudentsModal] = useState(false);
+
+  // Fetch classes from API
+  const fetchClasses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/teacher/classes");
+      if (response.ok) {
+        const data = await response.json();
+        // Convert ISO strings to Date objects
+        const formattedEvents: ClassEvent[] = data.classes.map((c: {
+          id: string;
+          title: string;
+          type: string;
+          start: string;
+          end: string;
+          color: string;
+          status: string;
+          room: string;
+          unit: string;
+          capacity: number;
+          enrolled: number;
+          students: Student[];
+        }) => ({
+          ...c,
+          start: new Date(c.start),
+          end: new Date(c.end),
+          color: (c.color || "gray") as ClassEvent["color"],
+          status: c.status as ClassStatus,
+        }));
+        setEvents(formattedEvents);
+      }
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
 
   const goToToday = () => setSelectedDate(new Date());
   const goToPrev = () => {
@@ -1509,6 +1445,15 @@ export default function TeacherClassesPage() {
   const handleTakeAttendance = () => setShowAttendanceModal(true);
   const handleViewReport = () => setShowReportModal(true);
   const handleViewStudents = () => setShowStudentsModal(true);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

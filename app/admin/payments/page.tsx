@@ -3,6 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon } from "@/components/icons";
 
+// Toast notification helper
+function showToast(message: string, type: "success" | "error" = "success") {
+  const toast = document.createElement("div");
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 transition-opacity ${
+    type === "success" ? "bg-green-600" : "bg-red-600"
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 type PaymentStatus = "paid" | "pending" | "overdue" | "failed" | "refunded";
 type PaymentFilter = "all" | PaymentStatus;
 
@@ -347,14 +361,40 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleBulkReminder = () => {
+  const handleBulkReminder = async () => {
     const unpaidSelected = selectedPayments
       .map(id => payments.find(p => p._id === id))
       .filter(p => p && (p.status === "pending" || p.status === "overdue"));
 
-    if (unpaidSelected.length > 0) {
-      alert(`Sending reminders to ${unpaidSelected.length} clients...`);
-      // TODO: Implement bulk reminder API call
+    if (unpaidSelected.length === 0) {
+      showToast("No pending or overdue payments selected", "error");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await fetch("/api/payments/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIds: unpaidSelected.map(p => p?._id),
+          type: "reminder",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast(`Reminders sent to ${result.results.sent} clients`);
+        setSelectedPayments([]);
+      } else {
+        showToast(result.error || "Failed to send reminders", "error");
+      }
+    } catch (error) {
+      console.error("Bulk reminder error:", error);
+      showToast("Failed to send reminders", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -841,13 +881,41 @@ export default function PaymentsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  alert(`Reminder sent to ${reminderTarget.clientName}!`);
-                  setShowReminderModal(false);
+                onClick={async () => {
+                  setActionLoading(true);
+                  try {
+                    const response = await fetch("/api/payments/reminders", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        paymentIds: [reminderTarget._id],
+                        type: "reminder",
+                      }),
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.results.sent > 0) {
+                      showToast(`Reminder sent to ${reminderTarget.clientName}!`);
+                      setShowReminderModal(false);
+                    } else {
+                      showToast(result.error || "Failed to send reminder", "error");
+                    }
+                  } catch (error) {
+                    console.error("Send reminder error:", error);
+                    showToast("Failed to send reminder", "error");
+                  } finally {
+                    setActionLoading(false);
+                  }
                 }}
-                className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Send Reminder
+                {actionLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                ) : (
+                  "Send Reminder"
+                )}
               </button>
             </div>
           </div>

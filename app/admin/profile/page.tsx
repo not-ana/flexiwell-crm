@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   MapPinIcon,
@@ -9,39 +9,50 @@ import {
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
 
-// Admin user data (matching Sidebar mockAccountsData)
-const adminUser = {
-  name: "Ana Silva",
-  avatar: undefined,
-  initials: "AS",
-  location: "Rio de Janeiro, Brazil",
+interface AdminUser {
+  name: string;
+  avatar?: string;
+  initials: string;
+  location: string;
+  locationFlag: string;
+  email: string;
+  phone: string;
+  role: string;
+  about: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
+
+interface AdminStats {
+  totalClients: number;
+  totalStaff: number;
+  totalClasses: number;
+  totalRevenue: number;
+}
+
+// Default values
+const defaultUser: AdminUser = {
+  name: "Loading...",
+  initials: "...",
+  location: "Brasil",
   locationFlag: "🇧🇷",
-  email: "ana@flexiwell.com",
-  phone: "55 21 99999 8888",
+  email: "",
+  phone: "",
   role: "Administrator",
-  about: `I'm the administrator of FlexiWell, managing studio operations, client relationships, and business growth. I oversee the day-to-day activities of our wellness centers across multiple locations.
-
-My responsibilities include managing staff, coordinating class schedules, handling client inquiries, and ensuring our services meet the highest quality standards.
-
-With over 5 years of experience in wellness management, I'm passionate about creating spaces where people can achieve their health and fitness goals.`,
+  about: "",
 };
 
-// Activity data for admin
-const recentActivity = [
-  { id: "1", action: "Added new client", target: "Maria Santos", time: "2 hours ago" },
-  { id: "2", action: "Updated class schedule", target: "Afternoon Pilates", time: "4 hours ago" },
-  { id: "3", action: "Approved instructor", target: "Carlos Lima", time: "1 day ago" },
-  { id: "4", action: "Generated monthly report", target: "December 2024", time: "2 days ago" },
-  { id: "5", action: "Updated pricing", target: "Monthly Plans", time: "3 days ago" },
-];
-
-// Quick stats
-const quickStats = [
-  { label: "Total Clients", value: "248" },
-  { label: "Active Staff", value: "12" },
-  { label: "This Month's Revenue", value: "$24,500" },
-  { label: "Classes This Week", value: "45" },
-];
+const defaultStats: AdminStats = {
+  totalClients: 0,
+  totalStaff: 0,
+  totalClasses: 0,
+  totalRevenue: 0,
+};
 
 // Avatar component
 function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; size?: "sm" | "md" | "lg" | "xl" }) {
@@ -64,9 +75,42 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 
 export default function AdminProfilePage() {
   const router = useRouter();
+  const [adminUser, setAdminUser] = useState<AdminUser>(defaultUser);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [stats, setStats] = useState<AdminStats>(defaultStats);
+  const [loading, setLoading] = useState(true);
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const aboutPreviewLength = 300;
   const shouldTruncate = adminUser.about.length > aboutPreviewLength;
+
+  // Fetch profile data
+  const fetchProfileData = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setAdminUser(data.user);
+        setRecentActivity(data.recentActivity || []);
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfileData();
+  }, [fetchProfileData]);
+
+  // Format stats for display
+  const quickStats = [
+    { label: "Total Clients", value: String(stats.totalClients) },
+    { label: "Active Staff", value: String(stats.totalStaff) },
+    { label: "This Month's Revenue", value: `R$${stats.totalRevenue.toLocaleString()}` },
+    { label: "Classes This Month", value: String(stats.totalClasses) },
+  ];
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("admin");
@@ -76,6 +120,15 @@ export default function AdminProfilePage() {
     // Redirect to admin dashboard where the onboarding elements are
     router.push("/admin");
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto">
@@ -173,10 +226,9 @@ export default function AdminProfilePage() {
                     }`}
                   >
                     <div>
-                      <span className="text-gray-900">{activity.action}</span>
-                      <span className="text-primary-600 font-medium ml-1">{activity.target}</span>
+                      <span className="text-gray-900">{activity.description}</span>
                     </div>
-                    <span className="text-sm text-gray-500">{activity.time}</span>
+                    <span className="text-sm text-gray-500">{activity.timestamp}</span>
                   </div>
                 ))}
               </div>

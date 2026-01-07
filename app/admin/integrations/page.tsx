@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, CheckCircleIcon, ToggleIcon } from "@/components/icons";
 
 interface Integration {
@@ -8,126 +8,66 @@ interface Integration {
   name: string;
   description: string;
   logo: string;
-  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics";
-  status: "connected" | "available" | "coming_soon";
+  icon?: string;
+  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics" | "messaging" | "automation" | "payments";
+  status: "connected" | "available" | "coming_soon" | "not_connected";
   features: string[];
-  connectedAt?: string;
+  connectedAt?: string | null;
   stats?: {
     label: string;
     value: string;
   }[];
 }
 
-const mockIntegrations: Integration[] = [
-  {
-    id: "wellhub",
-    name: "Wellhub",
-    description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients. Automatically sync classes and manage check-ins.",
-    logo: "W",
-    category: "marketplace",
-    status: "connected",
-    features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
-    connectedAt: "Dec 15, 2024",
-    stats: [
-      { label: "Monthly check-ins", value: "234" },
-      { label: "Revenue this month", value: "$4,560" },
-    ],
-  },
-  {
-    id: "classpass",
-    name: "ClassPass",
-    description: "List your classes on ClassPass to attract new clients looking for fitness and wellness experiences in your area.",
-    logo: "CP",
-    category: "marketplace",
-    status: "available",
-    features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"],
-  },
-  {
-    id: "stripe",
-    name: "Stripe",
-    description: "Accept online payments securely with Stripe. Process credit cards, subscriptions, and recurring payments.",
+// Default integrations for display purposes (enriched version of API data)
+const integrationDetails: Record<string, Partial<Integration>> = {
+  stripe: {
     logo: "S",
-    category: "payment",
-    status: "connected",
     features: ["Card payments", "Subscriptions", "Invoicing", "Fraud protection"],
-    connectedAt: "Nov 1, 2024",
-    stats: [
-      { label: "Transactions", value: "156" },
-      { label: "This month", value: "$12,340" },
-    ],
   },
-  {
-    id: "paypal",
-    name: "PayPal",
-    description: "Accept PayPal payments and offer more payment options to your clients worldwide.",
-    logo: "PP",
-    category: "payment",
-    status: "available",
-    features: ["PayPal checkout", "Pay Later options", "International payments"],
+  whatsapp: {
+    logo: "WA",
+    features: ["Client messaging", "Notifications", "Automated replies", "Media sharing"],
   },
-  {
-    id: "mailchimp",
-    name: "Mailchimp",
-    description: "Sync your client list with Mailchimp for email marketing campaigns and automated newsletters.",
+  instagram: {
+    logo: "IG",
+    features: ["DM responses", "Story mentions", "Comment replies", "Analytics"],
+  },
+  google_calendar: {
+    logo: "GC",
+    features: ["Two-way sync", "Reminders", "Availability", "Room booking"],
+  },
+  mailchimp: {
     logo: "MC",
-    category: "marketing",
-    status: "available",
     features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"],
   },
-  {
-    id: "google-calendar",
-    name: "Google Calendar",
-    description: "Sync classes and appointments with Google Calendar for seamless scheduling.",
-    logo: "GC",
-    category: "scheduling",
-    status: "connected",
-    features: ["Two-way sync", "Reminders", "Availability", "Room booking"],
-    connectedAt: "Oct 20, 2024",
+  zapier: {
+    logo: "ZP",
+    features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"],
   },
-  {
-    id: "zoom",
-    name: "Zoom",
-    description: "Offer virtual classes with automatic Zoom meeting creation and link sharing.",
-    logo: "Z",
-    category: "scheduling",
+  wellhub: {
+    logo: "W",
+    description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients.",
+    features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
     status: "available",
-    features: ["Auto meeting creation", "Link sharing", "Recording", "Attendance tracking"],
   },
-  {
-    id: "google-analytics",
-    name: "Google Analytics",
-    description: "Track website traffic and understand how clients find your wellness business online.",
-    logo: "GA",
-    category: "analytics",
+  classpass: {
+    logo: "CP",
+    description: "List your classes on ClassPass to attract new clients.",
+    features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"],
     status: "available",
-    features: ["Traffic analysis", "Conversion tracking", "User behavior", "Reports"],
   },
-  {
-    id: "mindbody",
-    name: "Mindbody",
-    description: "Import your existing data from Mindbody and keep both systems in sync during transition.",
-    logo: "MB",
-    category: "marketplace",
-    status: "coming_soon",
-    features: ["Data import", "Client migration", "Schedule sync", "Two-way sync"],
-  },
-  {
-    id: "square",
-    name: "Square",
-    description: "Accept in-person payments with Square POS integration for your front desk.",
-    logo: "SQ",
-    category: "payment",
-    status: "coming_soon",
-    features: ["POS integration", "In-person payments", "Hardware support", "Inventory"],
-  },
-];
+};
 
-const categoryLabels = {
+const categoryLabels: Record<string, { label: string; color: string }> = {
   marketplace: { label: "Marketplace", color: "bg-primary-100 text-primary-700" },
   payment: { label: "Payment", color: "bg-green-100 text-green-700" },
+  payments: { label: "Payments", color: "bg-green-100 text-green-700" },
   marketing: { label: "Marketing", color: "bg-blue-100 text-blue-700" },
   scheduling: { label: "Scheduling", color: "bg-orange-100 text-orange-700" },
   analytics: { label: "Analytics", color: "bg-pink-100 text-pink-700" },
+  messaging: { label: "Messaging", color: "bg-teal-100 text-teal-700" },
+  automation: { label: "Automation", color: "bg-purple-100 text-purple-700" },
 };
 
 const logoColors: Record<string, string> = {
@@ -441,12 +381,48 @@ function ConnectModal({
 }
 
 export default function IntegrationsPage() {
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [configureModal, setConfigureModal] = useState<Integration | null>(null);
   const [connectModal, setConnectModal] = useState<Integration | null>(null);
-  const [integrations, setIntegrations] = useState(mockIntegrations);
+
+  // Fetch integrations from API
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/integrations");
+      if (response.ok) {
+        const data = await response.json();
+        // Merge API data with local details
+        const enrichedIntegrations: Integration[] = data.integrations.map((int: {
+          id: string;
+          name: string;
+          description: string;
+          icon: string;
+          category: string;
+          status: string;
+          connectedAt: string | null;
+        }) => ({
+          ...int,
+          logo: integrationDetails[int.id]?.logo || int.icon || int.name[0],
+          features: integrationDetails[int.id]?.features || [],
+          status: int.status === "connected" ? "connected" : "available",
+          category: int.category as Integration["category"],
+        }));
+        setIntegrations(enrichedIntegrations);
+      }
+    } catch (error) {
+      console.error("Failed to fetch integrations:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIntegrations();
+  }, [fetchIntegrations]);
 
   const handleConnect = (integration: Integration) => {
     setConnectModal(integration);
@@ -484,6 +460,15 @@ export default function IntegrationsPage() {
 
   const connectedCount = integrations.filter((i) => i.status === "connected").length;
   const availableCount = integrations.filter((i) => i.status === "available").length;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
