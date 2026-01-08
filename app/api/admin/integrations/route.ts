@@ -119,6 +119,15 @@ export async function GET(request: NextRequest) {
         connectedAt: settings?.zapier?.connectedAt || null,
       },
       {
+        id: "paypal",
+        name: "PayPal",
+        description: "Accept PayPal payments and subscriptions",
+        icon: "💰",
+        category: "payments",
+        status: settings?.paypal?.clientId ? "connected" : "available",
+        connectedAt: settings?.paypal?.connectedAt || null,
+      },
+      {
         id: "classpass",
         name: "ClassPass",
         description: "List your classes on ClassPass marketplace",
@@ -126,6 +135,33 @@ export async function GET(request: NextRequest) {
         category: "marketplace",
         status: "coming_soon",
         connectedAt: null,
+      },
+      {
+        id: "mindbody",
+        name: "Mindbody",
+        description: "Import clients, schedules and data from Mindbody",
+        icon: "📥",
+        category: "migration",
+        status: credentialsMap["mindbody"] ? "connected" : "available",
+        connectedAt: (credentialsMap["mindbody"] as Record<string, unknown>)?.createdAt || null,
+      },
+      {
+        id: "glofox",
+        name: "Glofox",
+        description: "Migrate your data from Glofox seamlessly",
+        icon: "📥",
+        category: "migration",
+        status: credentialsMap["glofox"] ? "connected" : "available",
+        connectedAt: (credentialsMap["glofox"] as Record<string, unknown>)?.createdAt || null,
+      },
+      {
+        id: "tecnofit",
+        name: "Tecnofit",
+        description: "Importe seus dados do Tecnofit para o FlexiWell",
+        icon: "📥",
+        category: "migration",
+        status: credentialsMap["tecnofit"] ? "connected" : "available",
+        connectedAt: (credentialsMap["tecnofit"] as Record<string, unknown>)?.createdAt || null,
       },
     ];
 
@@ -280,6 +316,104 @@ export async function POST(request: NextRequest) {
           connectedAt: new Date(),
         };
         break;
+
+      case "paypal":
+        if (!credentials.clientId || !credentials.clientSecret) {
+          return NextResponse.json(
+            { error: "PayPal requires clientId and clientSecret" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          clientId: credentials.clientId,
+          clientSecret: credentials.clientSecret,
+          sandbox: credentials.sandbox || false,
+          connectedAt: new Date(),
+        };
+        break;
+
+      case "mindbody":
+        if (!credentials.siteId || !credentials.apiKey || !credentials.username || !credentials.password) {
+          return NextResponse.json(
+            { error: "Mindbody requires siteId, apiKey, username and password" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          provider: "mindbody",
+          siteId: credentials.siteId,
+          apiKey: credentials.apiKey,
+          username: credentials.username,
+          password: credentials.password,
+          isActive: true,
+          connectedAt: new Date(),
+        };
+        await db.collection("integration_credentials").updateOne(
+          { provider: "mindbody" },
+          {
+            $set: credentialData,
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true }
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Mindbody connected successfully",
+        });
+
+      case "glofox":
+        if (!credentials.branchId || !credentials.apiKey) {
+          return NextResponse.json(
+            { error: "Glofox requires branchId and apiKey" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          provider: "glofox",
+          branchId: credentials.branchId,
+          apiKey: credentials.apiKey,
+          isActive: true,
+          connectedAt: new Date(),
+        };
+        await db.collection("integration_credentials").updateOne(
+          { provider: "glofox" },
+          {
+            $set: credentialData,
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true }
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Glofox connected successfully",
+        });
+
+      case "tecnofit":
+        if (!credentials.empresaId || !credentials.apiToken) {
+          return NextResponse.json(
+            { error: "Tecnofit requires empresaId and apiToken" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          provider: "tecnofit",
+          empresaId: credentials.empresaId,
+          apiToken: credentials.apiToken,
+          isActive: true,
+          connectedAt: new Date(),
+        };
+        await db.collection("integration_credentials").updateOne(
+          { provider: "tecnofit" },
+          {
+            $set: credentialData,
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true }
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Tecnofit connected successfully",
+        });
 
       default:
         return NextResponse.json(

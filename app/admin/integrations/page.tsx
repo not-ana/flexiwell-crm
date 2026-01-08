@@ -9,7 +9,7 @@ interface Integration {
   description: string;
   logo: string;
   icon?: string;
-  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics" | "messaging" | "automation" | "payments";
+  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics" | "messaging" | "automation" | "payments" | "migration";
   status: "connected" | "available" | "coming_soon" | "not_connected";
   features: string[];
   connectedAt?: string | null;
@@ -45,6 +45,10 @@ const integrationDetails: Record<string, Partial<Integration>> = {
     logo: "ZP",
     features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"],
   },
+  paypal: {
+    logo: "PP",
+    features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"],
+  },
   wellhub: {
     logo: "W",
     description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients.",
@@ -55,6 +59,24 @@ const integrationDetails: Record<string, Partial<Integration>> = {
     logo: "CP",
     description: "List your classes on ClassPass to attract new clients.",
     features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"],
+    status: "available",
+  },
+  mindbody: {
+    logo: "MB",
+    description: "Import clients and schedules from Mindbody.",
+    features: ["Client import", "Schedule sync", "Membership data", "Payment history"],
+    status: "available",
+  },
+  glofox: {
+    logo: "GF",
+    description: "Migrate your data from Glofox seamlessly.",
+    features: ["Client import", "Class schedules", "Membership plans", "Booking history"],
+    status: "available",
+  },
+  tecnofit: {
+    logo: "TF",
+    description: "Importe seus dados do Tecnofit para o FlexiWell.",
+    features: ["Importar alunos", "Planos e mensalidades", "Histórico de treinos", "Agendamentos"],
     status: "available",
   },
 };
@@ -68,6 +90,7 @@ const categoryLabels: Record<string, { label: string; color: string }> = {
   analytics: { label: "Analytics", color: "bg-pink-100 text-pink-700" },
   messaging: { label: "Messaging", color: "bg-teal-100 text-teal-700" },
   automation: { label: "Automation", color: "bg-purple-100 text-purple-700" },
+  migration: { label: "Migration", color: "bg-cyan-100 text-cyan-700" },
 };
 
 const logoColors: Record<string, string> = {
@@ -75,12 +98,18 @@ const logoColors: Record<string, string> = {
   classpass: "bg-primary-600",
   stripe: "bg-indigo-600",
   paypal: "bg-blue-600",
+  zapier: "bg-orange-600",
   mailchimp: "bg-yellow-500",
   "google-calendar": "bg-blue-500",
+  google_calendar: "bg-blue-500",
   zoom: "bg-blue-600",
   "google-analytics": "bg-orange-500",
   mindbody: "bg-teal-600",
+  glofox: "bg-violet-600",
+  tecnofit: "bg-emerald-600",
   square: "bg-gray-900",
+  whatsapp: "bg-green-500",
+  instagram: "bg-pink-600",
 };
 
 function IntegrationCard({
@@ -358,6 +387,25 @@ const credentialFields: Record<string, { key: string; label: string; type: strin
   zapier: [
     { key: "webhookUrl", label: "Webhook URL", type: "text", placeholder: "https://hooks.zapier.com/...", required: true },
   ],
+  paypal: [
+    { key: "clientId", label: "Client ID", type: "text", placeholder: "Your PayPal Client ID", required: true },
+    { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "Your PayPal Client Secret", required: true },
+    { key: "sandbox", label: "Sandbox Mode", type: "checkbox", placeholder: "Use sandbox for testing", required: false },
+  ],
+  mindbody: [
+    { key: "siteId", label: "Site ID", type: "text", placeholder: "Your Mindbody Site ID (e.g., -99)", required: true },
+    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Mindbody API key", required: true },
+    { key: "username", label: "Staff Username", type: "text", placeholder: "Staff username for API access", required: true },
+    { key: "password", label: "Staff Password", type: "password", placeholder: "Staff password", required: true },
+  ],
+  glofox: [
+    { key: "branchId", label: "Branch ID", type: "text", placeholder: "Your Glofox Branch ID", required: true },
+    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Glofox API key", required: true },
+  ],
+  tecnofit: [
+    { key: "empresaId", label: "ID da Empresa", type: "text", placeholder: "Seu ID de empresa no Tecnofit", required: true },
+    { key: "apiToken", label: "Token de API", type: "password", placeholder: "Seu token de acesso", required: true },
+  ],
 };
 
 function ConnectModal({
@@ -554,6 +602,22 @@ export default function IntegrationsPage() {
   const [configureModal, setConfigureModal] = useState<Integration | null>(null);
   const [connectModal, setConnectModal] = useState<Integration | null>(null);
 
+  // Default integrations list (fallback when API fails)
+  const defaultIntegrations: Integration[] = [
+    { id: "wellhub", name: "Wellhub", description: "Connect with Wellhub (formerly Gympass) for corporate wellness", logo: "W", category: "marketplace", status: "available", features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"] },
+    { id: "stripe", name: "Stripe", description: "Process payments and manage subscriptions", logo: "S", category: "payments", status: "available", features: ["Card payments", "Subscriptions", "Invoicing", "Fraud protection"] },
+    { id: "paypal", name: "PayPal", description: "Accept PayPal payments and subscriptions", logo: "PP", category: "payments", status: "available", features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"] },
+    { id: "google_calendar", name: "Google Calendar", description: "Sync classes with Google Calendar", logo: "GC", category: "scheduling", status: "available", features: ["Two-way sync", "Reminders", "Availability", "Room booking"] },
+    { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients via Twilio", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Notifications", "Automated replies", "Media sharing"] },
+    { id: "instagram", name: "Instagram", description: "Receive messages and respond to clients", logo: "IG", category: "messaging", status: "available", features: ["DM responses", "Story mentions", "Comment replies", "Analytics"] },
+    { id: "mailchimp", name: "Mailchimp", description: "Email marketing and newsletters", logo: "MC", category: "marketing", status: "available", features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"] },
+    { id: "zapier", name: "Zapier", description: "Connect with 5000+ apps", logo: "ZP", category: "automation", status: "available", features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"] },
+    { id: "classpass", name: "ClassPass", description: "List your classes on ClassPass marketplace", logo: "CP", category: "marketplace", status: "coming_soon", features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"] },
+    { id: "mindbody", name: "Mindbody", description: "Import clients and schedules from Mindbody", logo: "MB", category: "migration", status: "available", features: ["Client import", "Schedule sync", "Membership data", "Payment history"] },
+    { id: "glofox", name: "Glofox", description: "Migrate your data from Glofox seamlessly", logo: "GF", category: "migration", status: "available", features: ["Client import", "Class schedules", "Membership plans", "Booking history"] },
+    { id: "tecnofit", name: "Tecnofit", description: "Importe seus dados do Tecnofit para o FlexiWell", logo: "TF", category: "migration", status: "available", features: ["Importar alunos", "Planos e mensalidades", "Histórico de treinos", "Agendamentos"] },
+  ];
+
   // Fetch integrations from API
   const fetchIntegrations = useCallback(async () => {
     try {
@@ -573,13 +637,18 @@ export default function IntegrationsPage() {
           ...int,
           logo: integrationDetails[int.id]?.logo || int.icon || int.name[0],
           features: integrationDetails[int.id]?.features || [],
-          status: int.status === "connected" ? "connected" : "available",
+          status: int.status === "connected" ? "connected" : int.status,
           category: int.category as Integration["category"],
         }));
         setIntegrations(enrichedIntegrations);
+      } else {
+        // Use default integrations if API fails
+        setIntegrations(defaultIntegrations);
       }
     } catch (error) {
       console.error("Failed to fetch integrations:", error);
+      // Use default integrations on error
+      setIntegrations(defaultIntegrations);
     } finally {
       setLoading(false);
     }
@@ -680,9 +749,11 @@ export default function IntegrationsPage() {
         >
           <option value="all">All categories</option>
           <option value="marketplace">Marketplace</option>
+          <option value="migration">Migration</option>
           <option value="payment">Payment</option>
           <option value="marketing">Marketing</option>
           <option value="scheduling">Scheduling</option>
+          <option value="messaging">Messaging</option>
           <option value="analytics">Analytics</option>
         </select>
 

@@ -83,6 +83,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
+      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, onboardingId: "sidebar-integrations" },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
@@ -243,7 +244,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
 
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-[280px] h-screen bg-white border-r border-gray-200 flex flex-col overflow-visible
+        w-[280px] h-screen bg-white border-r border-gray-200 flex flex-col overflow-hidden
         transform transition-transform duration-300 ease-in-out
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -265,7 +266,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
         </div>
 
       {/* Main Menu */}
-      <nav className="flex-1 px-4">
+      <nav className="flex-1 px-4 overflow-y-auto">
         <ul className="space-y-1">
           {mainMenuItems.map((item) => {
             const isActive = pathname === item.href;

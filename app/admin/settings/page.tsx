@@ -3694,6 +3694,11 @@ function IntegrationsSettings() {
     wellhub: { connected: false },
     stripe: { connected: false },
     googleCalendar: { connected: false },
+    whatsapp: { connected: false },
+    instagram: { connected: false },
+    mailchimp: { connected: false },
+    zapier: { connected: false },
+    paypal: { connected: false },
   });
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [stripeKeys, setStripeKeys] = useState({ publishableKey: "", secretKey: "" });
@@ -3820,6 +3825,16 @@ function IntegrationsSettings() {
       onConnect: () => setShowStripeModal(true),
     },
     {
+      id: "paypal",
+      name: "PayPal",
+      icon: "PP",
+      color: "blue",
+      description: integrationStatus.paypal?.connected
+        ? `Connected • Accepting PayPal payments`
+        : "Accept PayPal payments",
+      onConnect: () => window.location.href = "/admin/integrations",
+    },
+    {
       id: "googleCalendar",
       name: "Google Calendar",
       icon: "GC",
@@ -3829,12 +3844,55 @@ function IntegrationsSettings() {
         : "Calendar sync & notifications",
       onConnect: handleConnectGoogleCalendar,
     },
+    {
+      id: "whatsapp",
+      name: "WhatsApp",
+      icon: "WA",
+      color: "green",
+      description: integrationStatus.whatsapp?.connected
+        ? `Connected • Messaging active`
+        : "Client messaging via Twilio",
+      onConnect: () => window.location.href = "/admin/integrations",
+    },
+    {
+      id: "instagram",
+      name: "Instagram",
+      icon: "IG",
+      color: "pink",
+      description: integrationStatus.instagram?.connected
+        ? `Connected • DMs active`
+        : "Receive and respond to DMs",
+      onConnect: () => window.location.href = "/admin/integrations",
+    },
+    {
+      id: "mailchimp",
+      name: "Mailchimp",
+      icon: "MC",
+      color: "yellow",
+      description: integrationStatus.mailchimp?.connected
+        ? `Connected • Email marketing active`
+        : "Email marketing & newsletters",
+      onConnect: () => window.location.href = "/admin/integrations",
+    },
+    {
+      id: "zapier",
+      name: "Zapier",
+      icon: "ZP",
+      color: "orange",
+      description: integrationStatus.zapier?.connected
+        ? `Connected • Automations active`
+        : "Connect with 5000+ apps",
+      onConnect: () => window.location.href = "/admin/integrations",
+    },
   ];
 
   const colorClasses: Record<string, string> = {
     green: "bg-green-100 text-green-600",
     purple: "bg-primary-100 text-primary-600",
     blue: "bg-blue-100 text-blue-600",
+    pink: "bg-pink-100 text-pink-600",
+    yellow: "bg-yellow-100 text-yellow-600",
+    orange: "bg-orange-100 text-orange-600",
   };
 
   return (
@@ -4082,7 +4140,7 @@ export default function AdminSettingsPage() {
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Settings</h1>
 
         {/* Tabs Navigation */}
-        <div className="border-b border-gray-200 mb-6 sm:mb-8 overflow-x-auto">
+        <div className="border-b border-gray-200 mb-6 sm:mb-8 overflow-x-auto scrollbar-hide">
           <nav className="flex gap-1 -mb-px min-w-max">
             {tabs.map((tab) => (
               <button
