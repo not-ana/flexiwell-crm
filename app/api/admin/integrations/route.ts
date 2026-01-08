@@ -44,16 +44,43 @@ export async function GET(request: NextRequest) {
     // Get integrations from settings collection (tenant-specific credentials)
     const settings = await db.collection("integration_credentials").findOne({});
 
+    // Get all saved credentials
+    const allCredentials = await db.collection("integration_credentials").find({}).toArray();
+    const credentialsMap: Record<string, unknown> = {};
+    for (const cred of allCredentials) {
+      if (cred.provider) {
+        credentialsMap[cred.provider] = cred;
+      }
+    }
+
     // Build integrations list based on what's configured in the database
     const integrations = [
+      {
+        id: "wellhub",
+        name: "Wellhub",
+        description: "Connect with Wellhub (formerly Gympass) for corporate wellness",
+        icon: "🏋️",
+        category: "marketplace",
+        status: credentialsMap["wellhub"] ? "connected" : "available",
+        connectedAt: (credentialsMap["wellhub"] as Record<string, unknown>)?.createdAt || null,
+      },
       {
         id: "stripe",
         name: "Stripe",
         description: "Process payments and manage subscriptions",
         icon: "💳",
         category: "payments",
-        status: settings?.stripe?.secretKey ? "connected" : "not_connected",
-        connectedAt: settings?.stripe?.connectedAt || null,
+        status: credentialsMap["stripe"] ? "connected" : "available",
+        connectedAt: (credentialsMap["stripe"] as Record<string, unknown>)?.createdAt || null,
+      },
+      {
+        id: "google_calendar",
+        name: "Google Calendar",
+        description: "Sync classes with Google Calendar",
+        icon: "📅",
+        category: "scheduling",
+        status: credentialsMap["google-calendar"] ? "connected" : "available",
+        connectedAt: (credentialsMap["google-calendar"] as Record<string, unknown>)?.createdAt || null,
       },
       {
         id: "whatsapp",
@@ -61,7 +88,7 @@ export async function GET(request: NextRequest) {
         description: "Send notifications and chat with clients via Twilio",
         icon: "📱",
         category: "messaging",
-        status: settings?.whatsapp?.accountSid ? "connected" : "not_connected",
+        status: settings?.whatsapp?.accountSid ? "connected" : "available",
         connectedAt: settings?.whatsapp?.connectedAt || null,
       },
       {
@@ -70,17 +97,8 @@ export async function GET(request: NextRequest) {
         description: "Receive messages and respond to clients",
         icon: "📸",
         category: "messaging",
-        status: settings?.instagram?.accessToken ? "connected" : "not_connected",
+        status: settings?.instagram?.accessToken ? "connected" : "available",
         connectedAt: settings?.instagram?.connectedAt || null,
-      },
-      {
-        id: "google_calendar",
-        name: "Google Calendar",
-        description: "Sync classes with Google Calendar",
-        icon: "📅",
-        category: "scheduling",
-        status: settings?.googleCalendar?.refreshToken ? "connected" : "not_connected",
-        connectedAt: settings?.googleCalendar?.connectedAt || null,
       },
       {
         id: "mailchimp",
@@ -88,7 +106,7 @@ export async function GET(request: NextRequest) {
         description: "Email marketing and newsletters",
         icon: "📧",
         category: "marketing",
-        status: settings?.mailchimp?.apiKey ? "connected" : "not_connected",
+        status: settings?.mailchimp?.apiKey ? "connected" : "available",
         connectedAt: settings?.mailchimp?.connectedAt || null,
       },
       {
@@ -97,8 +115,17 @@ export async function GET(request: NextRequest) {
         description: "Connect with 5000+ apps",
         icon: "⚡",
         category: "automation",
-        status: settings?.zapier?.webhookUrl ? "connected" : "not_connected",
+        status: settings?.zapier?.webhookUrl ? "connected" : "available",
         connectedAt: settings?.zapier?.connectedAt || null,
+      },
+      {
+        id: "classpass",
+        name: "ClassPass",
+        description: "List your classes on ClassPass marketplace",
+        icon: "🎫",
+        category: "marketplace",
+        status: "coming_soon",
+        connectedAt: null,
       },
     ];
 
@@ -139,6 +166,34 @@ export async function POST(request: NextRequest) {
     let credentialData: Record<string, any> = {};
 
     switch (integrationId) {
+      case "wellhub":
+        if (!credentials.apiKey || !credentials.gymId) {
+          return NextResponse.json(
+            { error: "Wellhub requires apiKey and gymId" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          provider: "wellhub",
+          apiKey: credentials.apiKey,
+          gymId: credentials.gymId,
+          isActive: true,
+          connectedAt: new Date(),
+        };
+        // Save using provider-based document
+        await db.collection("integration_credentials").updateOne(
+          { provider: "wellhub" },
+          {
+            $set: credentialData,
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true }
+        );
+        return NextResponse.json({
+          success: true,
+          message: "Wellhub connected successfully",
+        });
+
       case "stripe":
         if (!credentials.secretKey || !credentials.publishableKey) {
           return NextResponse.json(

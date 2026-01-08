@@ -328,6 +328,10 @@ function ConfigureModal({
 
 // Credential fields for each integration type
 const credentialFields: Record<string, { key: string; label: string; type: string; placeholder: string; required: boolean }[]> = {
+  wellhub: [
+    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Wellhub API key", required: true },
+    { key: "gymId", label: "Gym ID", type: "text", placeholder: "Your Wellhub Gym ID", required: true },
+  ],
   stripe: [
     { key: "secretKey", label: "Secret Key", type: "password", placeholder: "sk_live_...", required: true },
     { key: "publishableKey", label: "Publishable Key", type: "text", placeholder: "pk_live_...", required: true },

@@ -412,11 +412,11 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Left Column - Schedule & Makeups */}
-          <div className="space-y-6 order-2 xl:order-1 xl:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch">
+          {/* Schedule & Makeups */}
+          <div className="order-2 lg:order-1 flex flex-col">
             {/* Tab Navigation */}
-            <div data-onboarding="teacher-schedule" className="bg-white border border-gray-200 rounded-2xl">
+            <div data-onboarding="teacher-schedule" className="bg-white border border-gray-200 rounded-2xl flex-1 flex flex-col">
               <div className="px-4 lg:px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div className="flex gap-2 lg:gap-4">
                   <button
@@ -574,10 +574,9 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6 order-1 xl:order-2">
-            {/* Upcoming Classes */}
-            <div data-onboarding="teacher-upcoming" className="bg-white border border-gray-200 rounded-2xl">
+          {/* Upcoming Classes */}
+          <div className="order-1 lg:order-2 flex flex-col">
+            <div data-onboarding="teacher-upcoming" className="bg-white border border-gray-200 rounded-2xl flex-1 flex flex-col">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Upcoming Classes</h2>
                 <p className="text-xs sm:text-sm text-gray-500">Next few days</p>
@@ -623,9 +622,11 @@ export default function TeacherDashboard() {
                 </Link>
               </div>
             </div>
+          </div>
 
-            {/* Students Needing Attention */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
+          {/* Student Attendance */}
+          <div className="order-3 flex flex-col">
+            <div className="bg-white border border-gray-200 rounded-2xl flex-1 flex flex-col">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Student Attendance</h2>
                 <p className="text-xs sm:text-sm text-gray-500">Track your regular students</p>

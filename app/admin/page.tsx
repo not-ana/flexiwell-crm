@@ -546,7 +546,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-              {/* Attendance Trend Mini Chart */}
+              {/* Attendance Trend Mini Chart + Monthly Highlights */}
               <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 flex flex-col">
                   <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Attendance Trend</h3>
                   <p className="text-xs sm:text-sm text-gray-500 mb-4">Last 8 weeks</p>
@@ -565,9 +565,46 @@ export default function AdminDashboard() {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                   <span className="text-sm text-gray-500">Average</span>
                   <span className="text-lg font-bold text-green-600">{stats.attendance}</span>
+                </div>
+
+                {/* Monthly Highlights */}
+                <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-gray-600">New clients</span>
+                    </div>
+                    <span className="text-sm font-bold text-blue-600">+{monthlyHighlights.newClients}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-gray-600">Retention rate</span>
+                    </div>
+                    <span className="text-sm font-bold text-green-600">{monthlyHighlights.retentionRate}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-gray-600">Revenue growth</span>
+                    </div>
+                    <span className="text-sm font-bold text-primary-600">+{monthlyHighlights.revenueGrowth}%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -711,45 +748,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Monthly Summary */}
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-4 sm:p-6 text-white">
-                  <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5">Monthly Highlights</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                          </svg>
-                        </div>
-                        <span className="text-sm text-gray-300">New clients</span>
-                      </div>
-                      <span className="text-lg font-bold">+{monthlyHighlights.newClients}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <span className="text-sm text-gray-300">Retention rate</span>
-                      </div>
-                      <span className="text-lg font-bold text-green-400">{monthlyHighlights.retentionRate}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
-                          <svg className="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                          </svg>
-                        </div>
-                        <span className="text-sm text-gray-300">Revenue growth</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary-400">+{monthlyHighlights.revenueGrowth}%</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </>
