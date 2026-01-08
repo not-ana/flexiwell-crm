@@ -28,6 +28,24 @@ export interface Client {
       instagram: boolean;
     };
   };
+  // Wellhub integration fields
+  wellhubId?: string; // unique_token from Wellhub
+  wellhubGympassId?: string; // 13-digit gympass_id
+  isWellhubMember?: boolean;
+  wellhubPlan?: string;
+  wellhubJoinedAt?: Date;
+  // Google Calendar integration
+  integrations?: {
+    googleCalendar?: {
+      accessToken: string;
+      refreshToken: string;
+      tokenExpiresAt: Date;
+      calendarEmail: string;
+      syncEnabled: boolean;
+      connectedAt: Date;
+      lastSyncAt?: Date;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +64,7 @@ export interface Staff {
     slots: { start: string; end: string }[];
   }[];
   status: "active" | "inactive";
+  unit?: string; // Establishment/unit name
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +97,12 @@ export interface Class {
   location?: string;
   roomId?: string;
   notes?: string;
+  // Wellhub sync fields
+  wellhubClassId?: string;
+  wellhubSyncEnabled?: boolean;
+  wellhubLastSyncAt?: Date;
+  wellhubSyncStatus?: "synced" | "pending" | "failed";
+  wellhubSyncError?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -95,6 +120,15 @@ export interface Booking {
   endTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | "no-show";
   source: "web" | "bot" | "admin";
+  // Wellhub integration fields
+  wellhubBookingId?: string;
+  isWellhubBooking?: boolean;
+  wellhubStatus?: "pending" | "accepted" | "rejected" | "cancelled" | "completed";
+  wellhubCheckedIn?: boolean;
+  wellhubCheckedInAt?: Date;
+  // Google Calendar sync
+  googleCalendarEventId?: string;
+  googleCalendarSynced?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -408,4 +442,32 @@ export interface Room {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Google Calendar sync log
+export interface CalendarSyncLog {
+  _id?: ObjectId;
+  clientId: string;
+  bookingId: string;
+  googleEventId: string;
+  action: "create" | "update" | "delete";
+  status: "success" | "failed" | "pending";
+  errorMessage?: string;
+  retries: number;
+  nextRetryAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Wellhub error log for manual review
+export interface WellhubErrorLog {
+  _id?: ObjectId;
+  type: "booking_accept_failed" | "checkin_validate_failed" | "class_sync_failed";
+  bookingId?: string;
+  classId?: string;
+  error: string;
+  resolved: boolean;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+  createdAt: Date;
 }

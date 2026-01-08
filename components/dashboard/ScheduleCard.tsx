@@ -153,7 +153,7 @@ export default function ScheduleCard() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -175,7 +175,7 @@ export default function ScheduleCard() {
       </div>
 
       {/* Upcoming Classes List */}
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1">
         {classes.map((cls) => (
           <div
             key={cls.id}
@@ -258,14 +258,14 @@ export default function ScheduleCard() {
 
       {/* Empty State */}
       {classes.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
             <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <p className="text-sm text-gray-500 mb-2">No upcoming classes</p>
-          <Link href="/dashboard/classes" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+          <Link href="/dashboard/classes" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
             Book a class
           </Link>
         </div>

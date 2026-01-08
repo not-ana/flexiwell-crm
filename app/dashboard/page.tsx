@@ -287,8 +287,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Cards Row - Upcoming Classes + Stacked Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div data-onboarding="client-schedule">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div data-onboarding="client-schedule" className="h-full">
           <ScheduleCard />
         </div>
         <div data-onboarding="client-progress" className="flex flex-col gap-6">

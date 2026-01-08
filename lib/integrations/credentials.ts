@@ -33,6 +33,12 @@ interface ZapierCredentials {
   webhookUrl: string;
 }
 
+interface WellhubCredentials {
+  bearerToken: string;
+  gymId: string;
+  webhookSecret: string;
+}
+
 // Get WhatsApp (Twilio) credentials from database
 export async function getWhatsAppCredentials(): Promise<WhatsAppCredentials | null> {
   try {
@@ -166,6 +172,37 @@ export async function getZapierCredentials(): Promise<ZapierCredentials | null> 
   }
 }
 
+// Get Wellhub credentials from database (with env fallback)
+export async function getWellhubCredentials(): Promise<WellhubCredentials | null> {
+  try {
+    // First check database for tenant-specific credentials
+    const db = await getDatabase();
+    const settings = await db.collection("integration_credentials").findOne({});
+
+    if (settings?.wellhub?.bearerToken) {
+      return {
+        bearerToken: settings.wellhub.bearerToken,
+        gymId: settings.wellhub.gymId,
+        webhookSecret: settings.wellhub.webhookSecret,
+      };
+    }
+
+    // Fallback to environment variables
+    if (process.env.WELLHUB_BEARER_TOKEN) {
+      return {
+        bearerToken: process.env.WELLHUB_BEARER_TOKEN,
+        gymId: process.env.WELLHUB_GYM_ID || "",
+        webhookSecret: process.env.WELLHUB_WEBHOOK_SECRET || "",
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching Wellhub credentials:", error);
+    return null;
+  }
+}
+
 // Check if an integration is connected
 export async function isIntegrationConnected(integrationId: string): Promise<boolean> {
   try {
@@ -180,11 +217,13 @@ export async function isIntegrationConnected(integrationId: string): Promise<boo
       case "instagram":
         return !!settings?.instagram?.accessToken;
       case "google_calendar":
-        return !!settings?.googleCalendar?.refreshToken;
+        return !!settings?.googleCalendar?.refreshToken || !!process.env.GOOGLE_CALENDAR_CLIENT_ID;
       case "mailchimp":
         return !!settings?.mailchimp?.apiKey;
       case "zapier":
         return !!settings?.zapier?.webhookUrl;
+      case "wellhub":
+        return !!settings?.wellhub?.bearerToken || !!process.env.WELLHUB_BEARER_TOKEN;
       default:
         return false;
     }

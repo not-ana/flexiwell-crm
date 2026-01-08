@@ -15,7 +15,6 @@ interface StaffPerformance {
   stats: {
     classesThisMonth: number;
     clientsServed: number;
-    avgRating: number;
     attendance: number;
     revenue?: number;
   };
@@ -112,16 +111,6 @@ function StaffAvatar({ name, initials, avatar }: { name: string; initials: strin
   );
 }
 
-function RatingStars({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-sm font-medium text-gray-900">{rating}</span>
-      <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 24 24">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </svg>
-    </div>
-  );
-}
 
 type TimePeriod = "week" | "month" | "year";
 
@@ -450,22 +439,21 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Left Column */}
-              <div className="space-y-6 order-2 xl:order-1 xl:col-span-2">
-                {/* Staff Performance Table */}
-                <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl">
-                  <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg lg:text-xl font-bold text-gray-900">Staff Performance</h2>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
-                    </div>
-                    <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-                      View all
-                      <ChevronIcon className="w-4 h-4" direction="right" />
-                    </Link>
+            {/* Staff Performance and Attendance Trend - Same Height Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 items-stretch">
+              {/* Staff Performance Table */}
+              <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl xl:col-span-2 flex flex-col">
+                <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">Staff Performance</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
                   </div>
-                  <div className="overflow-x-auto">
+                  <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+                    View all
+                    <ChevronIcon className="w-4 h-4" direction="right" />
+                  </Link>
+                </div>
+                <div className="overflow-x-auto flex-1">
                     {staffPerformance.length === 0 ? (
                       <div className="py-12 px-4 text-center">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -496,9 +484,6 @@ export default function AdminDashboard() {
                             Clients
                           </th>
                           <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Rating
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Attendance
                           </th>
                           <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -523,9 +508,6 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-3 py-3">
                               <span className="text-sm font-medium text-gray-900">{staff.stats.clientsServed}</span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <RatingStars rating={staff.stats.avgRating} />
                             </td>
                             <td className="px-3 py-3">
                               <div className="flex items-center gap-2">
@@ -564,70 +546,8 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Today's Classes */}
-                <div className="bg-white border border-gray-200 rounded-2xl">
-                  <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg lg:text-xl font-bold text-gray-900">Today's Classes</h2>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Upcoming classes for today</p>
-                    </div>
-                    <Link
-                      href="/admin/classes"
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
-                    >
-                      View schedule
-                      <ChevronIcon className="w-4 h-4" direction="right" />
-                    </Link>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {todayClasses.length === 0 ? (
-                      <div className="py-12 px-4 text-center">
-                        <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-base font-semibold text-gray-900 mb-1">No classes scheduled</h3>
-                        <p className="text-sm text-gray-500">Create your first class to see it here.</p>
-                      </div>
-                    ) : todayClasses.map((cls) => (
-                      <div key={cls.id} className="px-4 sm:px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
-                          <span className="text-sm font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{cls.name}</p>
-                            {cls.enrolled === cls.capacity && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full shrink-0">Full</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500">{cls.instructor}</p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                cls.enrolled === cls.capacity ? "bg-red-500" :
-                                cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
-                              }`}
-                              style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-700 w-10 text-right">
-                            {cls.enrolled}/{cls.capacity}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6 order-1 xl:order-2">
-                {/* Attendance Trend Mini Chart */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+              {/* Attendance Trend Mini Chart */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 flex flex-col">
                   <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Attendance Trend</h3>
                   <p className="text-xs sm:text-sm text-gray-500 mb-4">Last 8 weeks</p>
                   <div className="h-[120px]">
@@ -645,12 +565,76 @@ export default function AdminDashboard() {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <span className="text-sm text-gray-500">Average</span>
-                    <span className="text-lg font-bold text-green-600">{stats.attendance}</span>
-                  </div>
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-200">
+                  <span className="text-sm text-gray-500">Average</span>
+                  <span className="text-lg font-bold text-green-600">{stats.attendance}</span>
                 </div>
+              </div>
+            </div>
 
+            {/* Today's Classes and Recent Activity Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* Today's Classes */}
+              <div className="bg-white border border-gray-200 rounded-2xl xl:col-span-2">
+                <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">Today's Classes</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Upcoming classes for today</p>
+                  </div>
+                  <Link
+                    href="/admin/classes"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                  >
+                    View schedule
+                    <ChevronIcon className="w-4 h-4" direction="right" />
+                  </Link>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  {todayClasses.length === 0 ? (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">No classes scheduled</h3>
+                      <p className="text-sm text-gray-500">Create your first class to see it here.</p>
+                    </div>
+                  ) : todayClasses.map((cls) => (
+                    <div key={cls.id} className="px-4 sm:px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{cls.name}</p>
+                          {cls.enrolled === cls.capacity && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full shrink-0">Full</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">{cls.instructor}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              cls.enrolled === cls.capacity ? "bg-red-500" :
+                              cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
+                            }`}
+                            style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 w-10 text-right">
+                          {cls.enrolled}/{cls.capacity}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column - Recent Activity & Monthly Summary */}
+              <div className="space-y-6">
                 {/* Recent Activity */}
                 <div data-onboarding="admin-activity" className="bg-white border border-gray-200 rounded-2xl">
                   <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">

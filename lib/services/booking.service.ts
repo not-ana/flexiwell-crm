@@ -2,6 +2,8 @@
 import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/db/mongodb";
 import { notificationService } from "@/lib/services/notification.service";
+import { syncBookingToCalendar, removeBookingFromCalendar, getBookingEventData } from "@/lib/google-calendar/events";
+import { updateClassAvailability } from "@/lib/wellhub/classes";
 import type { Booking, Class, Client, Activity } from "@/lib/db/schemas";
 
 export interface CreateBookingParams {
@@ -183,6 +185,16 @@ export class BookingService {
         console.error("Error sending booking confirmation:", err);
       });
 
+      // 14. Sync to Google Calendar if client has it connected (async, fire-and-forget)
+      this.syncToGoogleCalendar(booking._id!.toString(), clientId).catch((err) => {
+        console.error("Error syncing to Google Calendar:", err);
+      });
+
+      // 15. Update Wellhub availability if class is synced (async, fire-and-forget)
+      this.updateWellhubAvailability(classId).catch((err) => {
+        console.error("Error updating Wellhub availability:", err);
+      });
+
       return { success: true, booking };
 
     } catch (error) {
@@ -347,6 +359,22 @@ export class BookingService {
       // Send cancellation notification (async, don't wait)
       notificationService.sendBookingCancellation(booking, shouldRefundCredit, reason).catch((err) => {
         console.error("Error sending cancellation notification:", err);
+      });
+
+      // Remove from Google Calendar if synced (async, fire-and-forget)
+      if (booking.googleCalendarEventId) {
+        removeBookingFromCalendar(
+          booking.clientId,
+          bookingId,
+          booking.googleCalendarEventId
+        ).catch((err) => {
+          console.error("Error removing from Google Calendar:", err);
+        });
+      }
+
+      // Update Wellhub availability (async, fire-and-forget)
+      this.updateWellhubAvailability(booking.classId).catch((err) => {
+        console.error("Error updating Wellhub availability:", err);
       });
 
       return {
@@ -579,6 +607,49 @@ export class BookingService {
     });
 
     return { success: true, booking: { ...booking, status: newStatus } };
+  }
+
+  // Sync booking to Google Calendar
+  private async syncToGoogleCalendar(bookingId: string, clientId: string): Promise<void> {
+    const db = await getDatabase();
+
+    // Check if client has Google Calendar connected
+    const client = await db.collection<Client>("clients").findOne({
+      _id: new ObjectId(clientId),
+    });
+
+    if (!client?.integrations?.googleCalendar?.syncEnabled) {
+      return; // Calendar not connected or sync disabled
+    }
+
+    // Get booking event data
+    const eventData = await getBookingEventData(bookingId);
+    if (!eventData) {
+      console.error("Could not get booking data for calendar sync");
+      return;
+    }
+
+    // Sync to calendar (fire-and-forget handled by the function)
+    syncBookingToCalendar(clientId, eventData);
+  }
+
+  // Update Wellhub class availability
+  private async updateWellhubAvailability(classId: string): Promise<void> {
+    const db = await getDatabase();
+
+    // Check if class is synced to Wellhub
+    const classDoc = await db.collection("classes").findOne({
+      _id: new ObjectId(classId),
+    });
+
+    if (!classDoc?.wellhubClassId || !classDoc?.wellhubSyncEnabled) {
+      return; // Class not synced to Wellhub
+    }
+
+    // Update availability (fire-and-forget)
+    updateClassAvailability(classId).catch((err) => {
+      console.error("Failed to update Wellhub availability:", err);
+    });
   }
 }
 
