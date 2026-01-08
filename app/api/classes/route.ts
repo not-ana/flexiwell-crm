@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
       maxCapacity,
       location,
       roomId,
+      establishmentId,
       notes,
     } = body;
 
@@ -200,6 +201,7 @@ export async function POST(request: NextRequest) {
       status: "scheduled",
       location: location || "",
       roomId: roomId || "",
+      establishmentId: establishmentId || undefined,
       notes: notes || "",
       createdAt: new Date(),
       updatedAt: new Date(),

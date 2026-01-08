@@ -100,18 +100,6 @@ function StaffRow({ staff, onResendInvite, onEdit, onDeactivate }: {
         )}
       </td>
       <td className="px-4 py-3">
-        {staff.rating ? (
-          <div className="flex items-center gap-1">
-            <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            <span className="text-sm font-medium text-gray-900">{staff.rating}</span>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">—</p>
-        )}
-      </td>
-      <td className="px-4 py-3">
         <p className="text-sm text-gray-500">{staff.lastActive || "—"}</p>
       </td>
       <td className="px-4 py-3">
@@ -193,19 +181,6 @@ function StaffCard({ staff, onResendInvite, onEdit, onDeactivate }: {
             <div>
               <p className="text-gray-500 text-xs">Classes This Week</p>
               <p className="font-medium text-gray-900">{staff.classesThisWeek ?? 0}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs">Rating</p>
-              {staff.rating ? (
-                <div className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span className="font-medium text-gray-900">{staff.rating}</span>
-                </div>
-              ) : (
-                <p className="text-gray-400">—</p>
-              )}
             </div>
           </>
         )}
@@ -321,7 +296,6 @@ function UnitSection({ unit, isExpanded, onToggle, onResendInvite, onEdit, onDea
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>

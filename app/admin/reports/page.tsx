@@ -24,14 +24,12 @@ interface InstructorData {
   name: string;
   classes: number;
   students: number;
-  rating: number;
   revenue: number;
 }
 
 interface InstructorMetrics {
   totalInstructors: number;
   totalClassesTaught: number;
-  avgRating: number;
   satisfaction: number;
   instructors: InstructorData[];
 }
@@ -233,14 +231,12 @@ export default function ReportsPage() {
             { key: "name", label: "Instructor" },
             { key: "classes", label: "Classes" },
             { key: "students", label: "Students" },
-            { key: "rating", label: "Rating" },
             { key: "revenue", label: "Revenue (R$)" },
           ],
           data: (data?.instructors?.instructors || []).map(i => ({
             name: i.name,
             classes: i.classes,
             students: i.students,
-            rating: i.rating,
             revenue: i.revenue,
           })),
           summary: `Instructors Report - ${periodLabel}\nActive Instructors: ${data?.instructors?.totalInstructors || 0}\nTotal Classes: ${data?.instructors?.totalClassesTaught || 0}`,
@@ -293,7 +289,7 @@ export default function ReportsPage() {
 
   const revenue = data?.revenue || { total: 0, growth: 0, monthly: [], paymentCount: 0 };
   const classes = data?.classes || { totalClasses: 0, avgAttendance: 0, cancelRate: 0, popularClasses: [] };
-  const instructors = data?.instructors || { totalInstructors: 0, totalClassesTaught: 0, avgRating: 0, satisfaction: 0, instructors: [] };
+  const instructors = data?.instructors || { totalInstructors: 0, totalClassesTaught: 0, satisfaction: 0, instructors: [] };
   const clients = data?.clients || { totalClients: 0, activeClients: 0, newThisMonth: 0, churnRate: 0, retention: 0, planDistribution: [], clientGrowth: [] };
 
   return (
@@ -545,10 +541,9 @@ export default function ReportsPage() {
 
         {activeTab === "instructors" && (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
               <StatCard title="Active Instructors" value={instructors.totalInstructors} />
               <StatCard title="Classes Taught" value={instructors.totalClassesTaught} />
-              <StatCard title="Avg. Rating" value={instructors.avgRating} suffix="/5" />
               <StatCard title="Satisfaction" value={instructors.satisfaction} suffix="%" />
             </div>
 
@@ -571,12 +566,6 @@ export default function ReportsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">{instructor.name}</p>
-                            <div className="flex items-center gap-1">
-                              <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="text-sm text-gray-600">{instructor.rating}</span>
-                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-sm">
@@ -604,7 +593,6 @@ export default function ReportsPage() {
                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Instructor</th>
                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Classes</th>
                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Students</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Rating</th>
                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Revenue Generated</th>
                       </tr>
                     </thead>
@@ -623,14 +611,6 @@ export default function ReportsPage() {
                           </td>
                           <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.classes}</td>
                           <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.students}</td>
-                          <td className="px-4 sm:px-6 py-4">
-                            <div className="flex items-center gap-1">
-                              <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="font-medium text-gray-900">{instructor.rating}</span>
-                            </div>
-                          </td>
                           <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {instructor.revenue.toLocaleString()}</td>
                         </tr>
                       ))}

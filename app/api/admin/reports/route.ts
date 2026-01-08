@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
         instructors.map(async (instructor: any) => {
           const instructorId = instructor._id.toString();
 
-          const [classesData, bookingsData, ratingsData] = await Promise.all([
+          const [classesData, bookingsData] = await Promise.all([
             // Classes taught
             db.collection("classes").countDocuments({
               instructorId,
@@ -224,35 +224,23 @@ export async function GET(request: NextRequest) {
                 }
               }
             ]).toArray(),
-            // Ratings
-            db.collection("reviews").aggregate([
-              { $match: { instructorId, createdAt: { $gte: startDate, $lte: endDate } } },
-              { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } }
-            ]).toArray(),
           ]);
 
           const bookings = bookingsData[0] || { total: 0, completed: 0, uniqueClients: [] };
-          const ratings = ratingsData[0] || { avgRating: 4.5, count: 0 };
 
           return {
             id: instructorId,
             name: instructor.name,
             classes: classesData,
             students: bookings.uniqueClients?.length || 0,
-            rating: parseFloat((ratings.avgRating || 4.5).toFixed(1)),
-            reviewCount: ratings.count || 0,
             revenue: 0, // Would need to calculate from bookings
           };
         })
       );
 
-      const totalRating = instructorStats.reduce((sum, i) => sum + i.rating, 0);
-      const avgRating = instructorStats.length > 0 ? totalRating / instructorStats.length : 0;
-
       response.instructors = {
         totalInstructors: instructors.length,
         totalClassesTaught: instructorStats.reduce((sum, i) => sum + i.classes, 0),
-        avgRating: parseFloat(avgRating.toFixed(1)),
         satisfaction: 92, // Would need proper feedback calculation
         instructors: instructorStats.sort((a, b) => b.classes - a.classes),
       };

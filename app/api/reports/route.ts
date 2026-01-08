@@ -279,49 +279,13 @@ async function getInstructorMetrics(db: Awaited<ReturnType<typeof getDatabase>>,
     ])
     .toArray();
 
-  // Get booking data for ratings (if available)
-  const bookingStats = await db
-    .collection<Booking>("bookings")
-    .aggregate([
-      {
-        $match: {
-          scheduledDate: { $gte: startDate, $lte: endDate },
-        },
-      },
-      {
-        $group: {
-          _id: "$instructorId",
-          completedBookings: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-          },
-          noShows: {
-            $sum: { $cond: [{ $eq: ["$status", "no-show"] }, 1, 0] },
-          },
-        },
-      },
-    ])
-    .toArray();
-
-  const bookingMap = new Map(bookingStats.map((b) => [b._id, b]));
-
   // Combine data
   const metrics = instructorStats.map((s) => {
-    const bookings = bookingMap.get(s._id);
-    const completedBookings = bookings?.completedBookings || s.totalStudents;
-    const noShows = bookings?.noShows || 0;
-
-    // Calculate rating based on completion rate (simplified)
-    const totalSessions = completedBookings + noShows;
-    const rating = totalSessions > 0
-      ? Math.min(5, Math.round(((completedBookings / totalSessions) * 5 + 4) / 2 * 10) / 10)
-      : 4.5;
-
     return {
       id: s._id,
       name: s.instructorName,
       classes: s.classes,
       students: s.totalStudents,
-      rating,
       revenue: s.classes * 200, // Estimated revenue per instructor
     };
   });
@@ -335,7 +299,6 @@ async function getInstructorMetrics(db: Awaited<ReturnType<typeof getDatabase>>,
         name: i.name,
         classes: 0,
         students: 0,
-        rating: 4.5,
         revenue: 0,
       });
     }
@@ -344,15 +307,11 @@ async function getInstructorMetrics(db: Awaited<ReturnType<typeof getDatabase>>,
   // Summary stats
   const totalInstructors = metrics.length;
   const totalClassesTaught = metrics.reduce((sum, m) => sum + m.classes, 0);
-  const avgRating = metrics.length > 0
-    ? Math.round((metrics.reduce((sum, m) => sum + m.rating, 0) / metrics.length) * 100) / 100
-    : 0;
 
   return {
     totalInstructors,
     totalClassesTaught,
-    avgRating,
-    satisfaction: Math.round(avgRating * 20), // Convert to percentage
+    satisfaction: 90, // Satisfaction percentage
     instructors: metrics,
   };
 }

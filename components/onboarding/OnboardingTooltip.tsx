@@ -41,7 +41,7 @@ const adminSteps: OnboardingStep[] = [
   {
     id: "admin-staff",
     title: "Staff Performance",
-    description: "Track your team's metrics including classes taught, clients served, ratings, and attendance. Identify top performers and those who may need support.",
+    description: "Track your team's metrics including classes taught, clients served, and attendance. Identify top performers and those who may need support.",
     targetSelector: '[data-onboarding="admin-staff"]',
     position: "top",
     spotlightPadding: 12,
@@ -60,7 +60,7 @@ const teacherSteps: OnboardingStep[] = [
   {
     id: "teacher-stats",
     title: "Your Weekly Stats",
-    description: "See your teaching performance at a glance. Track classes completed, students served, average attendance, and your rating from client reviews.",
+    description: "See your teaching performance at a glance. Track classes completed, students served, and average attendance.",
     targetSelector: '[data-onboarding="teacher-stats"]',
     position: "bottom",
     spotlightPadding: 12,

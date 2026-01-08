@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
         stats: {
           totalStudents: 0,
           classesThisWeek: 0,
-          avgRating: 0,
           yearsExperience: 0,
         },
         upcomingClasses: [],
@@ -156,8 +155,12 @@ export async function GET(request: NextRequest) {
       stats: {
         totalStudents: uniqueStudents.size,
         classesThisWeek,
-        avgRating: 4.9, // TODO: Implement ratings system
         yearsExperience: Math.max(yearsExp, 1),
+      },
+      rating: teacher.rating || {
+        average: 0,
+        totalReviews: 0,
+        breakdown: { five: 0, four: 0, three: 0, two: 0, one: 0 },
       },
       upcomingClasses,
     });

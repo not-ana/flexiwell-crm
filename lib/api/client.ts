@@ -287,7 +287,6 @@ export interface Staff {
   // Display fields
   unit?: string;
   classesThisWeek?: number;
-  rating?: number;
   lastActive?: string;
   joinDate?: string;
   createdAt: Date;
@@ -515,7 +514,6 @@ export interface TeacherStats {
   totalClasses: number;
   studentsServed: number;
   avgAttendance: number;
-  rating: number;
   hoursTeaching: number;
   makeupPending: number;
 }

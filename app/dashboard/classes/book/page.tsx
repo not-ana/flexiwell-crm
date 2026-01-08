@@ -618,7 +618,7 @@ export default function BookClassPage() {
             </p>
             <button
               onClick={() => {
-                // TODO: Navigate to waitlist
+                router.push("/dashboard/classes/waitlist");
               }}
               className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
             >

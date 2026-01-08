@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import type { Class, Booking, Client } from "@/lib/db/schemas";
+import type { Class, Booking, Client, Establishment } from "@/lib/db/schemas";
 
 interface JWTPayload {
   userId: string;
@@ -147,14 +147,29 @@ export async function GET(request: NextRequest) {
         color: typeColors[c.type] || "gray",
         status: displayStatus,
         room: c.location || "TBD",
-        unit: "FlexiWell", // TODO: Add unit/establishment to Class schema
+        establishmentId: c.establishmentId,
         capacity: c.maxCapacity,
         enrolled: c.currentEnrollment,
         students
       };
     });
 
-    return NextResponse.json({ classes: formattedClasses });
+    // Get establishment names for all classes
+    const establishmentIds = [...new Set(formattedClasses.map(c => c.establishmentId).filter(Boolean))];
+    const establishments = establishmentIds.length > 0
+      ? await db.collection<Establishment>("establishments")
+          .find({ _id: { $in: establishmentIds.map(id => new ObjectId(id as string)) } })
+          .toArray()
+      : [];
+    const establishmentMap = new Map(establishments.map(e => [e._id?.toString(), e.name]));
+
+    // Add unit name to each class
+    const classesWithUnit = formattedClasses.map(c => ({
+      ...c,
+      unit: c.establishmentId ? establishmentMap.get(c.establishmentId) || "FlexiWell" : "FlexiWell"
+    }));
+
+    return NextResponse.json({ classes: classesWithUnit });
   } catch (error) {
     console.error("Teacher classes error:", error);
     return NextResponse.json(
@@ -175,7 +190,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, type, scheduledDate, startTime, endTime, maxCapacity, location, description } = body;
+    const { title, type, scheduledDate, startTime, endTime, maxCapacity, location, description, establishmentId, roomId } = body;
 
     // Validate required fields
     if (!title || !type || !scheduledDate || !startTime || !endTime) {
@@ -212,6 +227,8 @@ export async function POST(request: NextRequest) {
       waitlist: [],
       status: "scheduled",
       location: location || "",
+      roomId: roomId || undefined,
+      establishmentId: establishmentId || undefined,
       createdAt: new Date(),
       updatedAt: new Date()
     };

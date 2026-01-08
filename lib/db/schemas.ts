@@ -65,6 +65,19 @@ export interface Staff {
   }[];
   status: "active" | "inactive";
   unit?: string; // Establishment/unit name
+  establishmentId?: string; // Reference to Establishment
+  // Rating system
+  rating?: {
+    average: number; // 0-5
+    totalReviews: number;
+    breakdown: {
+      five: number;
+      four: number;
+      three: number;
+      two: number;
+      one: number;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +109,7 @@ export interface Class {
   status: "scheduled" | "completed" | "cancelled";
   location?: string;
   roomId?: string;
+  establishmentId?: string; // Reference to Establishment/unit
   notes?: string;
   // Wellhub sync fields
   wellhubClassId?: string;
@@ -470,4 +484,32 @@ export interface WellhubErrorLog {
   resolvedAt?: Date;
   resolvedBy?: string;
   createdAt: Date;
+}
+
+// Teacher/Staff Review system
+export interface Review {
+  _id?: ObjectId;
+  staffId: string; // The teacher being reviewed
+  staffName: string;
+  clientId: string; // The client who submitted the review
+  clientName: string;
+  bookingId?: string; // Optional: link to the booking/class
+  classId?: string;
+  className?: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  comment?: string;
+  // Moderation
+  status: "pending" | "approved" | "rejected";
+  moderatedBy?: string;
+  moderatedAt?: Date;
+  rejectionReason?: string;
+  // Response from teacher
+  response?: {
+    content: string;
+    respondedAt: Date;
+  };
+  // Visibility
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

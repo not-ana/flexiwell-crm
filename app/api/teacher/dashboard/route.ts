@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import type { Class, Booking, Client } from "@/lib/db/schemas";
+import type { Class, Booking, Client, Staff, Review } from "@/lib/db/schemas";
 
 interface JWTPayload {
   userId: string;
@@ -314,16 +314,49 @@ export async function GET(request: NextRequest) {
       status: r.status as "pending" | "scheduled" | "completed"
     }));
 
+    // Get teacher's rating from staff collection
+    const teacher = await db.collection<Staff>("staff").findOne({
+      $or: [
+        { _id: new ObjectId(teacherId) },
+        { email: user.email }
+      ]
+    });
+
+    // Get recent reviews for this teacher
+    const recentReviews = await db.collection<Review>("reviews")
+      .find({
+        staffId: teacherId,
+        status: "approved"
+      })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .toArray();
+
+    const formattedReviews = recentReviews.map(r => ({
+      id: r._id?.toString() || "",
+      clientName: r.clientName,
+      rating: r.rating,
+      comment: r.comment,
+      className: r.className,
+      createdAt: r.createdAt,
+      response: r.response,
+    }));
+
     const response = {
       stats: {
         classesCompleted: completedClasses,
         totalClasses: totalClassesMonth,
         studentsServed: uniqueStudents.size,
         avgAttendance,
-        rating: 4.8, // TODO: Implement rating system
         hoursTeaching,
         makeupPending: pendingMakeups.length,
       },
+      rating: teacher?.rating || {
+        average: 0,
+        totalReviews: 0,
+        breakdown: { five: 0, four: 0, three: 0, two: 0, one: 0 },
+      },
+      recentReviews: formattedReviews,
       todaySchedule,
       upcomingClasses: formattedUpcoming,
       makeupRequests: formattedMakeups,

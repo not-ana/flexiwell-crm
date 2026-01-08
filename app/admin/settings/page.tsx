@@ -3046,8 +3046,8 @@ function BrandingSettings() {
               </button>
               <button
                 onClick={() => {
-                  // TODO: Redirect to upgrade flow
                   setShowUpgradeModal(false);
+                  window.location.href = "/admin/billing?upgrade=true";
                 }}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
               >

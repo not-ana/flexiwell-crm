@@ -150,7 +150,7 @@ const onboardingConfigs: Record<UserRole, OnboardingConfig> = {
       },
       {
         title: "Your Weekly Stats",
-        description: "Track your performance with weekly stats at the top: classes completed, students served, average attendance, and your rating. The chart shows your teaching distribution by day and class type, helping you understand your workload.",
+        description: "Track your performance with weekly stats at the top: classes completed, students served, and average attendance. The chart shows your teaching distribution by day and class type, helping you understand your workload.",
         icon: (
           <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="20" x2="18" y2="10" />

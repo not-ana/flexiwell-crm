@@ -36,7 +36,6 @@ interface UpcomingClass {
 interface TeacherStats {
   totalStudents: number;
   classesThisWeek: number;
-  avgRating: number;
   yearsExperience: number;
 }
 
@@ -56,7 +55,6 @@ const defaultUser: TeacherUser = {
 const defaultStats: TeacherStats = {
   totalStudents: 0,
   classesThisWeek: 0,
-  avgRating: 0,
   yearsExperience: 0,
 };
 
@@ -114,7 +112,6 @@ export default function TeacherProfilePage() {
   const teacherStats = [
     { label: "Total Students", value: String(stats.totalStudents) },
     { label: "Classes This Week", value: String(stats.classesThisWeek) },
-    { label: "Avg. Rating", value: stats.avgRating.toFixed(1) },
     { label: "Years Experience", value: String(stats.yearsExperience) },
   ];
 

@@ -231,23 +231,6 @@ export async function GET(request: NextRequest) {
           ? Math.round((instructorCompleted / instructorTotal) * 100)
           : 0;
 
-        // Get average rating from reviews/feedback if exists
-        const ratingAgg = await db.collection("reviews").aggregate([
-          {
-            $match: {
-              instructorId: staffId,
-              createdAt: { $gte: startDate }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              avgRating: { $avg: "$rating" }
-            }
-          }
-        ]).toArray();
-        const avgRating = ratingAgg[0]?.avgRating?.toFixed(1) || "4.5";
-
         return {
           id: staffId,
           name: staff.name,
@@ -257,7 +240,6 @@ export async function GET(request: NextRequest) {
           stats: {
             classesThisMonth: classCount,
             clientsServed,
-            avgRating,
             attendance: instructorAttendance,
           },
           trend: classCount > 10 ? "up" : classCount > 5 ? "stable" : "down",
