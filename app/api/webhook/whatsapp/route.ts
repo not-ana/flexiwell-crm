@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleMessage, IncomingMessage } from "@/lib/bot/handler";
+import { WhatsAppBotHandler } from "@/lib/whatsapp/bot-handler";
+import type { IncomingMessage, InteractiveContent } from "@/lib/whatsapp/types";
 
 // WhatsApp Webhook Verification (GET)
 export async function GET(request: NextRequest) {
@@ -72,74 +73,45 @@ interface WhatsAppMetadata {
 
 async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsAppMetadata) {
   const senderId = message.from;
-  const timestamp = new Date(parseInt(message.timestamp) * 1000);
 
-  let text: string | undefined;
-  let payload: string | undefined;
-
-  // Extract message content based on type
-  switch (message.type) {
-    case "text":
-      text = message.text?.body;
-      break;
-
-    case "button":
-      payload = message.button?.payload;
-      text = message.button?.text;
-      break;
-
-    case "interactive":
-      if (message.interactive?.button_reply) {
-        payload = message.interactive.button_reply.id;
-        text = message.interactive.button_reply.title;
-      } else if (message.interactive?.list_reply) {
-        payload = message.interactive.list_reply.id;
-        text = message.interactive.list_reply.title;
-      }
-      break;
-
-    default:
-      // For unsupported message types, ask user to send text
-      await sendWhatsAppMessage(
-        senderId,
-        metadata.phone_number_id,
-        "Desculpe, eu só consigo processar mensagens de texto. Por favor, digite sua mensagem."
-      );
-      return;
+  // For unsupported message types, ask user to send text
+  if (!["text", "button", "interactive"].includes(message.type)) {
+    await sendWhatsAppMessage(
+      senderId,
+      metadata.phone_number_id,
+      { body: "Desculpe, eu só consigo processar mensagens de texto. Por favor, digite sua mensagem." }
+    );
+    return;
   }
 
+  // Convert to IncomingMessage format for the bot handler
   const incoming: IncomingMessage = {
-    platform: "whatsapp",
-    platformUserId: senderId,
-    messageId: message.id,
-    text,
-    payload,
-    timestamp,
-    metadata: {
-      phoneNumberId: metadata.phone_number_id,
-      displayPhoneNumber: metadata.display_phone_number,
-    },
+    id: message.id,
+    from: senderId,
+    timestamp: message.timestamp,
+    type: message.type as "text" | "interactive" | "button",
+    text: message.text,
+    interactive: message.interactive,
+    button: message.button,
   };
 
+  // Initialize bot handler with default establishment and plan
+  // In production, you would look up the establishment based on the business phone number
+  const establishmentId = process.env.DEFAULT_ESTABLISHMENT_ID || "default";
+  const plan = process.env.WHATSAPP_BOT_PLAN || "pro";
+  const botHandler = new WhatsAppBotHandler(establishmentId, plan);
+
   // Process message and get response
-  const response = await handleMessage(incoming);
+  const response = await botHandler.handleMessage(incoming);
 
   // Send response
-  await sendWhatsAppMessage(
-    senderId,
-    metadata.phone_number_id,
-    response.text,
-    response.buttons,
-    response.quickReplies
-  );
+  await sendWhatsAppMessage(senderId, metadata.phone_number_id, response);
 }
 
 async function sendWhatsAppMessage(
   recipientId: string,
   phoneNumberId: string,
-  text: string,
-  buttons?: { text: string; payload: string }[],
-  quickReplies?: string[]
+  response: InteractiveContent | { body: string }
 ) {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
@@ -156,64 +128,24 @@ async function sendWhatsAppMessage(
     text?: { body: string };
     interactive?: {
       type: string;
+      header?: { type: string; text: string };
       body: { text: string };
+      footer?: { text: string };
       action: {
         buttons?: { type: string; reply: { id: string; title: string } }[];
         button?: string;
-        sections?: { title: string; rows: { id: string; title: string }[] }[];
+        sections?: { title: string; rows: { id: string; title: string; description?: string }[] }[];
       };
     };
   }
 
   let messagePayload: MessagePayload;
 
-  // If we have buttons, use interactive message
-  if (buttons && buttons.length > 0) {
-    messagePayload = {
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: recipientId,
-      type: "interactive",
-      interactive: {
-        type: "button",
-        body: { text },
-        action: {
-          buttons: buttons.slice(0, 3).map((btn, index) => ({
-            type: "reply",
-            reply: {
-              id: btn.payload,
-              title: btn.text.slice(0, 20),
-            },
-          })),
-        },
-      },
-    };
-  } else if (quickReplies && quickReplies.length > 0) {
-    // Use list for quick replies if more than 3
-    if (quickReplies.length > 3) {
-      messagePayload = {
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: recipientId,
-        type: "interactive",
-        interactive: {
-          type: "list",
-          body: { text },
-          action: {
-            button: "Ver opções",
-            sections: [
-              {
-                title: "Opções",
-                rows: quickReplies.slice(0, 10).map((reply, index) => ({
-                  id: reply.toUpperCase().replace(/\s+/g, "_"),
-                  title: reply.slice(0, 24),
-                })),
-              },
-            ],
-          },
-        },
-      };
-    } else {
+  // Check if it's an interactive message or simple text
+  if ("type" in response && (response.type === "button" || response.type === "list")) {
+    const interactive = response as InteractiveContent;
+
+    if (interactive.type === "button" && "buttons" in interactive.action) {
       messagePayload = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -221,32 +153,68 @@ async function sendWhatsAppMessage(
         type: "interactive",
         interactive: {
           type: "button",
-          body: { text },
+          ...(interactive.header && { header: interactive.header }),
+          body: interactive.body,
+          ...(interactive.footer && { footer: interactive.footer }),
           action: {
-            buttons: quickReplies.map((reply) => ({
+            buttons: interactive.action.buttons.slice(0, 3).map(btn => ({
               type: "reply",
               reply: {
-                id: reply.toUpperCase().replace(/\s+/g, "_"),
-                title: reply.slice(0, 20),
+                id: btn.reply.id,
+                title: btn.reply.title.slice(0, 20),
               },
             })),
           },
         },
       };
+    } else if (interactive.type === "list" && "sections" in interactive.action) {
+      messagePayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipientId,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          ...(interactive.header && { header: interactive.header }),
+          body: interactive.body,
+          ...(interactive.footer && { footer: interactive.footer }),
+          action: {
+            button: interactive.action.button,
+            sections: interactive.action.sections.map(section => ({
+              title: section.title,
+              rows: section.rows.slice(0, 10).map(row => ({
+                id: row.id,
+                title: row.title.slice(0, 24),
+                ...(row.description && { description: row.description }),
+              })),
+            })),
+          },
+        },
+      };
+    } else {
+      // Fallback to text
+      messagePayload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipientId,
+        type: "text",
+        text: { body: interactive.body.text },
+      };
     }
   } else {
     // Simple text message
+    const textResponse = response as { body: string };
     messagePayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
       to: recipientId,
       type: "text",
-      text: { body: text },
+      text: { body: textResponse.body },
     };
   }
 
   try {
-    const response = await fetch(
+    const apiResponse = await fetch(
       `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
       {
         method: "POST",
@@ -258,8 +226,8 @@ async function sendWhatsAppMessage(
       }
     );
 
-    if (!response.ok) {
-      const error = await response.json();
+    if (!apiResponse.ok) {
+      const error = await apiResponse.json();
       console.error("WhatsApp API error:", error);
     }
   } catch (error) {
