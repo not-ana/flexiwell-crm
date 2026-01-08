@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
+import { bookingService } from "@/lib/services/booking.service";
 import type { Booking } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 
@@ -169,30 +170,69 @@ export async function PATCH(
         break;
 
       case "cancel":
-        updateOperation = {
-          $set: {
-            status: "cancelled",
-            updatedAt: new Date(),
-          },
-        };
+        // Use booking service for proper cancellation with credit refund
+        const cancelResult = await bookingService.cancelBooking(
+          id,
+          body.cancelledBy || "admin",
+          body.reason
+        );
+
+        if (!cancelResult.success) {
+          return NextResponse.json(
+            { error: cancelResult.error, errorCode: cancelResult.errorCode },
+            { status: 400 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          booking: cancelResult.booking,
+          message: "Agendamento cancelado com sucesso",
+        });
         break;
 
       case "complete":
-        updateOperation = {
-          $set: {
-            status: "completed",
-            updatedAt: new Date(),
-          },
-        };
+        // Use booking service for proper attendance marking
+        const completeResult = await bookingService.markAttendance(
+          id,
+          true,
+          body.markedBy || "admin"
+        );
+
+        if (!completeResult.success) {
+          return NextResponse.json(
+            { error: completeResult.error, errorCode: completeResult.errorCode },
+            { status: 400 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          booking: completeResult.booking,
+          message: "Presença registrada com sucesso",
+        });
         break;
 
       case "no_show":
-        updateOperation = {
-          $set: {
-            status: "no-show",
-            updatedAt: new Date(),
-          },
-        };
+        // Use booking service for proper no-show marking
+        const noShowResult = await bookingService.markAttendance(
+          id,
+          false,
+          body.markedBy || "admin"
+        );
+
+        if (!noShowResult.success) {
+          return NextResponse.json(
+            { error: noShowResult.error, errorCode: noShowResult.errorCode },
+            { status: 400 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          booking: noShowResult.booking,
+          message: "Falta registrada",
+        });
         break;
 
       case "reschedule":

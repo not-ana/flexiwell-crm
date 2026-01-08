@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
+import { bookingService } from "@/lib/services/booking.service";
 import type { Booking } from "@/lib/db/schemas";
 
 // GET /api/bookings - List all bookings with filters
@@ -82,87 +83,56 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/bookings - Create a new booking
+// POST /api/bookings - Create a new booking with full validation
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      clientId,
-      clientName,
-      classId,
-      className,
-      instructorId,
-      instructorName,
-      scheduledDate,
-      startTime,
-      endTime,
-      source,
-    } = body;
+    const { clientId, classId, source = "web", useCredit = true } = body;
 
     // Validation
-    if (!clientId || !clientName || !classId || !className || !instructorId || !instructorName || !scheduledDate || !startTime || !endTime) {
+    if (!clientId || !classId) {
       return NextResponse.json(
-        { error: "Client, class, instructor details, and schedule are required" },
+        { error: "clientId e classId são obrigatórios" },
         { status: 400 }
       );
     }
 
-    const validSources = ["web", "bot", "admin"];
-    if (source && !validSources.includes(source)) {
-      return NextResponse.json(
-        { error: `Invalid source. Must be one of: ${validSources.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDatabase();
-
-    // Check for existing booking (same client, same class)
-    const existingBooking = await db.collection<Booking>("bookings").findOne({
+    // Use booking service for complete validation and creation
+    const result = await bookingService.createBooking({
       clientId,
       classId,
-      status: { $in: ["confirmed", "pending"] },
+      source,
+      useCredit,
     });
 
-    if (existingBooking) {
+    if (!result.success) {
+      const statusCode = result.errorCode === "CLASS_FULL" ? 409 :
+                         result.errorCode === "DUPLICATE" ? 409 :
+                         result.errorCode === "CLIENT_NOT_FOUND" ? 404 :
+                         result.errorCode === "CLASS_NOT_FOUND" ? 404 :
+                         400;
+
       return NextResponse.json(
-        { error: "Client already has a booking for this class" },
-        { status: 409 }
+        {
+          error: result.error,
+          errorCode: result.errorCode,
+        },
+        { status: statusCode }
       );
     }
-
-    const newBooking: Omit<Booking, "_id"> = {
-      clientId,
-      clientName,
-      classId,
-      className,
-      instructorId,
-      instructorName,
-      scheduledDate: new Date(scheduledDate),
-      startTime,
-      endTime,
-      status: "confirmed",
-      source: source || "admin",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await db.collection<Booking>("bookings").insertOne(newBooking);
 
     return NextResponse.json(
       {
         success: true,
-        booking: {
-          _id: result.insertedId,
-          ...newBooking,
-        },
+        booking: result.booking,
+        message: "Aula agendada com sucesso!",
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error creating booking:", error);
     return NextResponse.json(
-      { error: "Failed to create booking" },
+      { error: "Erro ao criar agendamento" },
       { status: 500 }
     );
   }

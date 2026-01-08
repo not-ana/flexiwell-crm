@@ -326,6 +326,36 @@ function ConfigureModal({
   );
 }
 
+// Credential fields for each integration type
+const credentialFields: Record<string, { key: string; label: string; type: string; placeholder: string; required: boolean }[]> = {
+  stripe: [
+    { key: "secretKey", label: "Secret Key", type: "password", placeholder: "sk_live_...", required: true },
+    { key: "publishableKey", label: "Publishable Key", type: "text", placeholder: "pk_live_...", required: true },
+    { key: "webhookSecret", label: "Webhook Secret", type: "password", placeholder: "whsec_...", required: false },
+  ],
+  whatsapp: [
+    { key: "accountSid", label: "Twilio Account SID", type: "text", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", required: true },
+    { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true },
+    { key: "phoneNumber", label: "WhatsApp Number", type: "text", placeholder: "+15551234567", required: true },
+  ],
+  instagram: [
+    { key: "accessToken", label: "Access Token", type: "password", placeholder: "Your Instagram access token", required: true },
+    { key: "pageId", label: "Instagram Page ID", type: "text", placeholder: "123456789", required: true },
+    { key: "appId", label: "Meta App ID", type: "text", placeholder: "Optional", required: false },
+  ],
+  google_calendar: [
+    { key: "clientId", label: "Client ID", type: "text", placeholder: "xxxxx.apps.googleusercontent.com", required: true },
+    { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "Your client secret", required: true },
+  ],
+  mailchimp: [
+    { key: "apiKey", label: "API Key", type: "password", placeholder: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us1", required: true },
+    { key: "listId", label: "Audience ID", type: "text", placeholder: "Optional - default list", required: false },
+  ],
+  zapier: [
+    { key: "webhookUrl", label: "Webhook URL", type: "text", placeholder: "https://hooks.zapier.com/...", required: true },
+  ],
+};
+
 function ConnectModal({
   integration,
   isOpen,
@@ -338,20 +368,64 @@ function ConnectModal({
   onConfirm: () => void;
 }) {
   const [connecting, setConnecting] = useState(false);
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const handleConnect = () => {
+  // Reset form when integration changes
+  useEffect(() => {
+    if (integration) {
+      setCredentials({});
+      setError(null);
+    }
+  }, [integration]);
+
+  const fields = integration ? credentialFields[integration.id] || [] : [];
+
+  const handleConnect = async () => {
     setConnecting(true);
-    setTimeout(() => {
-      setConnecting(false);
+    setError(null);
+
+    // Validate required fields
+    for (const field of fields) {
+      if (field.required && !credentials[field.key]) {
+        setError(`${field.label} is required`);
+        setConnecting(false);
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch("/api/admin/integrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          integrationId: integration?.id,
+          credentials,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to connect");
+        setConnecting(false);
+        return;
+      }
+
       onConfirm();
-    }, 1500);
+    } catch (err) {
+      setError("Failed to connect. Please try again.");
+      console.error("Connect error:", err);
+    } finally {
+      setConnecting(false);
+    }
   };
 
   if (!isOpen || !integration) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Connect {integration.name}</h2>
@@ -376,14 +450,40 @@ function ConnectModal({
               </svg>
               <div className="w-8 h-0.5 bg-gray-300" />
             </div>
-            <div className={`w-16 h-16 ${logoColors[integration.id]} rounded-xl flex items-center justify-center`}>
+            <div className={`w-16 h-16 ${logoColors[integration.id] || "bg-gray-500"} rounded-xl flex items-center justify-center`}>
               <span className="text-white font-bold text-2xl">{integration.logo}</span>
             </div>
           </div>
 
-          <p className="text-gray-600 text-center mb-6">
-            This will allow FlexiWell to access your {integration.name} account to sync data and automate workflows.
-          </p>
+          {/* Credential Fields */}
+          {fields.length > 0 ? (
+            <div className="space-y-4 mb-6">
+              {fields.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={credentials[field.key] || ""}
+                    onChange={(e) => setCredentials({ ...credentials, [field.key]: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 text-center mb-6">
+              This will allow FlexiWell to access your {integration.name} account to sync data and automate workflows.
+            </p>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
 
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <p className="text-sm font-medium text-gray-700 mb-2">FlexiWell will be able to:</p>
@@ -396,6 +496,19 @@ function ConnectModal({
               ))}
             </ul>
           </div>
+
+          {/* Webhook URLs for WhatsApp/Instagram */}
+          {(integration.id === "whatsapp" || integration.id === "instagram") && (
+            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-blue-700 mb-2">Webhook URL</p>
+              <p className="text-xs text-blue-600 mb-2">
+                Configure this URL in your {integration.id === "whatsapp" ? "Twilio" : "Meta"} settings:
+              </p>
+              <code className="block p-2 bg-white rounded text-xs text-gray-700 break-all">
+                {typeof window !== "undefined" ? window.location.origin : ""}/api/webhooks/{integration.id}
+              </code>
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-gray-200 flex gap-3">

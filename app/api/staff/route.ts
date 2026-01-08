@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
+import { notificationService } from "@/lib/services/notification.service";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import type { Staff } from "@/lib/db/schemas";
 
 // GET /api/staff - List all staff with filters
@@ -99,27 +102,94 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newStaff: Omit<Staff, "_id"> = {
+    // Check if user already exists
+    const existingUser = await db.collection("users").findOne({
+      email: email.toLowerCase(),
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "A user with this email already exists" },
+        { status: 409 }
+      );
+    }
+
+    // Generate a temporary password and invitation token
+    const tempPassword = crypto.randomBytes(8).toString("hex");
+    const invitationToken = crypto.randomBytes(32).toString("hex");
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Create user account
+    const newUser = {
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role,
+      invitationToken,
+      invitationExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      passwordResetRequired: true,
+      status: "invited",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const userResult = await db.collection("users").insertOne(newUser);
+
+    // Create staff record linked to user
+    // Note: Staff starts as inactive until they accept the invitation
+    const newStaff = {
       name,
       email: email.toLowerCase(),
       phone: phone || "",
       role,
       specialties: specialties || [],
       schedule: schedule || [],
-      status: "active",
+      status: "inactive", // Will be activated when user accepts invite
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const result = await db.collection<Staff>("staff").insertOne(newStaff);
+    const staffResult = await db.collection("staff").insertOne(newStaff);
+
+    // Link user to staff
+    await db.collection("users").updateOne(
+      { _id: userResult.insertedId },
+      { $set: { staffId: staffResult.insertedId.toString() } }
+    );
+
+    // Send invitation email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const inviteUrl = `${appUrl}/auth/accept-invite?token=${invitationToken}`;
+
+    try {
+      await notificationService.sendCustomMessage(
+        staffResult.insertedId.toString(),
+        `Convite para ${role === "admin" ? "Administrador" : role === "teacher" ? "Professor" : "Recepcionista"} - FlexiWell`,
+        `Olá ${name}!\n\n` +
+        `Você foi convidado(a) para se juntar à equipe do FlexiWell como ${role === "admin" ? "Administrador" : role === "teacher" ? "Professor" : "Recepcionista"}.\n\n` +
+        `Para ativar sua conta, clique no link abaixo:\n${inviteUrl}\n\n` +
+        `Ou use as credenciais temporárias:\n` +
+        `Email: ${email.toLowerCase()}\n` +
+        `Senha temporária: ${tempPassword}\n\n` +
+        `Este convite expira em 7 dias.\n\n` +
+        `Bem-vindo(a) à equipe!`,
+        "email"
+      );
+    } catch (emailError) {
+      console.error("Error sending invitation email:", emailError);
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json(
       {
         success: true,
         staff: {
-          _id: result.insertedId,
+          _id: staffResult.insertedId,
           ...newStaff,
         },
+        invitationSent: true,
+        // Only return temp password in development for testing
+        ...(process.env.NODE_ENV === "development" && { tempPassword }),
       },
       { status: 201 }
     );

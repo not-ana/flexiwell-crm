@@ -716,18 +716,39 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 function StartClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boolean; onClose: () => void; event: ClassEvent | null; onConfirm: () => void }) {
   const [isStarting, setIsStarting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !event) return null;
 
   const handleStart = async () => {
     setIsStarting(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsStarting(false);
-    setShowSuccess(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/teacher/classes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: event.id,
+          status: "in-progress",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to start class");
+      }
+
+      setShowSuccess(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const handleClose = () => {
     setShowSuccess(false);
+    setError(null);
     onClose();
     if (showSuccess) onConfirm();
   };
@@ -809,6 +830,12 @@ function StartClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boolea
           <p className="text-sm text-gray-600 mb-4">
             Starting this class will mark it as "In Progress" and allow you to take attendance.
           </p>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-gray-200 flex gap-3">
@@ -848,17 +875,18 @@ function TakeAttendanceModal({ isOpen, onClose, event, onSave }: { isOpen: boole
   const [attendance, setAttendance] = useState<Record<string, boolean | null>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize attendance from event students
-  useState(() => {
-    if (event?.students) {
+  // Initialize attendance from event students when modal opens
+  useEffect(() => {
+    if (isOpen && event?.students) {
       const initial: Record<string, boolean | null> = {};
       event.students.forEach(s => {
         initial[s.id] = s.attended ?? null;
       });
       setAttendance(initial);
     }
-  });
+  }, [isOpen, event]);
 
   if (!isOpen || !event) return null;
 
@@ -879,13 +907,54 @@ function TakeAttendanceModal({ isOpen, onClose, event, onSave }: { isOpen: boole
 
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSaving(false);
-    setShowSuccess(true);
+    setError(null);
+
+    try {
+      // First, get bookings for this class to get booking IDs
+      const attendanceResponse = await fetch(`/api/teacher/attendance?classId=${event.id}`);
+      if (!attendanceResponse.ok) {
+        throw new Error("Failed to fetch attendance data");
+      }
+      const attendanceData = await attendanceResponse.json();
+
+      // Build attendance data with booking IDs
+      const attendanceRecords = attendanceData.attendance.map((record: { bookingId: string; clientId: string }) => ({
+        bookingId: record.bookingId,
+        status: attendance[record.clientId] === true ? "present" : "absent",
+      }));
+
+      // Save attendance
+      const response = await fetch("/api/teacher/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: event.id,
+          attendanceData: attendanceRecords,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save attendance");
+      }
+
+      setShowSuccess(true);
+      // Call onSave to notify parent
+      const finalAttendance: Record<string, boolean> = {};
+      Object.entries(attendance).forEach(([k, v]) => {
+        if (v !== null) finalAttendance[k] = v;
+      });
+      onSave(finalAttendance);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
     setShowSuccess(false);
+    setError(null);
     onClose();
   };
 
@@ -1028,6 +1097,12 @@ function TakeAttendanceModal({ isOpen, onClose, event, onSave }: { isOpen: boole
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="mx-4 mb-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <div className="p-4 border-t border-gray-200 flex gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -1571,18 +1646,18 @@ export default function TeacherClassesPage() {
         </div>
       </div>
 
-      <CreateClassModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      <CreateClassModal isOpen={showCreateModal} onClose={() => { setShowCreateModal(false); fetchClasses(); }} />
       <StartClassModal
         isOpen={showStartClassModal}
         onClose={() => setShowStartClassModal(false)}
         event={selectedEvent}
-        onConfirm={() => console.log("Class started")}
+        onConfirm={() => { fetchClasses(); setSelectedEvent(null); }}
       />
       <TakeAttendanceModal
         isOpen={showAttendanceModal}
         onClose={() => setShowAttendanceModal(false)}
         event={selectedEvent}
-        onSave={(attendance) => console.log("Attendance saved:", attendance)}
+        onSave={() => { fetchClasses(); setSelectedEvent(null); }}
       />
       <ViewReportModal
         isOpen={showReportModal}

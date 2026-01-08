@@ -87,20 +87,25 @@ export default function ConversationsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/conversations/${selectedConversation._id}`, {
-        method: "PUT",
+      // Use the send endpoint to deliver to platform (WhatsApp/Instagram)
+      const response = await fetch(`/api/conversations/${selectedConversation._id}/send`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: {
-            from: "admin",
-            content: replyText,
-          },
+          content: replyText,
+          from: "admin",
         }),
       });
 
       if (!response.ok) throw new Error("Failed to send message");
 
       const data = await response.json();
+
+      // Show warning if delivery failed
+      if (data.warning) {
+        console.warn("Delivery warning:", data.warning);
+      }
+
       const updated = transformConversation(data.conversation);
 
       setConversations((prev) =>
