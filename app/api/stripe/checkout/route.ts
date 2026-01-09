@@ -32,10 +32,14 @@ async function getUser(): Promise<JWTPayload | null> {
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
+    // Use JWT_SECRET from environment - must be set in production
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error("JWT_SECRET environment variable is not set");
+      return null;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
     return decoded;
   } catch {
     return null;

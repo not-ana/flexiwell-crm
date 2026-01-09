@@ -323,15 +323,13 @@ export default function ConversationsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
-                <button
-                  onClick={() => {
-                    alert(`Viewing profile for: ${selectedConversation.clientName}\nClient ID: ${selectedConversation.clientId}`);
-                  }}
+                <a
+                  href={`/admin/clients?id=${selectedConversation.clientId}`}
                   className="px-2 lg:px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg whitespace-nowrap"
                 >
                   <span className="hidden lg:inline">View Profile</span>
                   <span className="lg:hidden">Profile</span>
-                </button>
+                </a>
                 {selectedConversation.status !== "closed" && (
                   <button
                     onClick={handleCloseConversation}

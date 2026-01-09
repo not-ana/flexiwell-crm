@@ -2,35 +2,9 @@
 // GET /api/stripe/invoices - Get invoice history
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getInvoiceHistory } from "@/lib/stripe/server";
 import { getDatabase as getDb } from "@/lib/db/mongodb";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,13 +13,9 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 100);
 
     // Require authenticated user
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user's Stripe info
     const db = await getDb();

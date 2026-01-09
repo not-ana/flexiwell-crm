@@ -1,43 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 // POST - Save integration settings
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAuthFromCookie();
+    if (error) return error;
 
     const body = await request.json();
     const { integrationId, settings } = body;
@@ -83,13 +52,8 @@ export async function POST(request: NextRequest) {
 // GET - Get integration settings
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAuthFromCookie();
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const integrationId = searchParams.get("id");

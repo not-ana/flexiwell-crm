@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { verifyAccessToken, extractTokenFromHeader, JWTPayload } from "./jwt";
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -77,6 +78,66 @@ export function requireRole(
   error: NextResponse | null;
 } {
   const { user, error } = requireAuth(request);
+
+  if (error) {
+    return { user: null, error };
+  }
+
+  if (!hasRole(user, allowedRoles)) {
+    return {
+      user: null,
+      error: forbiddenResponse("Insufficient permissions"),
+    };
+  }
+
+  return { user, error: null };
+}
+
+/**
+ * Get authenticated user from cookie
+ * Use this for routes that use cookie-based authentication
+ */
+export async function getAuthUserFromCookie(): Promise<JWTPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  return verifyAccessToken(token);
+}
+
+/**
+ * Require authentication from cookie
+ * Returns user or error response
+ */
+export async function requireAuthFromCookie(): Promise<{
+  user: JWTPayload | null;
+  error: NextResponse | null;
+}> {
+  const user = await getAuthUserFromCookie();
+
+  if (!user) {
+    return {
+      user: null,
+      error: unauthorizedResponse("Authentication required"),
+    };
+  }
+
+  return { user, error: null };
+}
+
+/**
+ * Require specific roles from cookie-based auth
+ */
+export async function requireRoleFromCookie(
+  allowedRoles: JWTPayload["role"][]
+): Promise<{
+  user: JWTPayload | null;
+  error: NextResponse | null;
+}> {
+  const { user, error } = await requireAuthFromCookie();
 
   if (error) {
     return { user: null, error };

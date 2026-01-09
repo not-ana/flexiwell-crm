@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { requireRoleFromCookie, requireAuthFromCookie } from "@/lib/auth/middleware";
 import {
   predictClassCancellations,
   predictClientBehavior,
@@ -9,49 +8,12 @@ import {
   getHistoricalConversionRate,
 } from "@/lib/ai/waitlist-intelligence";
 
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
 // GET /api/waitlist/ai - Get waitlist AI analytics
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
     // Only admin and teachers can access AI analytics
-    if (!["admin", "teacher"].includes(user.role)) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
-    }
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action") || "dashboard";
@@ -130,13 +92,9 @@ export async function GET(request: NextRequest) {
 // POST /api/waitlist/ai - Run AI analysis on demand
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     if (user.role !== "admin") {
       return NextResponse.json(

@@ -1,44 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import type { Class, Booking, Client, Staff, Review } from "@/lib/db/schemas";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
+import type { Class, Booking, Staff, Review } from "@/lib/db/schemas";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
     const teacherId = user.userId;
@@ -98,7 +68,6 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats
     const completedBookings = monthBookings.filter(b => b.status === "completed");
-    const noShowBookings = monthBookings.filter(b => b.status === "no-show");
     const totalAttended = completedBookings.length;
     const totalBooked = monthBookings.filter(b => b.status !== "cancelled").length;
     const avgAttendance = totalBooked > 0 ? Math.round((totalAttended / totalBooked) * 100) : 0;

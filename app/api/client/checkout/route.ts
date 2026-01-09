@@ -2,38 +2,11 @@
 // POST /api/client/checkout - Create a checkout session for client plan purchase
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import Stripe from "stripe";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 import type { Client } from "@/lib/db/schemas";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-  name?: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 // Plan configuration
 const PLAN_CONFIGS: Record<string, { classes: number; durationDays: number }> = {
@@ -46,13 +19,9 @@ const PLAN_CONFIGS: Record<string, { classes: number; durationDays: number }> = 
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { planId, planName, classes, price, duration } = body;
@@ -107,7 +76,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Create new client with plan
         const newClient: Omit<Client, "_id"> = {
-          name: user.name || user.email.split("@")[0],
+          name: user.email.split("@")[0],
           email: user.email,
           phone: "",
           plan: {
@@ -172,7 +141,6 @@ export async function POST(request: NextRequest) {
     } else {
       const customer = await stripe.customers.create({
         email: user.email,
-        name: user.name || undefined,
         metadata: {
           userId: user.userId,
         },

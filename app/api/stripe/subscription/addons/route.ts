@@ -3,8 +3,6 @@
 // DELETE /api/stripe/subscription/addons - Remove an add-on from subscription
 
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import {
   getActiveSubscription,
   addSubscriptionItem,
@@ -14,31 +12,7 @@ import { stripeAddOnPriceIds } from "@/lib/stripe/config";
 import { addOns } from "@/lib/config/pricing";
 import { getDatabase as getDb } from "@/lib/db/mongodb";
 import { getAddOnIdFromPriceId } from "../helpers";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 // Add an add-on to subscription
 export async function POST(request: NextRequest) {
@@ -75,13 +49,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Require authenticated user
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user's Stripe info
     const db = await getDb();
@@ -194,13 +164,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Require authenticated user
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user's Stripe info
     const db = await getDb();

@@ -611,12 +611,12 @@ export default function AdminDashboard() {
 
             {/* Today's Classes and Recent Activity Row */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Today's Classes */}
+              {/* Schedule Overview */}
               <div className="bg-white border border-gray-200 rounded-2xl xl:col-span-2">
                 <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">Today's Classes</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Upcoming classes for today</p>
+                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">Schedule Overview</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Today's classes and occupancy</p>
                   </div>
                   <Link
                     href="/admin/classes"

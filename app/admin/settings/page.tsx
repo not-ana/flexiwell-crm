@@ -2394,17 +2394,67 @@ function WhatsAppSettings() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<WhatsAppPlan>("pro");
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [twilioConfig, setTwilioConfig] = useState({
     accountSid: "",
     authToken: "",
     whatsappNumber: "",
   });
 
-  const handleSaveConfig = () => {
-    // In production, save to database
-    console.log("Saving Twilio config:", twilioConfig);
-    setShowConfigModal(false);
-    setIsEnabled(true);
+  // Load WhatsApp config on mount
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const res = await fetch("/api/admin/integrations");
+        if (res.ok) {
+          const data = await res.json();
+          const whatsapp = data.integrations?.find((i: { id: string }) => i.id === "whatsapp");
+          if (whatsapp?.status === "connected") {
+            setIsEnabled(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load WhatsApp config:", error);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  const handleSaveConfig = async () => {
+    if (!twilioConfig.accountSid || !twilioConfig.authToken || !twilioConfig.whatsappNumber) {
+      showToast("All fields are required", "error");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/integrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          integrationId: "whatsapp",
+          credentials: {
+            accountSid: twilioConfig.accountSid,
+            authToken: twilioConfig.authToken,
+            phoneNumber: twilioConfig.whatsappNumber,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        showToast("WhatsApp connected successfully");
+        setShowConfigModal(false);
+        setIsEnabled(true);
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to save configuration", "error");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save configuration", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -2726,6 +2776,57 @@ function BrandingSettings() {
     }
   };
 
+  const handleLogoUpload = (type: "logo" | "favicon") => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("Image must be less than 2MB", "error");
+        return;
+      }
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64 = reader.result as string;
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "image",
+              data: base64,
+              filename: file.name,
+              folder: type === "logo" ? "logos" : "favicons",
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to upload");
+          }
+
+          if (type === "logo") {
+            updateBranding("customLogo", data.url);
+          } else {
+            updateBranding("customFavicon", data.url);
+          }
+          showToast(`${type === "logo" ? "Logo" : "Favicon"} uploaded successfully`);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Upload error:", error);
+        showToast("Failed to upload image", "error");
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -2823,11 +2924,19 @@ function BrandingSettings() {
           {/* Logo Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Studio Logo</label>
-            <div className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}>
+            <div
+              onClick={() => isWhiteLabelAvailable && handleLogoUpload("logo")}
+              className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}
+            >
               {branding.customLogo ? (
                 <div className="flex flex-col items-center">
                   <img src={branding.customLogo} alt="Logo" className="h-12 mb-2" />
-                  <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                  <button
+                    onClick={() => updateBranding("customLogo", "")}
+                    className="text-sm text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
                 </div>
               ) : (
                 <>
@@ -2844,11 +2953,19 @@ function BrandingSettings() {
           {/* Favicon Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
-            <div className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}>
+            <div
+              onClick={() => isWhiteLabelAvailable && handleLogoUpload("favicon")}
+              className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}
+            >
               {branding.customFavicon ? (
                 <div className="flex flex-col items-center">
                   <img src={branding.customFavicon} alt="Favicon" className="h-8 mb-2" />
-                  <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                  <button
+                    onClick={() => updateBranding("customFavicon", "")}
+                    className="text-sm text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
                 </div>
               ) : (
                 <>

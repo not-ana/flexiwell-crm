@@ -1,35 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 import type { Review } from "@/lib/db/schemas";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-  clientId?: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 // GET /api/reviews/[id] - Get a single review
 export async function GET(
@@ -37,13 +10,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
 
@@ -67,9 +36,10 @@ export async function GET(
     }
 
     // Check access permissions
+    const clientId = (user as { clientId?: string }).clientId;
     const canView =
       user.role === "admin" ||
-      review.clientId === (user.clientId || user.userId) ||
+      review.clientId === (clientId || user.userId) ||
       review.staffId === user.userId ||
       (review.status === "approved" && review.isPublic);
 
@@ -96,13 +66,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
 
@@ -126,6 +92,7 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const clientId = (user as { clientId?: string }).clientId;
 
     // Teacher responding to a review
     if (user.role === "teacher" && review.staffId === user.userId) {
@@ -159,7 +126,7 @@ export async function PUT(
     // Client editing their own review (only if pending)
     if (
       user.role === "client" &&
-      review.clientId === (user.clientId || user.userId)
+      review.clientId === (clientId || user.userId)
     ) {
       if (review.status !== "pending") {
         return NextResponse.json(
@@ -221,13 +188,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
 
@@ -251,9 +214,10 @@ export async function DELETE(
     }
 
     // Only admin or the review owner can delete
+    const clientId = (user as { clientId?: string }).clientId;
     const canDelete =
       user.role === "admin" ||
-      review.clientId === (user.clientId || user.userId);
+      review.clientId === (clientId || user.userId);
 
     if (!canDelete) {
       return NextResponse.json(

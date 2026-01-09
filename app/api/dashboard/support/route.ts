@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 interface SupportMessage {
   _id?: ObjectId;
@@ -23,35 +16,12 @@ interface SupportMessage {
   isRead?: boolean;
 }
 
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
 // GET - Fetch support messages
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
 
@@ -95,7 +65,7 @@ export async function GET(request: NextRequest) {
     if (formattedMessages.length === 0) {
       formattedMessages.push({
         id: "welcome",
-        content: `Olá! Bem-vindo ao suporte ${studioName}. Como podemos ajudá-lo hoje?`,
+        content: `Ola! Bem-vindo ao suporte ${studioName}. Como podemos ajuda-lo hoje?`,
         sender: "support" as const,
         timestamp: "Agora",
         type: "text" as const,
@@ -124,13 +94,9 @@ export async function GET(request: NextRequest) {
 // POST - Send a new message
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { content, type = "text", fileName, fileSize } = body;
@@ -212,10 +178,10 @@ function formatTimestamp(date: Date): string {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMins < 1) return "Agora";
-  if (diffMins < 60) return `${diffMins} min atrás`;
-  if (diffHours < 24) return `${diffHours}h atrás`;
+  if (diffMins < 60) return `${diffMins} min atras`;
+  if (diffHours < 24) return `${diffHours}h atras`;
   if (diffDays === 1) return "Ontem";
-  if (diffDays < 7) return `${diffDays} dias atrás`;
+  if (diffDays < 7) return `${diffDays} dias atras`;
 
   return date.toLocaleDateString("pt-BR", {
     day: "numeric",

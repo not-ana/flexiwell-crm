@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { SearchIcon, FilterIcon, ChevronIcon, UploadIcon } from "@/components/icons";
 import { useClients } from "@/hooks/useData";
 import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
@@ -1092,7 +1092,7 @@ function EditClientModal({
   });
 
   // Update form when client changes
-  useState(() => {
+  useEffect(() => {
     if (client) {
       setFormData({
         name: client.name || "",
@@ -1102,18 +1102,7 @@ function EditClientModal({
         status: (client.status as ClientStatus) || "active",
       });
     }
-  });
-
-  // Reset form when client changes
-  if (client && formData.name !== client.name && formData.email !== client.email) {
-    setFormData({
-      name: client.name || "",
-      email: client.email || "",
-      phone: client.phone || "",
-      plan: client.plan || "",
-      status: (client.status as ClientStatus) || "active",
-    });
-  }
+  }, [client]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) {

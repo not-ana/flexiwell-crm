@@ -328,6 +328,13 @@ export default function TeacherDashboard() {
               <p className="text-sm text-gray-600">this week</p>
             </div>
 
+            {/* Hours Teaching */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 mb-1">Hours Teaching</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.hoursTeaching}h</p>
+              <p className="text-sm text-gray-600">this week</p>
+            </div>
+
           </div>
         </div>
 

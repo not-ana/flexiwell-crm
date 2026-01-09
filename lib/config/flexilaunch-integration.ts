@@ -238,7 +238,9 @@ export interface EarlyAdopterOffer {
   termsAndConditions: string[];
 }
 
-export const earlyAdopterOffer: EarlyAdopterOffer = {
+// Default early adopter offer configuration
+// The `claimed` field should be fetched from the database using getEarlyAdopterClaimedCount()
+export const earlyAdopterOfferConfig: Omit<EarlyAdopterOffer, "claimed"> = {
   id: "early_adopter_2025",
   name: "Early Adopter Exclusive",
   description:
@@ -249,7 +251,6 @@ export const earlyAdopterOffer: EarlyAdopterOffer = {
   savingsPercentage: 30,
   validUntil: "2025-03-31T23:59:59Z",
   limited: 10,
-  claimed: 0, // TODO: Track in database
   benefits: [
     "30% discount on Growth Accelerator bundle",
     "6 months FlexiWell Growth plan FREE (value: $594)",
@@ -271,6 +272,88 @@ export const earlyAdopterOffer: EarlyAdopterOffer = {
     "Non-transferable and cannot be combined with other offers",
   ],
 };
+
+// Legacy export for backwards compatibility - use getEarlyAdopterOffer() instead
+export const earlyAdopterOffer: EarlyAdopterOffer = {
+  ...earlyAdopterOfferConfig,
+  claimed: 0, // This is a static fallback - use getEarlyAdopterOffer() for real-time data
+};
+
+/**
+ * Get the early adopter offer with the current claimed count from the database
+ * @param db - MongoDB database instance
+ * @returns EarlyAdopterOffer with real-time claimed count
+ */
+export async function getEarlyAdopterOffer(db: { collection: (name: string) => { countDocuments: (query: Record<string, unknown>) => Promise<number> } }): Promise<EarlyAdopterOffer> {
+  const claimedCount = await db.collection("early_adopter_claims").countDocuments({
+    offerId: earlyAdopterOfferConfig.id,
+    status: { $in: ["claimed", "active"] },
+  });
+
+  return {
+    ...earlyAdopterOfferConfig,
+    claimed: claimedCount,
+  };
+}
+
+/**
+ * Claim an early adopter spot
+ * @param db - MongoDB database instance
+ * @param claimData - Data for the claim
+ * @returns Result of the claim operation
+ */
+export async function claimEarlyAdopterSpot(
+  db: { collection: (name: string) => { countDocuments: (query: Record<string, unknown>) => Promise<number>; insertOne: (doc: Record<string, unknown>) => Promise<{ insertedId: unknown }> } },
+  claimData: {
+    userId: string;
+    studioName: string;
+    email: string;
+    packageId: string;
+  }
+): Promise<{ success: boolean; message: string; spotsRemaining?: number }> {
+  // Check if spots are still available
+  const currentClaimed = await db.collection("early_adopter_claims").countDocuments({
+    offerId: earlyAdopterOfferConfig.id,
+    status: { $in: ["claimed", "active"] },
+  });
+
+  if (currentClaimed >= earlyAdopterOfferConfig.limited) {
+    return {
+      success: false,
+      message: "All early adopter spots have been claimed",
+      spotsRemaining: 0,
+    };
+  }
+
+  // Check if offer is still valid
+  const now = new Date();
+  const expiryDate = new Date(earlyAdopterOfferConfig.validUntil);
+  if (now > expiryDate) {
+    return {
+      success: false,
+      message: "The early adopter offer has expired",
+    };
+  }
+
+  // Create the claim
+  await db.collection("early_adopter_claims").insertOne({
+    offerId: earlyAdopterOfferConfig.id,
+    userId: claimData.userId,
+    studioName: claimData.studioName,
+    email: claimData.email,
+    packageId: claimData.packageId,
+    status: "claimed",
+    claimedAt: new Date(),
+    benefits: earlyAdopterOfferConfig.benefits,
+    discount: earlyAdopterOfferConfig.savingsPercentage,
+  });
+
+  return {
+    success: true,
+    message: "Early adopter spot claimed successfully!",
+    spotsRemaining: earlyAdopterOfferConfig.limited - currentClaimed - 1,
+  };
+}
 
 export interface FlexiLaunchLead {
   id: string;

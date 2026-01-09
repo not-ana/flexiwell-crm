@@ -1,43 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { requireRoleFromCookie } from "@/lib/auth/middleware";
 
 // GET /api/admin/integrations/google-calendar - Get OAuth URL for admin
 export async function GET() {
   try {
-    const user = await getUser();
-    if (!user || user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
+    const { user, error } = await requireRoleFromCookie(["admin"]);
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Check if Google Calendar OAuth is configured
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -85,13 +55,9 @@ export async function GET() {
 // POST /api/admin/integrations/google-calendar - Save admin Google Calendar connection
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user || user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
+    const { user, error } = await requireRoleFromCookie(["admin"]);
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { accessToken, refreshToken, email } = await request.json();
 
@@ -153,13 +119,8 @@ export async function POST(request: NextRequest) {
 // DELETE /api/admin/integrations/google-calendar - Disconnect Google Calendar
 export async function DELETE() {
   try {
-    const user = await getUser();
-    if (!user || user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
+    const { error } = await requireRoleFromCookie(["admin"]);
+    if (error) return error;
 
     const db = await getDatabase();
 

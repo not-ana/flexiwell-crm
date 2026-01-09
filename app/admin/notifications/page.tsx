@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type NotificationChannel = "none" | "in-app" | "email";
 
@@ -154,6 +154,14 @@ export default function AdminNotificationsPage() {
     },
   ];
 
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Track changes
+  useEffect(() => {
+    setHasChanges(true);
+  }, [generalSettings, summarySettings, businessSettings, staffSettings]);
+
   const handleUpdate = (groupIndex: number, id: string, value: NotificationChannel) => {
     switch (groupIndex) {
       case 0:
@@ -168,6 +176,49 @@ export default function AdminNotificationsPage() {
       case 3:
         updateSetting(staffSettings, setStaffSettings, id, value);
         break;
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/admin/settings/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          general: generalSettings,
+          summary: summarySettings,
+          business: businessSettings,
+          staff: staffSettings,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save notification preferences");
+      }
+
+      setHasChanges(false);
+      // Show success toast
+      const toast = document.createElement("div");
+      toast.className = "fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 bg-green-600";
+      toast.textContent = "Notification preferences saved successfully!";
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    } catch (error) {
+      console.error("Error saving preferences:", error);
+      const toast = document.createElement("div");
+      toast.className = "fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 bg-red-600";
+      toast.textContent = "Failed to save preferences. Please try again.";
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -195,14 +246,11 @@ export default function AdminNotificationsPage() {
       {/* Save Button */}
       <div className="mt-6 flex justify-end">
         <button
-          onClick={() => {
-            // In production: await api.saveNotificationPreferences({ generalSettings, summarySettings, businessSettings, staffSettings });
-            console.log("Saving notification preferences:", { generalSettings, summarySettings, businessSettings, staffSettings });
-            alert("Notification preferences saved successfully!");
-          }}
-          className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          onClick={handleSave}
+          disabled={saving || !hasChanges}
+          className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save changes
+          {saving ? "Saving..." : "Save changes"}
         </button>
       </div>
     </div>

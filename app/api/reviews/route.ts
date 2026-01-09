@@ -1,35 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 import type { Review, Staff } from "@/lib/db/schemas";
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-  clientId?: string;
-}
-
-async function getUser(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secret"
-    ) as JWTPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 // Helper to update staff rating aggregates
 async function updateStaffRating(db: ReturnType<typeof getDatabase> extends Promise<infer T> ? T : never, staffId: string) {
@@ -89,13 +62,9 @@ async function updateStaffRating(db: ReturnType<typeof getDatabase> extends Prom
 // GET /api/reviews - List reviews
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const staffId = searchParams.get("staffId");
@@ -117,12 +86,14 @@ export async function GET(request: NextRequest) {
       query.clientId = clientId;
     }
 
+    const userClientId = (user as { clientId?: string }).clientId;
+
     // Non-admin users can only see approved reviews (unless viewing their own)
     if (user.role !== "admin") {
-      if (user.role === "client" && user.clientId) {
+      if (user.role === "client" && userClientId) {
         // Clients can see their own reviews + approved reviews
         query.$or = [
-          { clientId: user.clientId },
+          { clientId: userClientId },
           { status: "approved", isPublic: true },
         ];
       } else if (user.role === "teacher") {
@@ -168,13 +139,9 @@ export async function GET(request: NextRequest) {
 // POST /api/reviews - Create a review
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Only clients can submit reviews
     if (user.role !== "client" && user.role !== "admin") {
@@ -215,10 +182,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userClientId = (user as { clientId?: string }).clientId;
+
     // Get client info
     const client = await db
       .collection("clients")
-      .findOne({ _id: new ObjectId(user.clientId || user.userId) });
+      .findOne({ _id: new ObjectId(userClientId || user.userId) });
 
     if (!client) {
       return NextResponse.json(
@@ -278,8 +247,11 @@ export async function POST(request: NextRequest) {
 // PATCH /api/reviews - Moderate reviews (admin only)
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getUser();
-    if (!user || user.role !== "admin") {
+    const { user, error } = await requireAuthFromCookie();
+    if (error) return error;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (user.role !== "admin") {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
