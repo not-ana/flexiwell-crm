@@ -89,13 +89,15 @@ export async function PUT(
   }
 }
 
-// DELETE /api/payments/[id] - Delete a payment
+// DELETE /api/payments/[id] - Soft delete a payment (moves to deleted_payments)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get("permanent") === "true";
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -106,20 +108,51 @@ export async function DELETE(
 
     const db = await getDatabase();
 
-    const result = await db.collection<Payment>("payments").deleteOne({
+    if (permanent) {
+      // Permanently delete from deleted_payments
+      const result = await db.collection("deleted_payments").deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      if (result.deletedCount === 0) {
+        return NextResponse.json(
+          { error: "Payment not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Payment permanently deleted",
+      });
+    }
+
+    // Soft delete: move to deleted_payments collection
+    const payment = await db.collection<Payment>("payments").findOne({
       _id: new ObjectId(id),
     });
 
-    if (result.deletedCount === 0) {
+    if (!payment) {
       return NextResponse.json(
         { error: "Payment not found" },
         { status: 404 }
       );
     }
 
+    // Insert into deleted_payments with deletion metadata
+    await db.collection("deleted_payments").insertOne({
+      ...payment,
+      deletedAt: new Date(),
+    });
+
+    // Remove from active payments
+    await db.collection<Payment>("payments").deleteOne({
+      _id: new ObjectId(id),
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Payment deleted successfully",
+      message: "Payment moved to trash",
     });
   } catch (error) {
     console.error("Error deleting payment:", error);
@@ -200,6 +233,24 @@ export async function PATCH(
             invoiceUrl: body.invoiceUrl,
           },
         };
+        break;
+
+      case "update":
+        const updateFields: Record<string, unknown> = {};
+        if (body.amount !== undefined) updateFields.amount = body.amount;
+        if (body.paymentMethod) updateFields.paymentMethod = body.paymentMethod;
+        if (body.transactionId !== undefined) updateFields.transactionId = body.transactionId;
+        if (body.type) updateFields.type = body.type;
+        if (body.status) {
+          updateFields.status = body.status;
+          if (body.status === "completed") {
+            updateFields.paidAt = new Date();
+          }
+        }
+        updateOperation = { $set: updateFields };
+        if (body.status === "pending") {
+          updateOperation.$unset = { paidAt: "" };
+        }
         break;
 
       default:

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
       // Map units to establishment format
       establishments = units.map(unit => ({
-        _id: unit._id,
+        _id: unit._id!,
         name: unit.name,
         location: unit.address || unit.location || "",
         address: unit.address || "",
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         isActive: unit.status === "active",
         createdAt: unit.createdAt || new Date(),
         updatedAt: unit.updatedAt || new Date(),
-      })) as Establishment[];
+      }));
     }
 
     return NextResponse.json({ establishments });

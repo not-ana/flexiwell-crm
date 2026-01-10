@@ -291,7 +291,6 @@ function RequestModal({ type, event, onClose, onSubmit }: { type: RequestType; e
   const [selectedSlot, setSelectedSlot] = useState<{ day: string; time: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isUrgent, setIsUrgent] = useState(false);
   const [joinWaitlist, setJoinWaitlist] = useState(false);
   const [preferredDays, setPreferredDays] = useState<string[]>([]);
   const [preferredTimeRange, setPreferredTimeRange] = useState<"morning" | "afternoon" | "evening" | "any">("any");
@@ -469,22 +468,6 @@ function RequestModal({ type, event, onClose, onSubmit }: { type: RequestType; e
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Urgent Toggle */}
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isUrgent}
-                      onChange={(e) => setIsUrgent(e.target.checked)}
-                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-amber-800">Mark as urgent</span>
-                      <p className="text-xs text-amber-600">Increases your priority on the waitlist</p>
-                    </div>
-                  </label>
                 </div>
 
                 {/* Estimated Position */}

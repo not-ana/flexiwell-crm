@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type UserRole = "client" | "admin" | "teacher";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const { register, socialLogin, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<"email" | "details">("email");
@@ -474,5 +474,17 @@ export default function SignUpPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-600 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
   );
 }

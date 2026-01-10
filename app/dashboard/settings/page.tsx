@@ -427,15 +427,27 @@ function ChangePlanModal({
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleConfirmChange = async () => {
+  const currentPlanData = availablePlans.find(p => p.id === currentPlanId);
+  const selectedPlanData = availablePlans.find(p => p.id === selectedPlan);
+  const currentPrice = currentPlanData?.priceMonthly || 0;
+  const newPrice = billingPeriod === "monthly" ? selectedPlanData?.priceMonthly : selectedPlanData?.priceAnnual;
+  const isUpgrade = (newPrice || 0) > currentPrice;
+  const isDowngrade = (newPrice || 0) < currentPrice;
+
+  const handleRequestChange = () => {
     if (selectedPlan === currentPlanId) {
       setError("You're already on this plan.");
       return;
     }
+    setError("");
+    setShowConfirmModal(true);
+  };
 
+  const handleConfirmChange = async () => {
     setIsProcessing(true);
     setError("");
 
@@ -455,16 +467,17 @@ function ChangePlanModal({
         throw new Error(data.error || "Failed to change plan");
       }
 
+      setShowConfirmModal(false);
       onPlanChanged?.();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to change plan");
+      setShowConfirmModal(false);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const selectedPlanData = availablePlans.find(p => p.id === selectedPlan);
   const displayPrice = billingPeriod === "monthly"
     ? selectedPlanData?.priceMonthly
     : selectedPlanData?.priceAnnual;
@@ -562,14 +575,105 @@ function ChangePlanModal({
             Cancel
           </button>
           <button
-            onClick={handleConfirmChange}
-            disabled={isProcessing || selectedPlan === currentPlanId}
+            onClick={handleRequestChange}
+            disabled={selectedPlan === currentPlanId}
             className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Processing..." : `Change to ${selectedPlanData?.name} - $${displayPrice}/mo`}
+            {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select Plan"}
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6">
+              {/* Icon */}
+              <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 ${
+                isUpgrade ? "bg-green-100" : "bg-amber-100"
+              }`}>
+                {isUpgrade ? (
+                  <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                ) : (
+                  <svg className="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                {isUpgrade ? "Confirm Upgrade" : "Confirm Downgrade"}
+              </h3>
+
+              {/* Plan change summary */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-center flex-1">
+                    <p className="text-xs text-gray-500 mb-1">Current Plan</p>
+                    <p className="font-semibold text-gray-900">{currentPlanData?.name}</p>
+                    <p className="text-sm text-gray-600">${currentPrice}/mo</p>
+                  </div>
+                  <div className="px-3">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                  <div className="text-center flex-1">
+                    <p className="text-xs text-gray-500 mb-1">New Plan</p>
+                    <p className="font-semibold text-gray-900">{selectedPlanData?.name}</p>
+                    <p className="text-sm text-gray-600">${newPrice}/mo</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning/Info message */}
+              <div className={`p-3 rounded-lg mb-4 ${
+                isUpgrade ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+              }`}>
+                <p className={`text-sm ${isUpgrade ? "text-green-700" : "text-amber-700"}`}>
+                  {isUpgrade
+                    ? "Your new plan will be activated immediately. You will have access to more classes and features."
+                    : "When downgrading, your remaining classes may be adjusted. Please check with the studio for details."}
+                </p>
+              </div>
+
+              {/* Billing info */}
+              <p className="text-xs text-gray-500 text-center">
+                {billingPeriod === "annual"
+                  ? `Billed annually at $${(newPrice || 0) * 12}/year`
+                  : `Billed monthly at $${newPrice}/month`
+                }
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmChange}
+                disabled={isProcessing}
+                className={`flex-1 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                  isUpgrade
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-amber-600 hover:bg-amber-700"
+                }`}
+              >
+                {isProcessing ? "Processing..." : isUpgrade ? "Confirm Upgrade" : "Confirm Downgrade"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -52,6 +52,7 @@ async function handleBookingCreated(data: WellhubBookingWebhook["data"]) {
           email: true,
           whatsapp: false,
           instagram: false,
+          sms: false,
         },
       },
       createdAt: new Date(),

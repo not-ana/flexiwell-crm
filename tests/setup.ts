@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { vi, beforeEach } from "vitest";
 
 // Set environment variables for testing
 process.env.JWT_SECRET = "test-secret-key-for-testing";

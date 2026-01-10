@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, CheckCircleIcon, ToggleIcon } from "@/components/icons";
 
+
 interface Integration {
   id: string;
   name: string;

@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
       planDetails,
       paymentMethod,
       transactionId,
+      status,
     } = body;
 
     // Validation
@@ -154,6 +155,9 @@ export async function POST(request: NextRequest) {
 
     const db = await getDatabase();
 
+    const validStatuses = ["pending", "completed"];
+    const paymentStatus = status && validStatuses.includes(status) ? status : "pending";
+
     const newPayment: Omit<Payment, "_id"> = {
       clientId,
       clientName,
@@ -161,10 +165,11 @@ export async function POST(request: NextRequest) {
       currency: currency || "USD",
       type,
       planDetails: planDetails || undefined,
-      status: "pending",
+      status: paymentStatus,
       paymentMethod,
       transactionId: transactionId || undefined,
       createdAt: new Date(),
+      ...(paymentStatus === "completed" && { paidAt: new Date() }),
     };
 
     const result = await db.collection<Payment>("payments").insertOne(newPayment);

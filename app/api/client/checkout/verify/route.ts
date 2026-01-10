@@ -155,6 +155,7 @@ export async function GET(request: NextRequest) {
             email: true,
             whatsapp: true,
             instagram: false,
+            sms: false,
           },
         },
         createdAt: now,

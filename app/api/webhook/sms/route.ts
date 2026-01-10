@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
         // Convert button response to SMS format
         const header = response.header?.text;
         const bodyText = response.body.text;
-        const options = response.action?.buttons?.map((btn: { reply: { id: string; title: string } }) => ({
+        const action = response.action as { buttons?: Array<{ reply: { id: string; title: string } }> } | undefined;
+        const options = action?.buttons?.map((btn) => ({
           id: btn.reply.id,
           title: btn.reply.title,
         })) || [];

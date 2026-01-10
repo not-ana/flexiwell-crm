@@ -20,6 +20,12 @@ function showToast(message: string, type: "success" | "error" = "success") {
 type PaymentStatus = "paid" | "pending" | "overdue" | "failed" | "refunded";
 type PaymentFilter = "all" | PaymentStatus;
 
+interface ClientSearchResult {
+  _id: string;
+  name: string;
+  email: string;
+}
+
 interface Payment {
   _id: string;
   clientId: string;
@@ -162,6 +168,7 @@ export default function PaymentsPage() {
   const [markPaidTarget, setMarkPaidTarget] = useState<DisplayPayment | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [recordPaymentForm, setRecordPaymentForm] = useState({
+    clientId: "",
     clientName: "",
     amount: "",
     // pix: Hidden for US market - re-enable for Brazil
@@ -169,7 +176,28 @@ export default function PaymentsPage() {
     reference: "",
     notes: "",
     type: "subscription" as "subscription" | "drop-in" | "package",
+    status: "completed" as "completed" | "pending",
   });
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<ClientSearchResult[]>([]);
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const [showEditPaymentModal, setShowEditPaymentModal] = useState(false);
+  const [editPaymentTarget, setEditPaymentTarget] = useState<DisplayPayment | null>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState({
+    amount: "",
+    paymentMethod: "cash" as "cash" | "bank_transfer" | "credit_card",
+    reference: "",
+    type: "subscription" as "subscription" | "drop-in" | "package",
+    status: "completed" as "completed" | "pending",
+  });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DisplayPayment | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<DisplayPayment | null>(null);
+  const [showDeletedHistoryModal, setShowDeletedHistoryModal] = useState(false);
+  const [deletedPayments, setDeletedPayments] = useState<(DisplayPayment & { deletedAt: string })[]>([]);
+  const [loadingDeleted, setLoadingDeleted] = useState(false);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -227,6 +255,32 @@ export default function PaymentsPage() {
     fetchPayments();
   }, [fetchPayments]);
 
+  // Client search with debounce
+  useEffect(() => {
+    if (!clientSearchQuery || clientSearchQuery.length < 2) {
+      setClientSearchResults([]);
+      return;
+    }
+
+    const debounceTimer = setTimeout(async () => {
+      setClientSearchLoading(true);
+      try {
+        const response = await fetch(`/api/clients?search=${encodeURIComponent(clientSearchQuery)}&limit=10`);
+        if (response.ok) {
+          const data = await response.json();
+          setClientSearchResults(data.clients || []);
+          setShowClientDropdown(true);
+        }
+      } catch (err) {
+        console.error("Failed to search clients:", err);
+      } finally {
+        setClientSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [clientSearchQuery]);
+
   // Filter payments client-side for status
   const filteredPayments = payments.filter((payment) => {
     if (statusFilter === "all") return true;
@@ -270,7 +324,7 @@ export default function PaymentsPage() {
   };
 
   const handleRecordPayment = async () => {
-    if (!recordPaymentForm.clientName || !recordPaymentForm.amount) return;
+    if (!recordPaymentForm.clientId || !recordPaymentForm.amount) return;
 
     setActionLoading(true);
     try {
@@ -278,13 +332,14 @@ export default function PaymentsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clientId: `client-${Date.now()}`,
+          clientId: recordPaymentForm.clientId,
           clientName: recordPaymentForm.clientName,
           amount: parseFloat(recordPaymentForm.amount),
           currency: "USD",
           type: recordPaymentForm.type,
           paymentMethod: recordPaymentForm.paymentMethod,
           transactionId: recordPaymentForm.reference || undefined,
+          status: recordPaymentForm.status,
         }),
       });
 
@@ -294,13 +349,17 @@ export default function PaymentsPage() {
 
       setShowRecordPaymentModal(false);
       setRecordPaymentForm({
+        clientId: "",
         clientName: "",
         amount: "",
         paymentMethod: "cash",
         reference: "",
         notes: "",
         type: "subscription",
+        status: "completed",
       });
+      setClientSearchQuery("");
+      setClientSearchResults([]);
 
       // Refresh payments list
       fetchPayments();
@@ -342,6 +401,52 @@ export default function PaymentsPage() {
     }
   };
 
+  const handleEditPayment = (payment: DisplayPayment) => {
+    setEditPaymentTarget(payment);
+    setEditPaymentForm({
+      amount: payment.amount.toString(),
+      paymentMethod: payment.paymentMethod as "cash" | "bank_transfer" | "credit_card",
+      reference: payment.transactionId || "",
+      type: payment.type,
+      status: payment.status === "paid" ? "completed" : "pending",
+    });
+    setShowEditPaymentModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleSaveEditPayment = async () => {
+    if (!editPaymentTarget || !editPaymentForm.amount) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/payments/${editPaymentTarget._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          amount: parseFloat(editPaymentForm.amount),
+          paymentMethod: editPaymentForm.paymentMethod,
+          transactionId: editPaymentForm.reference || undefined,
+          type: editPaymentForm.type,
+          status: editPaymentForm.status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update payment");
+      }
+
+      setShowEditPaymentModal(false);
+      setEditPaymentTarget(null);
+      showToast("Payment updated successfully");
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleRetryPayment = async (payment: DisplayPayment) => {
     setActionLoading(true);
     try {
@@ -358,6 +463,107 @@ export default function PaymentsPage() {
       fetchPayments();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to retry payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeletePayment = (payment: DisplayPayment) => {
+    setDeleteTarget(payment);
+    setShowDeleteModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/payments/${deleteTarget._id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete payment");
+      }
+
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+      showToast("Payment deleted successfully");
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleViewHistory = (payment: DisplayPayment) => {
+    setHistoryTarget(payment);
+    setShowHistoryModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleOpenDeletedHistory = async () => {
+    setShowDeletedHistoryModal(true);
+    setLoadingDeleted(true);
+    try {
+      const response = await fetch("/api/payments/deleted?limit=50");
+      if (response.ok) {
+        const data = await response.json();
+        const transformed = data.payments.map((p: Payment & { deletedAt: string }) => ({
+          ...transformPayment(p),
+          deletedAt: p.deletedAt,
+        }));
+        setDeletedPayments(transformed);
+      }
+    } catch (err) {
+      console.error("Failed to fetch deleted payments:", err);
+    } finally {
+      setLoadingDeleted(false);
+    }
+  };
+
+  const handleRestorePayment = async (paymentId: string) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch("/api/payments/deleted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to restore payment");
+      }
+
+      showToast("Payment restored successfully");
+      setDeletedPayments(prev => prev.filter(p => p._id !== paymentId));
+      fetchPayments();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to restore payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePermanentDelete = async (paymentId: string) => {
+    if (!confirm("Are you sure? This cannot be undone.")) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/payments/${paymentId}?permanent=true`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete payment");
+      }
+
+      showToast("Payment permanently deleted");
+      setDeletedPayments(prev => prev.filter(p => p._id !== paymentId));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete payment");
     } finally {
       setActionLoading(false);
     }
@@ -534,6 +740,16 @@ export default function PaymentsPage() {
             </button>
           )}
           <button
+            onClick={handleOpenDeletedHistory}
+            className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            title="View deleted payments"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span className="hidden lg:inline">Trash</span>
+          </button>
+          <button
             onClick={() => setShowExportModal(true)}
             className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
@@ -656,7 +872,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Payments Table/Cards */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl">
         {/* Mobile/Tablet Card View */}
         <div className="lg:hidden divide-y divide-gray-100">
           {filteredPayments.length === 0 ? (
@@ -842,13 +1058,13 @@ export default function PaymentsPage() {
                           <button
                             onClick={() => handleMarkPaid(payment)}
                             disabled={actionLoading}
-                            className="px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                            className="px-3 py-1.5 text-xs font-medium text-green-700 bg-white border border-green-300 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 shadow-sm"
                           >
                             Mark Paid
                           </button>
                           <button
                             onClick={() => handleSendReminder(payment)}
-                            className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                            className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-300 rounded-md hover:bg-primary-50 hover:border-primary-400 transition-colors shadow-sm"
                           >
                             Reminder
                           </button>
@@ -858,7 +1074,7 @@ export default function PaymentsPage() {
                         <button
                           onClick={() => handleRetryPayment(payment)}
                           disabled={actionLoading}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors disabled:opacity-50 shadow-sm"
                         >
                           Retry
                         </button>
@@ -875,7 +1091,16 @@ export default function PaymentsPage() {
                           </svg>
                         </button>
                         {openDropdownId === payment._id && (
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                            <button
+                              onClick={() => handleEditPayment(payment)}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Edit Payment
+                            </button>
                             <button
                               onClick={() => handleViewInvoice(payment)}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -909,6 +1134,16 @@ export default function PaymentsPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                               </svg>
                               Copy Transaction ID
+                            </button>
+                            <div className="border-t border-gray-100 my-1"></div>
+                            <button
+                              onClick={() => handleDeletePayment(payment)}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete Payment
                             </button>
                           </div>
                         )}
@@ -1211,16 +1446,81 @@ export default function PaymentsPage() {
             </div>
 
             <div className="p-4 sm:p-6 space-y-4">
-              {/* Client Name */}
-              <div>
+              {/* Client Name with Search */}
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Client Name</label>
-                <input
-                  type="text"
-                  value={recordPaymentForm.clientName}
-                  onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, clientName: e.target.value })}
-                  placeholder="Enter client name..."
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={recordPaymentForm.clientId ? recordPaymentForm.clientName : clientSearchQuery}
+                    onChange={(e) => {
+                      if (recordPaymentForm.clientId) {
+                        setRecordPaymentForm({ ...recordPaymentForm, clientId: "", clientName: "" });
+                      }
+                      setClientSearchQuery(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => clientSearchResults.length > 0 && setShowClientDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                    placeholder="Search for a client..."
+                    className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                  {clientSearchLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary-500"></div>
+                    </div>
+                  )}
+                  {recordPaymentForm.clientId && !clientSearchLoading && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecordPaymentForm({ ...recordPaymentForm, clientId: "", clientName: "" });
+                        setClientSearchQuery("");
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {/* Dropdown Results */}
+                {showClientDropdown && clientSearchResults.length > 0 && !recordPaymentForm.clientId && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {clientSearchResults.map((client) => (
+                      <button
+                        key={client._id}
+                        type="button"
+                        onClick={() => {
+                          setRecordPaymentForm({
+                            ...recordPaymentForm,
+                            clientId: client._id,
+                            clientName: client.name,
+                          });
+                          setClientSearchQuery("");
+                          setShowClientDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-semibold text-primary-700">
+                            {client.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{client.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{client.email}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showClientDropdown && clientSearchQuery.length >= 2 && clientSearchResults.length === 0 && !clientSearchLoading && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500 text-center">
+                    No clients found
+                  </div>
+                )}
               </div>
 
               {/* Amount */}
@@ -1286,6 +1586,41 @@ export default function PaymentsPage() {
                 />
               </div>
 
+              {/* Payment Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Status</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, status: "completed" })}
+                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      recordPaymentForm.status === "completed"
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Paid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecordPaymentForm({ ...recordPaymentForm, status: "pending" })}
+                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      recordPaymentForm.status === "pending"
+                        ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Pending
+                  </button>
+                </div>
+              </div>
+
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
@@ -1308,7 +1643,7 @@ export default function PaymentsPage() {
               </button>
               <button
                 onClick={handleRecordPayment}
-                disabled={!recordPaymentForm.clientName || !recordPaymentForm.amount || actionLoading}
+                disabled={!recordPaymentForm.clientId || !recordPaymentForm.amount || actionLoading}
                 className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {actionLoading ? (
@@ -1431,6 +1766,453 @@ export default function PaymentsPage() {
                     Confirm Payment
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      {showEditPaymentModal && editPaymentTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Edit Payment</h2>
+                <button
+                  onClick={() => {
+                    setShowEditPaymentModal(false);
+                    setEditPaymentTarget(null);
+                  }}
+                  className="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Client Info (read-only) */}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-primary-700">{editPaymentTarget.clientInitials}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{editPaymentTarget.clientName}</p>
+                  <p className="text-sm text-gray-500 truncate">{editPaymentTarget.clientEmail}</p>
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    value={editPaymentForm.amount}
+                    onChange={(e) => setEditPaymentForm({ ...editPaymentForm, amount: e.target.value })}
+                    className="w-full pl-7 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Type</label>
+                <select
+                  value={editPaymentForm.type}
+                  onChange={(e) => setEditPaymentForm({ ...editPaymentForm, type: e.target.value as "subscription" | "drop-in" | "package" })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="subscription">Subscription</option>
+                  <option value="drop-in">Drop-in</option>
+                  <option value="package">Package</option>
+                </select>
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["cash", "bank_transfer", "credit_card"] as const).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setEditPaymentForm({ ...editPaymentForm, paymentMethod: method })}
+                      className={`px-3 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
+                        editPaymentForm.paymentMethod === method
+                          ? "border-green-500 bg-green-50 text-green-700"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : "Cash"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reference/Transaction ID */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference / Transaction ID</label>
+                <input
+                  type="text"
+                  value={editPaymentForm.reference}
+                  onChange={(e) => setEditPaymentForm({ ...editPaymentForm, reference: e.target.value })}
+                  placeholder="Optional - receipt number, check number, etc."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+
+              {/* Payment Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Status</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditPaymentForm({ ...editPaymentForm, status: "completed" })}
+                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      editPaymentForm.status === "completed"
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Paid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditPaymentForm({ ...editPaymentForm, status: "pending" })}
+                    className={`px-3 py-2.5 border-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      editPaymentForm.status === "pending"
+                        ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Pending
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={() => {
+                  setShowEditPaymentModal(false);
+                  setEditPaymentTarget(null);
+                }}
+                className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditPayment}
+                disabled={!editPaymentForm.amount || actionLoading}
+                className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {actionLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Payment</h3>
+              <p className="text-sm text-gray-500 mb-1">
+                Are you sure you want to delete this payment?
+              </p>
+              <p className="text-sm font-medium text-gray-700 mb-6">
+                {deleteTarget.clientName} - {formatCurrency(deleteTarget.amount, deleteTarget.currency)}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteTarget(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment History Modal */}
+      {showHistoryModal && historyTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Payment History</h2>
+                <button
+                  onClick={() => {
+                    setShowHistoryModal(false);
+                    setHistoryTarget(null);
+                  }}
+                  className="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              {/* Payment Summary */}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-primary-700">{historyTarget.clientInitials}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900 truncate">{historyTarget.clientName}</p>
+                  <p className="text-sm text-gray-500">{formatCurrency(historyTarget.amount, historyTarget.currency)}</p>
+                </div>
+                <StatusBadge status={historyTarget.status} />
+              </div>
+
+              {/* Timeline */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Activity Timeline</h4>
+                <div className="relative">
+                  <div className="absolute left-3 top-3 bottom-3 w-0.5 bg-gray-200"></div>
+                  <div className="space-y-4">
+                    {/* Created */}
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 z-10">
+                        <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Payment Created</p>
+                        <p className="text-xs text-gray-500">{formatDate(historyTarget.dueDate)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {historyTarget.planName} • {historyTarget.paymentMethod.replace("_", " ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status changes based on current status */}
+                    {historyTarget.status === "paid" && historyTarget.paidDate && (
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 z-10">
+                          <svg className="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Payment Completed</p>
+                          <p className="text-xs text-gray-500">{historyTarget.paidDate}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {historyTarget.status === "overdue" && (
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 z-10">
+                          <svg className="w-3 h-3 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Payment Overdue</p>
+                          <p className="text-xs text-gray-500">{historyTarget.daysOverdue} days overdue</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {historyTarget.status === "failed" && (
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 z-10">
+                          <svg className="w-3 h-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Payment Failed</p>
+                          <p className="text-xs text-gray-500">Transaction could not be processed</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {historyTarget.status === "refunded" && (
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 z-10">
+                          <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Payment Refunded</p>
+                          <p className="text-xs text-gray-500">Full refund issued</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Details */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Payment Details</h4>
+                <dl className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Transaction ID</dt>
+                    <dd className="text-gray-900 font-mono text-xs">{historyTarget.transactionId || historyTarget._id}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Payment Method</dt>
+                    <dd className="text-gray-900 capitalize">{historyTarget.paymentMethod.replace("_", " ")}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Type</dt>
+                    <dd className="text-gray-900 capitalize">{historyTarget.type}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Due Date</dt>
+                    <dd className="text-gray-900">{historyTarget.dueDate}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setHistoryTarget(null);
+                }}
+                className="w-full px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deleted Payments History Modal */}
+      {showDeletedHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Deleted Payments</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Restore or permanently delete payments</p>
+                </div>
+                <button
+                  onClick={() => setShowDeletedHistoryModal(false)}
+                  className="p-1.5 -mr-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {loadingDeleted ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+                </div>
+              ) : deletedPayments.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <h3 className="text-base font-medium text-gray-900 mb-1">Trash is empty</h3>
+                  <p className="text-sm text-gray-500">Deleted payments will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {deletedPayments.map((payment) => (
+                    <div
+                      key={payment._id}
+                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-semibold text-gray-600">{payment.clientInitials}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{payment.clientName}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatCurrency(payment.amount, payment.currency)} • {payment.planName}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Deleted {formatDate(payment.deletedAt)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleRestorePayment(payment._id)}
+                          disabled={actionLoading}
+                          className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-50"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(payment._id)}
+                          disabled={actionLoading}
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 sm:p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowDeletedHistoryModal(false)}
+                className="w-full px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Close
               </button>
             </div>
           </div>

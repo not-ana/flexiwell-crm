@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
               email: true,
               whatsapp: true,
               instagram: false,
+              sms: false,
             },
           },
           createdAt: now,

@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
             email: true,
             whatsapp: false,
             instagram: false,
+            sms: false,
           },
         },
         createdAt: now,
