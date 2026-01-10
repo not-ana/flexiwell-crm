@@ -165,6 +165,7 @@ export interface RegisterRequest {
   name: string;
   role?: "admin" | "teacher" | "client";
   phone?: string;
+  inviteCode?: string; // Codigo de convite para vincular cliente a empresa
 }
 
 export interface AuthUser {

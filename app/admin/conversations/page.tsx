@@ -51,7 +51,8 @@ export default function ConversationsPage() {
   const [replyText, setReplyText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "closed">("all");
-  const [filterPlatform, setFilterPlatform] = useState<"all" | "whatsapp" | "instagram">("all");
+  // instagram: Hidden - incomplete implementation, re-enable post-MVP
+  const [filterPlatform, setFilterPlatform] = useState<"all" | "whatsapp">("all");
 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
@@ -213,6 +214,7 @@ export default function ConversationsPage() {
                 <option value="active">Active</option>
                 <option value="closed">Closed</option>
               </select>
+              {/* instagram: Hidden - platform filter simplified for MVP */}
               <select
                 value={filterPlatform}
                 onChange={(e) => setFilterPlatform(e.target.value as typeof filterPlatform)}
@@ -220,7 +222,6 @@ export default function ConversationsPage() {
               >
                 <option value="all">All Platforms</option>
                 <option value="whatsapp">WhatsApp</option>
-                <option value="instagram">Instagram</option>
               </select>
             </div>
           </div>

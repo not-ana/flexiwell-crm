@@ -24,16 +24,18 @@ export async function GET() {
     }
 
     // Build integrations list based on what's configured in the database
+    // Hidden for US market: wellhub, instagram, tecnofit - re-enable for Brazil/LATAM
     const integrations = [
-      {
-        id: "wellhub",
-        name: "Wellhub",
-        description: "Connect with Wellhub (formerly Gympass) for corporate wellness",
-        icon: "🏋️",
-        category: "marketplace",
-        status: credentialsMap["wellhub"] ? "connected" : "available",
-        connectedAt: (credentialsMap["wellhub"] as Record<string, unknown>)?.createdAt || null,
-      },
+      // wellhub: Hidden for US market
+      // {
+      //   id: "wellhub",
+      //   name: "Wellhub",
+      //   description: "Connect with Wellhub (formerly Gympass) for corporate wellness",
+      //   icon: "🏋️",
+      //   category: "marketplace",
+      //   status: credentialsMap["wellhub"] ? "connected" : "available",
+      //   connectedAt: (credentialsMap["wellhub"] as Record<string, unknown>)?.createdAt || null,
+      // },
       {
         id: "stripe",
         name: "Stripe",
@@ -62,14 +64,24 @@ export async function GET() {
         connectedAt: settings?.whatsapp?.connectedAt || null,
       },
       {
-        id: "instagram",
-        name: "Instagram",
-        description: "Receive messages and respond to clients",
-        icon: "📸",
+        id: "sms",
+        name: "SMS (Twilio)",
+        description: "Send SMS notifications and automated replies to US clients",
+        icon: "💬",
         category: "messaging",
-        status: settings?.instagram?.accessToken ? "connected" : "available",
-        connectedAt: settings?.instagram?.connectedAt || null,
+        status: settings?.sms?.accountSid ? "connected" : "available",
+        connectedAt: settings?.sms?.connectedAt || null,
       },
+      // instagram: Hidden - incomplete implementation, re-enable post-MVP
+      // {
+      //   id: "instagram",
+      //   name: "Instagram",
+      //   description: "Receive messages and respond to clients",
+      //   icon: "📸",
+      //   category: "messaging",
+      //   status: settings?.instagram?.accessToken ? "connected" : "available",
+      //   connectedAt: settings?.instagram?.connectedAt || null,
+      // },
       {
         id: "mailchimp",
         name: "Mailchimp",
@@ -124,15 +136,16 @@ export async function GET() {
         status: credentialsMap["glofox"] ? "connected" : "available",
         connectedAt: (credentialsMap["glofox"] as Record<string, unknown>)?.createdAt || null,
       },
-      {
-        id: "tecnofit",
-        name: "Tecnofit",
-        description: "Importe seus dados do Tecnofit para o FlexiWell",
-        icon: "📥",
-        category: "migration",
-        status: credentialsMap["tecnofit"] ? "connected" : "available",
-        connectedAt: (credentialsMap["tecnofit"] as Record<string, unknown>)?.createdAt || null,
-      },
+      // tecnofit: Hidden for US market - re-enable for Brazil/LATAM
+      // {
+      //   id: "tecnofit",
+      //   name: "Tecnofit",
+      //   description: "Importe seus dados do Tecnofit para o FlexiWell",
+      //   icon: "📥",
+      //   category: "migration",
+      //   status: credentialsMap["tecnofit"] ? "connected" : "available",
+      //   connectedAt: (credentialsMap["tecnofit"] as Record<string, unknown>)?.createdAt || null,
+      // },
     ];
 
     return NextResponse.json({ integrations });
@@ -215,6 +228,21 @@ export async function POST(request: NextRequest) {
         if (!credentials.accountSid || !credentials.authToken || !credentials.phoneNumber) {
           return NextResponse.json(
             { error: "WhatsApp requires accountSid, authToken, and phoneNumber (Twilio)" },
+            { status: 400 }
+          );
+        }
+        credentialData = {
+          accountSid: credentials.accountSid,
+          authToken: credentials.authToken,
+          phoneNumber: credentials.phoneNumber,
+          connectedAt: new Date(),
+        };
+        break;
+
+      case "sms":
+        if (!credentials.accountSid || !credentials.authToken || !credentials.phoneNumber) {
+          return NextResponse.json(
+            { error: "SMS requires accountSid, authToken, and phoneNumber (Twilio)" },
             { status: 400 }
           );
         }

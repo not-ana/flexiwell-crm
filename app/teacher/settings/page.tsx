@@ -1,30 +1,273 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
+import { AccountSettings } from "@/components/settings/AccountSettings";
+import { api, getStoredTokens } from "@/lib/api/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-type TeacherSettingsTab = "profile" | "availability" | "notifications";
+type TeacherSettingsTab = "profile" | "availability" | "notifications" | "account";
 
 const tabs: { id: TeacherSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "availability", label: "Availability" },
   { id: "notifications", label: "Notifications" },
+  { id: "account", label: "Account" },
 ];
+
+// Helper to get initials from name
+function getInitials(firstName: string, lastName: string): string {
+  const first = firstName?.[0]?.toUpperCase() || "";
+  const last = lastName?.[0]?.toUpperCase() || "";
+  return first + last || "??";
+}
 
 // Profile Settings Component
 function ProfileSettings() {
+  const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: "Maria",
-    lastName: "Santos",
-    email: "maria@flexiwell.com",
-    phone: "+55 11 98765-4321",
-    bio: "Certified Pilates instructor with 8 years of experience. Specialized in rehabilitation and posture correction.",
-    specialties: ["Pilates", "Yoga", "Stretching"],
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    bio: "",
+    specialties: [] as string[],
   });
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [originalAvatar, setOriginalAvatar] = useState<string | null>(null);
+  const [pendingPhotoBase64, setPendingPhotoBase64] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [passwords, setPasswords] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+
+  // Fetch profile on mount
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await api.get<{
+          firstName: string;
+          lastName: string;
+          email: string;
+          phone: string;
+          avatar: string | null;
+          name: string;
+        }>("/api/profile");
+
+        if (response.data) {
+          const data = response.data;
+          setFormData({
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            bio: "",
+            specialties: [],
+          });
+          setAvatar(data.avatar);
+          setOriginalAvatar(data.avatar);
+        } else if (response.error) {
+          console.error("Failed to fetch profile:", response.error);
+          // Fallback to auth user data
+          if (user) {
+            const nameParts = user.name?.split(" ") || [];
+            setFormData({
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              email: user.email || "",
+              phone: "",
+              bio: "",
+              specialties: [],
+            });
+            setAvatar(user.avatar || null);
+            setOriginalAvatar(user.avatar || null);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchProfile();
+  }, [user]);
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
   };
+
+  const handleCancel = async () => {
+    // Refetch profile to reset
+    setIsLoading(true);
+    try {
+      const response = await api.get<{
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        avatar: string | null;
+      }>("/api/profile");
+
+      if (response.data) {
+        setFormData({
+          firstName: response.data.firstName || "",
+          lastName: response.data.lastName || "",
+          email: response.data.email || "",
+          phone: response.data.phone || "",
+          bio: "",
+          specialties: [],
+        });
+        setAvatar(response.data.avatar);
+        setOriginalAvatar(response.data.avatar);
+      }
+      setPasswords({ current: "", new: "", confirm: "" });
+      setPendingPhotoBase64(null);
+      setError("");
+      setSuccess("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      // Validate passwords if changing
+      if (passwords.new || passwords.current) {
+        if (!passwords.current) {
+          setError("Current password is required to change password");
+          setIsSaving(false);
+          return;
+        }
+        if (passwords.new !== passwords.confirm) {
+          setError("New passwords do not match");
+          setIsSaving(false);
+          return;
+        }
+        if (passwords.new.length < 8) {
+          setError("New password must be at least 8 characters");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      const { accessToken } = getStoredTokens();
+      const authHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (accessToken) {
+        authHeaders["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      let newAvatarUrl: string | undefined;
+
+      // Upload pending photo if there is one
+      if (pendingPhotoBase64) {
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({
+            type: "profile",
+            data: pendingPhotoBase64,
+          }),
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          throw new Error(uploadData.error || "Failed to upload photo");
+        }
+
+        newAvatarUrl = uploadData.url;
+      }
+
+      const updateData: Record<string, string | undefined> = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+      };
+
+      if (newAvatarUrl) {
+        updateData.avatar = newAvatarUrl;
+      }
+
+      if (passwords.current && passwords.new) {
+        updateData.currentPassword = passwords.current;
+        updateData.newPassword = passwords.new;
+      }
+
+      const response = await api.put<{ success: boolean; error?: string; user?: { name: string; avatar?: string } }>("/api/profile", updateData);
+
+      if (response.error) {
+        throw new Error(response.error.error || "Failed to update profile");
+      }
+
+      // Update local state with new avatar
+      if (newAvatarUrl) {
+        setAvatar(newAvatarUrl);
+        setOriginalAvatar(newAvatarUrl);
+        setPendingPhotoBase64(null);
+      }
+
+      // Update AuthContext with new user data
+      if (user) {
+        updateUser({
+          ...user,
+          name: response.data?.user?.name || `${formData.firstName} ${formData.lastName}`.trim(),
+          avatar: newAvatarUrl || avatar || undefined,
+        });
+      }
+
+      setSuccess("Profile updated successfully!");
+      setPasswords({ current: "", new: "", confirm: "" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePhotoChange = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          setError("Image must be less than 2MB");
+          return;
+        }
+
+        // Convert to base64 for preview only - actual upload happens on Save
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          setPendingPhotoBase64(base64);
+          setAvatar(base64); // Show preview immediately
+          setError("");
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -33,14 +276,39 @@ function ProfileSettings() {
         <p className="text-sm text-gray-600 mt-1">Update your personal information.</p>
       </div>
 
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-600">{success}</p>
+        </div>
+      )}
+
       <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-6">
         {/* Avatar */}
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-100 to-pink-100 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-lg sm:text-xl font-semibold text-primary-600">MS</span>
-          </div>
+          {avatar ? (
+            <img
+              src={avatar}
+              alt="Profile"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-lg sm:text-xl font-semibold text-white">
+                {getInitials(formData.firstName, formData.lastName)}
+              </span>
+            </div>
+          )}
           <div>
-            <button className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button
+              onClick={handlePhotoChange}
+              className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
               Change photo
             </button>
             <p className="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max 2MB.</p>
@@ -74,8 +342,8 @@ function ProfileSettings() {
           <input
             type="email"
             value={formData.email}
-            onChange={(e) => handleChange("email", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
           />
         </div>
 
@@ -89,30 +357,6 @@ function ProfileSettings() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Specialties</label>
-          <div className="flex flex-wrap gap-2">
-            {formData.specialties.map((specialty) => (
-              <span key={specialty} className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                {specialty}
-              </span>
-            ))}
-            <button className="px-3 py-1.5 border border-dashed border-gray-300 text-gray-500 rounded-full text-sm hover:border-gray-400">
-              + Add
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-          <textarea
-            value={formData.bio}
-            onChange={(e) => handleChange("bio", e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-          />
-        </div>
-
         {/* Password Section */}
         <div className="pt-4 border-t border-gray-200">
           <h3 className="text-sm font-medium text-gray-900 mb-4">Change password</h3>
@@ -122,6 +366,8 @@ function ProfileSettings() {
               <input
                 type="password"
                 placeholder="Enter current password"
+                value={passwords.current}
+                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -130,6 +376,8 @@ function ProfileSettings() {
               <input
                 type="password"
                 placeholder="Enter new password"
+                value={passwords.new}
+                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -138,6 +386,8 @@ function ProfileSettings() {
               <input
                 type="password"
                 placeholder="Confirm new password"
+                value={passwords.confirm}
+                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -146,8 +396,10 @@ function ProfileSettings() {
 
         {/* Actions */}
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
-          <Button variant="secondary">Cancel</Button>
-          <Button>Save changes</Button>
+          <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save changes"}
+          </Button>
         </div>
       </div>
     </div>
@@ -435,6 +687,8 @@ export default function TeacherSettingsPage() {
         return <AvailabilitySettings />;
       case "notifications":
         return <NotificationsSettings />;
+      case "account":
+        return <AccountSettings />;
       default:
         return <ProfileSettings />;
     }

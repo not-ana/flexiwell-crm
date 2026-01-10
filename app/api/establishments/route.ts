@@ -15,11 +15,35 @@ export async function GET(request: NextRequest) {
       filter.isActive = true;
     }
 
-    const establishments = await db
+    // Try establishments collection first
+    let establishments = await db
       .collection<Establishment>("establishments")
       .find(filter)
       .sort({ name: 1 })
       .toArray();
+
+    // If no establishments found, try the 'units' collection (legacy)
+    if (establishments.length === 0) {
+      const units = await db
+        .collection("units")
+        .find(filter)
+        .sort({ name: 1 })
+        .toArray();
+
+      // Map units to establishment format
+      establishments = units.map(unit => ({
+        _id: unit._id,
+        name: unit.name,
+        location: unit.address || unit.location || "",
+        address: unit.address || "",
+        phone: unit.phone || "",
+        assignedTeachers: [],
+        rooms: unit.rooms || [],
+        isActive: unit.status === "active",
+        createdAt: unit.createdAt || new Date(),
+        updatedAt: unit.updatedAt || new Date(),
+      })) as Establishment[];
+    }
 
     return NextResponse.json({ establishments });
   } catch (error) {

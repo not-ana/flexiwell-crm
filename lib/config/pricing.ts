@@ -75,7 +75,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "SMS notifications", included: false },
       { name: "WhatsApp notifications", included: false },
       { name: "WhatsApp Bot", included: false },
-      { name: "Instagram Bot", included: false },
       // AI features
       { name: "AI Support Assistant", included: false },
       { name: "Smart Waitlist", included: false },
@@ -125,7 +124,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
       { name: "WhatsApp Bot", included: false },
-      { name: "Instagram Bot", included: false },
       // AI features
       { name: "AI Support Assistant", included: false },
       { name: "Smart Waitlist", included: false },
@@ -177,7 +175,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
       { name: "WhatsApp Bot", included: true, limit: "1,000 msgs/mo" },
-      { name: "Instagram Bot", included: false },
       // AI features
       { name: "AI Support Assistant", included: true, limit: "500 chats/mo" },
       { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
@@ -227,7 +224,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
       { name: "WhatsApp Bot", included: true, limit: "5,000 msgs/mo" },
-      { name: "Instagram Bot", included: true },
       // AI features
       { name: "AI Support Assistant", included: true, limit: "2,000 chats/mo" },
       { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
@@ -278,7 +274,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
       { name: "WhatsApp Bot", included: true, limit: "Unlimited" },
-      { name: "Instagram Bot", included: true },
       // AI features
       { name: "AI Support Assistant", included: true, limit: "Unlimited" },
       { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
@@ -382,7 +377,6 @@ export const featureMatrix: Record<string, Record<PlanTier, boolean | string | n
   sms_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
   whatsapp_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
   whatsapp_bot: { starter: false, growth: false, business: "1,000 msgs/mo", professional: "5,000 msgs/mo", enterprise: "unlimited" },
-  instagram_bot: { starter: false, growth: false, business: false, professional: true, enterprise: true },
 
   // AI features
   ai_support_assistant: { starter: false, growth: false, business: "500 chats/mo", professional: "2,000 chats/mo", enterprise: "unlimited" },

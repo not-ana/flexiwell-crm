@@ -8,7 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ResponsiveLayout variant="client" notificationCount={8}>
+    <ResponsiveLayout variant="client">
       {children}
     </ResponsiveLayout>
   );

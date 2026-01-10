@@ -12,19 +12,75 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
+    // Get user data first (for OAuth users who might not have a client record yet)
+    const userRecord = await db.collection("users").findOne({
+      _id: new ObjectId(user.userId),
+    });
+
     // Get client data
     let client: Client | null = null;
-    if (ObjectId.isValid(user.userId)) {
+
+    // First try by clientId from user record
+    if (userRecord?.clientId && ObjectId.isValid(userRecord.clientId)) {
+      client = await db.collection<Client>("clients").findOne({
+        _id: new ObjectId(userRecord.clientId),
+      });
+    }
+
+    // If not found, try by user ID
+    if (!client && ObjectId.isValid(user.userId)) {
       client = await db.collection<Client>("clients").findOne({
         _id: new ObjectId(user.userId),
       });
     }
 
-    // If not found by ID, try by email
+    // If still not found, try by email
     if (!client) {
       client = await db.collection<Client>("clients").findOne({
         email: user.email,
       });
+    }
+
+    // If still no client record, create one for OAuth users
+    if (!client && userRecord) {
+      const now = new Date();
+      const oneMonthLater = new Date(now);
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+      const newClient: Omit<Client, "_id"> = {
+        name: userRecord.name || user.name || user.email.split("@")[0],
+        email: user.email.toLowerCase(),
+        phone: userRecord.phone || "",
+        avatar: userRecord.avatar,
+        plan: {
+          type: "monthly",
+          totalClasses: 0,
+          usedClasses: 0,
+          remainingClasses: 0,
+          startDate: now,
+          endDate: oneMonthLater,
+          price: 0,
+        },
+        status: "pending",
+        preferences: {
+          notifications: {
+            email: true,
+            whatsapp: false,
+            instagram: false,
+          },
+        },
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const insertResult = await db.collection<Client>("clients").insertOne(newClient as Client);
+      client = { ...newClient, _id: insertResult.insertedId } as Client;
+
+      // Link client to user
+      await db.collection("users").updateOne(
+        { _id: new ObjectId(user.userId) },
+        { $set: { clientId: insertResult.insertedId.toString() } }
+      );
     }
 
     if (!client) {
@@ -32,6 +88,32 @@ export async function GET(request: NextRequest) {
         { error: "Client not found" },
         { status: 404 }
       );
+    }
+
+    // Sync client data with user record (for OAuth users)
+    if (userRecord && client._id) {
+      const clientUpdates: Record<string, unknown> = {};
+
+      // Update name if user has a better name (from OAuth)
+      if (userRecord.name && (!client.name || client.name === client.email.split("@")[0])) {
+        clientUpdates.name = userRecord.name;
+      }
+
+      // Update avatar from user record
+      if (userRecord.avatar && !client.avatar) {
+        clientUpdates.avatar = userRecord.avatar;
+      }
+
+      if (Object.keys(clientUpdates).length > 0) {
+        clientUpdates.updatedAt = new Date();
+        await db.collection("clients").updateOne(
+          { _id: client._id },
+          { $set: clientUpdates }
+        );
+        // Update local client object for response
+        if (clientUpdates.name) client.name = clientUpdates.name as string;
+        if (clientUpdates.avatar) client.avatar = clientUpdates.avatar as string;
+      }
     }
 
     // Get upcoming bookings

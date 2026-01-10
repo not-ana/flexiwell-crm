@@ -127,6 +127,70 @@ function ProgressBar({ value, max, color = "primary" }: { value: number; max: nu
   );
 }
 
+function ClientGrowthDisplay({ data }: { data: { month: string; year: number; clients: number }[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="h-[200px] flex items-center justify-center text-gray-500">
+        No client growth data available
+      </div>
+    );
+  }
+
+  // Se tem 1-2 meses, mostrar cards com números grandes
+  if (data.length <= 2) {
+    const current = data[data.length - 1];
+    const previous = data.length > 1 ? data[data.length - 2] : null;
+    const change = previous ? current.clients - previous.clients : null;
+    const changePercent = previous && previous.clients > 0
+      ? Math.round(((current.clients - previous.clients) / previous.clients) * 100)
+      : null;
+
+    return (
+      <div className="h-[200px] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-5xl font-bold text-primary-600 mb-2">
+            {current.clients}
+          </div>
+          <div className="text-sm text-gray-500 mb-3">
+            clients in {current.month} {current.year}
+          </div>
+          {change !== null && (
+            <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+              change >= 0
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {change >= 0 ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              )}
+              {change >= 0 ? '+' : ''}{change} ({changePercent}%) vs {previous?.month}
+            </div>
+          )}
+          {change === null && (
+            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+              First month of data
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Se tem 3+ meses, mostrar gráfico de barras normal
+  return (
+    <BarChart
+      data={data.map(m => ({ label: m.month, value: m.clients }))}
+      height={200}
+    />
+  );
+}
+
 type ExportFormat = "pdf" | "excel" | "csv";
 
 function generateCSV(data: Record<string, unknown>[], headers: { key: string; label: string }[]): string {
@@ -638,20 +702,7 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Client Growth</h2>
-                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <div className="min-w-[400px]">
-                    {clients.clientGrowth.length > 0 ? (
-                      <BarChart
-                        data={clients.clientGrowth.map(m => ({ label: m.month, value: m.clients }))}
-                        height={200}
-                      />
-                    ) : (
-                      <div className="h-[200px] flex items-center justify-center text-gray-500">
-                        No client growth data available
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ClientGrowthDisplay data={clients.clientGrowth} />
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">

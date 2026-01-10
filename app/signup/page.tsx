@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
-import { GoogleIcon, CloseIcon, FacebookIcon, AppleIcon } from "@/components/icons";
+import { GoogleIcon, CloseIcon } from "@/components/icons";
 import { useAuth } from "@/contexts/AuthContext";
 
 type UserRole = "client" | "admin" | "teacher";
 
 export default function SignUpPage() {
-  const { register, isLoading: authLoading } = useAuth();
+  const { register, socialLogin, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"email" | "details">("email");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -18,8 +20,20 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [userRole, setUserRole] = useState<UserRole>("client");
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCodeValid, setInviteCodeValid] = useState<boolean | null>(null);
+  const [inviteCompanyName, setInviteCompanyName] = useState("");
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Check for error in URL params (e.g., from OAuth callback)
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      setError(urlError);
+    }
+  }, [searchParams]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +43,39 @@ export default function SignUpPage() {
     }
     setError("");
     setStep("details");
+  };
+
+  const validateInviteCode = async (code: string) => {
+    if (!code || code.length < 4) {
+      setInviteCodeValid(null);
+      setInviteCompanyName("");
+      return;
+    }
+
+    setIsValidatingCode(true);
+    try {
+      const response = await fetch("/api/company/verify-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteCode: code }),
+      });
+      const data = await response.json();
+
+      if (data.valid) {
+        setInviteCodeValid(true);
+        setInviteCompanyName(data.company?.name || "");
+        setError("");
+      } else {
+        setInviteCodeValid(false);
+        setInviteCompanyName("");
+        setError(data.error || "Invalid invite code");
+      }
+    } catch {
+      setInviteCodeValid(false);
+      setInviteCompanyName("");
+    } finally {
+      setIsValidatingCode(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +98,12 @@ export default function SignUpPage() {
       return;
     }
 
+    // Clients need a valid invite code
+    if (userRole === "client" && !inviteCodeValid) {
+      setError("Please enter a valid invite code");
+      return;
+    }
+
     setIsLoading(true);
 
     const result = await register({
@@ -59,6 +112,7 @@ export default function SignUpPage() {
       name,
       role: userRole,
       phone: phone || undefined,
+      inviteCode: userRole === "client" ? inviteCode : undefined,
     });
 
     if (!result.success) {
@@ -146,37 +200,16 @@ export default function SignUpPage() {
               </div>
 
               {/* Social buttons */}
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  size="lg"
-                  leftIcon={<GoogleIcon className="w-5 h-5" />}
-                >
-                  Sign up with Google
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  size="lg"
-                  leftIcon={<FacebookIcon className="w-5 h-5" />}
-                >
-                  Sign up with Facebook
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  size="lg"
-                  leftIcon={<AppleIcon className="w-5 h-5" />}
-                >
-                  Sign up with Apple
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                size="lg"
+                leftIcon={<GoogleIcon className="w-5 h-5" />}
+                onClick={() => socialLogin("google", "signup")}
+              >
+                Sign up with Google
+              </Button>
             </div>
 
             {/* Login link */}
@@ -300,6 +333,64 @@ export default function SignUpPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Invite Code - Only for clients */}
+              {userRole === "client" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Invite code *
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Ex: FW-ABC123"
+                      value={inviteCode}
+                      onChange={(e) => {
+                        const code = e.target.value.toUpperCase();
+                        setInviteCode(code);
+                        validateInviteCode(code);
+                      }}
+                      className={`uppercase ${
+                        inviteCodeValid === true
+                          ? "border-green-500 focus:border-green-500"
+                          : inviteCodeValid === false
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }`}
+                    />
+                    {isValidatingCode && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                        </svg>
+                      </div>
+                    )}
+                    {!isValidatingCode && inviteCodeValid === true && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    {!isValidatingCode && inviteCodeValid === false && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  {inviteCodeValid === true && inviteCompanyName && (
+                    <p className="mt-1 text-sm text-green-600">
+                      You will be linked to: <span className="font-medium">{inviteCompanyName}</span>
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ask for the invite code from your studio or gym
+                  </p>
+                </div>
+              )}
 
               {/* Name */}
               <Input

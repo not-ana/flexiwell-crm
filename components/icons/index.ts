@@ -1,7 +1,6 @@
 export { default as GoogleIcon } from "./GoogleIcon";
 export { default as CloseIcon } from "./CloseIcon";
 export { default as FacebookIcon } from "./FacebookIcon";
-export { default as AppleIcon } from "./AppleIcon";
 export { default as DashboardIcon } from "./DashboardIcon";
 export { default as ClassesIcon } from "./ClassesIcon";
 export { default as NotificationIcon } from "./NotificationIcon";

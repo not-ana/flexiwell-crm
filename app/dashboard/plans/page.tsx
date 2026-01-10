@@ -143,12 +143,12 @@ export default function PlansPage() {
         window.location.href = data.url;
       } else {
         // Handle success without Stripe (for testing/demo)
-        alert("Plano adquirido com sucesso!");
+        alert("Plan purchased successfully!");
         router.push("/dashboard");
       }
     } catch (error) {
       console.error("Error creating checkout:", error);
-      alert("Erro ao processar pagamento. Tente novamente.");
+      alert("Error processing payment. Please try again.");
     } finally {
       setIsProcessing(false);
       setShowConfirmModal(false);
@@ -172,8 +172,8 @@ export default function PlansPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Planos e Pacotes</h1>
-          <p className="text-gray-600">Escolha o plano ideal para sua prática</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Plans & Packages</h1>
+          <p className="text-gray-600">Choose the ideal plan for your practice</p>
         </div>
 
         {/* Current Plan Card */}
@@ -181,33 +181,33 @@ export default function PlansPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Seu plano atual</p>
+                <p className="text-sm text-gray-500 mb-1">Your current plan</p>
                 <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                  {currentPlan.type === "monthly" ? "Mensal" :
-                   currentPlan.type === "quarterly" ? "Trimestral" :
-                   currentPlan.type === "annual" ? "Anual" :
-                   currentPlan.type === "drop-in" ? "Avulso" : currentPlan.type}
+                  {currentPlan.type === "monthly" ? "Monthly" :
+                   currentPlan.type === "quarterly" ? "Quarterly" :
+                   currentPlan.type === "annual" ? "Annual" :
+                   currentPlan.type === "drop-in" ? "Drop-in" : currentPlan.type}
                 </h2>
               </div>
 
               <div className="flex flex-wrap gap-6">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-primary-600">{currentPlan.remainingClasses}</p>
-                  <p className="text-sm text-gray-500">aulas restantes</p>
+                  <p className="text-sm text-gray-500">classes remaining</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-gray-900">{currentPlan.usedClasses}</p>
-                  <p className="text-sm text-gray-500">aulas usadas</p>
+                  <p className="text-sm text-gray-500">classes used</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-amber-600">{daysRemaining}</p>
-                  <p className="text-sm text-gray-500">dias restantes</p>
+                  <p className="text-sm text-gray-500">days remaining</p>
                 </div>
               </div>
 
               {daysRemaining <= 7 && (
                 <div className="bg-amber-50 text-amber-700 px-4 py-2 rounded-lg text-sm font-medium">
-                  Seu plano expira em breve!
+                  Your plan expires soon!
                 </div>
               )}
             </div>
@@ -215,7 +215,7 @@ export default function PlansPage() {
             {/* Progress bar */}
             <div className="mt-4">
               <div className="flex justify-between text-sm text-gray-500 mb-1">
-                <span>Progresso do plano</span>
+                <span>Plan progress</span>
                 <span>{Math.round((currentPlan.usedClasses / currentPlan.totalClasses) * 100)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -264,20 +264,20 @@ export default function PlansPage() {
                     <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-gray-700">{plan.classes} {plan.classes === 1 ? "aula" : "aulas"}</span>
+                    <span className="text-gray-700">{plan.classes} {plan.classes === 1 ? "class" : "classes"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-gray-700">R${plan.pricePerClass.toFixed(2)}/aula</span>
+                    <span className="text-gray-700">${plan.pricePerClass.toFixed(2)}/class</span>
                   </div>
                   {plan.savings && (
                     <div className="flex items-center gap-2 text-sm">
                       <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-green-600 font-medium">Economia de R${plan.savings}</span>
+                      <span className="text-green-600 font-medium">Save ${plan.savings}</span>
                     </div>
                   )}
                 </div>
@@ -289,7 +289,7 @@ export default function PlansPage() {
                       : "bg-gray-100 text-gray-900 hover:bg-gray-200"
                   }`}
                 >
-                  Escolher Plano
+                  Choose Plan
                 </button>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function PlansPage() {
         {/* Benefits Section */}
         <div className="mt-12 bg-white rounded-2xl border border-gray-200 p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-            Todos os planos incluem
+            All plans include
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
@@ -308,8 +308,8 @@ export default function PlansPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">Agendamento Online</h3>
-              <p className="text-sm text-gray-500">Agende suas aulas 24/7 pelo app ou site</p>
+              <h3 className="font-medium text-gray-900 mb-1">Online Booking</h3>
+              <p className="text-sm text-gray-500">Book your classes 24/7 via app or website</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -317,8 +317,8 @@ export default function PlansPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">Suporte WhatsApp</h3>
-              <p className="text-sm text-gray-500">Tire dúvidas direto pelo WhatsApp</p>
+              <h3 className="font-medium text-gray-900 mb-1">WhatsApp Support</h3>
+              <p className="text-sm text-gray-500">Get help directly via WhatsApp</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -326,8 +326,8 @@ export default function PlansPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">Reposição de Aulas</h3>
-              <p className="text-sm text-gray-500">Cancele com 12h de antecedência e reponha</p>
+              <h3 className="font-medium text-gray-900 mb-1">Class Makeup</h3>
+              <p className="text-sm text-gray-500">Cancel 12h ahead and reschedule</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -335,8 +335,8 @@ export default function PlansPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">Instrutores Certificados</h3>
-              <p className="text-sm text-gray-500">Profissionais qualificados e experientes</p>
+              <h3 className="font-medium text-gray-900 mb-1">Certified Instructors</h3>
+              <p className="text-sm text-gray-500">Qualified and experienced professionals</p>
             </div>
           </div>
         </div>
@@ -344,31 +344,31 @@ export default function PlansPage() {
         {/* FAQ Section */}
         <div className="mt-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-            Perguntas Frequentes
+            Frequently Asked Questions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Posso cancelar meu plano?</h3>
+              <h3 className="font-medium text-gray-900 mb-2">Can I cancel my plan?</h3>
               <p className="text-sm text-gray-600">
-                Sim, você pode cancelar a qualquer momento. As aulas restantes permanecem válidas até o vencimento do plano.
+                Yes, you can cancel at any time. Remaining classes stay valid until the plan expires.
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Como funciona a reposição?</h3>
+              <h3 className="font-medium text-gray-900 mb-2">How does class makeup work?</h3>
               <p className="text-sm text-gray-600">
-                Cancele com pelo menos 12 horas de antecedência e o crédito será devolvido automaticamente.
+                Cancel at least 12 hours in advance and the credit will be refunded automatically.
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Posso congelar meu plano?</h3>
+              <h3 className="font-medium text-gray-900 mb-2">Can I freeze my plan?</h3>
               <p className="text-sm text-gray-600">
-                Planos trimestrais e anuais permitem congelamento de até 30 dias. Entre em contato com o suporte.
+                Quarterly and annual plans allow freezing for up to 30 days. Contact support for assistance.
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Posso transferir aulas para outra pessoa?</h3>
+              <h3 className="font-medium text-gray-900 mb-2">Can I transfer classes to someone else?</h3>
               <p className="text-sm text-gray-600">
-                Aulas não são transferíveis, mas você pode trazer um amigo na sua aula (sujeito a disponibilidade).
+                Classes are non-transferable, but you can bring a friend to your class (subject to availability).
               </p>
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function PlansPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Confirmar Compra</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Confirm Purchase</h2>
             </div>
 
             <div className="p-6">
@@ -388,28 +388,28 @@ export default function PlansPage() {
                 <h3 className="font-semibold text-gray-900 mb-2">{selectedPlan.name}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Aulas</span>
+                    <span className="text-gray-500">Classes</span>
                     <span className="text-gray-900">{selectedPlan.classes}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Validade</span>
+                    <span className="text-gray-500">Duration</span>
                     <span className="text-gray-900">{selectedPlan.duration}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Preço por aula</span>
-                    <span className="text-gray-900">R${selectedPlan.pricePerClass.toFixed(2)}</span>
+                    <span className="text-gray-500">Price per class</span>
+                    <span className="text-gray-900">${selectedPlan.pricePerClass.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between font-semibold">
                       <span className="text-gray-900">Total</span>
-                      <span className="text-primary-600">R${selectedPlan.price.toLocaleString("pt-BR")}</span>
+                      <span className="text-primary-600">${selectedPlan.price.toLocaleString("en-US")}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <p className="text-sm text-gray-500 mb-4">
-                Ao confirmar, você será redirecionado para a página de pagamento seguro.
+                By confirming, you will be redirected to the secure payment page.
               </p>
             </div>
 
@@ -419,7 +419,7 @@ export default function PlansPage() {
                 disabled={isProcessing}
                 className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={handlePurchase}
@@ -432,10 +432,10 @@ export default function PlansPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Processando...
+                    Processing...
                   </>
                 ) : (
-                  "Pagar Agora"
+                  "Pay Now"
                 )}
               </button>
             </div>

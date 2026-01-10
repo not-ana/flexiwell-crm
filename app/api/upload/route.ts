@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadFromBase64, uploadProfilePhoto, uploadLogo, deleteUpload } from "@/lib/upload";
-import { requireAuthFromCookie } from "@/lib/auth/middleware";
+import { requireAuthFromCookie, requireAuth } from "@/lib/auth/middleware";
+
+// Helper to get auth from either cookie or Bearer token
+async function getAuthUser(request: NextRequest) {
+  // First try Bearer token
+  const bearerAuth = requireAuth(request);
+  if (bearerAuth.user) {
+    return { user: bearerAuth.user, error: null };
+  }
+
+  // Fall back to cookie
+  return await requireAuthFromCookie();
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await requireAuthFromCookie();
+    const { user, error } = await getAuthUser(request);
     if (error) return error;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -74,7 +86,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error } = await requireAuthFromCookie();
+    const { user, error } = await getAuthUser(request);
     if (error) return error;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

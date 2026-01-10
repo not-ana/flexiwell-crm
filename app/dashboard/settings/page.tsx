@@ -3,17 +3,28 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { pricingPlans, PlanTier, BillingPeriod } from "@/lib/config/pricing";
+import { api, getStoredTokens } from "@/lib/api/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-type ClientSettingsTab = "profile" | "plans" | "billing";
+type ClientSettingsTab = "profile" | "my-plan" | "payment-history" | "account";
 
 const tabs: { id: ClientSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
-  { id: "plans", label: "Plans" },
-  { id: "billing", label: "Billing" },
+  { id: "my-plan", label: "My Plan" },
+  { id: "payment-history", label: "Payment History" },
+  { id: "account", label: "Account" },
 ];
+
+// Helper to get initials from name
+function getInitials(firstName: string, lastName: string): string {
+  const first = firstName?.[0]?.toUpperCase() || "";
+  const last = lastName?.[0]?.toUpperCase() || "";
+  return first + last || "??";
+}
 
 // Profile Settings Component
 function ProfileSettings() {
+  const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,6 +32,8 @@ function ProfileSettings() {
     phone: "",
   });
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [originalAvatar, setOriginalAvatar] = useState<string | null>(null);
+  const [pendingPhotoBase64, setPendingPhotoBase64] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,9 +48,17 @@ function ProfileSettings() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const response = await fetch("/api/profile");
-        if (response.ok) {
-          const data = await response.json();
+        const response = await api.get<{
+          firstName: string;
+          lastName: string;
+          email: string;
+          phone: string;
+          avatar: string | null;
+          name: string;
+        }>("/api/profile");
+
+        if (response.data) {
+          const data = response.data;
           setFormData({
             firstName: data.firstName || "",
             lastName: data.lastName || "",
@@ -45,6 +66,21 @@ function ProfileSettings() {
             phone: data.phone || "",
           });
           setAvatar(data.avatar);
+          setOriginalAvatar(data.avatar);
+        } else if (response.error) {
+          console.error("Failed to fetch profile:", response.error);
+          // Fallback to auth user data
+          if (user) {
+            const nameParts = user.name?.split(" ") || [];
+            setFormData({
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              email: user.email || "",
+              phone: "",
+            });
+            setAvatar(user.avatar || null);
+            setOriginalAvatar(user.avatar || null);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
@@ -53,28 +89,41 @@ function ProfileSettings() {
       }
     }
     fetchProfile();
-  }, []);
+  }, [user]);
 
   const handleChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     // Refetch profile to reset
     setIsLoading(true);
-    fetch("/api/profile")
-      .then((res) => res.json())
-      .then((data) => {
+    try {
+      const response = await api.get<{
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        avatar: string | null;
+      }>("/api/profile");
+
+      if (response.data) {
         setFormData({
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          email: data.email || "",
-          phone: data.phone || "",
+          firstName: response.data.firstName || "",
+          lastName: response.data.lastName || "",
+          email: response.data.email || "",
+          phone: response.data.phone || "",
         });
-        setAvatar(data.avatar);
-        setPasswords({ current: "", new: "", confirm: "" });
-      })
-      .finally(() => setIsLoading(false));
+        setAvatar(response.data.avatar);
+        setOriginalAvatar(response.data.avatar);
+      }
+      setPasswords({ current: "", new: "", confirm: "" });
+      setPendingPhotoBase64(null);
+      setError("");
+      setSuccess("");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -102,27 +151,71 @@ function ProfileSettings() {
         }
       }
 
-      const updateData: Record<string, string> = {
+      const { accessToken } = getStoredTokens();
+      const authHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (accessToken) {
+        authHeaders["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      let newAvatarUrl: string | undefined;
+
+      // Upload pending photo if there is one
+      if (pendingPhotoBase64) {
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({
+            type: "profile",
+            data: pendingPhotoBase64,
+          }),
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          throw new Error(uploadData.error || "Failed to upload photo");
+        }
+
+        newAvatarUrl = uploadData.url;
+      }
+
+      const updateData: Record<string, string | undefined> = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
       };
+
+      if (newAvatarUrl) {
+        updateData.avatar = newAvatarUrl;
+      }
 
       if (passwords.current && passwords.new) {
         updateData.currentPassword = passwords.current;
         updateData.newPassword = passwords.new;
       }
 
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
+      const response = await api.put<{ success: boolean; error?: string; user?: { name: string; avatar?: string } }>("/api/profile", updateData);
 
-      const data = await response.json();
+      if (response.error) {
+        throw new Error(response.error.error || "Failed to update profile");
+      }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update profile");
+      // Update local state with new avatar
+      if (newAvatarUrl) {
+        setAvatar(newAvatarUrl);
+        setOriginalAvatar(newAvatarUrl);
+        setPendingPhotoBase64(null);
+      }
+
+      // Update AuthContext with new user data
+      if (user) {
+        updateUser({
+          ...user,
+          name: response.data?.user?.name || `${formData.firstName} ${formData.lastName}`.trim(),
+          avatar: newAvatarUrl || avatar || undefined,
+        });
       }
 
       setSuccess("Profile updated successfully!");
@@ -146,42 +239,15 @@ function ProfileSettings() {
           return;
         }
 
-        try {
-          // Convert to base64
-          const reader = new FileReader();
-          reader.onload = async () => {
-            const base64 = reader.result as string;
-
-            // Upload to server
-            const response = await fetch("/api/upload", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: "profile",
-                data: base64,
-              }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              throw new Error(data.error || "Failed to upload photo");
-            }
-
-            // Update profile with new avatar URL
-            await fetch("/api/profile", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ avatar: data.url }),
-            });
-
-            setAvatar(data.url);
-            setSuccess("Photo updated successfully!");
-          };
-          reader.readAsDataURL(file);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to upload photo");
-        }
+        // Convert to base64 for preview only - actual upload happens on Save
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          setPendingPhotoBase64(base64);
+          setAvatar(base64); // Show preview immediately
+          setError("");
+        };
+        reader.readAsDataURL(file);
       }
     };
     input.click();
@@ -224,9 +290,9 @@ function ProfileSettings() {
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-100 to-pink-100 rounded-full flex items-center justify-center shrink-0">
-              <span className="text-lg sm:text-xl font-semibold text-primary-600">
-                {formData.firstName?.[0]?.toUpperCase() || ""}{formData.lastName?.[0]?.toUpperCase() || ""}
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-lg sm:text-xl font-semibold text-white">
+                {getInitials(formData.firstName, formData.lastName)}
               </span>
             </div>
           )}
@@ -605,8 +671,8 @@ function UpdatePaymentModal({
   );
 }
 
-// Plans Settings Component
-function PlansSettings() {
+// My Plan Settings Component (Client's studio/gym membership)
+function MyPlanSettings() {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [currentPlan, setCurrentPlan] = useState({
     id: "growth",
@@ -685,15 +751,15 @@ function PlansSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Plans</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage your subscription plan.</p>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">My Plan</h2>
+        <p className="text-sm text-gray-600 mt-1">View your current membership plan at the studio.</p>
       </div>
 
       {/* Current Plan */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
           <div>
-            <h3 className="text-sm font-medium text-gray-900">Current plan</h3>
+            <h3 className="text-sm font-medium text-gray-900">Current membership</h3>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{currentPlan.name}</p>
             <p className="text-sm text-gray-500">${currentPlan.price}/{currentPlan.period}</p>
           </div>
@@ -785,7 +851,7 @@ function PlansSettings() {
   );
 }
 
-// Billing Settings Component
+// Payment History Settings Component (Client's payments to studio)
 interface Invoice {
   id: string;
   number: string;
@@ -797,7 +863,7 @@ interface Invoice {
   description: string;
 }
 
-function BillingSettings() {
+function PaymentHistorySettings() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -837,8 +903,8 @@ function BillingSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Billing</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage your payment methods and view billing history.</p>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment History</h2>
+        <p className="text-sm text-gray-600 mt-1">View your payment history at the studio.</p>
       </div>
 
       {/* Payment Method */}
@@ -931,6 +997,258 @@ function BillingSettings() {
   );
 }
 
+// Delete Account Confirmation Modal
+function DeleteAccountModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const { logout } = useAuth();
+  const [confirmText, setConfirmText] = useState("");
+  const [password, setPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  const CONFIRM_TEXT = "DELETE MY ACCOUNT";
+
+  if (!isOpen) return null;
+
+  const handleDelete = async () => {
+    if (confirmText !== CONFIRM_TEXT) {
+      setError(`Please type '${CONFIRM_TEXT}' to confirm`);
+      return;
+    }
+
+    setIsDeleting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          confirmText,
+          password: password || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete account");
+      }
+
+      // Logout and redirect
+      await logout();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete account");
+      setIsDeleting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setConfirmText("");
+    setPassword("");
+    setError("");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Delete account</h2>
+              <p className="text-sm text-red-600">This action cannot be undone</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          <div className="p-4 bg-red-50 rounded-lg">
+            <h3 className="text-sm font-medium text-red-800 mb-2">By deleting your account:</h3>
+            <ul className="text-sm text-red-700 space-y-1">
+              <li>• All your data will be permanently removed</li>
+              <li>• You will lose access to all linked companies</li>
+              <li>• Your class history will be anonymized</li>
+              <li>• This action CANNOT be undone</li>
+            </ul>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type <span className="font-bold text-red-600">{CONFIRM_TEXT}</span> to confirm:
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={CONFIRM_TEXT}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password (optional, for additional confirmation):
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            />
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={handleClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting || confirmText !== CONFIRM_TEXT}
+            className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? "Deleting..." : "Delete my account"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Account Settings Component
+function AccountSettings() {
+  const { user } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string; joinedAt: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch linked companies
+  useEffect(() => {
+    async function fetchCompanies() {
+      try {
+        const response = await fetch("/api/company/verify-access");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.companies) {
+            setCompanies(data.companies);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch companies:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchCompanies();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Account</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage your account settings and linked companies.</p>
+      </div>
+
+      {/* Linked Companies */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Linked companies</h3>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+          </div>
+        ) : companies.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500 mb-4">You are not linked to any company.</p>
+            <p className="text-xs text-gray-400">
+              To link, use an invite code provided by the company.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {companies.map((company) => (
+              <div
+                key={company.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{company.name}</p>
+                  <p className="text-xs text-gray-500">
+                    Joined on {new Date(company.joinedAt).toLocaleDateString("en-US")}
+                  </p>
+                </div>
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                  Active
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Account Info */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Account information</h3>
+        <div className="space-y-3">
+          <div className="flex justify-between py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-500">Email</span>
+            <span className="text-sm text-gray-900">{user?.email}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-500">Account type</span>
+            <span className="text-sm text-gray-900 capitalize">{user?.role}</span>
+          </div>
+          <div className="flex justify-between py-2">
+            <span className="text-sm text-gray-500">Account ID</span>
+            <span className="text-sm text-gray-400 font-mono text-xs">{user?.id}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="bg-white border border-red-200 rounded-xl p-4 sm:p-6">
+        <h3 className="text-sm font-medium text-red-600 mb-2">Danger zone</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Irreversible actions. Please be certain before proceeding.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          Delete my account
+        </button>
+      </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
+    </div>
+  );
+}
+
 export default function ClientSettingsPage() {
   const [activeTab, setActiveTab] = useState<ClientSettingsTab>("profile");
 
@@ -938,10 +1256,12 @@ export default function ClientSettingsPage() {
     switch (activeTab) {
       case "profile":
         return <ProfileSettings />;
-      case "plans":
-        return <PlansSettings />;
-      case "billing":
-        return <BillingSettings />;
+      case "my-plan":
+        return <MyPlanSettings />;
+      case "payment-history":
+        return <PaymentHistorySettings />;
+      case "account":
+        return <AccountSettings />;
       default:
         return <ProfileSettings />;
     }

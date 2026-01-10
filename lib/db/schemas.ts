@@ -26,6 +26,7 @@ export interface Client {
       email: boolean;
       whatsapp: boolean;
       instagram: boolean;
+      sms: boolean; // SMS for US market
     };
   };
   // Wellhub integration fields
@@ -169,7 +170,8 @@ export interface Conversation {
   _id?: ObjectId;
   clientId: string;
   clientName: string;
-  platform: "whatsapp" | "instagram";
+  // SMS added for US market support
+  platform: "whatsapp" | "instagram" | "sms";
   platformUserId: string;
   messages: {
     id: string;
@@ -351,6 +353,21 @@ export interface User {
   clientId?: string; // For client role
   isActive: boolean;
   lastLoginAt?: Date;
+  // Trial and subscription fields
+  trialStartDate?: Date;
+  trialEndDate?: Date;
+  trialStatus?: "active" | "expired" | "converted";
+  subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  planTier?: "starter" | "professional" | "enterprise";
+  // Trial notification tracking
+  trialNotifications?: {
+    sevenDaysSent?: boolean;
+    threeDaysSent?: boolean;
+    oneDaySent?: boolean;
+    expiredSent?: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -484,6 +501,51 @@ export interface WellhubErrorLog {
   resolvedAt?: Date;
   resolvedBy?: string;
   createdAt: Date;
+}
+
+// Company Invite Codes - Códigos de convite para vincular clientes
+export interface CompanyInvite {
+  _id?: ObjectId;
+  companyId: string; // ID da empresa (userId do admin)
+  code: string; // Código único ex: "STUDIO-ABC123"
+  name?: string; // Nome descritivo ex: "Convite Geral"
+  maxUses: number | null; // null = ilimitado
+  currentUses: number;
+  expiresAt: Date | null; // null = nunca expira
+  isActive: boolean;
+  createdBy: string; // userId do admin que criou
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Authorized Clients - Lista de clientes pré-autorizados pela empresa
+export interface AuthorizedClient {
+  _id?: ObjectId;
+  companyId: string; // ID da empresa
+  identifier: string; // email, telefone ou CPF
+  identifierType: "email" | "phone" | "cpf";
+  name?: string; // Nome para referência (opcional)
+  claimedBy?: string; // userId quando o cliente se cadastrar
+  claimedAt?: Date;
+  invitedBy?: string; // userId do admin que adicionou
+  invitedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Company Clients - Vínculo efetivo entre empresa e cliente
+export interface CompanyClient {
+  _id?: ObjectId;
+  userId: string; // ID do usuário (cliente)
+  companyId: string; // ID da empresa
+  joinedVia: "invite_code" | "pre_authorized" | "manual";
+  inviteCodeUsed?: string; // código usado (se joinedVia = invite_code)
+  status: "active" | "inactive" | "pending";
+  role?: "client" | "vip"; // tipo de cliente na empresa
+  joinedAt: Date;
+  leftAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Teacher/Staff Review system

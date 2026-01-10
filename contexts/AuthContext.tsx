@@ -12,12 +12,15 @@ import {
   type RegisterRequest,
 } from "@/lib/api/client";
 
+type SocialProvider = "google" | "facebook";
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterRequest) => Promise<{ success: boolean; error?: string }>;
+  socialLogin: (provider: SocialProvider, mode?: "login" | "signup") => void;
   logout: () => Promise<void>;
   updateUser: (user: AuthUser) => void;
 }
@@ -25,7 +28,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", "/bundle"];
+const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", "/bundle", "/auth/callback"];
 
 // Role-based route prefixes
 const roleRoutes: Record<string, string[]> = {
@@ -182,6 +185,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser);
   }, []);
 
+  const socialLogin = useCallback((provider: SocialProvider, mode: "login" | "signup" = "login") => {
+    // Redirect to OAuth authorization endpoint
+    window.location.href = `/api/auth/social/${provider}/authorize?mode=${mode}`;
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -190,6 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        socialLogin,
         logout,
         updateUser,
       }}

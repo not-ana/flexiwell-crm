@@ -33,7 +33,8 @@ interface Payment {
     period: string;
   };
   status: "pending" | "completed" | "failed" | "refunded";
-  paymentMethod: "credit_card" | "pix" | "bank_transfer" | "cash";
+  // pix: Hidden for US market - re-enable for Brazil
+  paymentMethod: "credit_card" | "bank_transfer" | "cash";
   transactionId?: string;
   invoiceUrl?: string;
   createdAt: string;
@@ -163,7 +164,8 @@ export default function PaymentsPage() {
   const [recordPaymentForm, setRecordPaymentForm] = useState({
     clientName: "",
     amount: "",
-    paymentMethod: "cash" as "cash" | "pix" | "bank_transfer" | "credit_card",
+    // pix: Hidden for US market - re-enable for Brazil
+    paymentMethod: "cash" as "cash" | "bank_transfer" | "credit_card",
     reference: "",
     notes: "",
     type: "subscription" as "subscription" | "drop-in" | "package",
@@ -1253,19 +1255,20 @@ export default function PaymentsPage() {
               {/* Payment Method */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["cash", "pix", "bank_transfer", "credit_card"] as const).map((method) => (
+                <div className="grid grid-cols-3 gap-2">
+                  {/* pix: Hidden for US market - re-enable for Brazil */}
+                  {(["cash", "bank_transfer", "credit_card"] as const).map((method) => (
                     <button
                       key={method}
                       type="button"
                       onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: method })}
-                      className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
+                      className={`px-3 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
                         recordPaymentForm.paymentMethod === method
                           ? "border-green-500 bg-green-50 text-green-700"
                           : "border-gray-200 text-gray-600 hover:border-gray-300"
                       }`}
                     >
-                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : method.toUpperCase()}
+                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : "Cash"}
                     </button>
                   ))}
                 </div>
@@ -1278,7 +1281,7 @@ export default function PaymentsPage() {
                   type="text"
                   value={recordPaymentForm.reference}
                   onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, reference: e.target.value })}
-                  placeholder="Optional - receipt number, PIX ID, etc."
+                  placeholder="Optional - receipt number, check number, etc."
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
@@ -1371,19 +1374,20 @@ export default function PaymentsPage() {
               {/* Payment Method Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">How was it paid?</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["cash", "pix", "bank_transfer", "credit_card"] as const).map((method) => (
+                <div className="grid grid-cols-3 gap-2">
+                  {/* pix: Hidden for US market - re-enable for Brazil */}
+                  {(["cash", "bank_transfer", "credit_card"] as const).map((method) => (
                     <button
                       key={method}
                       type="button"
                       onClick={() => setRecordPaymentForm({ ...recordPaymentForm, paymentMethod: method })}
-                      className={`px-2 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
+                      className={`px-3 py-2 border-2 rounded-lg text-xs font-medium transition-colors ${
                         recordPaymentForm.paymentMethod === method
                           ? "border-green-500 bg-green-50 text-green-700"
                           : "border-gray-200 text-gray-600 hover:border-gray-300"
                       }`}
                     >
-                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : method.toUpperCase()}
+                      {method === "credit_card" ? "Card" : method === "bank_transfer" ? "Transfer" : "Cash"}
                     </button>
                   ))}
                 </div>
@@ -1396,7 +1400,7 @@ export default function PaymentsPage() {
                   type="text"
                   value={recordPaymentForm.reference}
                   onChange={(e) => setRecordPaymentForm({ ...recordPaymentForm, reference: e.target.value })}
-                  placeholder="Receipt number, PIX ID, etc."
+                  placeholder="Receipt number, check number, etc."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>

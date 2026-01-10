@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { BusinessType, businessTypes, getBusinessTypeOptions } from "@/lib/config/business-types";
+import { AccountSettings } from "@/components/settings/AccountSettings";
+import { getStoredTokens } from "@/lib/api/client";
 
 // Toast notification helper - centered at top
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -19,7 +21,7 @@ function showToast(message: string, type: "success" | "error" = "success") {
   }, 3000);
 }
 
-type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "rooms" | "billing" | "notifications" | "team" | "integrations" | "whatsapp";
+type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "whatsapp" | "account";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -29,10 +31,11 @@ const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "team", label: "Team" },
   { id: "establishments", label: "Establishments" },
   { id: "rooms", label: "Rooms" },
-  { id: "billing", label: "Billing" },
+  { id: "subscription", label: "Subscription" },
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
   { id: "whatsapp", label: "WhatsApp" },
+  { id: "account", label: "Account" },
 ];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => void }) {
@@ -1578,8 +1581,8 @@ function UpdatePaymentModalAdmin({
   );
 }
 
-// Billing Settings Component
-function BillingSettings() {
+// Subscription Settings Component (FlexiWell platform subscription)
+function SubscriptionSettings() {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -1622,8 +1625,8 @@ function BillingSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Billing</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage your subscription and payment methods.</p>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Subscription</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage your FlexiWell platform subscription.</p>
       </div>
 
       {/* Current Plan */}
@@ -1631,7 +1634,7 @@ function BillingSettings() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-gray-900">Current plan</h3>
+              <h3 className="text-sm font-medium text-gray-900">Current subscription</h3>
               <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
                 Most Popular
               </span>
@@ -2486,15 +2489,15 @@ function WhatsAppSettings() {
             {isEnabled ? (
               <>
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                  Ativo
+                  Active
                 </span>
                 <Button variant="secondary" onClick={() => setShowConfigModal(true)}>
-                  Configurar
+                  Configure
                 </Button>
               </>
             ) : (
               <Button onClick={() => setShowConfigModal(true)}>
-                Ativar WhatsApp
+                Enable WhatsApp
               </Button>
             )}
           </div>
@@ -2505,15 +2508,15 @@ function WhatsAppSettings() {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">1,247</p>
-                <p className="text-xs text-gray-500">Mensagens este mes</p>
+                <p className="text-xs text-gray-500">Messages this month</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">89%</p>
-                <p className="text-xs text-gray-500">Taxa de resposta</p>
+                <p className="text-xs text-gray-500">Response rate</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">156</p>
-                <p className="text-xs text-gray-500">Confirmacoes pelo bot</p>
+                <p className="text-xs text-gray-500">Bot confirmations</p>
               </div>
             </div>
           </div>
@@ -2522,7 +2525,7 @@ function WhatsAppSettings() {
 
       {/* Pricing Plans */}
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Planos WhatsApp</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-4">WhatsApp Plans</h3>
         <div className="grid grid-cols-3 gap-4">
           {(Object.keys(whatsappPlans) as WhatsAppPlan[]).map((planKey) => {
             const plan = whatsappPlans[planKey];
@@ -2793,10 +2796,17 @@ function BrandingSettings() {
         const reader = new FileReader();
         reader.onload = async () => {
           const base64 = reader.result as string;
+          const { accessToken } = getStoredTokens();
+          const authHeaders: HeadersInit = {
+            "Content-Type": "application/json",
+          };
+          if (accessToken) {
+            authHeaders["Authorization"] = `Bearer ${accessToken}`;
+          }
 
           const response = await fetch("/api/upload", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: JSON.stringify({
               type: "image",
               data: base64,
@@ -4235,8 +4245,8 @@ export default function AdminSettingsPage() {
         return <EstablishmentsSettings />;
       case "rooms":
         return <RoomsSettings />;
-      case "billing":
-        return <BillingSettings />;
+      case "subscription":
+        return <SubscriptionSettings />;
       case "notifications":
         return <NotificationsSettings />;
       case "team":
@@ -4245,6 +4255,8 @@ export default function AdminSettingsPage() {
         return <IntegrationsSettings />;
       case "whatsapp":
         return <WhatsAppSettings />;
+      case "account":
+        return <AccountSettings />;
       default:
         return <GeneralSettings />;
     }

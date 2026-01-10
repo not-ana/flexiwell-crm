@@ -29,10 +29,15 @@ const integrationDetails: Record<string, Partial<Integration>> = {
     logo: "WA",
     features: ["Client messaging", "Notifications", "Automated replies", "Media sharing"],
   },
-  instagram: {
-    logo: "IG",
-    features: ["DM responses", "Story mentions", "Comment replies", "Analytics"],
+  sms: {
+    logo: "SMS",
+    features: ["SMS notifications", "Automated replies", "Class reminders", "AI Bot support"],
   },
+  // instagram: Hidden - incomplete implementation, re-enable post-MVP
+  // instagram: {
+  //   logo: "IG",
+  //   features: ["DM responses", "Story mentions", "Comment replies", "Analytics"],
+  // },
   google_calendar: {
     logo: "GC",
     features: ["Two-way sync", "Reminders", "Availability", "Room booking"],
@@ -49,12 +54,13 @@ const integrationDetails: Record<string, Partial<Integration>> = {
     logo: "PP",
     features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"],
   },
-  wellhub: {
-    logo: "W",
-    description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients.",
-    features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
-    status: "available",
-  },
+  // wellhub: Hidden for US market - re-enable for Brazil/LATAM
+  // wellhub: {
+  //   logo: "W",
+  //   description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients.",
+  //   features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
+  //   status: "available",
+  // },
   classpass: {
     logo: "CP",
     description: "List your classes on ClassPass to attract new clients.",
@@ -75,8 +81,8 @@ const integrationDetails: Record<string, Partial<Integration>> = {
   },
   tecnofit: {
     logo: "TF",
-    description: "Importe seus dados do Tecnofit para o FlexiWell.",
-    features: ["Importar alunos", "Planos e mensalidades", "Histórico de treinos", "Agendamentos"],
+    description: "Import your data from Tecnofit to FlexiWell.",
+    features: ["Import clients", "Plans & memberships", "Training history", "Schedules"],
     status: "available",
   },
 };
@@ -110,6 +116,7 @@ const logoColors: Record<string, string> = {
   square: "bg-gray-900",
   whatsapp: "bg-green-500",
   instagram: "bg-pink-600",
+  sms: "bg-blue-500",
 };
 
 function IntegrationCard({
@@ -357,10 +364,11 @@ function ConfigureModal({
 
 // Credential fields for each integration type
 const credentialFields: Record<string, { key: string; label: string; type: string; placeholder: string; required: boolean }[]> = {
-  wellhub: [
-    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Wellhub API key", required: true },
-    { key: "gymId", label: "Gym ID", type: "text", placeholder: "Your Wellhub Gym ID", required: true },
-  ],
+  // wellhub: Hidden for US market - re-enable for Brazil/LATAM
+  // wellhub: [
+  //   { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Wellhub API key", required: true },
+  //   { key: "gymId", label: "Gym ID", type: "text", placeholder: "Your Wellhub Gym ID", required: true },
+  // ],
   stripe: [
     { key: "secretKey", label: "Secret Key", type: "password", placeholder: "sk_live_...", required: true },
     { key: "publishableKey", label: "Publishable Key", type: "text", placeholder: "pk_live_...", required: true },
@@ -371,11 +379,17 @@ const credentialFields: Record<string, { key: string; label: string; type: strin
     { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true },
     { key: "phoneNumber", label: "WhatsApp Number", type: "text", placeholder: "+15551234567", required: true },
   ],
-  instagram: [
-    { key: "accessToken", label: "Access Token", type: "password", placeholder: "Your Instagram access token", required: true },
-    { key: "pageId", label: "Instagram Page ID", type: "text", placeholder: "123456789", required: true },
-    { key: "appId", label: "Meta App ID", type: "text", placeholder: "Optional", required: false },
+  sms: [
+    { key: "accountSid", label: "Twilio Account SID", type: "text", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", required: true },
+    { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true },
+    { key: "phoneNumber", label: "SMS Phone Number", type: "text", placeholder: "+15551234567", required: true },
   ],
+  // instagram: Hidden - incomplete implementation, re-enable post-MVP
+  // instagram: [
+  //   { key: "accessToken", label: "Access Token", type: "password", placeholder: "Your Instagram access token", required: true },
+  //   { key: "pageId", label: "Instagram Page ID", type: "text", placeholder: "123456789", required: true },
+  //   { key: "appId", label: "Meta App ID", type: "text", placeholder: "Optional", required: false },
+  // ],
   google_calendar: [
     { key: "clientId", label: "Client ID", type: "text", placeholder: "xxxxx.apps.googleusercontent.com", required: true },
     { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "Your client secret", required: true },
@@ -403,8 +417,8 @@ const credentialFields: Record<string, { key: string; label: string; type: strin
     { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Glofox API key", required: true },
   ],
   tecnofit: [
-    { key: "empresaId", label: "ID da Empresa", type: "text", placeholder: "Seu ID de empresa no Tecnofit", required: true },
-    { key: "apiToken", label: "Token de API", type: "password", placeholder: "Seu token de acesso", required: true },
+    { key: "empresaId", label: "Company ID", type: "text", placeholder: "Your Tecnofit company ID", required: true },
+    { key: "apiToken", label: "API Token", type: "password", placeholder: "Your access token", required: true },
   ],
 };
 
@@ -549,15 +563,15 @@ function ConnectModal({
             </ul>
           </div>
 
-          {/* Webhook URLs for WhatsApp/Instagram */}
-          {(integration.id === "whatsapp" || integration.id === "instagram") && (
+          {/* Webhook URLs for WhatsApp/SMS/Instagram */}
+          {(integration.id === "whatsapp" || integration.id === "sms" || integration.id === "instagram") && (
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
               <p className="text-sm font-medium text-blue-700 mb-2">Webhook URL</p>
               <p className="text-xs text-blue-600 mb-2">
-                Configure this URL in your {integration.id === "whatsapp" ? "Twilio" : "Meta"} settings:
+                Configure this URL in your Twilio settings:
               </p>
               <code className="block p-2 bg-white rounded text-xs text-gray-700 break-all">
-                {typeof window !== "undefined" ? window.location.origin : ""}/api/webhooks/{integration.id}
+                {typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/{integration.id}
               </code>
             </div>
           )}
@@ -603,19 +617,20 @@ export default function IntegrationsPage() {
   const [connectModal, setConnectModal] = useState<Integration | null>(null);
 
   // Default integrations list (fallback when API fails)
+  // Hidden: wellhub (US market), instagram (incomplete), tecnofit (Brazil)
   const defaultIntegrations: Integration[] = [
-    { id: "wellhub", name: "Wellhub", description: "Connect with Wellhub (formerly Gympass) for corporate wellness", logo: "W", category: "marketplace", status: "available", features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"] },
     { id: "stripe", name: "Stripe", description: "Process payments and manage subscriptions", logo: "S", category: "payments", status: "available", features: ["Card payments", "Subscriptions", "Invoicing", "Fraud protection"] },
     { id: "paypal", name: "PayPal", description: "Accept PayPal payments and subscriptions", logo: "PP", category: "payments", status: "available", features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"] },
     { id: "google_calendar", name: "Google Calendar", description: "Sync classes with Google Calendar", logo: "GC", category: "scheduling", status: "available", features: ["Two-way sync", "Reminders", "Availability", "Room booking"] },
+    { id: "sms", name: "SMS (Twilio)", description: "Send SMS notifications and automated replies to US clients", logo: "SMS", category: "messaging", status: "available", features: ["SMS notifications", "Automated replies", "Class reminders", "AI Bot support"] },
     { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients via Twilio", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Notifications", "Automated replies", "Media sharing"] },
-    { id: "instagram", name: "Instagram", description: "Receive messages and respond to clients", logo: "IG", category: "messaging", status: "available", features: ["DM responses", "Story mentions", "Comment replies", "Analytics"] },
     { id: "mailchimp", name: "Mailchimp", description: "Email marketing and newsletters", logo: "MC", category: "marketing", status: "available", features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"] },
     { id: "zapier", name: "Zapier", description: "Connect with 5000+ apps", logo: "ZP", category: "automation", status: "available", features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"] },
     { id: "classpass", name: "ClassPass", description: "List your classes on ClassPass marketplace", logo: "CP", category: "marketplace", status: "coming_soon", features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"] },
     { id: "mindbody", name: "Mindbody", description: "Import clients and schedules from Mindbody", logo: "MB", category: "migration", status: "available", features: ["Client import", "Schedule sync", "Membership data", "Payment history"] },
     { id: "glofox", name: "Glofox", description: "Migrate your data from Glofox seamlessly", logo: "GF", category: "migration", status: "available", features: ["Client import", "Class schedules", "Membership plans", "Booking history"] },
-    { id: "tecnofit", name: "Tecnofit", description: "Importe seus dados do Tecnofit para o FlexiWell", logo: "TF", category: "migration", status: "available", features: ["Importar alunos", "Planos e mensalidades", "Histórico de treinos", "Agendamentos"] },
+    // tecnofit: Hidden for US market - re-enable for Brazil/LATAM
+    // { id: "tecnofit", name: "Tecnofit", description: "Import your data from Tecnofit to FlexiWell", logo: "TF", category: "migration", status: "available", features: ["Import clients", "Plans & memberships", "Training history", "Schedules"] },
   ];
 
   // Fetch integrations from API

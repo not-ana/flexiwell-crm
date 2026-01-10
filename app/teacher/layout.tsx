@@ -8,7 +8,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ResponsiveLayout variant="teacher" notificationCount={3}>
+    <ResponsiveLayout variant="teacher">
       {children}
     </ResponsiveLayout>
   );

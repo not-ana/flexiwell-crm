@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DashboardIcon,
   ClassesIcon,
@@ -81,6 +82,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
+      { name: "Rooms", href: "/admin/rooms", icon: RoomsIcon, onboardingId: "sidebar-rooms" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
       { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, onboardingId: "sidebar-integrations" },
@@ -103,12 +105,11 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
   },
 };
 
-// Mock accounts for switch account feature - 3 account types: Client, Admin, Teacher
-const mockAccountsData: Record<AccountType, Account> = {
-  client: { id: "1", name: "Olivia Rhye", email: "olivia@flexitrack.net", initials: "OR", type: "client", isActive: false },
-  admin: { id: "2", name: "Ana Silva", email: "ana@flexiwell.com", initials: "AS", type: "admin", isActive: false },
-  teacher: { id: "3", name: "Maria Santos", email: "maria@flexiwell.com", initials: "MS", type: "teacher", isActive: false },
-};
+// Helper function to generate initials from name
+function getInitials(name: string): string {
+  if (!name) return "??";
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
 
 const accountTypeStyles: Record<AccountType, { bg: string; text: string; label: string }> = {
   client: { bg: "bg-primary-50", text: "text-primary-700", label: "Client" },
@@ -119,7 +120,7 @@ const accountTypeStyles: Record<AccountType, { bg: string; text: string; label: 
 function AccountTypeBadge({ type }: { type: AccountType }) {
   const style = accountTypeStyles[type];
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${style.bg} ${style.text}`}>
       {style.label}
     </span>
   );
@@ -128,6 +129,7 @@ function AccountTypeBadge({ type }: { type: AccountType }) {
 export default function Sidebar({ variant = "client", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -148,13 +150,27 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
   // Get menu config based on variant
   const { main: mainMenuItems, bottom: bottomMenuItems } = menuConfigs[variant];
 
-  // Build accounts list with current variant as active
-  const accounts: Account[] = Object.values(mockAccountsData).map((account) => ({
-    ...account,
-    isActive: account.type === variant,
-  }));
+  // Create active account from real user data
+  const activeAccount: Account = {
+    id: user?.id || "0",
+    name: user?.name || "User",
+    email: user?.email || "",
+    initials: getInitials(user?.name || ""),
+    avatar: user?.avatar,
+    type: (user?.role as AccountType) || variant,
+    isActive: true,
+  };
 
-  const activeAccount = accounts.find((a) => a.isActive) || accounts[0];
+  // For switch account feature, show demo accounts for other roles (dev only)
+  const isDev = process.env.NODE_ENV === "development";
+  const currentUserRole = activeAccount.type;
+  const otherAccounts: Account[] = isDev ? ([
+    { id: "demo-admin", name: "Admin Demo", email: "admin@flexiwell.com", initials: "AD", type: "admin" as AccountType, isActive: false },
+    { id: "demo-teacher", name: "Teacher Demo", email: "teacher@flexiwell.com", initials: "TD", type: "teacher" as AccountType, isActive: false },
+    { id: "demo-client", name: "Client Demo", email: "client@flexiwell.com", initials: "CD", type: "client" as AccountType, isActive: false },
+  ] as Account[]).filter(a => a.type !== currentUserRole) : [];
+
+  const accounts: Account[] = [activeAccount, ...otherAccounts];
 
   const handleSwitchAccount = (accountId: string) => {
     const selectedAccount = accounts.find((a) => a.id === accountId);
@@ -175,13 +191,9 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     }
   };
 
-  const handleSignOut = () => {
-    // Clear any stored session/auth data
-    localStorage.removeItem("flexiwell-session");
-    sessionStorage.clear();
+  const handleSignOut = async () => {
     setShowSignOutModal(false);
-    // Redirect to login page
-    router.push("/login");
+    await logout();
   };
 
   const handleAddAccount = async () => {
@@ -349,14 +361,14 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
             <p className="text-sm text-gray-600">{activeAccount.email}</p>
           </div>
           <ChevronIcon
-            className="w-5 h-5 text-gray-400 transition-transform"
+            className="w-5 h-5 text-gray-500 transition-transform shrink-0"
             direction={isProfileMenuOpen ? "down" : "up"}
           />
         </button>
 
         {/* Profile Dropdown Menu */}
         {isProfileMenuOpen && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
             {/* Menu Items */}
             <div className="py-1 border-b border-gray-100">
               <Link
@@ -368,63 +380,67 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                 <span className="flex-1">View profile</span>
                 <span className="text-xs text-gray-400">Ctrl+K P</span>
               </Link>
-              <Link
-                href="/docs"
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                onClick={() => setIsProfileMenuOpen(false)}
-              >
-                <DocumentIcon className="w-4 h-4 text-gray-500" />
-                <span>Documentation</span>
-              </Link>
-            </div>
-
-            {/* Switch Account Section */}
-            <div className="py-2 border-b border-gray-100">
-              <div className="flex items-center gap-2 px-4 py-1.5">
-                <SwitchIcon className="w-3.5 h-3.5 text-gray-400" />
-                <p className="text-xs font-medium text-gray-500">Switch account</p>
-              </div>
-              {accounts.map((account) => (
-                <button
-                  key={account.id}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
-                  onClick={() => handleSwitchAccount(account.id)}
-                >
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
-                      <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900">{account.name}</p>
-                      <AccountTypeBadge type={account.type} />
-                    </div>
-                    <p className="text-xs text-gray-500">{account.email}</p>
-                  </div>
-                  {account.isActive ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-primary-600 flex items-center justify-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                  )}
-                </button>
-              ))}
               <button
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setIsProfileMenuOpen(false);
-                  setShowAddAccountModal(true);
+                  alert('Documentation coming soon!');
                 }}
               >
-                <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <span className="text-gray-400 text-lg">+</span>
-                </div>
-                <span>Add account</span>
+                <DocumentIcon className="w-4 h-4 text-gray-500" />
+                <span>Documentation</span>
               </button>
             </div>
+
+            {/* Switch Account Section - Dev only */}
+            {isDev && (
+              <div className="py-2 border-b border-gray-100">
+                <div className="flex items-center gap-2 px-4 py-1.5">
+                  <SwitchIcon className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-xs font-medium text-gray-500">Switch account</p>
+                </div>
+                {accounts.map((account) => (
+                  <button
+                    key={account.id}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                    onClick={() => handleSwitchAccount(account.id)}
+                  >
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                        <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">{account.name}</p>
+                        <AccountTypeBadge type={account.type} />
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">{account.email}</p>
+                    </div>
+                    {account.isActive ? (
+                      <div className="w-5 h-5 rounded-full border-2 border-primary-600 flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                    )}
+                  </button>
+                ))}
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    setShowAddAccountModal(true);
+                  }}
+                >
+                  <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
+                    <span className="text-gray-400 text-lg">+</span>
+                  </div>
+                  <span>Add account</span>
+                </button>
+              </div>
+            )}
 
             {/* Sign Out */}
             <div className="py-1">

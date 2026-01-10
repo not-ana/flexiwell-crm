@@ -10,10 +10,20 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
-    // Get all establishments
-    const establishments = await db.collection("establishments")
+    // Get all establishments (try both collections for backward compatibility)
+    let establishments = await db.collection("establishments")
       .find()
       .toArray();
+
+    // If no establishments found, try the 'units' collection (legacy)
+    if (establishments.length === 0) {
+      establishments = await db.collection("units")
+        .find()
+        .toArray();
+    }
+
+    console.log("Establishments found:", establishments.length);
+    console.log("Establishments data:", JSON.stringify(establishments, null, 2));
 
     // Get all rooms
     const rooms = await db.collection<Room>("rooms")

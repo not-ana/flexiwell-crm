@@ -8,14 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "ts-node --esm scripts/seed.ts",
-    "test": "cucumber-js",
-    "test:ui": "cucumber-js -p ui",
-    "test:smoke": "cucumber-js -p smoke",
-    "test:teacher": "cucumber-js --tags @teacher-classes",
-    "test:admin": "cucumber-js --tags @admin",
-    "test:client": "cucumber-js --tags @client",
-    "test:sidebar": "cucumber-js --tags @sidebar",
-    "test:buttons": "cucumber-js --tags @buttons"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.6.1",
@@ -36,21 +33,24 @@
     "stripe": "^20.1.0"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^12.5.0",
-    "@cucumber/cucumber-expressions": "^18.0.1",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-big-calendar": "^1.16.3",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "jsdom": "^27.4.0",
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.0.16"
   }
 }
