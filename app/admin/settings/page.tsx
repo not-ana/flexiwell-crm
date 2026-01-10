@@ -535,6 +535,7 @@ function RoomsSettings() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [newRoom, setNewRoom] = useState({ name: "", capacity: 10, establishmentId: "", amenities: "" });
   const [saving, setSaving] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
 
   // Load rooms and establishments from API
   useEffect(() => {
@@ -644,13 +645,13 @@ function RoomsSettings() {
     }
   };
 
-  const handleDeleteRoom = async (roomId: string) => {
-    if (!confirm("Are you sure you want to delete this room?")) return;
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
 
     try {
-      const res = await fetch(`/api/rooms/${roomId}`, { method: "DELETE" });
+      const res = await fetch(`/api/rooms/${roomToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
-        setRooms(prev => prev.filter(room => room.id !== roomId));
+        setRooms(prev => prev.filter(room => room.id !== roomToDelete.id));
         showToast("Room deleted");
       } else {
         showToast("Failed to delete room", "error");
@@ -658,7 +659,61 @@ function RoomsSettings() {
     } catch (error) {
       console.error("Delete room error:", error);
       showToast("Failed to delete room", "error");
+    } finally {
+      setRoomToDelete(null);
     }
+  };
+
+  const handleStartEdit = (room: Room) => {
+    setEditingRoom(room);
+    setNewRoom({
+      name: room.name,
+      capacity: room.capacity,
+      establishmentId: room.establishmentId,
+      amenities: room.amenities.join(", "),
+    });
+  };
+
+  const handleUpdateRoom = async () => {
+    if (!editingRoom || !newRoom.name || !newRoom.establishmentId) return;
+    setSaving(true);
+    try {
+      const amenitiesArray = newRoom.amenities.split(",").map(a => a.trim()).filter(a => a);
+      const res = await fetch(`/api/rooms/${editingRoom.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newRoom.name,
+          establishmentId: newRoom.establishmentId,
+          capacity: newRoom.capacity,
+          equipment: amenitiesArray,
+        }),
+      });
+
+      if (res.ok) {
+        setRooms(prev => prev.map(r =>
+          r.id === editingRoom.id
+            ? { ...r, name: newRoom.name, capacity: newRoom.capacity, establishmentId: newRoom.establishmentId, amenities: amenitiesArray }
+            : r
+        ));
+        setEditingRoom(null);
+        setNewRoom({ name: "", capacity: 10, establishmentId: establishments[0]?.id || "", amenities: "" });
+        showToast("Room updated successfully");
+      } else {
+        showToast("Failed to update room", "error");
+      }
+    } catch (error) {
+      console.error("Update room error:", error);
+      showToast("Failed to update room", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingRoom(null);
+    setNewRoom({ name: "", capacity: 10, establishmentId: establishments[0]?.id || "", amenities: "" });
   };
 
   if (loading) {
@@ -736,18 +791,31 @@ function RoomsSettings() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleToggleActive(room.id)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                          room.isActive
-                            ? "text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-                            : "text-green-700 bg-green-50 hover:bg-green-100"
-                        }`}
+                        onClick={() => handleStartEdit(room)}
+                        className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"
+                        title="Edit room"
                       >
-                        {room.isActive ? "Deactivate" : "Activate"}
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                       </button>
                       <button
-                        onClick={() => handleDeleteRoom(room.id)}
+                        onClick={() => handleToggleActive(room.id)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          room.isActive ? "bg-primary-600" : "bg-gray-300"
+                        }`}
+                        title={room.isActive ? "Active - Click to deactivate" : "Inactive - Click to activate"}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            room.isActive ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <button
+                        onClick={() => setRoomToDelete(room)}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete room"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -775,14 +843,14 @@ function RoomsSettings() {
         )}
       </div>
 
-      {/* Add Room Modal */}
-      {showAddModal && (
+      {/* Add/Edit Room Modal */}
+      {(showAddModal || editingRoom) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="px-6 pt-6 pb-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Add Room</h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <h3 className="text-lg font-semibold text-gray-900">{editingRoom ? "Edit Room" : "Add Room"}</h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -815,12 +883,23 @@ function RoomsSettings() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newRoom.capacity}
-                  onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    const numValue = parseInt(value) || 0;
+                    setNewRoom({ ...newRoom, capacity: numValue });
+                  }}
+                  onBlur={() => {
+                    if (newRoom.capacity < 2) {
+                      setNewRoom({ ...newRoom, capacity: 2 });
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">Minimum capacity: 2 (student + instructor)</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
@@ -836,17 +915,50 @@ function RoomsSettings() {
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={handleCloseModal}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleAddRoom}
-                disabled={!newRoom.name}
+                onClick={editingRoom ? handleUpdateRoom : handleAddRoom}
+                disabled={!newRoom.name || newRoom.capacity < 2 || saving}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
               >
-                Add Room
+                {saving ? "Saving..." : editingRoom ? "Save Changes" : "Add Room"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {roomToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Delete Room?</h3>
+              <p className="text-sm text-gray-600 text-center">
+                Are you sure you want to delete <span className="font-medium">{roomToDelete.name}</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setRoomToDelete(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRoom}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Delete
               </button>
             </div>
           </div>
@@ -1233,33 +1345,41 @@ function ChangePlanModal({
   const [selectedPlan, setSelectedPlan] = useState(currentPlanId);
   const [selectedCycle, setSelectedCycle] = useState(billingCycle);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleConfirmChange = async () => {
-    if (selectedPlan === currentPlanId && selectedCycle === billingCycle) {
-      alert("You are already on this plan.");
-      return;
-    }
-
-    setIsProcessing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsProcessing(false);
-
-    const plan = flexiwellPlans.find((p) => p.id === selectedPlan);
-    const price = selectedCycle === "yearly" ? plan?.yearlyPrice : plan?.monthlyPrice;
-    alert(`Plan changed to ${plan?.name}!\n\nYour new plan will be activated immediately.\nYou will be charged R$ ${price}/${selectedCycle === "yearly" ? "month (yearly)" : "month"} starting from the next billing cycle.`);
-    onClose();
-  };
+  const currentPlan = flexiwellPlans.find((p) => p.id === currentPlanId);
+  const newPlan = flexiwellPlans.find((p) => p.id === selectedPlan);
+  const currentPrice = billingCycle === "yearly" ? currentPlan?.yearlyPrice : currentPlan?.monthlyPrice;
+  const newPrice = selectedCycle === "yearly" ? newPlan?.yearlyPrice : newPlan?.monthlyPrice;
+  const priceDifference = (newPrice || 0) - (currentPrice || 0);
 
   const currentPlanIndex = flexiwellPlans.findIndex((p) => p.id === currentPlanId);
   const selectedPlanIndex = flexiwellPlans.findIndex((p) => p.id === selectedPlan);
-  const isUpgrade = selectedPlanIndex > currentPlanIndex;
-  const isDowngrade = selectedPlanIndex < currentPlanIndex;
+  const isUpgrade = selectedPlanIndex > currentPlanIndex || (selectedPlanIndex === currentPlanIndex && priceDifference > 0);
+  const isDowngrade = selectedPlanIndex < currentPlanIndex || (selectedPlanIndex === currentPlanIndex && priceDifference < 0);
+
+  const handleRequestChange = () => {
+    if (selectedPlan === currentPlanId && selectedCycle === billingCycle) {
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmChange = async () => {
+    setIsProcessing(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsProcessing(false);
+    setShowConfirmModal(false);
+    onClose();
+    // Show success toast or redirect
+  };
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-[95vw] xl:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl w-full max-w-[98vw] 2xl:max-w-[1600px] max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -1447,15 +1567,108 @@ function ChangePlanModal({
             Cancel
           </button>
           <button
-            onClick={handleConfirmChange}
-            disabled={isProcessing || (selectedPlan === currentPlanId && selectedCycle === billingCycle)}
+            onClick={handleRequestChange}
+            disabled={selectedPlan === currentPlanId && selectedCycle === billingCycle}
             className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Processing..." : isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Confirm Change"}
+            {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Confirm Change"}
           </button>
         </div>
       </div>
     </div>
+
+    {/* Confirmation Modal */}
+    {showConfirmModal && (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+        <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+          <div className="p-6">
+            {/* Icon */}
+            <div className={`w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4 ${
+              isUpgrade ? "bg-green-100" : "bg-amber-100"
+            }`}>
+              {isUpgrade ? (
+                <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              ) : (
+                <svg className="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              )}
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+              {isUpgrade ? "Confirm Upgrade" : "Confirm Downgrade"}
+            </h3>
+
+            {/* Plan change summary */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Current Plan</p>
+                  <p className="font-semibold text-gray-900">{currentPlan?.name}</p>
+                  <p className="text-sm text-gray-600">R$ {currentPrice}/mo</p>
+                </div>
+                <div className="px-3">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">New Plan</p>
+                  <p className="font-semibold text-gray-900">{newPlan?.name}</p>
+                  <p className="text-sm text-gray-600">R$ {newPrice}/mo</p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Warning/Info message */}
+            <div className={`p-3 rounded-lg mb-4 ${
+              isUpgrade ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+            }`}>
+              <p className={`text-sm ${isUpgrade ? "text-green-700" : "text-amber-700"}`}>
+                {isUpgrade
+                  ? "Your new plan will be activated immediately. You will be charged the prorated difference for the current billing period."
+                  : "When downgrading, you may lose access to some features. Your current data will be preserved but may become inaccessible if it exceeds the new plan limits."}
+              </p>
+            </div>
+
+            {/* Billing info */}
+            <p className="text-xs text-gray-500 text-center">
+              {selectedCycle === "yearly"
+                ? `Billed annually at R$ ${(newPrice || 0) * 12}/year`
+                : `Billed monthly at R$ ${newPrice}/month`
+              }
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="px-6 pb-6 flex gap-3">
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              disabled={isProcessing}
+              className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmChange}
+              disabled={isProcessing}
+              className={`flex-1 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                isUpgrade
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-amber-600 hover:bg-amber-700"
+              }`}
+            >
+              {isProcessing ? "Processing..." : isUpgrade ? "Confirm Upgrade" : "Confirm Downgrade"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
