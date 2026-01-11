@@ -83,12 +83,10 @@ export async function apiRequest<T>(
   }
 
   try {
-    console.log("[API] Fetching:", `${API_BASE_URL}${endpoint}`);
     let response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
-    console.log("[API] Response status:", response.status);
 
     // If unauthorized, try to refresh token
     if (response.status === 401 && accessToken) {
@@ -104,7 +102,6 @@ export async function apiRequest<T>(
     }
 
     const data = await response.json();
-    console.log("[API] Response data:", data);
 
     if (!response.ok) {
       return {
@@ -117,7 +114,6 @@ export async function apiRequest<T>(
 
     return { data };
   } catch (error) {
-    console.error("[API] Error:", error);
     return {
       error: {
         error: error instanceof Error ? error.message : "Network error",
@@ -276,7 +272,7 @@ export interface Staff {
   name: string;
   email: string;
   phone?: string;
-  role: "admin" | "teacher" | "receptionist";
+  role: "admin" | "teacher";
   avatar?: string;
   specialties?: string[];
   schedule?: {

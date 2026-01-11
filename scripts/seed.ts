@@ -87,17 +87,6 @@ const seedData = {
       createdAt: new Date(),
       updatedAt: new Date(),
     },
-    {
-      _id: new ObjectId(),
-      name: "Ana Paula",
-      email: "ana@flexiwell.com",
-      phone: "(11) 99999-3333",
-      role: "receptionist",
-      status: "active",
-      unit: "FlexiWell Centro",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
   ],
 
   // Clients

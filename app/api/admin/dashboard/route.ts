@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
+import { requireRole } from "@/lib/auth";
 
 // GET /api/admin/dashboard - Get dashboard statistics
 export async function GET(request: NextRequest) {
+  // Require admin authentication
+  const { user, error } = requireRole(request, ["admin"]);
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "month"; // week, month, year

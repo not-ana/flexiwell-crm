@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["admin", "teacher", "receptionist"].includes(role)) {
+    if (!["admin", "teacher"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, teacher, or receptionist" },
+        { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
     }

@@ -76,12 +76,12 @@ export async function POST(request: NextRequest) {
 
       // Validate role
       const role = row.role?.toLowerCase().trim() || "teacher";
-      if (!["admin", "teacher", "receptionist"].includes(role)) {
+      if (!["admin", "teacher"].includes(role)) {
         results.failed++;
         results.errors.push({
           row: rowNum,
           email,
-          error: `Invalid role: ${row.role}. Must be admin, teacher, or receptionist`,
+          error: `Invalid role: ${row.role}. Must be admin or teacher`,
         });
         continue;
       }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         name: row.name.trim(),
         email,
         phone: row.phone?.trim() || "",
-        role: role as "admin" | "teacher" | "receptionist",
+        role: role as "admin" | "teacher",
         specialties: [],
         schedule: [],
         status: "inactive", // New imports start as inactive until activated

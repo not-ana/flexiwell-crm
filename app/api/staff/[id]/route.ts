@@ -62,9 +62,9 @@ export async function PUT(
     const { _id, createdAt, ...updateData } = body;
 
     // Validate role if provided
-    if (updateData.role && !["admin", "teacher", "receptionist"].includes(updateData.role)) {
+    if (updateData.role && !["admin", "teacher"].includes(updateData.role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, teacher, or receptionist" },
+        { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
     }
@@ -233,9 +233,9 @@ export async function PATCH(
             { status: 400 }
           );
         }
-        if (!["admin", "teacher", "receptionist"].includes(body.role)) {
+        if (!["admin", "teacher"].includes(body.role)) {
           return NextResponse.json(
-            { error: "Invalid role. Must be admin, teacher, or receptionist" },
+            { error: "Invalid role. Must be admin or teacher" },
             { status: 400 }
           );
         }

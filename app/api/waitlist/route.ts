@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import type { WaitlistEntry, Client, Booking } from "@/lib/db/schemas";
+import { requireRole } from "@/lib/auth";
 
 // GET /api/waitlist - List all waitlist entries
 export async function GET(request: NextRequest) {
+  // Require authentication - only admin and teacher can view waitlist
+  const { user, error } = requireRole(request, ["admin", "teacher"]);
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -80,6 +85,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/waitlist - Create a new waitlist entry
 export async function POST(request: NextRequest) {
+  // Require authentication - admin, teacher, or client can create entries
+  const { user, error } = requireRole(request, ["admin", "teacher", "client"]);
+  if (error) return error;
+
   try {
     const body = await request.json();
     const {

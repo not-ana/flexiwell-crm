@@ -116,7 +116,7 @@ export const onboardingSteps: OnboardingStepConfig[] = [
       {
         label: "Invite Team Members",
         type: "form",
-        description: "Add email addresses and roles (instructor, receptionist, admin)",
+        description: "Add email addresses and roles (instructor, admin)",
       },
       {
         label: "Skip - I'll do this later",

@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Client } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
+import { requireRole } from "@/lib/auth";
+import { sanitizeSearchInput } from "@/lib/security";
 
 // GET /api/clients - Get all clients with optional filters
 export async function GET(request: NextRequest) {
+  // Require authentication - only admin and teacher can list clients
+  const { user, error } = requireRole(request, ["admin", "teacher"]);
+  if (error) return error;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status");
-    const search = searchParams.get("search");
+    const rawSearch = searchParams.get("search");
+    const search = rawSearch ? sanitizeSearchInput(rawSearch) : null;
     const limit = parseInt(searchParams.get("limit") || "50");
     const skip = parseInt(searchParams.get("skip") || "0");
 
@@ -56,6 +63,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/clients - Create a new client
 export async function POST(request: NextRequest) {
+  // Require authentication - only admin can create clients
+  const { user, error } = requireRole(request, ["admin"]);
+  if (error) return error;
+
   try {
     const body = await request.json();
     const { name, email, phone, plan, preferences } = body;

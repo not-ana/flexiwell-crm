@@ -6,9 +6,27 @@ import {
   generateTokenPair,
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
+import { checkRateLimit, getClientIp, RATE_LIMITS, validatePassword } from "@/lib/security";
 
 // POST /api/auth/register - Register a new user
 export async function POST(request: NextRequest) {
+  // Rate limiting - prevent mass account creation
+  const clientIp = getClientIp(request);
+  const rateLimit = checkRateLimit(`register:${clientIp}`, RATE_LIMITS.register);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": String(rateLimit.remaining),
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password, name, role, phone, inviteCode } = body;
@@ -30,10 +48,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password strength with comprehensive checks
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
+        { error: passwordValidation.errors[0] },
         { status: 400 }
       );
     }
@@ -187,7 +206,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error registering user:", error);
+    // Don't log sensitive details in production
+    console.error("Registration error occurred");
     return NextResponse.json(
       { error: "Failed to register user" },
       { status: 500 }

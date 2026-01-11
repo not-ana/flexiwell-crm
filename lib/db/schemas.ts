@@ -56,7 +56,7 @@ export interface Staff {
   name: string;
   email: string;
   phone: string;
-  role: "admin" | "teacher" | "receptionist";
+  role: "admin" | "teacher";
   avatar?: string;
   bio?: string;
   specialties?: string[];

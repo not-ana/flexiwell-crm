@@ -7,9 +7,27 @@ import {
   generateTokenPair,
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security";
 
 // POST /api/auth/login - Login user
 export async function POST(request: NextRequest) {
+  // Rate limiting - prevent brute force attacks
+  const clientIp = getClientIp(request);
+  const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.login);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "X-RateLimit-Remaining": String(rateLimit.remaining),
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -104,7 +122,8 @@ export async function POST(request: NextRequest) {
       tokens,
     });
   } catch (error) {
-    console.error("Error logging in:", error);
+    // Don't log sensitive details in production
+    console.error("Login error occurred");
     return NextResponse.json(
       { error: "Failed to login" },
       { status: 500 }

@@ -395,7 +395,7 @@ export function InteractiveOnboarding({
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const config = onboardingConfigs[role];
+  const config = onboardingConfigs[role] || onboardingConfigs.client;
   const currentStepData = config.steps[currentStep];
 
   // Find and scroll to target element
@@ -498,18 +498,24 @@ export function InteractiveOnboarding({
 // Hook for managing onboarding state
 export function useInteractiveOnboarding(role: UserRole) {
   const [shouldShow, setShouldShow] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Check if onboarding was completed
-    const completed = localStorage.getItem(`onboarding_completed_${role}`);
-    if (!completed) {
-      setShouldShow(true);
-    }
+    // Small delay to ensure page is fully rendered before showing onboarding
+    const timer = setTimeout(() => {
+      // Check if onboarding was completed (only runs on client)
+      const completed = localStorage.getItem(`onboarding_completed_${role}`);
+      setShouldShow(!completed);
+      setIsReady(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [role]);
 
   const resetOnboarding = () => {
     localStorage.removeItem(`onboarding_completed_${role}`);
     setShouldShow(true);
+    setIsReady(true);
   };
 
   const markComplete = () => {
@@ -517,5 +523,5 @@ export function useInteractiveOnboarding(role: UserRole) {
     setShouldShow(false);
   };
 
-  return { shouldShow, resetOnboarding, markComplete, setShouldShow };
+  return { shouldShow: isReady && shouldShow, resetOnboarding, markComplete, setShouldShow };
 }

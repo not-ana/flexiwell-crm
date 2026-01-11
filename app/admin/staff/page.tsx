@@ -7,7 +7,7 @@ import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
 import type { Staff } from "@/lib/api/client";
 
-type StaffRole = "admin" | "teacher" | "receptionist";
+type StaffRole = "admin" | "teacher";
 type StaffStatus = "active" | "invited" | "inactive";
 
 interface Unit {
@@ -20,7 +20,6 @@ interface Unit {
 const roleStyles: Record<StaffRole, { bg: string; text: string; label: string }> = {
   admin: { bg: "bg-primary-50", text: "text-primary-700", label: "Admin" },
   teacher: { bg: "bg-blue-50", text: "text-blue-700", label: "Teacher" },
-  receptionist: { bg: "bg-green-50", text: "text-green-700", label: "Receptionist" },
 };
 
 const statusStyles: Record<StaffStatus, { bg: string; text: string; dot: string; label: string }> = {
@@ -428,7 +427,6 @@ function AddStaffModal({
               >
                 <option value="teacher">Teacher</option>
                 <option value="admin">Admin</option>
-                <option value="receptionist">Receptionist</option>
               </select>
             </div>
 
@@ -925,7 +923,6 @@ export default function AdminStaffPage() {
             <option value="all">All roles</option>
             <option value="admin">Admin</option>
             <option value="teacher">Teacher</option>
-            <option value="receptionist">Receptionist</option>
           </select>
 
           <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
