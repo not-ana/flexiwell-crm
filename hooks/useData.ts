@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   clientsApi,
   staffApi,
@@ -18,319 +18,211 @@ import {
   type TeacherDashboardResponse,
   type TeacherClass,
   type TeacherUnit,
-  type TeacherStudent,
   type MakeupRequest,
 } from "@/lib/api/client";
+import { useApiData, useResourceById } from "./useResource";
 
-// Generic hook for data fetching with loading and error states
-function useApiData<T>(
-  fetchFn: () => Promise<{ data?: T; error?: { error: string; status: number } }>,
-  dependencies: unknown[] = []
+// ============================================
+// Helper for standard list + CRUD pattern
+// ============================================
+
+type ApiListResponse = { data?: unknown; error?: { error: string } };
+
+function useListWithCrud<T, P>(
+  listFn: (params?: P) => Promise<ApiListResponse>,
+  createFn: ((data: Partial<T>) => Promise<ApiListResponse>) | undefined,
+  updateFn: ((id: string, data: Partial<T>) => Promise<ApiListResponse>) | undefined,
+  deleteFn: ((id: string) => Promise<ApiListResponse>) | undefined,
+  params: P | undefined,
+  config: { itemsKey: string; itemKey: string }
 ) {
-  const [data, setData] = useState<T | null>(null);
+  const { itemsKey, itemKey } = config;
+
+  const [items, setItems] = useState<T[]>([]);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = useCallback(async () => {
+  const paramsKey = JSON.stringify(params || {});
+
+  const fetchItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await fetchFn();
+    const response = await listFn(params);
 
     if (response.error) {
       setError(response.error.error);
-      setData(null);
     } else if (response.data) {
-      setData(response.data);
+      const data = response.data as unknown as Record<string, unknown>;
+      setItems((data[itemsKey] as T[]) || []);
+      setTotal((data.total as number) || 0);
     }
 
     setIsLoading(false);
-  }, [fetchFn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey]);
 
   useEffect(() => {
-    refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies);
+    fetchItems();
+  }, [fetchItems]);
 
-  return { data, isLoading, error, refetch };
+  const createItem = async (data: Partial<T>) => {
+    if (!createFn) return { success: false, error: "Not supported" };
+    const response = await createFn(data);
+    if (response.data) {
+      await fetchItems();
+      const resData = response.data as unknown as Record<string, T>;
+      return { success: true, [itemKey]: resData[itemKey] };
+    }
+    return { success: false, error: response.error?.error };
+  };
+
+  const updateItem = async (id: string, data: Partial<T>) => {
+    if (!updateFn) return { success: false, error: "Not supported" };
+    const response = await updateFn(id, data);
+    if (response.data) {
+      await fetchItems();
+      const resData = response.data as unknown as Record<string, T>;
+      return { success: true, [itemKey]: resData[itemKey] };
+    }
+    return { success: false, error: response.error?.error };
+  };
+
+  const deleteItem = async (id: string) => {
+    if (!deleteFn) return { success: false, error: "Not supported" };
+    const response = await deleteFn(id);
+    if (!response.error) {
+      await fetchItems();
+      return { success: true };
+    }
+    return { success: false, error: response.error?.error };
+  };
+
+  return { items, total, isLoading, error, refetch: fetchItems, createItem, updateItem, deleteItem };
 }
 
+// ============================================
 // Dashboard Stats Hook
+// ============================================
+
 export function useDashboardStats() {
-  return useApiData<DashboardStats>(
-    () => dashboardApi.getStats(),
-    []
-  );
+  return useApiData<DashboardStats>(() => dashboardApi.getStats(), []);
 }
 
+// ============================================
 // Clients Hooks
-export function useClients(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
-}) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// ============================================
 
-  // Serialize params to avoid infinite loop
-  const paramsKey = JSON.stringify(params || {});
+type ClientsParams = { page?: number; limit?: number; search?: string; status?: string };
 
-  const fetchClients = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const response = await clientsApi.list(params);
-
-    if (response.error) {
-      setError(response.error.error);
-    } else if (response.data) {
-      setClients(response.data.clients);
-      setTotal(response.data.total);
-    }
-
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey]);
-
-  useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
-
-  const createClient = async (data: Partial<Client>) => {
-    const response = await clientsApi.create(data);
-    if (response.data) {
-      await fetchClients();
-      return { success: true, client: response.data.client };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const updateClient = async (id: string, data: Partial<Client>) => {
-    const response = await clientsApi.update(id, data);
-    if (response.data) {
-      await fetchClients();
-      return { success: true, client: response.data.client };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const deleteClient = async (id: string) => {
-    const response = await clientsApi.delete(id);
-    if (!response.error) {
-      await fetchClients();
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
-  };
+export function useClients(params?: ClientsParams) {
+  const result = useListWithCrud<Client, ClientsParams>(
+    clientsApi.list,
+    clientsApi.create,
+    clientsApi.update,
+    clientsApi.delete,
+    params,
+    { itemsKey: "clients", itemKey: "client" }
+  );
 
   return {
-    clients,
-    total,
-    isLoading,
-    error,
-    refetch: fetchClients,
-    createClient,
-    updateClient,
-    deleteClient,
+    clients: result.items,
+    total: result.total,
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch,
+    createClient: result.createItem,
+    updateClient: result.updateItem,
+    deleteClient: result.deleteItem,
   };
 }
 
-// Single Client Hook
 export function useClient(id: string | null) {
-  const [client, setClient] = useState<Client | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!id) {
-      setClient(null);
-      return;
-    }
-
-    const fetchClient = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await clientsApi.get(id);
-
-      if (response.error) {
-        setError(response.error.error);
-      } else if (response.data) {
-        setClient(response.data.client);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchClient();
-  }, [id]);
-
-  return { client, isLoading, error };
+  const result = useResourceById<Client>(clientsApi.get, id, "client");
+  return { client: result.data, isLoading: result.isLoading, error: result.error };
 }
 
+// ============================================
 // Staff Hooks
-export function useStaff(params?: { role?: string; status?: string }) {
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// ============================================
 
-  // Serialize params to avoid infinite loop
-  const paramsKey = JSON.stringify(params || {});
+type StaffParams = { role?: string; status?: string };
 
-  const fetchStaff = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const response = await staffApi.list(params);
-
-    if (response.error) {
-      setError(response.error.error);
-    } else if (response.data) {
-      setStaff(response.data.staff);
-      setTotal(response.data.total);
-    }
-
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey]);
-
-  useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
-
-  const createStaff = async (data: Partial<Staff>) => {
-    const response = await staffApi.create(data);
-    if (response.data) {
-      await fetchStaff();
-      return { success: true, staff: response.data.staff };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const updateStaff = async (id: string, data: Partial<Staff>) => {
-    const response = await staffApi.update(id, data);
-    if (response.data) {
-      await fetchStaff();
-      return { success: true, staff: response.data.staff };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const deleteStaff = async (id: string) => {
-    const response = await staffApi.delete(id);
-    if (!response.error) {
-      await fetchStaff();
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
-  };
+export function useStaff(params?: StaffParams) {
+  const result = useListWithCrud<Staff, StaffParams>(
+    staffApi.list,
+    staffApi.create,
+    staffApi.update,
+    staffApi.delete,
+    params,
+    { itemsKey: "staff", itemKey: "staff" }
+  );
 
   return {
-    staff,
-    total,
-    isLoading,
-    error,
-    refetch: fetchStaff,
-    createStaff,
-    updateStaff,
-    deleteStaff,
+    staff: result.items,
+    total: result.total,
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch,
+    createStaff: result.createItem,
+    updateStaff: result.updateItem,
+    deleteStaff: result.deleteItem,
   };
 }
 
+// ============================================
 // Classes Hooks
-export function useClasses(params?: {
+// ============================================
+
+type ClassesParams = {
   instructorId?: string;
   type?: string;
   status?: string;
   startDate?: string;
   endDate?: string;
-}) {
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+};
 
-  // Serialize params to avoid infinite loop
-  const paramsKey = JSON.stringify(params || {});
-
-  const fetchClasses = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const response = await classesApi.list(params);
-
-    if (response.error) {
-      setError(response.error.error);
-    } else if (response.data) {
-      setClasses(response.data.classes);
-      setTotal(response.data.total);
-    }
-
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey]);
-
-  useEffect(() => {
-    fetchClasses();
-  }, [fetchClasses]);
-
-  const createClass = async (data: Partial<Class>) => {
-    const response = await classesApi.create(data);
-    if (response.data) {
-      await fetchClasses();
-      return { success: true, class: response.data.class };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const updateClass = async (id: string, data: Partial<Class>) => {
-    const response = await classesApi.update(id, data);
-    if (response.data) {
-      await fetchClasses();
-      return { success: true, class: response.data.class };
-    }
-    return { success: false, error: response.error?.error };
-  };
-
-  const deleteClass = async (id: string) => {
-    const response = await classesApi.delete(id);
-    if (!response.error) {
-      await fetchClasses();
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
-  };
+export function useClasses(params?: ClassesParams) {
+  const result = useListWithCrud<Class, ClassesParams>(
+    classesApi.list,
+    classesApi.create,
+    classesApi.update,
+    classesApi.delete,
+    params,
+    { itemsKey: "classes", itemKey: "class" }
+  );
 
   return {
-    classes,
-    total,
-    isLoading,
-    error,
-    refetch: fetchClasses,
-    createClass,
-    updateClass,
-    deleteClass,
+    classes: result.items,
+    total: result.total,
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch,
+    createClass: result.createItem,
+    updateClass: result.updateItem,
+    deleteClass: result.deleteItem,
   };
 }
 
+// ============================================
 // Bookings Hooks
-export function useBookings(params?: {
+// ============================================
+
+type BookingsParams = {
   clientId?: string;
   classId?: string;
   status?: string;
   startDate?: string;
   endDate?: string;
-}) {
+};
+
+export function useBookings(params?: BookingsParams) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Serialize params to avoid infinite loop
   const paramsKey = JSON.stringify(params || {});
 
   const fetchBookings = useCallback(async () => {
@@ -376,32 +268,28 @@ export function useBookings(params?: {
     return { success: false, error: response.error?.error };
   };
 
-  return {
-    bookings,
-    total,
-    isLoading,
-    error,
-    refetch: fetchBookings,
-    createBooking,
-    cancelBooking,
-  };
+  return { bookings, total, isLoading, error, refetch: fetchBookings, createBooking, cancelBooking };
 }
 
+// ============================================
 // Payments Hooks
-export function usePayments(params?: {
+// ============================================
+
+type PaymentsParams = {
   clientId?: string;
   status?: string;
   method?: string;
   startDate?: string;
   endDate?: string;
-}) {
+};
+
+export function usePayments(params?: PaymentsParams) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [total, setTotal] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Serialize params to avoid infinite loop
   const paramsKey = JSON.stringify(params || {});
 
   const fetchPayments = useCallback(async () => {
@@ -437,18 +325,12 @@ export function usePayments(params?: {
 
   const sendReminder = async (id: string) => {
     const response = await paymentsApi.sendReminder(id);
-    if (!response.error) {
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
+    return response.error ? { success: false, error: response.error.error } : { success: true };
   };
 
   const sendBulkReminders = async (ids: string[]) => {
     const response = await paymentsApi.sendBulkReminders(ids);
-    if (!response.error) {
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
+    return response.error ? { success: false, error: response.error.error } : { success: true };
   };
 
   return {
@@ -464,103 +346,38 @@ export function usePayments(params?: {
   };
 }
 
-// Revenue Chart Hook
+// ============================================
+// Dashboard Chart Hooks
+// ============================================
+
 export function useRevenueChart(period: "week" | "month" | "year") {
-  const [data, setData] = useState<{ date: string; amount: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await dashboardApi.getRevenueChart(period);
-
-      if (response.error) {
-        setError(response.error.error);
-      } else if (response.data) {
-        setData(response.data.data);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchData();
-  }, [period]);
-
-  return { data, isLoading, error };
+  const { data, isLoading, error } = useApiData(
+    () => dashboardApi.getRevenueChart(period),
+    [period]
+  );
+  return { data: data?.data || [], isLoading, error };
 }
 
-// Class Metrics Hook
 export function useClassMetrics() {
-  const [data, setData] = useState<
-    { type: string; count: number; attendance: number }[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await dashboardApi.getClassMetrics();
-
-      if (response.error) {
-        setError(response.error.error);
-      } else if (response.data) {
-        setData(response.data.data);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchData();
-  }, []);
-
-  return { data, isLoading, error };
+  const { data, isLoading, error } = useApiData(() => dashboardApi.getClassMetrics(), []);
+  return { data: data?.data || [], isLoading, error };
 }
 
-// ===========================================
+// ============================================
 // Teacher-specific Hooks
-// ===========================================
+// ============================================
 
-// Teacher Dashboard Hook
 export function useTeacherDashboard() {
-  const [data, setData] = useState<TeacherDashboardResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const response = await teacherApi.getDashboard();
-
-    if (response.error) {
-      setError(response.error.error);
-    } else if (response.data) {
-      setData(response.data);
-    }
-
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { data, isLoading, error, refetch };
+  return useApiData<TeacherDashboardResponse>(() => teacherApi.getDashboard(), []);
 }
 
-// Teacher Classes Hook
-export function useTeacherClasses(params?: { startDate?: string; endDate?: string }) {
+type TeacherClassesParams = { startDate?: string; endDate?: string };
+
+export function useTeacherClasses(params?: TeacherClassesParams) {
   const [classes, setClasses] = useState<TeacherClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Serialize params to avoid infinite loop
   const paramsKey = JSON.stringify(params || {});
 
   const fetchClasses = useCallback(async () => {
@@ -619,19 +436,9 @@ export function useTeacherClasses(params?: { startDate?: string; endDate?: strin
     return { success: false, error: response.error?.error };
   };
 
-  return {
-    classes,
-    isLoading,
-    error,
-    refetch: fetchClasses,
-    startClass,
-    saveAttendance,
-    createClass,
-    addWalkIn,
-  };
+  return { classes, isLoading, error, refetch: fetchClasses, startClass, saveAttendance, createClass, addWalkIn };
 }
 
-// Teacher Students Hook
 export function useTeacherStudents() {
   const [units, setUnits] = useState<TeacherUnit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -658,25 +465,19 @@ export function useTeacherStudents() {
 
   const sendMessage = async (studentId: string, message: string, channel: "whatsapp" | "email" | "sms") => {
     const response = await teacherApi.sendMessage(studentId, message, channel);
-    if (response.data) {
-      return { success: true };
-    }
-    return { success: false, error: response.error?.error };
+    return response.data ? { success: true } : { success: false, error: response.error?.error };
   };
 
-  // Flatten all students
-  const allStudents = units.flatMap(unit =>
-    unit.students.map(s => ({ ...s, unitId: unit.id, unitName: unit.name }))
+  const allStudents = useMemo(
+    () => units.flatMap((unit) => unit.students.map((s) => ({ ...s, unitId: unit.id, unitName: unit.name }))),
+    [units]
   );
-
-  const totalStudents = allStudents.length;
-  const activeStudents = allStudents.filter(s => s.status === "active").length;
 
   return {
     units,
     allStudents,
-    totalStudents,
-    activeStudents,
+    totalStudents: allStudents.length,
+    activeStudents: allStudents.filter((s) => s.status === "active").length,
     isLoading,
     error,
     refetch: fetchStudents,
@@ -684,7 +485,6 @@ export function useTeacherStudents() {
   };
 }
 
-// Teacher Makeup Requests Hook
 export function useTeacherMakeups() {
   const [requests, setRequests] = useState<MakeupRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -718,11 +518,9 @@ export function useTeacherMakeups() {
     return { success: false, error: response.error?.error };
   };
 
-  const pendingCount = requests.filter(r => r.status === "pending").length;
-
   return {
     requests,
-    pendingCount,
+    pendingCount: requests.filter((r) => r.status === "pending").length,
     isLoading,
     error,
     refetch: fetchMakeups,

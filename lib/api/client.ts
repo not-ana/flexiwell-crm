@@ -1,5 +1,8 @@
 // API Client utilities for frontend
 
+import { buildQueryString } from "@/lib/utils/query";
+import { TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/lib/utils/constants";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface ApiError {
@@ -11,10 +14,6 @@ export interface ApiResponse<T> {
   data?: T;
   error?: ApiError;
 }
-
-// Token management
-const TOKEN_KEY = "flexiwell_access_token";
-const REFRESH_TOKEN_KEY = "flexiwell_refresh_token";
 
 export function getStoredTokens() {
   if (typeof window === "undefined") return { accessToken: null, refreshToken: null };
@@ -247,14 +246,8 @@ export interface ClientsResponse {
 }
 
 export const clientsApi = {
-  list: (params?: { page?: number; limit?: number; search?: string; status?: string }) => {
-    const query = new URLSearchParams();
-    if (params?.page) query.set("page", String(params.page));
-    if (params?.limit) query.set("limit", String(params.limit));
-    if (params?.search) query.set("search", params.search);
-    if (params?.status) query.set("status", params.status);
-    return api.get<ClientsResponse>(`/api/clients?${query}`);
-  },
+  list: (params?: { page?: number; limit?: number; search?: string; status?: string }) =>
+    api.get<ClientsResponse>(`/api/clients${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ client: Client }>(`/api/clients/${id}`),
 
@@ -296,12 +289,8 @@ export interface StaffResponse {
 }
 
 export const staffApi = {
-  list: (params?: { role?: string; status?: string }) => {
-    const query = new URLSearchParams();
-    if (params?.role) query.set("role", params.role);
-    if (params?.status) query.set("status", params.status);
-    return api.get<StaffResponse>(`/api/staff?${query}`);
-  },
+  list: (params?: { role?: string; status?: string }) =>
+    api.get<StaffResponse>(`/api/staff${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ staff: Staff }>(`/api/staff/${id}`),
 
@@ -351,15 +340,7 @@ export const classesApi = {
     status?: string;
     startDate?: string;
     endDate?: string;
-  }) => {
-    const query = new URLSearchParams();
-    if (params?.instructorId) query.set("instructorId", params.instructorId);
-    if (params?.type) query.set("type", params.type);
-    if (params?.status) query.set("status", params.status);
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    return api.get<ClassesResponse>(`/api/classes?${query}`);
-  },
+  }) => api.get<ClassesResponse>(`/api/classes${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ class: Class }>(`/api/classes/${id}`),
 
@@ -407,15 +388,7 @@ export const bookingsApi = {
     status?: string;
     startDate?: string;
     endDate?: string;
-  }) => {
-    const query = new URLSearchParams();
-    if (params?.clientId) query.set("clientId", params.clientId);
-    if (params?.classId) query.set("classId", params.classId);
-    if (params?.status) query.set("status", params.status);
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    return api.get<BookingsResponse>(`/api/bookings?${query}`);
-  },
+  }) => api.get<BookingsResponse>(`/api/bookings${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ booking: Booking }>(`/api/bookings/${id}`),
 
@@ -461,15 +434,7 @@ export const paymentsApi = {
     method?: string;
     startDate?: string;
     endDate?: string;
-  }) => {
-    const query = new URLSearchParams();
-    if (params?.clientId) query.set("clientId", params.clientId);
-    if (params?.status) query.set("status", params.status);
-    if (params?.method) query.set("method", params.method);
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    return api.get<PaymentsResponse>(`/api/payments?${query}`);
-  },
+  }) => api.get<PaymentsResponse>(`/api/payments${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ payment: Payment }>(`/api/payments/${id}`),
 
@@ -624,12 +589,8 @@ export const teacherApi = {
   getStats: () =>
     api.get<{ stats: TeacherStats }>("/api/teacher/stats"),
 
-  getClasses: (params?: { startDate?: string; endDate?: string }) => {
-    const query = new URLSearchParams();
-    if (params?.startDate) query.set("startDate", params.startDate);
-    if (params?.endDate) query.set("endDate", params.endDate);
-    return api.get<{ classes: TeacherClass[] }>(`/api/teacher/classes?${query}`);
-  },
+  getClasses: (params?: { startDate?: string; endDate?: string }) =>
+    api.get<{ classes: TeacherClass[] }>(`/api/teacher/classes${buildQueryString(params || {})}`),
 
   getClass: (id: string) =>
     api.get<{ class: TeacherClass }>(`/api/teacher/classes/${id}`),

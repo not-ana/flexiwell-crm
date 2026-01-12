@@ -2,6 +2,8 @@
 import { Resend } from "resend";
 import { getDatabase } from "@/lib/db/mongodb";
 import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
+import { formatPhoneForWhatsApp } from "@/lib/utils/phone";
+import { formatDateBR } from "@/lib/utils/date";
 import type { Client, Booking, Class } from "@/lib/db/schemas";
 
 // ============================================
@@ -599,7 +601,7 @@ export class NotificationService {
       const message = template(data);
 
       // Format phone number for WhatsApp
-      const formattedPhone = this.formatPhoneForWhatsApp(phone);
+      const formattedPhone = formatPhoneForWhatsApp(phone);
 
       // Send via Twilio
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/Messages.json`;
@@ -658,19 +660,6 @@ export class NotificationService {
     }
   }
 
-  // Format phone number for WhatsApp (Brazil format)
-  private formatPhoneForWhatsApp(phone: string): string {
-    // Remove all non-digits
-    let digits = phone.replace(/\D/g, "");
-
-    // Add Brazil country code if not present
-    if (!digits.startsWith("55")) {
-      digits = "55" + digits;
-    }
-
-    // Ensure proper format
-    return "+" + digits;
-  }
 
   // Log notification to database
   private async logNotification(notification: NotificationRecord): Promise<void> {
@@ -695,7 +684,7 @@ export class NotificationService {
       data: {
         clientId: booking.clientId,
         className: classDoc.title,
-        date: new Date(classDoc.scheduledDate).toLocaleDateString("pt-BR"),
+        date: formatDateBR(classDoc.scheduledDate),
         startTime: classDoc.startTime,
         endTime: classDoc.endTime,
         instructorName: classDoc.instructorName,
@@ -715,7 +704,7 @@ export class NotificationService {
       data: {
         clientId: booking.clientId,
         className: booking.className,
-        date: new Date(booking.scheduledDate).toLocaleDateString("pt-BR"),
+        date: formatDateBR(booking.scheduledDate),
         startTime: booking.startTime,
         reason,
         creditRefunded,
@@ -733,7 +722,7 @@ export class NotificationService {
       data: {
         clientId: booking.clientId,
         className: booking.className,
-        date: new Date(booking.scheduledDate).toLocaleDateString("pt-BR"),
+        date: formatDateBR(booking.scheduledDate),
         startTime: booking.startTime,
         endTime: booking.endTime,
         instructorName: booking.instructorName,
@@ -753,7 +742,7 @@ export class NotificationService {
       data: {
         clientId,
         className: classDoc.title,
-        date: new Date(classDoc.scheduledDate).toLocaleDateString("pt-BR"),
+        date: formatDateBR(classDoc.scheduledDate),
         startTime: classDoc.startTime,
         confirmUrl,
       },
@@ -787,7 +776,7 @@ export class NotificationService {
         data: {
           clientId,
           className: classDoc.title,
-          date: new Date(classDoc.scheduledDate).toLocaleDateString("pt-BR"),
+          date: formatDateBR(classDoc.scheduledDate),
           startTime: classDoc.startTime,
           reason,
         },
@@ -834,7 +823,7 @@ export class NotificationService {
         clientId: client._id?.toString(),
         planName: client.plan.type,
         daysUntilExpiry,
-        expiryDate: new Date(client.plan.endDate).toLocaleDateString("pt-BR"),
+        expiryDate: formatDateBR(client.plan.endDate),
         remainingClasses: client.plan.remainingClasses,
       },
     });
