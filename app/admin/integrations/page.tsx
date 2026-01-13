@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, CheckCircleIcon, ToggleIcon } from "@/components/icons";
+import { IntegrationLogo } from "@/components/icons/integrations";
 
 
 interface Integration {
@@ -137,7 +138,7 @@ function IntegrationCard({
     <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start gap-4">
         <div className={`w-14 h-14 ${logoColors[integration.id]} rounded-xl flex items-center justify-center flex-shrink-0`}>
-          <span className="text-white font-bold text-lg">{integration.logo}</span>
+          <IntegrationLogo integrationId={integration.id} className="w-7 h-7 text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -278,7 +279,7 @@ function ConfigureModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 ${logoColors[integration.id] || "bg-gray-500"} rounded-lg flex items-center justify-center`}>
-                <span className="text-white font-bold">{integration.logo}</span>
+                <IntegrationLogo integrationId={integration.id} className="w-5 h-5 text-white" />
               </div>
               <h2 className="text-xl font-semibold text-gray-900">{integration.name} Settings</h2>
             </div>
@@ -518,7 +519,7 @@ function ConnectModal({
               <div className="w-8 h-0.5 bg-gray-300" />
             </div>
             <div className={`w-16 h-16 ${logoColors[integration.id] || "bg-gray-500"} rounded-xl flex items-center justify-center`}>
-              <span className="text-white font-bold text-2xl">{integration.logo}</span>
+              <IntegrationLogo integrationId={integration.id} className="w-8 h-8 text-white" />
             </div>
           </div>
 

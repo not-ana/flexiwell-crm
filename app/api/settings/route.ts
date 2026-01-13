@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS: Omit<StudioSettings, "_id"> = {
     timezone: "America/New_York",
     currency: "USD",
     language: "en-US",
+    region: "US",
     businessType: "pilates",
   },
   branding: {
@@ -20,6 +21,8 @@ const DEFAULT_SETTINGS: Omit<StudioSettings, "_id"> = {
     emailEnabled: true,
     whatsappEnabled: false,
     smsEnabled: false,
+    primaryMessagingChannel: "whatsapp",
+    messagingBotEnabled: false,
     reminderHours: 24,
     confirmationEmail: true,
     marketingEmails: false,

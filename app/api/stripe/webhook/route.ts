@@ -2,44 +2,18 @@
 // POST /api/stripe/webhook - Handle Stripe webhook events
 
 import { NextRequest, NextResponse } from "next/server";
-import { constructWebhookEvent, stripe } from "@/lib/stripe/server";
+import { constructWebhookEvent } from "@/lib/stripe/server";
 import { getDatabase as getDb } from "@/lib/db/mongodb";
-import { stripePlanPriceIds, stripeAddOnPriceIds } from "@/lib/stripe/config";
-import type { PlanTier } from "@/lib/config/pricing";
 import { EmailService } from "@/lib/email";
 import Stripe from "stripe";
+import {
+  getPlanTierFromPriceId,
+  getBillingPeriodFromPriceId,
+  getAddOnIdFromPriceId,
+} from "../subscription/helpers";
 
 // Disable body parsing - we need raw body for webhook verification
 export const runtime = "nodejs";
-
-// Map Stripe price IDs back to plan tiers
-function getPlanTierFromPriceId(priceId: string): PlanTier | null {
-  for (const [tier, prices] of Object.entries(stripePlanPriceIds)) {
-    if (prices.monthly === priceId || prices.annual === priceId) {
-      return tier as PlanTier;
-    }
-  }
-  return null;
-}
-
-// Get billing period from price ID
-function getBillingPeriodFromPriceId(priceId: string): "monthly" | "annual" | null {
-  for (const prices of Object.values(stripePlanPriceIds)) {
-    if (prices.monthly === priceId) return "monthly";
-    if (prices.annual === priceId) return "annual";
-  }
-  return null;
-}
-
-// Get add-on ID from price ID
-function getAddOnIdFromPriceId(priceId: string): string | null {
-  for (const [addOnId, stripePriceId] of Object.entries(stripeAddOnPriceIds)) {
-    if (stripePriceId === priceId) {
-      return addOnId;
-    }
-  }
-  return null;
-}
 
 // Handle checkout.session.completed
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
