@@ -1,10 +1,58 @@
 // FlexiWell Pricing Configuration
-// US Market Pricing in USD
+// Multi-region support: BR (BRL) and US/Global (USD)
+// Focus: Support + Smart Waitlist + Bot (WhatsApp BR / SMS+WhatsApp US)
 // Updated January 2026
 
-export type PlanTier = "starter" | "growth" | "business" | "professional" | "enterprise";
+export type PlanTier = "starter" | "growth" | "business" | "enterprise";
 export type BillingPeriod = "monthly" | "annual";
 export type Currency = "USD" | "BRL" | "EUR" | "GBP";
+export type Region = "BR" | "US" | "EU" | "GLOBAL";
+export type SupportedLocale = "pt-BR" | "en-US" | "en-GB" | "es-ES";
+
+// Region configuration - messaging channel defaults
+export interface RegionConfig {
+  currency: Currency;
+  locale: SupportedLocale;
+  defaultMessagingChannels: ("whatsapp" | "sms")[];
+  dateFormat: string;
+  currencySymbol: string;
+  currencyPosition: "before" | "after";
+}
+
+export const regionConfigs: Record<Region, RegionConfig> = {
+  BR: {
+    currency: "BRL",
+    locale: "pt-BR",
+    defaultMessagingChannels: ["whatsapp"], // Brazil: WhatsApp only
+    dateFormat: "dd/MM/yyyy",
+    currencySymbol: "R$",
+    currencyPosition: "before",
+  },
+  US: {
+    currency: "USD",
+    locale: "en-US",
+    defaultMessagingChannels: ["whatsapp", "sms"], // US: choice between WhatsApp and SMS
+    dateFormat: "MM/dd/yyyy",
+    currencySymbol: "$",
+    currencyPosition: "before",
+  },
+  EU: {
+    currency: "EUR",
+    locale: "en-GB",
+    defaultMessagingChannels: ["whatsapp", "sms"],
+    dateFormat: "dd/MM/yyyy",
+    currencySymbol: "€",
+    currencyPosition: "before",
+  },
+  GLOBAL: {
+    currency: "USD",
+    locale: "en-US",
+    defaultMessagingChannels: ["whatsapp", "sms"],
+    dateFormat: "dd/MM/yyyy",
+    currencySymbol: "$",
+    currencyPosition: "before",
+  },
+};
 
 export interface PricingPlan {
   id: PlanTier;
@@ -45,7 +93,36 @@ export interface AddOn {
   availableOn: PlanTier[];
 }
 
-// Core pricing plans for US market
+// Multi-currency pricing by region
+// USD is base currency, BRL uses fixed conversion
+export interface RegionalPricing {
+  USD: { monthly: number; annual: number; annualTotal: number };
+  BRL: { monthly: number; annual: number; annualTotal: number };
+}
+
+export const regionalPricing: Record<PlanTier, RegionalPricing> = {
+  starter: {
+    USD: { monthly: 49, annual: 39, annualTotal: 468 },
+    BRL: { monthly: 197, annual: 157, annualTotal: 1884 },
+  },
+  growth: {
+    USD: { monthly: 99, annual: 79, annualTotal: 948 },
+    BRL: { monthly: 397, annual: 317, annualTotal: 3804 },
+  },
+  business: {
+    USD: { monthly: 249, annual: 199, annualTotal: 2388 },
+    BRL: { monthly: 997, annual: 797, annualTotal: 9564 },
+  },
+  enterprise: {
+    USD: { monthly: 0, annual: 0, annualTotal: 0 }, // Custom
+    BRL: { monthly: 0, annual: 0, annualTotal: 0 }, // Custom
+  },
+};
+
+// Core pricing plans - Default in USD
+// Focus: Support + Smart Waitlist + Messaging Bot (WhatsApp BR / SMS+WhatsApp US)
+// 4 tiers: Starter, Growth, Business, Enterprise
+// Team members are UNLIMITED on all plans - limit is by clients and locations
 export const pricingPlans: PricingPlan[] = [
   {
     id: "starter",
@@ -60,7 +137,7 @@ export const pricingPlans: PricingPlan[] = [
     },
     limits: {
       clients: 100,
-      teamMembers: 1,
+      teamMembers: "unlimited",
       locations: 1,
       storage: "5GB",
     },
@@ -71,25 +148,26 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Payment processing", included: true, tooltip: "2.9% + $0.30 per transaction" },
       { name: "Email reminders", included: true },
       { name: "Calendar sync", included: true },
-      // Communication
+      // Messaging - Region dependent (WhatsApp BR / SMS+WhatsApp US)
       { name: "SMS notifications", included: false },
       { name: "WhatsApp notifications", included: false },
-      { name: "WhatsApp Bot", included: false },
-      // AI features
+      { name: "Messaging Bot", included: false, tooltip: "WhatsApp Bot (BR) or SMS/WhatsApp Bot (US)" },
+      // AI & Waitlist - Core differentiator
       { name: "AI Support Assistant", included: false },
-      { name: "Smart Waitlist", included: false },
+      { name: "Smart Waitlist", included: false, tooltip: "Reduce revenue variation, improve cash flow predictability" },
       { name: "Cancellation predictions", included: false },
+      // Integrations
+      { name: "Wellhub/Gympass", included: false },
       // Reports
       { name: "Basic reports", included: true },
       { name: "Advanced reports", included: false },
-      { name: "Custom dashboards", included: false },
+      { name: "Revenue analytics", included: false, tooltip: "Cash flow and predictability insights" },
       { name: "Data export", included: true },
       // Support
       { name: "Email support", included: true },
       { name: "Chat support", included: false },
       { name: "Priority support", included: false },
       { name: "Dedicated account manager", included: false },
-      { name: "24/7 phone support", included: false },
       // Advanced
       { name: "API access", included: false },
       { name: "White-label branding", included: false },
@@ -99,7 +177,7 @@ export const pricingPlans: PricingPlan[] = [
   {
     id: "growth",
     name: "Growth",
-    description: "For growing studios with multiple staff.",
+    description: "For growing studios ready to scale.",
     tagline: "For growing studios",
     pricing: {
       monthly: 99,
@@ -109,9 +187,9 @@ export const pricingPlans: PricingPlan[] = [
     },
     limits: {
       clients: 500,
-      teamMembers: 5,
+      teamMembers: "unlimited",
       locations: 2,
-      storage: "10GB",
+      storage: "25GB",
     },
     features: [
       // Core features
@@ -120,25 +198,26 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Payment processing", included: true, tooltip: "2.5% + $0.25 per transaction" },
       { name: "Email reminders", included: true },
       { name: "Calendar sync", included: true },
-      // Communication
-      { name: "SMS notifications", included: true },
+      // Messaging - Region dependent
+      { name: "SMS notifications", included: true, tooltip: "US market" },
       { name: "WhatsApp notifications", included: true },
-      { name: "WhatsApp Bot", included: false },
-      // AI features
+      { name: "Messaging Bot", included: false, tooltip: "WhatsApp Bot (BR) or SMS/WhatsApp Bot (US)" },
+      // AI & Waitlist - Core differentiator
       { name: "AI Support Assistant", included: false },
-      { name: "Smart Waitlist", included: false },
+      { name: "Smart Waitlist", included: true, limit: "Basic queue", tooltip: "FIFO priority, manual notifications" },
       { name: "Cancellation predictions", included: false },
+      // Integrations
+      { name: "Wellhub/Gympass", included: true },
       // Reports
       { name: "Basic reports", included: true },
       { name: "Advanced reports", included: true },
-      { name: "Custom dashboards", included: false },
+      { name: "Revenue analytics", included: true, tooltip: "Basic cash flow insights" },
       { name: "Data export", included: true },
       // Support
       { name: "Email support", included: true },
       { name: "Chat support", included: true },
       { name: "Priority support", included: false },
       { name: "Dedicated account manager", included: false },
-      { name: "24/7 phone support", included: false },
       // Advanced
       { name: "API access", included: false },
       { name: "White-label branding", included: false },
@@ -148,71 +227,22 @@ export const pricingPlans: PricingPlan[] = [
   {
     id: "business",
     name: "Business",
-    description: "For established studios with AI features.",
-    tagline: "AI-powered",
+    description: "Maximize revenue with AI-powered waitlist and predictive insights.",
+    tagline: "Revenue optimization",
     pricing: {
-      monthly: 179,
-      annual: 149,
-      annualTotal: 1788,
-      currency: "USD",
-    },
-    limits: {
-      clients: 500,
-      teamMembers: 3,
-      locations: 2,
-      storage: "50GB",
-    },
-    highlighted: true,
-    badge: "Most popular",
-    features: [
-      // Core features
-      { name: "Online scheduling", included: true },
-      { name: "Client portal", included: true },
-      { name: "Payment processing", included: true, tooltip: "2.2% + $0.20 per transaction" },
-      { name: "Email reminders", included: true },
-      { name: "Calendar sync", included: true },
-      // Communication
-      { name: "SMS notifications", included: true },
-      { name: "WhatsApp notifications", included: true },
-      { name: "WhatsApp Bot", included: true, limit: "1,000 msgs/mo" },
-      // AI features
-      { name: "AI Support Assistant", included: true, limit: "500 chats/mo" },
-      { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
-      { name: "Cancellation predictions", included: true },
-      // Reports
-      { name: "Basic reports", included: true },
-      { name: "Advanced reports", included: true },
-      { name: "Custom dashboards", included: false },
-      { name: "Data export", included: true },
-      // Support
-      { name: "Email support", included: true },
-      { name: "Chat support", included: true },
-      { name: "Priority support", included: false },
-      { name: "Dedicated account manager", included: false },
-      { name: "24/7 phone support", included: false },
-      // Advanced
-      { name: "API access", included: false },
-      { name: "White-label branding", included: false },
-      { name: "Custom integrations", included: false },
-    ],
-  },
-  {
-    id: "professional",
-    name: "Professional",
-    description: "For multi-location studios.",
-    tagline: "Multi-location",
-    pricing: {
-      monthly: 199,
-      annual: 159,
-      annualTotal: 1908,
+      monthly: 249,
+      annual: 199,
+      annualTotal: 2388,
       currency: "USD",
     },
     limits: {
       clients: 2000,
-      teamMembers: 10,
+      teamMembers: "unlimited",
       locations: 5,
-      storage: "200GB",
+      storage: "100GB",
     },
+    highlighted: true,
+    badge: "Best for predictability",
     features: [
       // Core features
       { name: "Online scheduling", included: true },
@@ -220,25 +250,29 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Payment processing", included: true, tooltip: "1.9% + $0.15 per transaction" },
       { name: "Email reminders", included: true },
       { name: "Calendar sync", included: true },
-      // Communication
+      // Messaging - Full bot support (WhatsApp BR / SMS+WhatsApp US)
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
-      { name: "WhatsApp Bot", included: true, limit: "5,000 msgs/mo" },
-      // AI features
+      { name: "Messaging Bot", included: true, limit: "5,000 msgs/mo", tooltip: "WhatsApp Bot (BR) or SMS/WhatsApp Bot (US) - automated scheduling, confirmations, reminders" },
+      // AI & Waitlist - Core differentiator - MAIN VALUE PROP
       { name: "AI Support Assistant", included: true, limit: "2,000 chats/mo" },
-      { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
-      { name: "Cancellation predictions", included: true },
-      // Reports
+      { name: "Smart Waitlist", included: true, tooltip: "AI-powered priority, auto-fill cancellations, reduce no-shows by 40%" },
+      { name: "Cancellation predictions", included: true, tooltip: "ML-based predictions to proactively fill spots" },
+      { name: "Auto-fill spots", included: true, tooltip: "Automatically notify waitlist when spots open" },
+      { name: "Revenue protection", included: true, tooltip: "Late cancellation fees, no-show tracking" },
+      // Integrations
+      { name: "Wellhub/Gympass", included: true },
+      // Reports - Revenue focus
       { name: "Basic reports", included: true },
       { name: "Advanced reports", included: true },
-      { name: "Custom dashboards", included: true },
+      { name: "Revenue analytics", included: true, tooltip: "Full cash flow predictability dashboard" },
+      { name: "Monthly revenue forecast", included: true, tooltip: "30-day revenue predictions based on bookings" },
       { name: "Data export", included: true },
       // Support
       { name: "Email support", included: true },
       { name: "Chat support", included: true },
       { name: "Priority support", included: true },
       { name: "Dedicated account manager", included: false },
-      { name: "24/7 phone support", included: false },
       // Advanced
       { name: "API access", included: true },
       { name: "White-label branding", included: true },
@@ -248,8 +282,8 @@ export const pricingPlans: PricingPlan[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    description: "For studio networks.",
-    tagline: "Custom Pricing",
+    description: "For studio networks and franchises with maximum control.",
+    tagline: "Custom solution",
     pricing: {
       monthly: 0, // Custom pricing - contact sales
       annual: 0,
@@ -267,28 +301,34 @@ export const pricingPlans: PricingPlan[] = [
       // Core features
       { name: "Online scheduling", included: true },
       { name: "Client portal", included: true },
-      { name: "Payment processing", included: true, tooltip: "1.9% + $0.15 per transaction" },
+      { name: "Payment processing", included: true, tooltip: "Custom rates" },
       { name: "Email reminders", included: true },
       { name: "Calendar sync", included: true },
-      // Communication
+      // Messaging - Unlimited (WhatsApp BR / SMS+WhatsApp US)
       { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: true },
-      { name: "WhatsApp Bot", included: true, limit: "Unlimited" },
-      // AI features
+      { name: "Messaging Bot", included: true, limit: "Unlimited", tooltip: "WhatsApp Bot (BR) or SMS/WhatsApp Bot (US)" },
+      // AI & Waitlist - Full suite
       { name: "AI Support Assistant", included: true, limit: "Unlimited" },
-      { name: "Smart Waitlist", included: true, tooltip: "Priority tiers" },
+      { name: "Smart Waitlist", included: true, tooltip: "AI-powered priority with custom rules" },
       { name: "Cancellation predictions", included: true },
+      { name: "Auto-fill spots", included: true },
+      { name: "Revenue protection", included: true },
+      { name: "Custom waitlist rules", included: true, tooltip: "Define priority based on membership, LTV, etc" },
+      // Integrations
+      { name: "Wellhub/Gympass", included: true },
       // Reports
       { name: "Basic reports", included: true },
       { name: "Advanced reports", included: true },
-      { name: "Custom dashboards", included: true },
+      { name: "Revenue analytics", included: true },
+      { name: "Monthly revenue forecast", included: true },
+      { name: "Multi-location analytics", included: true },
       { name: "Data export", included: true },
       // Support
       { name: "Email support", included: true },
       { name: "Chat support", included: true },
       { name: "Priority support", included: true },
       { name: "Dedicated account manager", included: true },
-      { name: "24/7 phone support", included: true },
       // Advanced
       { name: "API access", included: true },
       { name: "White-label branding", included: true },
@@ -305,7 +345,7 @@ export const addOns: AddOn[] = [
     description: "Additional 1,000 WhatsApp Bot messages per month",
     price: 19,
     billingPeriod: "monthly",
-    availableOn: ["business", "professional"],
+    availableOn: ["business"],
   },
   {
     id: "extra_ai_chats",
@@ -313,7 +353,7 @@ export const addOns: AddOn[] = [
     description: "Additional 500 AI Support chats per month",
     price: 29,
     billingPeriod: "monthly",
-    availableOn: ["business", "professional"],
+    availableOn: ["business"],
   },
   {
     id: "sms_bundle",
@@ -321,7 +361,7 @@ export const addOns: AddOn[] = [
     description: "1000 SMS credits for notifications and reminders",
     price: 25,
     billingPeriod: "monthly",
-    availableOn: ["starter", "growth", "business", "professional", "enterprise"],
+    availableOn: ["starter", "growth", "business", "enterprise"],
   },
   {
     id: "additional_location",
@@ -329,7 +369,7 @@ export const addOns: AddOn[] = [
     description: "Add one more location to your account",
     price: 49,
     billingPeriod: "monthly",
-    availableOn: ["growth", "business", "professional"],
+    availableOn: ["growth", "business"],
   },
   {
     id: "additional_storage",
@@ -337,7 +377,7 @@ export const addOns: AddOn[] = [
     description: "Add 50GB of storage to your account",
     price: 15,
     billingPeriod: "monthly",
-    availableOn: ["starter", "growth", "business", "professional"],
+    availableOn: ["starter", "growth", "business"],
   },
   {
     id: "migration_service",
@@ -345,7 +385,7 @@ export const addOns: AddOn[] = [
     description: "Full-service data migration from your current platform",
     price: 299,
     billingPeriod: "one-time",
-    availableOn: ["starter", "growth", "business", "professional", "enterprise"],
+    availableOn: ["starter", "growth", "business", "enterprise"],
   },
 ];
 
@@ -353,53 +393,61 @@ export const addOns: AddOn[] = [
 export const transactionFees: Record<PlanTier, { percentage: number; fixed: number }> = {
   starter: { percentage: 2.9, fixed: 0.30 },
   growth: { percentage: 2.5, fixed: 0.25 },
-  business: { percentage: 2.2, fixed: 0.20 },
-  professional: { percentage: 1.9, fixed: 0.15 },
-  enterprise: { percentage: 1.9, fixed: 0.15 },
+  business: { percentage: 1.9, fixed: 0.15 },
+  enterprise: { percentage: 1.9, fixed: 0.15 }, // Custom rates available
 };
 
 // Feature availability matrix for quick lookups
+// 4 plans: starter, growth, business, enterprise
+// Focus: Smart Waitlist, Messaging Bot, Revenue Predictability
 export const featureMatrix: Record<string, Record<PlanTier, boolean | string | number>> = {
-  // Limits
-  active_clients: { starter: 100, growth: 500, business: 500, professional: 2000, enterprise: "unlimited" },
-  team_members: { starter: 1, growth: 5, business: 3, professional: 10, enterprise: "unlimited" },
-  locations: { starter: 1, growth: 2, business: 2, professional: 5, enterprise: "unlimited" },
-  storage: { starter: "5GB", growth: "10GB", business: "50GB", professional: "200GB", enterprise: "500GB" },
+  // Limits - team_members is unlimited for all plans
+  active_clients: { starter: 100, growth: 500, business: 2000, enterprise: "unlimited" },
+  team_members: { starter: "unlimited", growth: "unlimited", business: "unlimited", enterprise: "unlimited" },
+  locations: { starter: 1, growth: 2, business: 5, enterprise: "unlimited" },
+  storage: { starter: "5GB", growth: "25GB", business: "100GB", enterprise: "500GB" },
 
   // Core features
-  online_scheduling: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  client_portal: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  payment_processing: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  email_reminders: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  calendar_sync: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  online_scheduling: { starter: true, growth: true, business: true, enterprise: true },
+  client_portal: { starter: true, growth: true, business: true, enterprise: true },
+  payment_processing: { starter: true, growth: true, business: true, enterprise: true },
+  email_reminders: { starter: true, growth: true, business: true, enterprise: true },
+  calendar_sync: { starter: true, growth: true, business: true, enterprise: true },
 
-  // Communication
-  sms_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
-  whatsapp_notifications: { starter: false, growth: true, business: true, professional: true, enterprise: true },
-  whatsapp_bot: { starter: false, growth: false, business: "1,000 msgs/mo", professional: "5,000 msgs/mo", enterprise: "unlimited" },
+  // Messaging - Region dependent (WhatsApp BR / SMS+WhatsApp US)
+  sms_notifications: { starter: false, growth: true, business: true, enterprise: true },
+  whatsapp_notifications: { starter: false, growth: true, business: true, enterprise: true },
+  messaging_bot: { starter: false, growth: false, business: "5,000 msgs/mo", enterprise: "unlimited" },
 
-  // AI features
-  ai_support_assistant: { starter: false, growth: false, business: "500 chats/mo", professional: "2,000 chats/mo", enterprise: "unlimited" },
-  smart_waitlist: { starter: false, growth: false, business: true, professional: true, enterprise: true },
-  cancellation_predictions: { starter: false, growth: false, business: true, professional: true, enterprise: true },
+  // AI & Waitlist - Core differentiator for revenue predictability
+  ai_support_assistant: { starter: false, growth: false, business: "2,000 chats/mo", enterprise: "unlimited" },
+  smart_waitlist: { starter: false, growth: "basic", business: true, enterprise: true },
+  cancellation_predictions: { starter: false, growth: false, business: true, enterprise: true },
+  auto_fill_spots: { starter: false, growth: false, business: true, enterprise: true },
+  revenue_protection: { starter: false, growth: false, business: true, enterprise: true },
+  custom_waitlist_rules: { starter: false, growth: false, business: false, enterprise: true },
 
-  // Reports & analytics
-  basic_reports: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  advanced_reports: { starter: false, growth: true, business: true, professional: true, enterprise: true },
-  custom_dashboards: { starter: false, growth: false, business: false, professional: true, enterprise: true },
-  data_export: { starter: true, growth: true, business: true, professional: true, enterprise: true },
+  // Integrations
+  wellhub_gympass: { starter: false, growth: true, business: true, enterprise: true },
+
+  // Reports & analytics - Revenue focus
+  basic_reports: { starter: true, growth: true, business: true, enterprise: true },
+  advanced_reports: { starter: false, growth: true, business: true, enterprise: true },
+  revenue_analytics: { starter: false, growth: true, business: true, enterprise: true },
+  monthly_revenue_forecast: { starter: false, growth: false, business: true, enterprise: true },
+  multi_location_analytics: { starter: false, growth: false, business: false, enterprise: true },
+  data_export: { starter: true, growth: true, business: true, enterprise: true },
 
   // Support
-  email_support: { starter: true, growth: true, business: true, professional: true, enterprise: true },
-  chat_support: { starter: false, growth: true, business: true, professional: true, enterprise: true },
-  priority_support: { starter: false, growth: false, business: false, professional: true, enterprise: true },
-  dedicated_manager: { starter: false, growth: false, business: false, professional: false, enterprise: true },
-  phone_support_24_7: { starter: false, growth: false, business: false, professional: false, enterprise: true },
+  email_support: { starter: true, growth: true, business: true, enterprise: true },
+  chat_support: { starter: false, growth: true, business: true, enterprise: true },
+  priority_support: { starter: false, growth: false, business: true, enterprise: true },
+  dedicated_manager: { starter: false, growth: false, business: false, enterprise: true },
 
   // Advanced features
-  api_access: { starter: false, growth: false, business: false, professional: true, enterprise: true },
-  white_label: { starter: false, growth: false, business: false, professional: true, enterprise: true },
-  custom_integrations: { starter: false, growth: false, business: false, professional: false, enterprise: true },
+  api_access: { starter: false, growth: false, business: true, enterprise: true },
+  white_label: { starter: false, growth: false, business: true, enterprise: true },
+  custom_integrations: { starter: false, growth: false, business: false, enterprise: true },
 };
 
 // Helper functions
@@ -432,52 +480,95 @@ export function isFeatureAvailable(feature: string, tier: PlanTier): boolean | s
 
 // Pricing display helpers
 export function formatPrice(price: number, currency: Currency = "USD"): string {
-  const symbols: Record<Currency, string> = {
-    USD: "$",
-    BRL: "R$",
-    EUR: "€",
-    GBP: "£",
+  const config = Object.values(regionConfigs).find(r => r.currency === currency) || regionConfigs.US;
+
+  if (config.currencyPosition === "after") {
+    return `${price.toLocaleString(config.locale)}${config.currencySymbol}`;
+  }
+  return `${config.currencySymbol}${price.toLocaleString(config.locale)}`;
+}
+
+// Get pricing for a specific region
+export function getPlanPricingForRegion(tier: PlanTier, region: Region): {
+  monthly: number;
+  annual: number;
+  annualTotal: number;
+  currency: Currency;
+} {
+  const currency = regionConfigs[region].currency;
+  const pricing = regionalPricing[tier][currency as "USD" | "BRL"] || regionalPricing[tier].USD;
+  return { ...pricing, currency };
+}
+
+// Get plan with regional pricing
+export function getPlanForRegion(tier: PlanTier, region: Region): PricingPlan {
+  const plan = getPlanByTier(tier);
+  const pricing = getPlanPricingForRegion(tier, region);
+  return {
+    ...plan,
+    pricing: {
+      ...plan.pricing,
+      ...pricing,
+    },
   };
-  return `${symbols[currency]}${price}`;
+}
+
+// Get all plans for a region
+export function getAllPlansForRegion(region: Region): PricingPlan[] {
+  return pricingPlans.map(plan => getPlanForRegion(plan.id, region));
+}
+
+// Get region from country code or locale
+export function getRegionFromLocale(locale: string): Region {
+  const localeMap: Record<string, Region> = {
+    "pt-BR": "BR",
+    "pt": "BR",
+    "en-US": "US",
+    "en": "US",
+    "en-GB": "EU",
+    "es-ES": "EU",
+    "es": "EU",
+    "de": "EU",
+    "fr": "EU",
+    "it": "EU",
+  };
+  return localeMap[locale] || "GLOBAL";
+}
+
+// Get messaging channels for region
+export function getMessagingChannelsForRegion(region: Region): ("whatsapp" | "sms")[] {
+  return regionConfigs[region].defaultMessagingChannels;
+}
+
+// Check if SMS is available for region (US can choose, BR is WhatsApp only)
+export function isSmsAvailableForRegion(region: Region): boolean {
+  return regionConfigs[region].defaultMessagingChannels.includes("sms");
+}
+
+// Get the primary messaging channel for a region
+export function getPrimaryMessagingChannel(region: Region): "whatsapp" | "sms" {
+  // BR always WhatsApp, US defaults to WhatsApp but can choose SMS
+  return regionConfigs[region].defaultMessagingChannels[0];
 }
 
 export function getPlanRecommendation(
   clientCount: number,
-  teamMemberCount: number,
   locationCount: number,
   needsAI: boolean,
   needsWhatsAppBot: boolean
 ): PlanTier {
-  // Enterprise for large scale
-  if (
-    clientCount > 2000 ||
-    teamMemberCount > 10 ||
-    locationCount > 5
-  ) {
+  // Enterprise for very large scale
+  if (clientCount > 2000 || locationCount > 5) {
     return "enterprise";
   }
 
-  // Professional for multi-location or high volume
-  if (
-    clientCount > 500 ||
-    teamMemberCount > 5 ||
-    locationCount > 2 ||
-    needsWhatsAppBot
-  ) {
-    return "professional";
-  }
-
-  // Business for AI features
-  if (needsAI) {
+  // Business for AI features, WhatsApp Bot, or high volume
+  if (needsAI || needsWhatsAppBot || clientCount > 500 || locationCount > 2) {
     return "business";
   }
 
-  // Growth for multiple staff
-  if (
-    clientCount > 100 ||
-    teamMemberCount > 1 ||
-    locationCount > 1
-  ) {
+  // Growth for growing studios
+  if (clientCount > 100 || locationCount > 1) {
     return "growth";
   }
 

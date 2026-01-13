@@ -185,12 +185,11 @@ Be friendly, professional, and helpful. If you can't help with something, offer 
     "not helpful",
   ],
 
-  // Response limits by plan
+  // Response limits by plan (4 plans: starter, growth, business, enterprise)
   limitsPerPlan: {
     starter: 0,
     growth: 0,
-    business: 500,
-    professional: 2000,
+    business: 2000,
     enterprise: -1, // unlimited
   },
 };

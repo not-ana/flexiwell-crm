@@ -1,6 +1,7 @@
 // Plan types and feature flags for FlexiWell CRM
+// 4 plans: Starter, Growth, Business, Enterprise (professional removed)
 
-export type PlanType = "starter" | "growth" | "business" | "professional" | "enterprise";
+export type PlanType = "starter" | "growth" | "business" | "enterprise";
 
 export interface PlanLimits {
   maxClients: number;
@@ -65,7 +66,7 @@ export interface Plan {
 }
 
 // Plan definitions
-// Updated 2025 pricing from IMPLEMENTATION_GUIDE.md
+// Updated January 2026 - 4 plans, unlimited team members
 export const plans: Record<PlanType, Plan> = {
   starter: {
     id: "starter",
@@ -77,7 +78,7 @@ export const plans: Record<PlanType, Plan> = {
     },
     limits: {
       maxClients: 100,
-      maxStaff: 1,
+      maxStaff: -1, // unlimited
       maxLocations: 1,
     },
     features: {
@@ -86,7 +87,7 @@ export const plans: Record<PlanType, Plan> = {
       classManagement: true,
       clientProfiles: true,
 
-      // Communication - Limited
+      // Communication - Email only
       emailReminders: true,
       whatsappReminders: false,
       whatsappBot: false,
@@ -98,7 +99,7 @@ export const plans: Record<PlanType, Plan> = {
       advancedReports: false,
       revenueAnalytics: false,
       instructorAnalytics: false,
-      exportReports: false,
+      exportReports: true,
 
       // Advanced - Limited
       waitlist: true,
@@ -106,9 +107,9 @@ export const plans: Record<PlanType, Plan> = {
       packages: true,
       memberships: false,
 
-      // Integrations - None
-      calendarSync: false,
-      paymentIntegration: false,
+      // Integrations - Basic
+      calendarSync: true,
+      paymentIntegration: true,
       apiAccess: false,
       webhooks: false,
 
@@ -133,65 +134,8 @@ export const plans: Record<PlanType, Plan> = {
       yearly: 79, // ~20% discount
     },
     limits: {
-      maxClients: 150,
-      maxStaff: 5,
-      maxLocations: 1,
-    },
-    features: {
-      // Core - Full
-      basicScheduling: true,
-      classManagement: true,
-      clientProfiles: true,
-
-      // Communication - No SMS
-      emailReminders: true,
-      whatsappReminders: false,
-      whatsappBot: false,
-      instagramBot: false,
-      smsReminders: false,
-
-      // Reporting - Full
-      basicReports: true,
-      advancedReports: true,
-      revenueAnalytics: true,
-      instructorAnalytics: true,
-      exportReports: true,
-
-      // Advanced - Full
-      waitlist: true,
-      makeupClasses: true,
-      packages: true,
-      memberships: true,
-
-      // Integrations - Basic
-      calendarSync: true,
-      paymentIntegration: true,
-      apiAccess: false,
-      webhooks: false,
-
-      // Multi-location - No
-      multiLocation: false,
-
-      // Support - Email + Chat
-      emailSupport: true,
-      chatSupport: true,
-      phoneSupport: false,
-      prioritySupport: false,
-      dedicatedManager: false,
-    },
-  },
-
-  business: {
-    id: "business",
-    name: "Business",
-    description: "For established studios looking to scale with intelligent automation",
-    price: {
-      monthly: 179,
-      yearly: 149, // ~17% discount
-    },
-    limits: {
       maxClients: 500,
-      maxStaff: 3,
+      maxStaff: -1, // unlimited
       maxLocations: 2,
     },
     features: {
@@ -200,10 +144,10 @@ export const plans: Record<PlanType, Plan> = {
       classManagement: true,
       clientProfiles: true,
 
-      // Communication - Full except Instagram
+      // Communication - SMS + WhatsApp notifications (no bot)
       emailReminders: true,
       whatsappReminders: true,
-      whatsappBot: true,
+      whatsappBot: false,
       instagramBot: false,
       smsReminders: true,
 
@@ -220,7 +164,7 @@ export const plans: Record<PlanType, Plan> = {
       packages: true,
       memberships: true,
 
-      // Integrations - Basic
+      // Integrations - Basic + Wellhub
       calendarSync: true,
       paymentIntegration: true,
       apiAccess: false,
@@ -233,23 +177,22 @@ export const plans: Record<PlanType, Plan> = {
       emailSupport: true,
       chatSupport: true,
       phoneSupport: false,
-      prioritySupport: true,
+      prioritySupport: false,
       dedicatedManager: false,
     },
-    popular: true,
   },
 
-  professional: {
-    id: "professional",
-    name: "Professional",
-    description: "For established studios with multiple instructors and locations",
+  business: {
+    id: "business",
+    name: "Business",
+    description: "For established studios with AI-powered automation",
     price: {
-      monthly: 199,
-      yearly: 159, // ~20% discount
+      monthly: 249,
+      yearly: 199, // ~20% discount
     },
     limits: {
       maxClients: 2000,
-      maxStaff: 10,
+      maxStaff: -1, // unlimited
       maxLocations: 5,
     },
     features: {
@@ -258,12 +201,12 @@ export const plans: Record<PlanType, Plan> = {
       classManagement: true,
       clientProfiles: true,
 
-      // Communication - Full except SMS
+      // Communication - Full including WhatsApp Bot
       emailReminders: true,
       whatsappReminders: true,
       whatsappBot: true,
       instagramBot: true,
-      smsReminders: false,
+      smsReminders: true,
 
       // Reporting - Full
       basicReports: true,
@@ -278,22 +221,23 @@ export const plans: Record<PlanType, Plan> = {
       packages: true,
       memberships: true,
 
-      // Integrations - Basic
+      // Integrations - Full except custom
       calendarSync: true,
       paymentIntegration: true,
-      apiAccess: false,
-      webhooks: false,
+      apiAccess: true,
+      webhooks: true,
 
-      // Multi-location - No
-      multiLocation: false,
+      // Multi-location - Yes (5)
+      multiLocation: true,
 
-      // Support - Email + Chat
+      // Support - Full except dedicated manager
       emailSupport: true,
       chatSupport: true,
-      phoneSupport: true,
+      phoneSupport: false,
       prioritySupport: true,
       dedicatedManager: false,
     },
+    popular: true,
   },
 
   enterprise: {
@@ -301,13 +245,13 @@ export const plans: Record<PlanType, Plan> = {
     name: "Enterprise",
     description: "For studio networks and franchises requiring unlimited scale and customization",
     price: {
-      monthly: 399,
-      yearly: 319, // ~20% discount
+      monthly: 0, // Custom pricing
+      yearly: 0,
     },
     limits: {
-      maxClients: -1, // -1 = unlimited
-      maxStaff: -1,
-      maxLocations: -1,
+      maxClients: -1, // unlimited
+      maxStaff: -1, // unlimited
+      maxLocations: -1, // unlimited
     },
     features: {
       // Core - Full
@@ -335,13 +279,13 @@ export const plans: Record<PlanType, Plan> = {
       packages: true,
       memberships: true,
 
-      // Integrations - Full
+      // Integrations - Full including custom
       calendarSync: true,
       paymentIntegration: true,
       apiAccess: true,
       webhooks: true,
 
-      // Multi-location - Yes
+      // Multi-location - Yes (unlimited)
       multiLocation: true,
 
       // Support - Full

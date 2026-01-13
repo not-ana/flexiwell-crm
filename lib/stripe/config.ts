@@ -1,7 +1,8 @@
 // Stripe Configuration for FlexiWell CRM
 // Maps pricing plans to Stripe Products/Prices
+// Multi-region support: BR (BRL) and US/Global (USD)
 
-import { PlanTier, BillingPeriod, addOns } from "@/lib/config/pricing";
+import { PlanTier, BillingPeriod, addOns, Region, Currency } from "@/lib/config/pricing";
 
 // Stripe Price IDs - These need to be created in your Stripe Dashboard
 // and the IDs pasted here. Format: price_xxx
@@ -10,28 +11,56 @@ export interface StripePriceIds {
   annual: string;
 }
 
-// Map plan tiers to Stripe Price IDs
+// Regional Stripe Price IDs - different prices for each currency
+export interface RegionalStripePriceIds {
+  USD: StripePriceIds;
+  BRL: StripePriceIds;
+}
+
+// Map plan tiers to Stripe Price IDs by currency
 // IMPORTANT: Replace these with your actual Stripe Price IDs after creating products
-export const stripePlanPriceIds: Record<PlanTier, StripePriceIds> = {
+// 4 plans: Starter, Growth, Business, Enterprise
+// USD prices and BRL prices are separate products in Stripe
+export const stripePlanPriceIds: Record<PlanTier, RegionalStripePriceIds> = {
   starter: {
-    monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || "price_starter_monthly",
-    annual: process.env.STRIPE_PRICE_STARTER_ANNUAL || "price_starter_annual",
+    USD: {
+      monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY_USD || "price_starter_monthly_usd",
+      annual: process.env.STRIPE_PRICE_STARTER_ANNUAL_USD || "price_starter_annual_usd",
+    },
+    BRL: {
+      monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY_BRL || "price_starter_monthly_brl",
+      annual: process.env.STRIPE_PRICE_STARTER_ANNUAL_BRL || "price_starter_annual_brl",
+    },
   },
   growth: {
-    monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY || "price_growth_monthly",
-    annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL || "price_growth_annual",
+    USD: {
+      monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY_USD || "price_growth_monthly_usd",
+      annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL_USD || "price_growth_annual_usd",
+    },
+    BRL: {
+      monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY_BRL || "price_growth_monthly_brl",
+      annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL_BRL || "price_growth_annual_brl",
+    },
   },
   business: {
-    monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || "price_business_monthly",
-    annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL || "price_business_annual",
-  },
-  professional: {
-    monthly: process.env.STRIPE_PRICE_PROFESSIONAL_MONTHLY || "price_professional_monthly",
-    annual: process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL || "price_professional_annual",
+    USD: {
+      monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY_USD || "price_business_monthly_usd",
+      annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL_USD || "price_business_annual_usd",
+    },
+    BRL: {
+      monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY_BRL || "price_business_monthly_brl",
+      annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL_BRL || "price_business_annual_brl",
+    },
   },
   enterprise: {
-    monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || "price_enterprise_monthly",
-    annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL || "price_enterprise_annual",
+    USD: {
+      monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY_USD || "price_enterprise_monthly_usd",
+      annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL_USD || "price_enterprise_annual_usd",
+    },
+    BRL: {
+      monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY_BRL || "price_enterprise_monthly_brl",
+      annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL_BRL || "price_enterprise_annual_brl",
+    },
   },
 };
 
@@ -45,9 +74,21 @@ export const stripeAddOnPriceIds: Record<string, string> = {
   migration_service: process.env.STRIPE_PRICE_ADDON_MIGRATION || "price_addon_migration",
 };
 
-// Helper to get Stripe Price ID for a plan
-export function getStripePriceId(tier: PlanTier, billing: BillingPeriod): string {
-  return stripePlanPriceIds[tier][billing];
+// Helper to get Stripe Price ID for a plan with currency support
+export function getStripePriceId(tier: PlanTier, billing: BillingPeriod, currency: Currency = "USD"): string {
+  const currencyKey = currency === "BRL" ? "BRL" : "USD";
+  return stripePlanPriceIds[tier][currencyKey][billing];
+}
+
+// Helper to get Stripe Price ID for a region
+export function getStripePriceIdForRegion(tier: PlanTier, billing: BillingPeriod, region: Region): string {
+  const currencyMap: Record<Region, "USD" | "BRL"> = {
+    BR: "BRL",
+    US: "USD",
+    EU: "USD", // EU uses USD pricing
+    GLOBAL: "USD",
+  };
+  return stripePlanPriceIds[tier][currencyMap[region]][billing];
 }
 
 // Helper to get Stripe Price ID for an add-on
@@ -56,11 +97,11 @@ export function getStripeAddOnPriceId(addOnId: string): string | null {
 }
 
 // Plan tier ordering for upgrade/downgrade logic
+// 4 plans only (professional removed)
 export const planTierOrder: PlanTier[] = [
   "starter",
   "growth",
   "business",
-  "professional",
   "enterprise",
 ];
 

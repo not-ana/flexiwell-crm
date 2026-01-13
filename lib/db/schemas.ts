@@ -360,7 +360,7 @@ export interface User {
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  planTier?: "starter" | "professional" | "enterprise";
+  planTier?: "starter" | "growth" | "business" | "enterprise";
   // Trial notification tracking
   trialNotifications?: {
     sevenDaysSent?: boolean;
@@ -403,6 +403,10 @@ export interface BotSession {
   expiresAt: Date;
 }
 
+// Supported locales for internationalization
+export type SupportedLocale = "pt-BR" | "en-US" | "en-GB" | "es-ES";
+export type SupportedRegion = "BR" | "US" | "EU" | "GLOBAL";
+
 // Settings types
 export interface StudioSettings {
   _id?: ObjectId;
@@ -414,8 +418,10 @@ export interface StudioSettings {
     address: string;
     timezone: string;
     currency: string;
-    language: string;
+    language: SupportedLocale;
+    region: SupportedRegion;
     businessType: string;
+    country?: string;
   };
   // Branding settings
   branding?: {
@@ -423,11 +429,15 @@ export interface StudioSettings {
     logo?: string;
     favicon?: string;
   };
-  // Notification preferences
+  // Notification preferences - messaging channel based on region
   notifications?: {
     emailEnabled: boolean;
     whatsappEnabled: boolean;
     smsEnabled: boolean;
+    // Primary messaging channel: BR = whatsapp only, US = whatsapp or sms
+    primaryMessagingChannel: "whatsapp" | "sms";
+    // Bot settings
+    messagingBotEnabled: boolean;
     reminderHours: number;
     confirmationEmail: boolean;
     marketingEmails: boolean;

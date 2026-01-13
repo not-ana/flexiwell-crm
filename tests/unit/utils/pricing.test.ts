@@ -12,13 +12,13 @@ import {
 
 describe("Pricing Utils", () => {
   describe("pricingPlans", () => {
-    it("should have all required plan tiers", () => {
+    it("should have all required plan tiers (4 plans)", () => {
       const planIds = pricingPlans.map((p) => p.id);
       expect(planIds).toContain("starter");
       expect(planIds).toContain("growth");
       expect(planIds).toContain("business");
-      expect(planIds).toContain("professional");
       expect(planIds).toContain("enterprise");
+      expect(planIds.length).toBe(4);
     });
 
     it("should have monthly and annual prices for each plan", () => {
@@ -50,6 +50,12 @@ describe("Pricing Utils", () => {
       expect(businessPlan?.highlighted).toBe(true);
       expect(businessPlan?.badge).toBe("Most popular");
     });
+
+    it("should have unlimited team members for all plans", () => {
+      pricingPlans.forEach((plan) => {
+        expect(plan.limits.teamMembers).toBe("unlimited");
+      });
+    });
   });
 
   describe("getPlanByTier", () => {
@@ -59,10 +65,10 @@ describe("Pricing Utils", () => {
       expect(plan.pricing.monthly).toBe(49);
     });
 
-    it("should return correct plan for professional tier", () => {
-      const plan = getPlanByTier("professional");
-      expect(plan.id).toBe("professional");
-      expect(plan.pricing.monthly).toBe(199);
+    it("should return correct plan for business tier", () => {
+      const plan = getPlanByTier("business");
+      expect(plan.id).toBe("business");
+      expect(plan.pricing.monthly).toBe(249);
     });
   });
 
@@ -99,8 +105,8 @@ describe("Pricing Utils", () => {
     it("should calculate savings for business plan", () => {
       const businessPlan = getPlanByTier("business");
       const savings = calculateAnnualSavings(businessPlan);
-      // monthly: 179 * 12 = 2148, annualTotal: 1788, savings: 360
-      expect(savings).toBe(360);
+      // monthly: 249 * 12 = 2988, annualTotal: 2388, savings: 600
+      expect(savings).toBe(600);
     });
 
     it("should return 0 for enterprise plan (custom pricing)", () => {
@@ -117,9 +123,9 @@ describe("Pricing Utils", () => {
       expect(fee).toBeCloseTo(3.2, 2);
     });
 
-    it("should calculate correct fee for professional plan", () => {
+    it("should calculate correct fee for business plan", () => {
       // 1.9% + $0.15
-      const fee = getTransactionFee("professional", 100);
+      const fee = getTransactionFee("business", 100);
       expect(fee).toBeCloseTo(2.05, 2);
     });
   });
@@ -152,7 +158,7 @@ describe("Pricing Utils", () => {
     });
 
     it("should return limit string for AI features on business", () => {
-      expect(isFeatureAvailable("ai_support_assistant", "business")).toBe("500 chats/mo");
+      expect(isFeatureAvailable("ai_support_assistant", "business")).toBe("2,000 chats/mo");
     });
 
     it("should return unlimited for AI features on enterprise", () => {
@@ -162,27 +168,27 @@ describe("Pricing Utils", () => {
 
   describe("getPlanRecommendation", () => {
     it("should recommend starter for solo instructor", () => {
-      const recommendation = getPlanRecommendation(50, 1, 1, false, false);
+      const recommendation = getPlanRecommendation(50, 1, false, false);
       expect(recommendation).toBe("starter");
     });
 
-    it("should recommend growth for small team", () => {
-      const recommendation = getPlanRecommendation(200, 3, 1, false, false);
+    it("should recommend growth for growing studio", () => {
+      const recommendation = getPlanRecommendation(200, 1, false, false);
       expect(recommendation).toBe("growth");
     });
 
     it("should recommend business for AI needs", () => {
-      const recommendation = getPlanRecommendation(50, 1, 1, true, false);
+      const recommendation = getPlanRecommendation(50, 1, true, false);
       expect(recommendation).toBe("business");
     });
 
-    it("should recommend professional for WhatsApp bot", () => {
-      const recommendation = getPlanRecommendation(50, 1, 1, false, true);
-      expect(recommendation).toBe("professional");
+    it("should recommend business for WhatsApp bot", () => {
+      const recommendation = getPlanRecommendation(50, 1, false, true);
+      expect(recommendation).toBe("business");
     });
 
     it("should recommend enterprise for large scale", () => {
-      const recommendation = getPlanRecommendation(3000, 15, 10, true, true);
+      const recommendation = getPlanRecommendation(3000, 10, true, true);
       expect(recommendation).toBe("enterprise");
     });
   });
