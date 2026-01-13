@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Conversation } from "@/lib/db/schemas";
-import { requireRole } from "@/lib/auth";
+import { requireRoleFromCookie } from "@/lib/auth/middleware";
 import { sanitizeSearchInput } from "@/lib/security";
 
 // GET /api/conversations - List all conversations
 export async function GET(request: NextRequest) {
   // Require authentication - only admin can view all conversations
-  const { user, error } = requireRole(request, ["admin"]);
+  const { error } = await requireRoleFromCookie(["admin"]);
   if (error) return error;
 
   try {
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
 // POST /api/conversations - Create a new conversation
 export async function POST(request: NextRequest) {
   // Require authentication - only admin can create conversations manually
-  const { user, error } = requireRole(request, ["admin"]);
+  const { error } = await requireRoleFromCookie(["admin"]);
   if (error) return error;
 
   try {
