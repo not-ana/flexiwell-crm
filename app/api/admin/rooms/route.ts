@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format units with rooms
-    const units = establishments.map((est, estIndex) => {
+    let units = establishments.map((est, estIndex) => {
       const estRooms = roomsByEstablishment[est._id.toString()] || [];
 
       return {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       const orphanRooms = rooms.filter(r => !establishments.find(e => e._id.toString() === r.establishmentId));
 
       if (orphanRooms.length > 0) {
-        units.push({
+        units = [{
           id: "default",
           name: "FlexiWell Studio",
           address: "Main Location",
@@ -87,15 +87,15 @@ export async function GET(request: NextRequest) {
             status: room.isActive ? "active" : "inactive",
             color: roomColors[roomIndex % roomColors.length],
           })),
-        });
+        }];
       } else {
         // Return empty default unit
-        units.push({
+        units = [{
           id: "default",
           name: "FlexiWell Studio",
           address: "Main Location",
           rooms: [],
-        });
+        }];
       }
     }
 

@@ -21,7 +21,6 @@ import {
   ChatIcon,
   ReportIcon,
   PaymentIcon,
-  RoomsIcon,
   CloseIcon,
   WaitlistIcon,
 } from "@/components/icons";
@@ -82,7 +81,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
-      { name: "Rooms", href: "/admin/rooms", icon: RoomsIcon, onboardingId: "sidebar-rooms" },
       { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
       { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, onboardingId: "sidebar-integrations" },
