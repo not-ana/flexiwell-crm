@@ -1,7 +1,8 @@
-// Notification Service - Email (Resend) and WhatsApp (Twilio) notifications
+// Notification Service - Email (Resend) and WhatsApp (Twilio/Cloud API) notifications
 import { Resend } from "resend";
 import { getDatabase } from "@/lib/db/mongodb";
 import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
+import type { TwilioCredentials, CloudApiCredentials } from "@/lib/whatsapp/types";
 import { formatPhoneForWhatsApp } from "@/lib/utils/phone";
 import { formatDateBR } from "@/lib/utils/date";
 import type { Client, Booking, Class } from "@/lib/db/schemas";
@@ -577,7 +578,7 @@ export class NotificationService {
     }
   }
 
-  // Send WhatsApp via Twilio
+  // Send WhatsApp via Twilio or Cloud API
   private async sendWhatsApp(
     type: NotificationType,
     phone: string,
@@ -603,27 +604,58 @@ export class NotificationService {
       // Format phone number for WhatsApp
       const formattedPhone = formatPhoneForWhatsApp(phone);
 
-      // Send via Twilio
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${credentials.accountSid}/Messages.json`;
+      let response: Response;
+      let result: Record<string, unknown>;
 
-      const body = new URLSearchParams({
-        From: `whatsapp:${credentials.phoneNumber}`,
-        To: `whatsapp:${formattedPhone}`,
-        Body: message,
-      });
+      if (credentials.provider === "cloud-api") {
+        // Send via Cloud API
+        const creds = credentials as CloudApiCredentials;
+        const normalizedPhone = formattedPhone.replace(/\D/g, "");
 
-      const response = await fetch(twilioUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Basic ${Buffer.from(`${credentials.accountSid}:${credentials.authToken}`).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body.toString(),
-      });
+        response = await fetch(
+          `https://graph.facebook.com/v18.0/${creds.phoneNumberId}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${creds.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              to: normalizedPhone,
+              type: "text",
+              text: { body: message },
+            }),
+          }
+        );
 
-      const result = await response.json();
+        result = await response.json() as Record<string, unknown>;
+      } else {
+        // Send via Twilio
+        const creds = credentials as TwilioCredentials;
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+
+        const body = new URLSearchParams({
+          From: `whatsapp:${creds.phoneNumber}`,
+          To: `whatsapp:${formattedPhone}`,
+          Body: message,
+        });
+
+        response = await fetch(twilioUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Basic ${Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString("base64")}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body.toString(),
+        });
+
+        result = await response.json() as Record<string, unknown>;
+      }
 
       if (!response.ok) {
+        const errorMsg = (result.error as Record<string, unknown>)?.message || result.message || "Failed to send";
         console.error("[WhatsApp] Error sending:", result);
         await this.logNotification({
           type,
@@ -633,10 +665,10 @@ export class NotificationService {
           recipient: formattedPhone,
           content: message,
           status: "failed",
-          error: result.message || "Failed to send",
+          error: errorMsg as string,
           createdAt: new Date(),
         });
-        return { success: false, error: result.message };
+        return { success: false, error: errorMsg as string };
       }
 
       await this.logNotification({

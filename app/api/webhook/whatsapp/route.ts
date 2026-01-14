@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WhatsAppBotHandler } from "@/lib/whatsapp/bot-handler";
-import type { IncomingMessage, InteractiveContent } from "@/lib/whatsapp/types";
+import type { IncomingMessage, InteractiveContent, CloudApiCredentials } from "@/lib/whatsapp/types";
+import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
 
 // WhatsApp Webhook Verification (GET)
 export async function GET(request: NextRequest) {
@@ -10,8 +11,14 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
+  // Get verify token from database or environment
+  const credentials = await getWhatsAppCredentials();
+  const verifyToken =
+    (credentials?.provider === "cloud-api" ? (credentials as CloudApiCredentials).verifyToken : null) ||
+    process.env.WHATSAPP_VERIFY_TOKEN;
+
   // Check if this is a subscription verification
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === verifyToken) {
     console.log("WhatsApp webhook verified");
     return new NextResponse(challenge, { status: 200 });
   }
@@ -113,7 +120,16 @@ async function sendWhatsAppMessage(
   phoneNumberId: string,
   response: InteractiveContent | { body: string }
 ) {
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  // Get credentials from database or environment
+  const credentials = await getWhatsAppCredentials();
+
+  let accessToken: string | undefined;
+
+  if (credentials?.provider === "cloud-api") {
+    accessToken = (credentials as CloudApiCredentials).accessToken;
+  } else {
+    accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  }
 
   if (!accessToken) {
     console.error("WhatsApp access token not configured");

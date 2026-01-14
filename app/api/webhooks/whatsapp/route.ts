@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
+import type { TwilioCredentials, CloudApiCredentials } from "@/lib/whatsapp/types";
 import type { Conversation, Client } from "@/lib/db/schemas";
 
 // Twilio WhatsApp webhook
@@ -204,7 +205,7 @@ async function processWithBot(
   }
 }
 
-// Send WhatsApp message via Twilio
+// Send WhatsApp message (supports Twilio and Cloud API)
 async function sendWhatsAppMessage(to: string, message: string) {
   const credentials = await getWhatsAppCredentials();
 
@@ -213,28 +214,59 @@ async function sendWhatsAppMessage(to: string, message: string) {
     return;
   }
 
-  const { accountSid, authToken, phoneNumber } = credentials;
-
   try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          From: `whatsapp:${phoneNumber}`,
-          To: `whatsapp:${to}`,
-          Body: message,
-        }),
-      }
-    );
+    if (credentials.provider === "cloud-api") {
+      // Cloud API
+      const creds = credentials as CloudApiCredentials;
+      const normalizedTo = to.replace(/\D/g, "");
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("[WhatsApp] Send error:", error);
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${creds.phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${creds.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: normalizedTo,
+            type: "text",
+            text: { body: message },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("[WhatsApp Cloud API] Send error:", error);
+      }
+    } else {
+      // Twilio
+      const creds = credentials as TwilioCredentials;
+      const { accountSid, authToken, phoneNumber } = creds;
+
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            From: `whatsapp:${phoneNumber}`,
+            To: `whatsapp:${to}`,
+            Body: message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("[WhatsApp Twilio] Send error:", error);
+      }
     }
   } catch (error) {
     console.error("[WhatsApp] Error sending message:", error);

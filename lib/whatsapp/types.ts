@@ -1,12 +1,34 @@
 // WhatsApp Integration Types
 
+export type WhatsAppProvider = "twilio" | "cloud-api" | "meta" | "360dialog";
+
 export interface WhatsAppConfig {
-  provider: "twilio" | "meta" | "360dialog";
+  provider: WhatsAppProvider;
   apiKey: string;
   phoneNumberId: string;
   webhookSecret: string;
   businessId: string;
 }
+
+// Twilio-specific credentials
+export interface TwilioCredentials {
+  provider: "twilio";
+  accountSid: string;
+  authToken: string;
+  phoneNumber: string; // Format: +14155238886
+}
+
+// WhatsApp Cloud API credentials (Meta official)
+export interface CloudApiCredentials {
+  provider: "cloud-api";
+  phoneNumberId: string;
+  accessToken: string;
+  businessAccountId: string;
+  verifyToken: string;
+}
+
+// Union type for all WhatsApp credentials
+export type WhatsAppCredentials = TwilioCredentials | CloudApiCredentials;
 
 export interface WhatsAppMessage {
   id: string;

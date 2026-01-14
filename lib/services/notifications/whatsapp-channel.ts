@@ -1,13 +1,8 @@
 // WhatsApp Notification Channel - SRP: Only handles WhatsApp sending
 import type { INotificationChannel, NotificationData, NotificationResult } from "../interfaces";
+import type { WhatsAppCredentials, TwilioCredentials, CloudApiCredentials } from "@/lib/whatsapp/types";
 import { formatPhoneForWhatsApp } from "@/lib/utils/phone";
 import { WHATSAPP_TEMPLATES } from "./templates/whatsapp-templates";
-
-interface WhatsAppCredentials {
-  accountSid: string;
-  authToken: string;
-  phoneNumber: string;
-}
 
 export class WhatsAppChannel implements INotificationChannel {
   private credentials: WhatsAppCredentials | null = null;
@@ -34,28 +29,62 @@ export class WhatsAppChannel implements INotificationChannel {
       const message = template(data);
       const formattedPhone = formatPhoneForWhatsApp(phone);
 
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${this.credentials.accountSid}/Messages.json`;
+      let response: Response;
 
-      const body = new URLSearchParams({
-        From: `whatsapp:${this.credentials.phoneNumber}`,
-        To: `whatsapp:${formattedPhone}`,
-        Body: message,
-      });
+      if (this.credentials.provider === "cloud-api") {
+        // Send via Cloud API
+        const creds = this.credentials as CloudApiCredentials;
+        const normalizedPhone = formattedPhone.replace(/\D/g, "");
 
-      const response = await fetch(twilioUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${this.credentials.accountSid}:${this.credentials.authToken}`
-          ).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body.toString(),
-      });
+        response = await fetch(
+          `https://graph.facebook.com/v18.0/${creds.phoneNumberId}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${creds.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              to: normalizedPhone,
+              type: "text",
+              text: { body: message },
+            }),
+          }
+        );
 
-      if (!response.ok) {
-        const result = await response.json();
-        return { success: false, error: result.message || "Failed to send" };
+        if (!response.ok) {
+          const result = await response.json();
+          const error = result as { error?: { message?: string } };
+          return { success: false, error: error.error?.message || "Failed to send" };
+        }
+      } else {
+        // Send via Twilio
+        const creds = this.credentials as TwilioCredentials;
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+
+        const body = new URLSearchParams({
+          From: `whatsapp:${creds.phoneNumber}`,
+          To: `whatsapp:${formattedPhone}`,
+          Body: message,
+        });
+
+        response = await fetch(twilioUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${Buffer.from(
+              `${creds.accountSid}:${creds.authToken}`
+            ).toString("base64")}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body.toString(),
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          return { success: false, error: (result as { message?: string }).message || "Failed to send" };
+        }
       }
 
       return { success: true };

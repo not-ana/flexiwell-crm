@@ -1,6 +1,16 @@
 import { getDatabase } from "@/lib/db/mongodb";
+import type {
+  WhatsAppCredentials,
+  TwilioCredentials,
+  CloudApiCredentials,
+  WhatsAppProvider,
+} from "@/lib/whatsapp/types";
 
-interface WhatsAppCredentials {
+// Re-export for convenience
+export type { WhatsAppCredentials, TwilioCredentials, CloudApiCredentials };
+
+// Legacy interface for backwards compatibility
+interface LegacyWhatsAppCredentials {
   accountSid: string;
   authToken: string;
   phoneNumber: string;
@@ -51,25 +61,78 @@ interface ClassPassCredentials {
   webhookSecret: string;
 }
 
-// Get WhatsApp (Twilio) credentials from database
+// Get WhatsApp credentials from database (supports Twilio and Cloud API)
 export async function getWhatsAppCredentials(): Promise<WhatsAppCredentials | null> {
   try {
     const db = await getDatabase();
     const settings = await db.collection("integration_credentials").findOne({});
 
-    if (!settings?.whatsapp?.accountSid) {
-      return null;
+    // Check for Cloud API credentials first (new format)
+    if (settings?.whatsapp?.provider === "cloud-api" && settings?.whatsapp?.phoneNumberId) {
+      return {
+        provider: "cloud-api",
+        phoneNumberId: settings.whatsapp.phoneNumberId,
+        accessToken: settings.whatsapp.accessToken,
+        businessAccountId: settings.whatsapp.businessAccountId,
+        verifyToken: settings.whatsapp.verifyToken,
+      } as CloudApiCredentials;
     }
 
-    return {
-      accountSid: settings.whatsapp.accountSid,
-      authToken: settings.whatsapp.authToken,
-      phoneNumber: settings.whatsapp.phoneNumber,
-    };
+    // Check for Twilio credentials (legacy format)
+    if (settings?.whatsapp?.accountSid) {
+      return {
+        provider: "twilio",
+        accountSid: settings.whatsapp.accountSid,
+        authToken: settings.whatsapp.authToken,
+        phoneNumber: settings.whatsapp.phoneNumber,
+      } as TwilioCredentials;
+    }
+
+    // Fallback to environment variables for Cloud API
+    if (process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN) {
+      return {
+        provider: "cloud-api",
+        phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
+        businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || "",
+        verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "",
+      } as CloudApiCredentials;
+    }
+
+    return null;
   } catch (error) {
     console.error("Error fetching WhatsApp credentials:", error);
     return null;
   }
+}
+
+// Get WhatsApp provider type
+export async function getWhatsAppProvider(): Promise<WhatsAppProvider | null> {
+  const credentials = await getWhatsAppCredentials();
+  return credentials?.provider || null;
+}
+
+// Get legacy Twilio credentials (for backwards compatibility)
+export async function getTwilioCredentials(): Promise<LegacyWhatsAppCredentials | null> {
+  const credentials = await getWhatsAppCredentials();
+  if (credentials?.provider === "twilio") {
+    const twilioCreds = credentials as TwilioCredentials;
+    return {
+      accountSid: twilioCreds.accountSid,
+      authToken: twilioCreds.authToken,
+      phoneNumber: twilioCreds.phoneNumber,
+    };
+  }
+  return null;
+}
+
+// Get Cloud API credentials
+export async function getCloudApiCredentials(): Promise<CloudApiCredentials | null> {
+  const credentials = await getWhatsAppCredentials();
+  if (credentials?.provider === "cloud-api") {
+    return credentials as CloudApiCredentials;
+  }
+  return null;
 }
 
 // Get Stripe credentials from database (falls back to env for platform-level config)
@@ -320,7 +383,12 @@ export async function isIntegrationConnected(integrationId: string): Promise<boo
       case "stripe":
         return !!settings?.stripe?.secretKey || !!process.env.STRIPE_SECRET_KEY;
       case "whatsapp":
-        return !!settings?.whatsapp?.accountSid;
+        // Support both Twilio (accountSid) and Cloud API (phoneNumberId)
+        return !!(
+          settings?.whatsapp?.accountSid ||
+          settings?.whatsapp?.phoneNumberId ||
+          process.env.WHATSAPP_PHONE_NUMBER_ID
+        );
       case "instagram":
         return !!settings?.instagram?.accessToken;
       case "google_calendar":

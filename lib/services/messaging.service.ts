@@ -1,6 +1,7 @@
 import { getDatabase } from "@/lib/db/mongodb";
 import { getWhatsAppCredentials, getInstagramCredentials } from "@/lib/integrations/credentials";
 import type { Conversation } from "@/lib/db/schemas";
+import type { TwilioCredentials, CloudApiCredentials } from "@/lib/whatsapp/types";
 import { ObjectId } from "mongodb";
 
 export type MessagePlatform = "whatsapp" | "instagram";
@@ -81,7 +82,7 @@ export const messagingService = {
   },
 
   /**
-   * Send WhatsApp message via Twilio
+   * Send WhatsApp message (supports both Twilio and Cloud API)
    */
   async sendWhatsAppMessage(to: string, message: string): Promise<SendMessageResult> {
     const credentials = await getWhatsAppCredentials();
@@ -91,6 +92,69 @@ export const messagingService = {
       return { success: false, error: "WhatsApp not configured" };
     }
 
+    // Route to the appropriate provider
+    if (credentials.provider === "cloud-api") {
+      return this.sendWhatsAppCloudApi(to, message, credentials as CloudApiCredentials);
+    } else {
+      return this.sendWhatsAppTwilio(to, message, credentials as TwilioCredentials);
+    }
+  },
+
+  /**
+   * Send WhatsApp message via Cloud API (Meta official)
+   */
+  async sendWhatsAppCloudApi(
+    to: string,
+    message: string,
+    credentials: CloudApiCredentials
+  ): Promise<SendMessageResult> {
+    try {
+      // Normalize phone number (digits only with country code)
+      let normalizedTo = to.replace(/\D/g, "");
+      if (normalizedTo.length === 11 && !normalizedTo.startsWith("55")) {
+        normalizedTo = "55" + normalizedTo;
+      }
+
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${credentials.phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${credentials.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: normalizedTo,
+            type: "text",
+            text: { body: message },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("[WhatsApp Cloud API] Error:", error);
+        return { success: false, error: error.error?.message || "Failed to send" };
+      }
+
+      const data = await response.json();
+      return { success: true, messageId: data.messages?.[0]?.id };
+    } catch (error) {
+      console.error("[WhatsApp Cloud API] Error:", error);
+      return { success: false, error: "Failed to send WhatsApp message" };
+    }
+  },
+
+  /**
+   * Send WhatsApp message via Twilio
+   */
+  async sendWhatsAppTwilio(
+    to: string,
+    message: string,
+    credentials: TwilioCredentials
+  ): Promise<SendMessageResult> {
     const { accountSid, authToken, phoneNumber } = credentials;
 
     try {
@@ -115,14 +179,14 @@ export const messagingService = {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error("[WhatsApp] API error:", error);
+        console.error("[WhatsApp Twilio] API error:", error);
         return { success: false, error: error.message || "Failed to send" };
       }
 
       const data = await response.json();
       return { success: true, messageId: data.sid };
     } catch (error) {
-      console.error("[WhatsApp] Error:", error);
+      console.error("[WhatsApp Twilio] Error:", error);
       return { success: false, error: "Failed to send WhatsApp message" };
     }
   },
@@ -174,7 +238,8 @@ export const messagingService = {
   async sendWhatsAppTemplate(
     to: string,
     templateName: string,
-    templateParams: string[]
+    templateParams: string[],
+    languageCode: string = "pt_BR"
   ): Promise<SendMessageResult> {
     const credentials = await getWhatsAppCredentials();
 
@@ -182,8 +247,94 @@ export const messagingService = {
       return { success: false, error: "WhatsApp not configured" };
     }
 
-    // Note: Template messages require WhatsApp Business API approval
-    // This is a simplified version using Twilio's content API
+    // Route to the appropriate provider
+    if (credentials.provider === "cloud-api") {
+      return this.sendWhatsAppTemplateCloudApi(
+        to,
+        templateName,
+        templateParams,
+        languageCode,
+        credentials as CloudApiCredentials
+      );
+    } else {
+      return this.sendWhatsAppTemplateTwilio(
+        to,
+        templateName,
+        templateParams,
+        credentials as TwilioCredentials
+      );
+    }
+  },
+
+  /**
+   * Send template via Cloud API
+   */
+  async sendWhatsAppTemplateCloudApi(
+    to: string,
+    templateName: string,
+    templateParams: string[],
+    languageCode: string,
+    credentials: CloudApiCredentials
+  ): Promise<SendMessageResult> {
+    try {
+      let normalizedTo = to.replace(/\D/g, "");
+      if (normalizedTo.length === 11 && !normalizedTo.startsWith("55")) {
+        normalizedTo = "55" + normalizedTo;
+      }
+
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${credentials.phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${credentials.accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: normalizedTo,
+            type: "template",
+            template: {
+              name: templateName,
+              language: { code: languageCode },
+              components: templateParams.length > 0 ? [
+                {
+                  type: "body",
+                  parameters: templateParams.map((param) => ({
+                    type: "text",
+                    text: param,
+                  })),
+                },
+              ] : undefined,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("[WhatsApp Cloud API] Template error:", error);
+        return { success: false, error: error.error?.message || "Failed to send template" };
+      }
+
+      const data = await response.json();
+      return { success: true, messageId: data.messages?.[0]?.id };
+    } catch (error) {
+      console.error("[WhatsApp Cloud API] Template error:", error);
+      return { success: false, error: "Failed to send template message" };
+    }
+  },
+
+  /**
+   * Send template via Twilio
+   */
+  async sendWhatsAppTemplateTwilio(
+    to: string,
+    templateName: string,
+    templateParams: string[],
+    credentials: TwilioCredentials
+  ): Promise<SendMessageResult> {
     const { accountSid, authToken, phoneNumber } = credentials;
 
     try {
@@ -200,7 +351,7 @@ export const messagingService = {
           body: new URLSearchParams({
             From: `whatsapp:${phoneNumber}`,
             To: `whatsapp:${formattedTo}`,
-            ContentSid: templateName, // Twilio Content Template SID
+            ContentSid: templateName,
             ContentVariables: JSON.stringify(
               templateParams.reduce(
                 (acc, val, idx) => ({ ...acc, [(idx + 1).toString()]: val }),
@@ -213,14 +364,14 @@ export const messagingService = {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error("[WhatsApp] Template error:", error);
+        console.error("[WhatsApp Twilio] Template error:", error);
         return { success: false, error: error.message || "Failed to send template" };
       }
 
       const data = await response.json();
       return { success: true, messageId: data.sid };
     } catch (error) {
-      console.error("[WhatsApp] Template error:", error);
+      console.error("[WhatsApp Twilio] Template error:", error);
       return { success: false, error: "Failed to send template message" };
     }
   },

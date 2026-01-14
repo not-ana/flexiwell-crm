@@ -365,7 +365,17 @@ function ConfigureModal({
 }
 
 // Credential fields for each integration type
-const credentialFields: Record<string, { key: string; label: string; type: string; placeholder: string; required: boolean }[]> = {
+interface CredentialField {
+  key: string;
+  label: string;
+  type: string;
+  placeholder: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
+  showWhen?: string; // Show only when provider field equals this value
+}
+
+const credentialFields: Record<string, CredentialField[]> = {
   // wellhub: Hidden for US market - re-enable for Brazil/LATAM
   // wellhub: [
   //   { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Wellhub API key", required: true },
@@ -377,9 +387,19 @@ const credentialFields: Record<string, { key: string; label: string; type: strin
     { key: "webhookSecret", label: "Webhook Secret", type: "password", placeholder: "whsec_...", required: false },
   ],
   whatsapp: [
-    { key: "accountSid", label: "Twilio Account SID", type: "text", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", required: true },
-    { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true },
-    { key: "phoneNumber", label: "WhatsApp Number", type: "text", placeholder: "+15551234567", required: true },
+    { key: "provider", label: "Provider", type: "select", placeholder: "Choose provider", required: true, options: [
+      { value: "cloud-api", label: "WhatsApp Cloud API (Recommended - Free)" },
+      { value: "twilio", label: "Twilio (Paid)" },
+    ] },
+    // Cloud API fields
+    { key: "phoneNumberId", label: "Phone Number ID", type: "text", placeholder: "123456789012345", required: true, showWhen: "cloud-api" },
+    { key: "accessToken", label: "Access Token", type: "password", placeholder: "EAAxxxxxxx...", required: true, showWhen: "cloud-api" },
+    { key: "businessAccountId", label: "Business Account ID", type: "text", placeholder: "123456789012345", required: true, showWhen: "cloud-api" },
+    { key: "verifyToken", label: "Verify Token", type: "text", placeholder: "Your custom verify token", required: true, showWhen: "cloud-api" },
+    // Twilio fields
+    { key: "accountSid", label: "Twilio Account SID", type: "text", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", required: true, showWhen: "twilio" },
+    { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true, showWhen: "twilio" },
+    { key: "phoneNumber", label: "WhatsApp Number", type: "text", placeholder: "+15551234567", required: true, showWhen: "twilio" },
   ],
   sms: [
     { key: "accountSid", label: "Twilio Account SID", type: "text", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", required: true },
@@ -453,8 +473,12 @@ function ConnectModal({
     setConnecting(true);
     setError(null);
 
-    // Validate required fields
+    // Validate required fields (considering conditional fields)
     for (const field of fields) {
+      // Skip fields that are for a different provider
+      if (field.showWhen && credentials.provider !== field.showWhen) {
+        continue;
+      }
       if (field.required && !credentials[field.key]) {
         setError(`${field.label} is required`);
         setConnecting(false);
@@ -526,18 +550,41 @@ function ConnectModal({
           {/* Credential Fields */}
           {fields.length > 0 ? (
             <div className="space-y-4 mb-6">
-              {fields.map((field) => (
+              {fields
+                .filter((field) => {
+                  // Filter out fields that should only show for a specific provider
+                  if (field.showWhen) {
+                    return credentials.provider === field.showWhen;
+                  }
+                  return true;
+                })
+                .map((field) => (
                 <div key={field.key}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
-                  <input
-                    type={field.type}
-                    placeholder={field.placeholder}
-                    value={credentials[field.key] || ""}
-                    onChange={(e) => setCredentials({ ...credentials, [field.key]: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
+                  {field.type === "select" && field.options ? (
+                    <select
+                      value={credentials[field.key] || ""}
+                      onChange={(e) => setCredentials({ ...credentials, [field.key]: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                    >
+                      <option value="">{field.placeholder}</option>
+                      {field.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      value={credentials[field.key] || ""}
+                      onChange={(e) => setCredentials({ ...credentials, [field.key]: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -570,11 +617,25 @@ function ConnectModal({
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
               <p className="text-sm font-medium text-blue-700 mb-2">Webhook URL</p>
               <p className="text-xs text-blue-600 mb-2">
-                Configure this URL in your Twilio settings:
+                {integration.id === "whatsapp" && credentials.provider === "cloud-api"
+                  ? "Configure this URL in your Meta App Dashboard (WhatsApp > Configuration):"
+                  : "Configure this URL in your Twilio settings:"}
               </p>
               <code className="block p-2 bg-white rounded text-xs text-gray-700 break-all">
                 {typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/{integration.id}
               </code>
+              {integration.id === "whatsapp" && credentials.provider === "cloud-api" && (
+                <div className="mt-3 text-xs text-blue-600">
+                  <p className="font-medium mb-1">Steps to configure:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Go to Meta for Developers</li>
+                    <li>Select your App → WhatsApp → Configuration</li>
+                    <li>Click &quot;Edit&quot; on Webhook</li>
+                    <li>Paste the URL above and your Verify Token</li>
+                    <li>Subscribe to &quot;messages&quot; field</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -625,7 +686,7 @@ export default function IntegrationsPage() {
     { id: "paypal", name: "PayPal", description: "Accept PayPal payments and subscriptions", logo: "PP", category: "payments", status: "available", features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"] },
     { id: "google_calendar", name: "Google Calendar", description: "Sync classes with Google Calendar", logo: "GC", category: "scheduling", status: "available", features: ["Two-way sync", "Reminders", "Availability", "Room booking"] },
     { id: "sms", name: "SMS (Twilio)", description: "Send SMS notifications and automated replies to US clients", logo: "SMS", category: "messaging", status: "available", features: ["SMS notifications", "Automated replies", "Class reminders", "AI Bot support"] },
-    { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients via Twilio", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Notifications", "Automated replies", "Media sharing"] },
+    { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients (Cloud API or Twilio)", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Automated bot", "Class booking", "Notifications"] },
     { id: "mailchimp", name: "Mailchimp", description: "Email marketing and newsletters", logo: "MC", category: "marketing", status: "available", features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"] },
     { id: "zapier", name: "Zapier", description: "Connect with 5000+ apps", logo: "ZP", category: "automation", status: "available", features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"] },
     { id: "classpass", name: "ClassPass", description: "List your classes on ClassPass marketplace", logo: "CP", category: "marketplace", status: "coming_soon", features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"] },
