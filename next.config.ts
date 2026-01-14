@@ -32,17 +32,18 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "default-src 'self' https://*.flexiwell.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.flexiwell.net https://js.stripe.com https://*.posthog.com https://www.clarity.ms https://*.clarity.ms",
+      "style-src 'self' 'unsafe-inline' https://*.flexiwell.net https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http:",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://api.stripe.com https://*.posthog.com wss:",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "connect-src 'self' https://*.flexiwell.net https://api.stripe.com https://*.posthog.com https://*.clarity.ms wss:",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'self'",
+      "worker-src 'self' blob:",
     ].join("; "),
   },
 ];
