@@ -127,7 +127,7 @@ function AccountTypeBadge({ type }: { type: AccountType }) {
 export default function Sidebar({ variant = "client", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -176,16 +176,9 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
 
     setIsProfileMenuOpen(false);
 
-    // Redirect based on account type
-    switch (selectedAccount.type) {
-      case "admin":
-        router.push("/admin");
-        break;
-      case "teacher":
-        router.push("/teacher");
-        break;
-      default:
-        router.push("/dashboard");
+    // In dev mode, use switchRole to change the user's role in the auth context
+    if (isDev && selectedAccount.id !== activeAccount.id) {
+      switchRole(selectedAccount.type);
     }
   };
 

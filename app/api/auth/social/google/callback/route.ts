@@ -5,6 +5,7 @@ import {
   getGoogleUserInfo,
   findOrCreateOAuthUser,
   generateOAuthResponse,
+  linkSocialAccount,
 } from "@/lib/auth/social-oauth";
 
 // GET /api/auth/social/google/callback - Handle Google OAuth callback
@@ -44,8 +45,31 @@ export async function GET(request: NextRequest) {
     // Get user info from Google
     const userInfo = await getGoogleUserInfo(tokens.accessToken);
 
+    // Handle linking mode
+    if (stateData.mode === "link" && stateData.userId) {
+      const result = await linkSocialAccount(stateData.userId, userInfo);
+
+      // Determine the correct settings URL based on user role
+      const settingsPath = stateData.userRole === "admin"
+        ? "/admin/settings"
+        : stateData.userRole === "teacher"
+          ? "/teacher/settings"
+          : "/dashboard/settings";
+
+      if (!result.success) {
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}${settingsPath}?tab=account&error=${encodeURIComponent(result.error || "Failed to link account")}`
+        );
+      }
+
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}${settingsPath}?tab=account&success=${encodeURIComponent("Google account linked successfully")}`
+      );
+    }
+
     // Find existing user (does NOT create new accounts)
-    const { user } = await findOrCreateOAuthUser(userInfo, stateData.mode);
+    // Note: stateData.mode at this point can only be "login" or "signup" since "link" was handled above
+    const { user } = await findOrCreateOAuthUser(userInfo, stateData.mode as "login" | "signup");
 
     // Generate auth response
     const authResponse = await generateOAuthResponse(user);

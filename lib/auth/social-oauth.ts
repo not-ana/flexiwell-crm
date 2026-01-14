@@ -25,7 +25,9 @@ export interface OAuthTokens {
 // OAuth state payload
 interface OAuthStatePayload {
   provider: OAuthProvider;
-  mode: "login" | "signup";
+  mode: "login" | "signup" | "link";
+  userId?: string; // For linking mode, store the user ID
+  userRole?: string; // For linking mode, store the user role for redirect
 }
 
 const OAUTH_STATE_SECRET = process.env.JWT_SECRET || "oauth-state-fallback-secret";
@@ -34,18 +36,23 @@ const OAUTH_STATE_SECRET = process.env.JWT_SECRET || "oauth-state-fallback-secre
  * Generate a secure state parameter for OAuth flow using JWT
  * This works in serverless environments where in-memory state doesn't persist
  */
-export function generateOAuthState(provider: OAuthProvider, mode: "login" | "signup" = "login"): string {
-  const payload: OAuthStatePayload = { provider, mode };
+export function generateOAuthState(
+  provider: OAuthProvider,
+  mode: "login" | "signup" | "link" = "login",
+  userId?: string,
+  userRole?: string
+): string {
+  const payload: OAuthStatePayload = { provider, mode, userId, userRole };
   return jwt.sign(payload, OAUTH_STATE_SECRET, { expiresIn: "10m" });
 }
 
 /**
  * Validate a state parameter (JWT-based, works in serverless)
  */
-export function validateOAuthState(state: string): { provider: OAuthProvider; mode: "login" | "signup" } | null {
+export function validateOAuthState(state: string): { provider: OAuthProvider; mode: "login" | "signup" | "link"; userId?: string; userRole?: string } | null {
   try {
     const decoded = jwt.verify(state, OAUTH_STATE_SECRET) as OAuthStatePayload;
-    return { provider: decoded.provider, mode: decoded.mode };
+    return { provider: decoded.provider, mode: decoded.mode, userId: decoded.userId, userRole: decoded.userRole };
   } catch {
     return null;
   }
@@ -245,4 +252,96 @@ export async function generateOAuthResponse(user: User): Promise<{
     },
     tokens,
   };
+}
+
+/**
+ * Link a social account to an existing user
+ */
+export async function linkSocialAccount(
+  userId: string,
+  userInfo: OAuthUserInfo
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDatabase();
+  const usersCollection = db.collection<User>("users");
+  const { ObjectId } = await import("mongodb");
+
+  // Find the user
+  const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+  if (!user) {
+    return { success: false, error: "User not found" };
+  }
+
+  // Check if this provider account is already linked to another user
+  const existingLink = await usersCollection.findOne({
+    "linkedAccounts.provider": userInfo.provider,
+    "linkedAccounts.providerId": userInfo.id,
+  });
+
+  if (existingLink && existingLink._id?.toString() !== userId) {
+    return { success: false, error: "This Google account is already linked to another user" };
+  }
+
+  // Check if user already has this provider linked
+  const alreadyLinked = user.linkedAccounts?.some(
+    (acc) => acc.provider === userInfo.provider
+  );
+
+  if (alreadyLinked) {
+    return { success: false, error: "You already have a Google account linked" };
+  }
+
+  // Add the linked account
+  const linkedAccount = {
+    provider: userInfo.provider,
+    providerId: userInfo.id,
+    email: userInfo.email,
+    name: userInfo.name,
+    avatar: userInfo.avatar,
+    linkedAt: new Date(),
+  };
+
+  await usersCollection.updateOne(
+    { _id: new ObjectId(userId) },
+    {
+      $push: { linkedAccounts: linkedAccount },
+      $set: { updatedAt: new Date() },
+    }
+  );
+
+  return { success: true };
+}
+
+/**
+ * Unlink a social account from a user
+ */
+export async function unlinkSocialAccount(
+  userId: string,
+  provider: OAuthProvider
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDatabase();
+  const usersCollection = db.collection<User>("users");
+  const { ObjectId } = await import("mongodb");
+
+  // Find the user
+  const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+  if (!user) {
+    return { success: false, error: "User not found" };
+  }
+
+  // Check if the account is linked
+  const isLinked = user.linkedAccounts?.some((acc) => acc.provider === provider);
+  if (!isLinked) {
+    return { success: false, error: "No linked account found for this provider" };
+  }
+
+  // Remove the linked account
+  await usersCollection.updateOne(
+    { _id: new ObjectId(userId) },
+    {
+      $pull: { linkedAccounts: { provider } },
+      $set: { updatedAt: new Date() },
+    }
+  );
+
+  return { success: true };
 }

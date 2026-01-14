@@ -340,6 +340,15 @@ export interface WaitlistNotification {
 }
 
 // User Authentication types
+export interface LinkedAccount {
+  provider: "google";
+  providerId: string;
+  email: string;
+  name?: string;
+  avatar?: string;
+  linkedAt: Date;
+}
+
 export interface User {
   _id?: ObjectId;
   email: string;
@@ -353,6 +362,8 @@ export interface User {
   clientId?: string; // For client role
   isActive: boolean;
   lastLoginAt?: Date;
+  // Linked social accounts
+  linkedAccounts?: LinkedAccount[];
   // Trial and subscription fields
   trialStartDate?: Date;
   trialEndDate?: Date;
@@ -422,6 +433,13 @@ export interface StudioSettings {
     region: SupportedRegion;
     businessType: string;
     country?: string;
+    // Custom terminology for "other" business type
+    customTerminology?: {
+      classes: string;
+      teachers: string;
+      clients: string;
+      studio: string;
+    };
   };
   // Branding settings
   branding?: {

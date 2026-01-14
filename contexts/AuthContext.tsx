@@ -23,6 +23,7 @@ interface AuthContextType {
   socialLogin: (provider: SocialProvider, mode?: "login" | "signup") => void;
   logout: () => Promise<void>;
   updateUser: (user: AuthUser) => void;
+  switchRole: (role: AuthUser["role"]) => void; // Dev mode only
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -195,6 +196,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser);
   }, []);
 
+  // Dev mode only: Switch role for testing different dashboards
+  const switchRole = useCallback((role: AuthUser["role"]) => {
+    if (process.env.NODE_ENV !== "development") {
+      console.warn("switchRole is only available in development mode");
+      return;
+    }
+
+    if (!user) return;
+
+    // Update user role in state
+    const updatedUser = { ...user, role };
+    setUser(updatedUser);
+
+    // Navigate to the appropriate dashboard
+    const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
+    router.push(redirectPath);
+  }, [user, router]);
+
   const socialLogin = useCallback((provider: SocialProvider, mode: "login" | "signup" = "login") => {
     // Redirect to OAuth authorization endpoint
     window.location.href = `/api/auth/social/${provider}/authorize?mode=${mode}`;
@@ -211,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         socialLogin,
         logout,
         updateUser,
+        switchRole,
       }}
     >
       {children}

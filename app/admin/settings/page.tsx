@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { BusinessType, businessTypes, getBusinessTypeOptions } from "@/lib/config/business-types";
 import { AccountSettings } from "@/components/settings/AccountSettings";
-import { getStoredTokens } from "@/lib/api/client";
+import { getStoredTokens, api } from "@/lib/api/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Toast notification helper - centered at top
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -21,11 +22,10 @@ function showToast(message: string, type: "success" | "error" = "success") {
   }, 3000);
 }
 
-type AdminSettingsTab = "general" | "branding" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "whatsapp" | "account";
+type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "whatsapp";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
-  { id: "branding", label: "Branding" },
   { id: "plans", label: "Plans" },
   { id: "waitlist", label: "Waitlist" },
   { id: "team", label: "Team" },
@@ -35,7 +35,6 @@ const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
   { id: "whatsapp", label: "WhatsApp" },
-  { id: "account", label: "Account" },
 ];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => void }) {
@@ -55,8 +54,31 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boo
   );
 }
 
+// Helper to get initials from name
+function getInitials(firstName: string, lastName: string): string {
+  const first = firstName?.[0]?.toUpperCase() || "";
+  const last = lastName?.[0]?.toUpperCase() || "";
+  return first + last || "??";
+}
+
 // General Settings Component
 function GeneralSettings() {
+  const { user, updateUser } = useAuth();
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [passwords, setPasswords] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
   const [settings, setSettings] = useState({
     studioName: "FlexiWell Studio",
     email: "contact@flexiwell.com",
@@ -66,9 +88,52 @@ function GeneralSettings() {
     currency: "USD",
     language: "en-US",
     businessType: "pilates" as BusinessType,
+    customTerminology: {
+      classes: "Classes",
+      teachers: "Instructors",
+      clients: "Clients",
+      studio: "Studio",
+    },
   });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Load profile data
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await api.get<{
+          firstName: string;
+          lastName: string;
+          email: string;
+          phone: string;
+          avatar: string | null;
+        }>("/api/profile");
+
+        if (response.data) {
+          setProfileData({
+            firstName: response.data.firstName || "",
+            lastName: response.data.lastName || "",
+            email: response.data.email || "",
+            phone: response.data.phone || "",
+          });
+        } else if (user) {
+          const nameParts = user.name?.split(" ") || [];
+          setProfileData({
+            firstName: nameParts[0] || "",
+            lastName: nameParts.slice(1).join(" ") || "",
+            email: user.email || "",
+            phone: "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+    fetchProfile();
+  }, [user]);
 
   // Load settings from API
   useEffect(() => {
@@ -92,6 +157,68 @@ function GeneralSettings() {
 
   const updateSetting = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleProfileChange = (field: string, value: string) => {
+    setProfileData({ ...profileData, [field]: value });
+  };
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true);
+    setProfileError("");
+    setProfileSuccess("");
+
+    try {
+      // Validate passwords if changing
+      if (passwords.new || passwords.current) {
+        if (!passwords.current) {
+          setProfileError("Current password is required to change password");
+          setProfileSaving(false);
+          return;
+        }
+        if (passwords.new !== passwords.confirm) {
+          setProfileError("New passwords do not match");
+          setProfileSaving(false);
+          return;
+        }
+        if (passwords.new.length < 8) {
+          setProfileError("New password must be at least 8 characters");
+          setProfileSaving(false);
+          return;
+        }
+      }
+
+      const updateData: Record<string, string | undefined> = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phone: profileData.phone,
+      };
+
+      if (passwords.current && passwords.new) {
+        updateData.currentPassword = passwords.current;
+        updateData.newPassword = passwords.new;
+      }
+
+      const response = await api.put<{ success: boolean; error?: string; user?: { name: string; avatar?: string } }>("/api/profile", updateData);
+
+      if (response.error) {
+        throw new Error(response.error.error || "Failed to update profile");
+      }
+
+      if (user) {
+        updateUser({
+          ...user,
+          name: response.data?.user?.name || `${profileData.firstName} ${profileData.lastName}`.trim(),
+        });
+      }
+
+      setProfileSuccess("Profile updated successfully!");
+      setPasswords({ current: "", new: "", confirm: "" });
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -128,8 +255,148 @@ function GeneralSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Profile Section */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">General</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
+        <p className="text-sm text-gray-600 mt-1">Update your personal information.</p>
+      </div>
+
+      {profileError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{profileError}</p>
+        </div>
+      )}
+
+      {profileSuccess && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-600">{profileSuccess}</p>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-6">
+        {/* Account Info */}
+        <div className="flex justify-end">
+          <div className="text-right space-y-1">
+            <div className="flex items-center gap-2 sm:justify-end">
+              <span className="text-sm text-gray-500">Type:</span>
+              <span className="text-sm text-gray-900 capitalize">{user?.role}</span>
+            </div>
+            <div className="flex items-center gap-2 sm:justify-end">
+              <span className="text-sm text-gray-500">ID:</span>
+              <span className="text-sm text-gray-400 font-mono text-xs">{user?.id}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (user?.id) {
+                    navigator.clipboard.writeText(user.id);
+                  }
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                title="Copy Account ID"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Form Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
+            <input
+              type="text"
+              value={profileData.firstName}
+              onChange={(e) => handleProfileChange("firstName", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
+            <input
+              type="text"
+              value={profileData.lastName}
+              onChange={(e) => handleProfileChange("lastName", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            value={profileData.email}
+            disabled
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
+          <input
+            type="tel"
+            value={profileData.phone}
+            onChange={(e) => handleProfileChange("phone", e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
+        {/* Password Section */}
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-900 mb-4">Change password</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Current password</label>
+              <input
+                type="password"
+                placeholder="Enter current password"
+                value={passwords.current}
+                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+              <input
+                type="password"
+                placeholder="Enter new password"
+                value={passwords.new}
+                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={passwords.confirm}
+                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Actions */}
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
+          <Button variant="secondary" onClick={() => {
+            setPasswords({ current: "", new: "", confirm: "" });
+            setProfileError("");
+            setProfileSuccess("");
+          }}>Cancel</Button>
+          <Button onClick={handleProfileSave} disabled={profileSaving}>
+            {profileSaving ? "Saving..." : "Save profile"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Studio Settings Section */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Studio Settings</h2>
         <p className="text-sm text-gray-600 mt-1">Basic studio information and preferences.</p>
       </div>
 
@@ -167,124 +434,93 @@ function GeneralSettings() {
           })}
         </div>
 
-        {/* Terminology Preview */}
+        {/* Terminology Preview / Custom Terminology */}
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700 mb-3">
-            Terminology preview for {selectedBusinessType.name}:
+            {settings.businessType === "other"
+              ? "Customize your terminology:"
+              : `Terminology preview for ${selectedBusinessType.name}:`}
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Sessions:</span>
-              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.classes}</span>
+          {settings.businessType === "other" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Sessions</label>
+                <input
+                  type="text"
+                  value={settings.customTerminology.classes}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    customTerminology: { ...prev.customTerminology, classes: e.target.value }
+                  }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g., Classes, Sessions"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Staff</label>
+                <input
+                  type="text"
+                  value={settings.customTerminology.teachers}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    customTerminology: { ...prev.customTerminology, teachers: e.target.value }
+                  }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g., Instructors, Coaches"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Clients</label>
+                <input
+                  type="text"
+                  value={settings.customTerminology.clients}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    customTerminology: { ...prev.customTerminology, clients: e.target.value }
+                  }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g., Clients, Members"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={settings.customTerminology.studio}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    customTerminology: { ...prev.customTerminology, studio: e.target.value }
+                  }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g., Studio, Gym"
+                />
+              </div>
             </div>
-            <div>
-              <span className="text-gray-500">Staff:</span>
-              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.teachers}</span>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Sessions:</span>
+                <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.classes}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Staff:</span>
+                <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.teachers}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Clients:</span>
+                <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.clients}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Location:</span>
+                <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.studio}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-gray-500">Clients:</span>
-              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.clients}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Location:</span>
-              <span className="ml-2 font-medium text-gray-900">{selectedBusinessType.terminology.studio}</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Studio Name</label>
-          <input
-            type="text"
-            value={settings.studioName}
-            onChange={(e) => updateSetting("studioName", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-            <input
-              type="email"
-              value={settings.email}
-              onChange={(e) => updateSetting("email", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input
-              type="tel"
-              value={settings.phone}
-              onChange={(e) => updateSetting("phone", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-          <input
-            type="text"
-            value={settings.address}
-            onChange={(e) => updateSetting("address", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
-            <select
-              value={settings.timezone}
-              onChange={(e) => updateSetting("timezone", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
-              <option value="America/New_York">New York (GMT-5)</option>
-              <option value="America/Los_Angeles">Los Angeles (GMT-8)</option>
-              <option value="America/Chicago">Chicago (GMT-6)</option>
-              <option value="Europe/London">London (GMT)</option>
-              <option value="Europe/Paris">Paris (GMT+1)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-            <select
-              value={settings.currency}
-              onChange={(e) => updateSetting("currency", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="USD">USD ($)</option>
-              <option value="BRL">BRL (R$)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-            <select
-              value={settings.language}
-              onChange={(e) => updateSetting("language", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="pt-BR">Português (Brasil)</option>
-              <option value="en-US">English (US)</option>
-              <option value="es">Español</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 pt-4">
-          <Button variant="secondary">Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
-        </div>
-      </div>
+      {/* Account Settings Section */}
+      <AccountSettings hideAccountInfo />
     </div>
   );
 }
@@ -362,16 +598,9 @@ function EstablishmentsSettings() {
             {/* Establishment Header */}
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">{establishment.name}</h3>
-                    <p className="text-sm text-gray-500">{establishment.location}</p>
-                  </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">{establishment.name}</h3>
+                  <p className="text-sm text-gray-500">{establishment.location}</p>
                 </div>
                 <button
                   onClick={() => setEditingEstablishment(editingEstablishment === establishment.id ? null : establishment.id)}
@@ -746,16 +975,9 @@ function RoomsSettings() {
           <div key={establishment.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             {/* Establishment Header */}
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{establishment.name}</h3>
-                  <p className="text-sm text-gray-500">{establishment.rooms.length} room{establishment.rooms.length !== 1 ? "s" : ""}</p>
-                </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{establishment.name}</h3>
+                <p className="text-sm text-gray-500">{establishment.rooms.length} room{establishment.rooms.length !== 1 ? "s" : ""}</p>
               </div>
             </div>
 
@@ -1003,6 +1225,7 @@ function PlansSettings() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<typeof plans[0] | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<typeof plans[0] | null>(null);
   const [newPlan, setNewPlan] = useState({
     name: "",
     price: "",
@@ -1041,9 +1264,14 @@ function PlansSettings() {
     setShowAddModal(false);
   };
 
-  const handleDeletePlan = (planId: string) => {
-    if (confirm("Are you sure you want to delete this plan? Existing subscribers will keep their current plan.")) {
-      setPlans(prev => prev.filter(p => p.id !== planId));
+  const handleDeletePlan = (plan: typeof plans[0]) => {
+    setPlanToDelete(plan);
+  };
+
+  const confirmDeletePlan = () => {
+    if (planToDelete) {
+      setPlans(prev => prev.filter(p => p.id !== planToDelete.id));
+      setPlanToDelete(null);
     }
   };
 
@@ -1120,7 +1348,7 @@ function PlansSettings() {
                 </button>
                 <Toggle enabled={plan.isActive} onChange={() => handleTogglePlan(plan.id)} />
                 <button
-                  onClick={() => handleDeletePlan(plan.id)}
+                  onClick={() => handleDeletePlan(plan)}
                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Delete plan"
                 >
@@ -1193,6 +1421,44 @@ function PlansSettings() {
               <Button className="flex-1" onClick={handleAddPlan}>
                 Add Plan
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Plan Confirmation Modal */}
+      {planToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Delete Plan
+              </h3>
+              <p className="text-sm text-gray-600 text-center">
+                Are you sure you want to delete <span className="font-medium text-gray-900">{planToDelete.name}</span>? Existing subscribers will keep their current plan.
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setPlanToDelete(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletePlan}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -2930,476 +3196,8 @@ function WhatsAppSettings() {
   );
 }
 
-// Branding Settings Component (White Label)
-function BrandingSettings() {
-  const [branding, setBranding] = useState({
-    whiteLabelEnabled: false,
-    customLogo: "",
-    customFavicon: "",
-    primaryColor: "#6938EF",
-    accentColor: "#DD2590",
-    customDomain: "",
-    hideFlexiwellBranding: false,
-    customEmailHeader: "",
-    customLoginBackground: "",
-  });
-
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // Mock: Check if white label is available in current plan
-  const isWhiteLabelAvailable = false; // Would come from plan context
-
-  useEffect(() => {
-    async function loadBranding() {
-      try {
-        const res = await fetch("/api/settings?section=branding");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.branding) {
-            setBranding(prev => ({ ...prev, ...data.branding }));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load branding:", error);
-      }
-    }
-    loadBranding();
-  }, []);
-
-  const updateBranding = (key: string, value: string | boolean) => {
-    setBranding((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSaveBranding = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "branding", data: branding }),
-      });
-      if (res.ok) {
-        showToast("Branding saved successfully");
-      } else {
-        showToast("Failed to save branding", "error");
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-      showToast("Failed to save branding", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleLogoUpload = (type: "logo" | "favicon") => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      if (file.size > 2 * 1024 * 1024) {
-        showToast("Image must be less than 2MB", "error");
-        return;
-      }
-
-      try {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const base64 = reader.result as string;
-          const { accessToken } = getStoredTokens();
-          const authHeaders: HeadersInit = {
-            "Content-Type": "application/json",
-          };
-          if (accessToken) {
-            authHeaders["Authorization"] = `Bearer ${accessToken}`;
-          }
-
-          const response = await fetch("/api/upload", {
-            method: "POST",
-            headers: authHeaders,
-            body: JSON.stringify({
-              type: "image",
-              data: base64,
-              filename: file.name,
-              folder: type === "logo" ? "logos" : "favicons",
-            }),
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Failed to upload");
-          }
-
-          if (type === "logo") {
-            updateBranding("customLogo", data.url);
-          } else {
-            updateBranding("customFavicon", data.url);
-          }
-          showToast(`${type === "logo" ? "Logo" : "Favicon"} uploaded successfully`);
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        console.error("Upload error:", error);
-        showToast("Failed to upload image", "error");
-      }
-    };
-    input.click();
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Branding & White Label</h2>
-        <p className="text-sm text-gray-600 mt-1">Customize the look and feel of your studio's platform.</p>
-      </div>
-
-      {/* White Label Status */}
-      <div className={`bg-white border rounded-xl p-6 ${isWhiteLabelAvailable ? "border-gray-200" : "border-primary-200 bg-primary-50/30"}`}>
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isWhiteLabelAvailable ? "bg-green-100" : "bg-primary-100"}`}>
-              <svg className={`w-6 h-6 ${isWhiteLabelAvailable ? "text-green-600" : "text-primary-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-gray-900">White Label Mode</h3>
-                {isWhiteLabelAvailable ? (
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">Pro Feature</span>
-                )}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">
-                {isWhiteLabelAvailable
-                  ? "Your studio's branding is displayed to all users."
-                  : "Remove FlexiWell branding and use your own logo, colors, and domain."}
-              </p>
-            </div>
-          </div>
-          {!isWhiteLabelAvailable ? (
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Upgrade to Pro
-            </button>
-          ) : (
-            <Toggle enabled={branding.whiteLabelEnabled} onChange={(v) => updateBranding("whiteLabelEnabled", v)} />
-          )}
-        </div>
-
-        {!isWhiteLabelAvailable && (
-          <div className="mt-4 p-4 bg-white rounded-lg border border-primary-100">
-            <p className="text-sm font-medium text-gray-900 mb-2">White Label includes:</p>
-            <ul className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Custom logo & favicon
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Custom color scheme
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Custom domain (studio.com)
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Branded email templates
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Remove "Powered by FlexiWell"
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Custom login page
-              </li>
-            </ul>
-            <p className="text-sm text-primary-700 font-medium mt-3">+$39/month</p>
-          </div>
-        )}
-      </div>
-
-      {/* Logo & Assets */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Logo & Assets</h3>
-        <div className="grid grid-cols-2 gap-6">
-          {/* Logo Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Studio Logo</label>
-            <div
-              onClick={() => isWhiteLabelAvailable && handleLogoUpload("logo")}
-              className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}
-            >
-              {branding.customLogo ? (
-                <div className="flex flex-col items-center">
-                  <img src={branding.customLogo} alt="Logo" className="h-12 mb-2" />
-                  <button
-                    onClick={() => updateBranding("customLogo", "")}
-                    className="text-sm text-red-600 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-400 mt-1">SVG, PNG or JPG (max 2MB)</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Favicon Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
-            <div
-              onClick={() => isWhiteLabelAvailable && handleLogoUpload("favicon")}
-              className={`border-2 border-dashed rounded-xl p-6 text-center ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : "border-gray-300 hover:border-primary-400 cursor-pointer"}`}
-            >
-              {branding.customFavicon ? (
-                <div className="flex flex-col items-center">
-                  <img src={branding.customFavicon} alt="Favicon" className="h-8 mb-2" />
-                  <button
-                    onClick={() => updateBranding("customFavicon", "")}
-                    className="text-sm text-red-600 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm text-gray-600">Click to upload favicon</p>
-                  <p className="text-xs text-gray-400 mt-1">ICO or PNG (32x32px)</p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Color Scheme */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Color Scheme</h3>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-            <div className={`flex items-center gap-3 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
-              <input
-                type="color"
-                value={branding.primaryColor}
-                onChange={(e) => updateBranding("primaryColor", e.target.value)}
-                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-              />
-              <input
-                type="text"
-                value={branding.primaryColor}
-                onChange={(e) => updateBranding("primaryColor", e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Used for buttons, links, and accents</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
-            <div className={`flex items-center gap-3 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
-              <input
-                type="color"
-                value={branding.accentColor}
-                onChange={(e) => updateBranding("accentColor", e.target.value)}
-                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-              />
-              <input
-                type="text"
-                value={branding.accentColor}
-                onChange={(e) => updateBranding("accentColor", e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Secondary highlights and badges</p>
-          </div>
-        </div>
-
-        {/* Color Preview */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm font-medium text-gray-700 mb-3">Preview</p>
-          <div className="flex items-center gap-4">
-            <button
-              style={{ backgroundColor: branding.primaryColor }}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg"
-            >
-              Primary Button
-            </button>
-            <button
-              style={{ backgroundColor: branding.accentColor }}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg"
-            >
-              Accent Button
-            </button>
-            <span
-              style={{ backgroundColor: branding.primaryColor + "20", color: branding.primaryColor }}
-              className="px-3 py-1 text-xs font-medium rounded-full"
-            >
-              Badge
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Custom Domain */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">Custom Domain</h3>
-        <p className="text-sm text-gray-600 mb-4">Use your own domain for a fully branded experience.</p>
-
-        <div className={`space-y-4 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">https://</span>
-              <input
-                type="text"
-                placeholder="app.yourstudio.com"
-                value={branding.customDomain}
-                onChange={(e) => updateBranding("customDomain", e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Point your domain's CNAME record to <code className="bg-gray-100 px-1 rounded">app.flexiwell.net</code>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-            <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p className="text-sm text-yellow-800">SSL certificates are automatically provisioned. DNS changes may take up to 48 hours.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Branding Options */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Branding Options</h3>
-        <div className={`space-y-4 ${!isWhiteLabelAvailable ? "opacity-50 pointer-events-none" : ""}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Hide "Powered by FlexiWell"</p>
-              <p className="text-sm text-gray-500">Remove FlexiWell attribution from footer</p>
-            </div>
-            <Toggle enabled={branding.hideFlexiwellBranding} onChange={(v) => updateBranding("hideFlexiwellBranding", v)} />
-          </div>
-        </div>
-      </div>
-
-      {isWhiteLabelAvailable && (
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="secondary">Cancel</Button>
-          <Button onClick={handleSaveBranding} disabled={saving}>
-            {saving ? "Saving..." : "Save Branding"}
-          </Button>
-        </div>
-      )}
-
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-6">
-              <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
-                Upgrade to Pro
-              </h3>
-              <p className="text-sm text-gray-600 text-center mb-6">
-                Unlock White Label mode and make FlexiWell truly yours. Your clients will only see your brand.
-              </p>
-
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="flex items-baseline justify-center gap-1 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">$39</span>
-                  <span className="text-gray-500">/month</span>
-                </div>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center gap-2 text-gray-700">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Custom logo, colors & favicon
-                  </li>
-                  <li className="flex items-center gap-2 text-gray-700">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Custom domain with SSL
-                  </li>
-                  <li className="flex items-center gap-2 text-gray-700">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Branded email templates
-                  </li>
-                  <li className="flex items-center gap-2 text-gray-700">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    No FlexiWell branding
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="px-6 pb-6 flex gap-3">
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Maybe later
-              </button>
-              <button
-                onClick={() => {
-                  setShowUpgradeModal(false);
-                  window.location.href = "/admin/billing?upgrade=true";
-                }}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-              >
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// NOTE: Branding Settings Component moved to /components/features-future/BrandingSettings.tsx
+// This is a future feature that will be sold as a premium add-on (+$39/month)
 
 // Waitlist Settings Component
 function WaitlistSettings() {
@@ -4448,8 +4246,6 @@ export default function AdminSettingsPage() {
     switch (activeTab) {
       case "general":
         return <GeneralSettings />;
-      case "branding":
-        return <BrandingSettings />;
       case "plans":
         return <PlansSettings />;
       case "waitlist":
@@ -4468,8 +4264,6 @@ export default function AdminSettingsPage() {
         return <IntegrationsSettings />;
       case "whatsapp":
         return <WhatsAppSettings />;
-      case "account":
-        return <AccountSettings />;
       default:
         return <GeneralSettings />;
     }

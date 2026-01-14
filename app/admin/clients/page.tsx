@@ -238,7 +238,7 @@ function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, 
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   onEdit: (client: Client) => void;
-  onDelete: (id: string) => void;
+  onDelete: (client: Client) => void;
 }) {
   const activeCount = unit.clients.filter((c) => c.status === "active").length;
   const pendingCount = unit.clients.filter((c) => c.status === "pending").length;
@@ -250,12 +250,6 @@ function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, 
         onClick={onToggle}
         className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </div>
         <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{unit.name}</h2>
@@ -294,7 +288,7 @@ function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, 
               onApprove={() => onApprove(client._id)}
               onReject={() => onReject(client._id)}
               onEdit={() => onEdit(client)}
-              onDelete={() => onDelete(client._id)}
+              onDelete={() => onDelete(client)}
             />
           ))}
         </div>
@@ -323,7 +317,7 @@ function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, 
                   onApprove={() => onApprove(client._id)}
                   onReject={() => onReject(client._id)}
                   onEdit={() => onEdit(client)}
-                  onDelete={() => onDelete(client._id)}
+                  onDelete={() => onDelete(client)}
                 />
               ))}
             </tbody>
@@ -802,6 +796,7 @@ export default function AdminClientsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   // Fetch clients from API
   const { clients, total, isLoading, error, refetch, createClient, updateClient, deleteClient } = useClients({
@@ -890,13 +885,17 @@ export default function AdminClientsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this client?")) {
-      const result = await deleteClient(id);
-      if (!result.success) {
-        alert(result.error || "Failed to delete client");
-      }
+  const handleDeleteClick = (client: Client) => {
+    setClientToDelete(client);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!clientToDelete) return;
+    const result = await deleteClient(clientToDelete._id);
+    if (!result.success) {
+      alert(result.error || "Failed to delete client");
     }
+    setClientToDelete(null);
   };
 
   // Calculate stats
@@ -1030,7 +1029,7 @@ export default function AdminClientsPage() {
               onApprove={handleApprove}
               onReject={handleReject}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={handleDeleteClick}
             />
           ))}
         </div>
@@ -1065,6 +1064,44 @@ export default function AdminClientsPage() {
         onSubmit={handleUpdateClient}
         isSubmitting={isSubmitting}
       />
+
+      {/* Delete Confirmation Modal */}
+      {clientToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Delete Client
+              </h3>
+              <p className="text-sm text-gray-600 text-center">
+                Are you sure you want to delete <span className="font-medium text-gray-900">{clientToDelete.name}</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setClientToDelete(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminUser {
   name: string;
@@ -18,7 +19,6 @@ interface AdminUser {
   email: string;
   phone: string;
   role: string;
-  about: string;
 }
 
 interface ActivityItem {
@@ -44,7 +44,6 @@ const defaultUser: AdminUser = {
   email: "",
   phone: "",
   role: "Administrator",
-  about: "",
 };
 
 const defaultStats: AdminStats = {
@@ -75,23 +74,55 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 
 export default function AdminProfilePage() {
   const router = useRouter();
-  const [adminUser, setAdminUser] = useState<AdminUser>(defaultUser);
+  const { user: authUser } = useAuth();
+
+  // Use auth context data as initial values
+  const getInitialUser = (): AdminUser => {
+    if (authUser) {
+      const initials = authUser.name
+        ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+        : authUser.email.substring(0, 2).toUpperCase();
+      return {
+        name: authUser.name || authUser.email.split("@")[0],
+        avatar: authUser.avatar,
+        initials,
+        location: "Brasil",
+        locationFlag: "🇧🇷",
+        email: authUser.email,
+        phone: authUser.phone || "",
+        role: authUser.role === "admin" ? "Administrator" : authUser.role.charAt(0).toUpperCase() + authUser.role.slice(1),
+      };
+    }
+    return defaultUser;
+  };
+
+  const [adminUser, setAdminUser] = useState<AdminUser>(getInitialUser);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [stats, setStats] = useState<AdminStats>(defaultStats);
   const [loading, setLoading] = useState(true);
-  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
-  const aboutPreviewLength = 300;
-  const shouldTruncate = adminUser.about.length > aboutPreviewLength;
+
+  // Update adminUser when authUser changes
+  useEffect(() => {
+    if (authUser && adminUser.name === "Loading...") {
+      setAdminUser(getInitialUser());
+    }
+  }, [authUser]);
 
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/profile");
+      const token = localStorage.getItem("flexiwell_access_token");
+      const response = await fetch("/api/admin/profile", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
       if (response.ok) {
         const data = await response.json();
         setAdminUser(data.user);
         setRecentActivity(data.recentActivity || []);
         setStats(data.stats);
+      } else {
+        console.error("Profile API returned:", response.status);
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -160,24 +191,32 @@ export default function AdminProfilePage() {
             {/* Email */}
             <div>
               <p className="text-sm text-gray-500 mb-1">Email</p>
-              <a
-                href={`mailto:${adminUser.email}`}
-                className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
-              >
-                <span>{adminUser.email}</span>
-                <ExternalLinkIcon className="w-4 h-4" />
-              </a>
+              {adminUser.email ? (
+                <a
+                  href={`mailto:${adminUser.email}`}
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
+                >
+                  <span>{adminUser.email}</span>
+                  <ExternalLinkIcon className="w-4 h-4" />
+                </a>
+              ) : (
+                <span className="text-gray-400">Not provided</span>
+              )}
             </div>
 
             {/* Phone */}
             <div>
               <p className="text-sm text-gray-500 mb-1">Phone</p>
-              <a
-                href={`tel:${adminUser.phone.replace(/\s/g, "")}`}
-                className="text-primary-600 hover:text-primary-700"
-              >
-                {adminUser.phone}
-              </a>
+              {adminUser.phone ? (
+                <a
+                  href={`tel:${adminUser.phone.replace(/\s/g, "")}`}
+                  className="text-primary-600 hover:text-primary-700"
+                >
+                  {adminUser.phone}
+                </a>
+              ) : (
+                <span className="text-gray-400">Not provided</span>
+              )}
             </div>
 
             {/* Quick Stats */}
@@ -194,26 +233,8 @@ export default function AdminProfilePage() {
             </div>
           </div>
 
-          {/* Right Column - About and Activity */}
+          {/* Right Column - Activity */}
           <div className="flex-1">
-            {/* About Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">About</h2>
-              <div className="text-gray-600 whitespace-pre-line">
-                {shouldTruncate && !isAboutExpanded
-                  ? adminUser.about.slice(0, aboutPreviewLength) + "..."
-                  : adminUser.about}
-              </div>
-              {shouldTruncate && (
-                <button
-                  onClick={() => setIsAboutExpanded(!isAboutExpanded)}
-                  className="mt-2 text-sm font-semibold text-primary-600 hover:text-primary-700"
-                >
-                  {isAboutExpanded ? "Show less" : "Read more"}
-                </button>
-              )}
-            </div>
-
             {/* Recent Activity Section */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>

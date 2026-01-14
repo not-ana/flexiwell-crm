@@ -261,6 +261,14 @@ export const businessTypes: Record<BusinessType, BusinessTypeConfig> = {
   },
 };
 
+// Custom terminology interface for "other" business type
+export interface CustomTerminology {
+  classes: string;
+  teachers: string;
+  clients: string;
+  studio: string;
+}
+
 // Helper functions
 export function getBusinessType(type: BusinessType): BusinessTypeConfig {
   return businessTypes[type] || businessTypes.other;
@@ -272,6 +280,36 @@ export function getTerminology(type: BusinessType): BusinessTerminology {
 
 export function getTerm(type: BusinessType, term: keyof BusinessTerminology): string {
   return getTerminology(type)[term];
+}
+
+// Get terminology with custom overrides for "other" business type
+export function getEffectiveTerminology(
+  type: BusinessType,
+  customTerminology?: CustomTerminology
+): BusinessTerminology {
+  const baseTerminology = getTerminology(type);
+
+  // If it's "other" and custom terminology is provided, merge it
+  if (type === "other" && customTerminology) {
+    return {
+      ...baseTerminology,
+      classes: customTerminology.classes || baseTerminology.classes,
+      teachers: customTerminology.teachers || baseTerminology.teachers,
+      clients: customTerminology.clients || baseTerminology.clients,
+      studio: customTerminology.studio || baseTerminology.studio,
+    };
+  }
+
+  return baseTerminology;
+}
+
+// Get a specific term with custom override support
+export function getEffectiveTerm(
+  type: BusinessType,
+  term: keyof BusinessTerminology,
+  customTerminology?: CustomTerminology
+): string {
+  return getEffectiveTerminology(type, customTerminology)[term];
 }
 
 // Get all business types as array for select options

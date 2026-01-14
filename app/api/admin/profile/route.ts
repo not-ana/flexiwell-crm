@@ -1,29 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import { requireAuthFromCookie } from "@/lib/auth/middleware";
-import type { Staff } from "@/lib/db/schemas";
+import { requireAuthFromCookie, requireAuth } from "@/lib/auth/middleware";
+import type { Staff, User } from "@/lib/db/schemas";
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await requireAuthFromCookie();
+    // Try cookie auth first, then header auth
+    let authResult = await requireAuthFromCookie();
+    if (authResult.error) {
+      authResult = requireAuth(request);
+    }
+    const { user, error } = authResult;
     if (error) return error;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
     const adminId = user.userId;
 
-    // Get admin/staff data
-    let admin: Staff | null = null;
+    // Get admin/staff data - try staff collection first, then users collection
+    let admin: Staff | User | null = null;
     if (ObjectId.isValid(adminId)) {
       admin = await db.collection<Staff>("staff").findOne({
         _id: new ObjectId(adminId),
       });
+
+      // If not found in staff, try users collection
+      if (!admin) {
+        admin = await db.collection<User>("users").findOne({
+          _id: new ObjectId(adminId),
+        });
+      }
     }
 
-    // If not found by ID, try by email
+    // If not found by ID, try by email in both collections
     if (!admin) {
       admin = await db.collection<Staff>("staff").findOne({
+        email: user.email,
+      });
+    }
+
+    if (!admin) {
+      admin = await db.collection<User>("users").findOne({
         email: user.email,
       });
     }
@@ -101,7 +119,7 @@ export async function GET(request: NextRequest) {
         locationFlag: "\u{1f1e7}\u{1f1f7}",
         phone: admin.phone || "",
         role: admin.role === "admin" ? "Administrator" : admin.role.charAt(0).toUpperCase() + admin.role.slice(1),
-        about: admin.bio || "",
+        about: ("bio" in admin ? admin.bio : "") || "",
       },
       stats: {
         totalClients,

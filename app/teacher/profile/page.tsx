@@ -21,7 +21,6 @@ interface TeacherUser {
   phone: string;
   role: string;
   specialties: string[];
-  about: string;
 }
 
 interface UpcomingClass {
@@ -49,7 +48,6 @@ const defaultUser: TeacherUser = {
   phone: "",
   role: "Instructor",
   specialties: [],
-  about: "",
 };
 
 const defaultStats: TeacherStats = {
@@ -83,9 +81,6 @@ export default function TeacherProfilePage() {
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [stats, setStats] = useState<TeacherStats>(defaultStats);
   const [loading, setLoading] = useState(true);
-  const [isAboutExpanded, setIsAboutExpanded] = useState(false);
-  const aboutPreviewLength = 300;
-  const shouldTruncate = teacherUser.about.length > aboutPreviewLength;
 
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {
@@ -212,26 +207,8 @@ export default function TeacherProfilePage() {
             </div>
           </div>
 
-          {/* Right Column - About and Classes */}
+          {/* Right Column - Classes */}
           <div className="flex-1">
-            {/* About Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">About</h2>
-              <div className="text-gray-600 whitespace-pre-line">
-                {shouldTruncate && !isAboutExpanded
-                  ? teacherUser.about.slice(0, aboutPreviewLength) + "..."
-                  : teacherUser.about}
-              </div>
-              {shouldTruncate && (
-                <button
-                  onClick={() => setIsAboutExpanded(!isAboutExpanded)}
-                  className="mt-2 text-sm font-semibold text-primary-600 hover:text-primary-700"
-                >
-                  {isAboutExpanded ? "Show less" : "Read more"}
-                </button>
-              )}
-            </div>
-
             {/* Upcoming Classes Section */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">My Upcoming Classes</h2>
