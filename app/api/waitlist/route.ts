@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import type { WaitlistEntry, Client, Booking } from "@/lib/db/schemas";
-import { requireRoleFromCookie } from "@/lib/auth/middleware";
+import { requireRole } from "@/lib/auth/middleware";
 
 // GET /api/waitlist - List all waitlist entries
 export async function GET(request: NextRequest) {
   // Require authentication - only admin and teacher can view waitlist
-  const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+  const { error } = requireRole(request, ["admin", "teacher"]);
   if (error) return error;
 
   try {
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 // POST /api/waitlist - Create a new waitlist entry
 export async function POST(request: NextRequest) {
   // Require authentication - admin, teacher, or client can create entries
-  const { error } = await requireRoleFromCookie(["admin", "teacher", "client"]);
+  const { error } = requireRole(request, ["admin", "teacher", "client"]);
   if (error) return error;
 
   try {
