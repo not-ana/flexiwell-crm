@@ -3,6 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronIcon, SearchIcon } from "@/components/icons";
 import type { Conversation } from "@/lib/db/schemas";
+import { getStoredTokens } from "@/lib/api/client";
+
+// Helper to make authenticated fetch requests
+function authFetch(url: string, options: RequestInit = {}) {
+  const { accessToken } = getStoredTokens();
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+}
 
 interface DisplayConversation extends Omit<Conversation, "_id"> {
   _id: string;
@@ -64,7 +78,7 @@ export default function ConversationsPage() {
       if (filterPlatform !== "all") params.set("platform", filterPlatform);
       if (searchQuery) params.set("search", searchQuery);
 
-      const response = await fetch(`/api/conversations?${params}`);
+      const response = await authFetch(`/api/conversations?${params}`);
       if (!response.ok) throw new Error("Failed to fetch conversations");
 
       const data = await response.json();
@@ -89,7 +103,7 @@ export default function ConversationsPage() {
     setActionLoading(true);
     try {
       // Use the send endpoint to deliver to platform (WhatsApp/Instagram)
-      const response = await fetch(`/api/conversations/${selectedConversation._id}/send`, {
+      const response = await authFetch(`/api/conversations/${selectedConversation._id}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -126,7 +140,7 @@ export default function ConversationsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/conversations/${selectedConversation._id}`, {
+      const response = await authFetch(`/api/conversations/${selectedConversation._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "close" }),

@@ -2,6 +2,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { WaitlistEntry, WaitlistRequestType, WaitlistStatus } from "@/lib/db/schemas";
+import { getStoredTokens } from "@/lib/api/client";
+
+// Helper to make authenticated fetch requests
+function authFetch(url: string, options: RequestInit = {}) {
+  const { accessToken } = getStoredTokens();
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+}
 
 interface DisplayEntry extends Omit<WaitlistEntry, "_id"> {
   _id: string;
@@ -70,7 +84,7 @@ function PrioritySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   const handleSave = async () => {
     try {
-      const response = await fetch("/api/waitlist/settings", {
+      const response = await authFetch("/api/waitlist/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -316,7 +330,7 @@ export default function WaitlistPage() {
       if (filterStatus !== "all") params.set("status", filterStatus);
       if (filterType !== "all") params.set("requestType", filterType);
 
-      const response = await fetch(`/api/waitlist?${params}`);
+      const response = await authFetch(`/api/waitlist?${params}`);
       if (!response.ok) throw new Error("Failed to fetch waitlist");
 
       const data = await response.json();
@@ -334,7 +348,7 @@ export default function WaitlistPage() {
 
   const fetchAvailableClasses = useCallback(async () => {
     try {
-      const response = await fetch("/api/classes?hasAvailability=true&limit=20");
+      const response = await authFetch("/api/classes?hasAvailability=true&limit=20");
       if (response.ok) {
         const data = await response.json();
         setAvailableClasses(data.classes.map((c: AvailableClass & { _id: { toString: () => string } }) => ({
@@ -361,7 +375,7 @@ export default function WaitlistPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/waitlist/${selectedEntry._id}`, {
+      const response = await authFetch(`/api/waitlist/${selectedEntry._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -388,7 +402,7 @@ export default function WaitlistPage() {
   const handleNotify = async (entry: DisplayEntry) => {
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/waitlist/${entry._id}`, {
+      const response = await authFetch(`/api/waitlist/${entry._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "notify" }),
@@ -408,7 +422,7 @@ export default function WaitlistPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/waitlist/${entryId}`, { method: "DELETE" });
+      const response = await authFetch(`/api/waitlist/${entryId}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Failed to remove");
 
       if (selectedEntry?._id === entryId) {
