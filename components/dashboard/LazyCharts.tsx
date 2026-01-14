@@ -8,8 +8,13 @@ import { ComponentType } from 'react';
  * Charts are only loaded when needed, improving initial page load performance
  */
 
+// Import component types for type-safe dynamic imports
+import type YearlyBarChart from './YearlyBarChart';
+import type ProgressDonutCard from './ProgressDonutCard';
+import type BigCalendar from '../calendar/BigCalendar';
+
 // Lazy load YearlyBarChart (includes recharts library)
-export const LazyYearlyBarChart = dynamic<any>(
+export const LazyYearlyBarChart = dynamic<ComponentType<React.ComponentProps<typeof YearlyBarChart>>>(
   () => import('./YearlyBarChart'),
   {
     loading: () => (
@@ -22,7 +27,7 @@ export const LazyYearlyBarChart = dynamic<any>(
 );
 
 // Lazy load ProgressDonutCard (includes recharts library)
-export const LazyProgressDonutCard = dynamic<any>(
+export const LazyProgressDonutCard = dynamic<ComponentType<React.ComponentProps<typeof ProgressDonutCard>>>(
   () => import('./ProgressDonutCard'),
   {
     loading: () => (
@@ -38,7 +43,7 @@ export const LazyProgressDonutCard = dynamic<any>(
 );
 
 // Lazy load BigCalendar (heavy calendar library)
-export const LazyBigCalendar = dynamic<any>(
+export const LazyBigCalendar = dynamic<ComponentType<React.ComponentProps<typeof BigCalendar>>>(
   () => import('../calendar/BigCalendar'),
   {
     loading: () => (

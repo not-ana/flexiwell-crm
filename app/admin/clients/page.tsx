@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, memo } from "react";
 import { SearchIcon, FilterIcon, ChevronIcon, UploadIcon } from "@/components/icons";
 import { useClients } from "@/hooks/useData";
 import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
 import type { Client } from "@/lib/api/client";
+import { formatCurrency, getInitials } from "@/lib/utils/formatters";
 
 type ClientStatus = "active" | "paused" | "expired" | "pending";
 
@@ -24,7 +25,7 @@ const statusStyles = {
   pending: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Pending" },
 };
 
-function StatusBadge({ status }: { status: ClientStatus }) {
+const StatusBadge = memo(function StatusBadge({ status }: { status: ClientStatus }) {
   const style = statusStyles[status] || statusStyles.active;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
@@ -32,22 +33,9 @@ function StatusBadge({ status }: { status: ClientStatus }) {
       {style.label}
     </span>
   );
-}
+});
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function ClientRow({ client, onApprove, onReject, onEdit, onDelete }: {
+const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit, onDelete }: {
   client: Client;
   onApprove?: () => void;
   onReject?: () => void;
@@ -229,9 +217,9 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete }: {
       )}
     </div>
   );
-}
+});
 
-function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, onDelete }: {
+const UnitSection = memo(function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, onDelete }: {
   unit: Unit;
   isExpanded: boolean;
   onToggle: () => void;
@@ -326,7 +314,7 @@ function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, 
       )}
     </div>
   );
-}
+});
 
 // Plan options for clients
 const planOptions = [
