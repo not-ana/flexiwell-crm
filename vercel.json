@@ -1,15 +1,3 @@
 {
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "app.flexiwell.net"
-        }
-      ],
-      "destination": "https://flexiwell.net/:path*",
-      "permanent": true
-    }
-  ]
+  "redirects": []
 }
