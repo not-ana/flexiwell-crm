@@ -1,108 +1,108 @@
-# Como Conectar ao MongoDB Atlas
+# How to Connect to MongoDB Atlas
 
-Este guia ensina como configurar o MongoDB Atlas para o FlexiWell CRM.
+This guide explains how to configure MongoDB Atlas for FlexiWell CRM.
 
-## Passo 1: Criar Conta no MongoDB Atlas
+## Step 1: Create a MongoDB Atlas Account
 
-1. Acesse [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Clique em "Try Free" ou "Start Free"
-3. Crie sua conta (pode usar Google, GitHub ou email)
+1. Go to [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Click "Try Free" or "Start Free"
+3. Create your account (you can use Google, GitHub, or email)
 
-## Passo 2: Criar um Cluster
+## Step 2: Create a Cluster
 
-1. Após login, clique em "Build a Database"
-2. Escolha o plano **FREE (M0)** - suficiente para desenvolvimento e pequenos projetos
-3. Escolha o provedor (AWS, Google Cloud ou Azure) e a região mais próxima de você
-   - Para Brasil: escolha `South America (São Paulo)` se disponível
-4. Dê um nome ao cluster (ex: `flexiwell-cluster`)
-5. Clique em "Create"
+1. After logging in, click "Build a Database"
+2. Choose the **FREE (M0)** plan - sufficient for development and small projects
+3. Choose the provider (AWS, Google Cloud, or Azure) and the region closest to you
+   - For Brazil: choose `South America (São Paulo)` if available
+4. Name your cluster (e.g., `flexiwell-cluster`)
+5. Click "Create"
 
-## Passo 3: Configurar Acesso
+## Step 3: Configure Access
 
-### 3.1 Criar Usuário do Banco
+### 3.1 Create Database User
 
-1. No menu lateral, vá em **Database Access**
-2. Clique em "Add New Database User"
-3. Escolha "Password" como método de autenticação
-4. Defina:
-   - **Username**: `flexiwell_admin` (ou outro de sua escolha)
-   - **Password**: Gere uma senha forte (clique em "Autogenerate Secure Password")
-   - **IMPORTANTE**: Copie e salve essa senha!
-5. Em "Database User Privileges", selecione "Read and write to any database"
-6. Clique em "Add User"
+1. In the sidebar menu, go to **Database Access**
+2. Click "Add New Database User"
+3. Choose "Password" as the authentication method
+4. Set:
+   - **Username**: `flexiwell_admin` (or another of your choice)
+   - **Password**: Generate a strong password (click "Autogenerate Secure Password")
+   - **IMPORTANT**: Copy and save this password!
+5. Under "Database User Privileges", select "Read and write to any database"
+6. Click "Add User"
 
-### 3.2 Configurar IP Access (Network Access)
+### 3.2 Configure IP Access (Network Access)
 
-1. No menu lateral, vá em **Network Access**
-2. Clique em "Add IP Address"
-3. Para desenvolvimento, clique em "Allow Access from Anywhere" (0.0.0.0/0)
-   - ⚠️ Em produção, configure apenas os IPs do seu servidor
-4. Clique em "Confirm"
+1. In the sidebar menu, go to **Network Access**
+2. Click "Add IP Address"
+3. For development, click "Allow Access from Anywhere" (0.0.0.0/0)
+   - Warning: In production, configure only your server's IPs
+4. Click "Confirm"
 
-## Passo 4: Obter a Connection String
+## Step 4: Get the Connection String
 
-1. Volte para **Database** no menu lateral
-2. Clique em "Connect" no seu cluster
-3. Escolha "Connect your application"
-4. Selecione:
+1. Go back to **Database** in the sidebar menu
+2. Click "Connect" on your cluster
+3. Choose "Connect your application"
+4. Select:
    - Driver: `Node.js`
    - Version: `6.0 or later`
-5. Copie a connection string. Ela será algo como:
+5. Copy the connection string. It will look something like:
 
 ```
 mongodb+srv://flexiwell_admin:<password>@flexiwell-cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
 ```
 
-## Passo 5: Configurar no FlexiWell
+## Step 5: Configure in FlexiWell
 
-1. No projeto FlexiWell, crie/edite o arquivo `.env.local`:
+1. In the FlexiWell project, create/edit the `.env.local` file:
 
 ```bash
-# Substitua <password> pela senha que você salvou
-# Adicione o nome do banco (/flexiwell) antes do ?
+# Replace <password> with the password you saved
+# Add the database name (/flexiwell) before the ?
 
-MONGODB_URI=mongodb+srv://flexiwell_admin:SUA_SENHA_AQUI@flexiwell-cluster.xxxxx.mongodb.net/flexiwell?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://flexiwell_admin:YOUR_PASSWORD_HERE@flexiwell-cluster.xxxxx.mongodb.net/flexiwell?retryWrites=true&w=majority
 ```
 
-2. **IMPORTANTE**: Substitua:
-   - `SUA_SENHA_AQUI` pela senha do usuário
-   - `flexiwell-cluster.xxxxx` pelo endereço real do seu cluster
-   - Adicione `/flexiwell` antes do `?` para especificar o banco de dados
+2. **IMPORTANT**: Replace:
+   - `YOUR_PASSWORD_HERE` with the user password
+   - `flexiwell-cluster.xxxxx` with your actual cluster address
+   - Add `/flexiwell` before the `?` to specify the database
 
-## Passo 6: Testar a Conexão
+## Step 6: Test the Connection
 
-### Opção A: Rodar o Seed Script
+### Option A: Run the Seed Script
 
 ```bash
-# Instale as dependências se necessário
+# Install dependencies if needed
 npm install mongodb bcryptjs dotenv
 
-# Execute o seed
+# Run the seed
 npx ts-node scripts/seed.ts
 ```
 
-Se tudo estiver correto, você verá:
+If everything is correct, you'll see:
 ```
-🌱 Starting database seed...
-✅ Connected to MongoDB
+Starting database seed...
+Connected to MongoDB
 ...
-🎉 Database seed completed successfully!
+Database seed completed successfully!
 ```
 
-### Opção B: Testar via Aplicação
+### Option B: Test via Application
 
 ```bash
 npm run dev
 ```
 
-Acesse `http://localhost:3000/login` e tente fazer login com:
+Go to `http://localhost:3000/login` and try logging in with:
 - Email: `admin@flexiwell.com`
-- Senha: `password123`
+- Password: `password123`
 
-## Passo 7: Verificar os Dados no Atlas
+## Step 7: Verify Data in Atlas
 
-1. No MongoDB Atlas, vá em **Database** > **Browse Collections**
-2. Você verá o banco `flexiwell` com as collections:
+1. In MongoDB Atlas, go to **Database** > **Browse Collections**
+2. You'll see the `flexiwell` database with collections:
    - `users`
    - `staff`
    - `clients`
@@ -111,44 +111,44 @@ Acesse `http://localhost:3000/login` e tente fazer login com:
 
 ## Troubleshooting
 
-### Erro: "MongoServerError: bad auth"
-- Verifique se a senha está correta
-- Certifique-se de que não há caracteres especiais não-escapados na senha
-- Se a senha tem `@`, `#`, ou outros caracteres especiais, use URL encoding
+### Error: "MongoServerError: bad auth"
+- Verify the password is correct
+- Make sure there are no unescaped special characters in the password
+- If the password has `@`, `#`, or other special characters, use URL encoding
 
-### Erro: "MongoNetworkError: connection timed out"
-- Verifique se seu IP está na lista de Network Access
-- Tente adicionar 0.0.0.0/0 temporariamente para testar
+### Error: "MongoNetworkError: connection timed out"
+- Check if your IP is in the Network Access list
+- Try temporarily adding 0.0.0.0/0 to test
 
-### Erro: "MongoServerSelectionError"
-- Verifique se o cluster está ativo (não pausado)
-- Clusters M0 gratuitos pausam após 60 dias de inatividade
+### Error: "MongoServerSelectionError"
+- Check if the cluster is active (not paused)
+- Free M0 clusters pause after 60 days of inactivity
 
-## Próximos Passos
+## Next Steps
 
-Após configurar o MongoDB:
+After configuring MongoDB:
 
-1. [ ] Execute o seed script para popular dados iniciais
-2. [ ] Teste o login na aplicação
-3. [ ] Configure as variáveis do Stripe para pagamentos
-4. [ ] Configure a API do OpenAI para o chat AI
+1. [ ] Run the seed script to populate initial data
+2. [ ] Test login in the application
+3. [ ] Configure Stripe variables for payments
+4. [ ] Configure the OpenAI API for AI chat
 
 ---
 
-## Configuração para Produção
+## Production Configuration
 
-Para produção, considere:
+For production, consider:
 
-1. **Upgrade do Cluster**: M0 é limitado a 512MB. Para produção, considere M10+
-2. **IP Whitelist**: Configure apenas os IPs do seu servidor (Vercel/Railway)
-3. **Backup**: Configure backups automáticos (disponível em planos pagos)
-4. **Índices**: Crie índices adicionais baseado nos padrões de query
-5. **Monitoramento**: Ative alertas no Atlas para monitorar performance
+1. **Cluster Upgrade**: M0 is limited to 512MB. For production, consider M10+
+2. **IP Whitelist**: Configure only your server's IPs (Vercel/Railway)
+3. **Backup**: Configure automatic backups (available on paid plans)
+4. **Indexes**: Create additional indexes based on query patterns
+5. **Monitoring**: Enable alerts in Atlas to monitor performance
 
-## Custos
+## Pricing
 
-- **M0 (Free)**: Gratuito, 512MB, ideal para desenvolvimento
-- **M10**: ~$57/mês, 10GB, para produção pequena
-- **M20**: ~$120/mês, 20GB, para produção média
+- **M0 (Free)**: Free, 512MB, ideal for development
+- **M10**: ~$57/month, 10GB, for small production
+- **M20**: ~$120/month, 20GB, for medium production
 
-Para mais detalhes: [MongoDB Atlas Pricing](https://www.mongodb.com/pricing)
+For more details: [MongoDB Atlas Pricing](https://www.mongodb.com/pricing)

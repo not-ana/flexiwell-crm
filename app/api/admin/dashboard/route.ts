@@ -181,76 +181,86 @@ export async function GET(request: NextRequest) {
             booking.status === "cancelled" ? "cancel" : "booking",
     }));
 
-    // Format staff performance
-    const staffPerformance = await Promise.all(
-      staffList.map(async (staff: any) => {
-        const staffId = staff._id.toString();
+    // Format staff performance - Optimized with single aggregation query
+    // Get all staff IDs for the aggregation
+    const staffIds = staffList.map((staff: any) => staff._id.toString());
 
-        // Get classes count
-        const classCount = await db.collection("classes").countDocuments({
-          instructorId: staffId,
-          scheduledDate: { $gte: startDate },
-        });
-
-        // Get unique clients served (from bookings)
-        const clientsServedAgg = await db.collection("bookings").aggregate([
-          {
-            $match: {
-              instructorId: staffId,
-              scheduledDate: { $gte: startDate },
-              status: { $in: ["completed", "confirmed"] }
-            }
+    // Single aggregation to get all staff metrics at once
+    const staffMetrics = await db.collection("bookings").aggregate([
+      {
+        $match: {
+          instructorId: { $in: staffIds },
+          scheduledDate: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: "$instructorId",
+          totalBookings: { $sum: 1 },
+          completedBookings: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
           },
-          {
-            $group: {
-              _id: "$clientId"
-            }
-          },
-          {
-            $count: "count"
-          }
-        ]).toArray();
-        const clientsServed = clientsServedAgg[0]?.count || 0;
-
-        // Get attendance rate for this instructor
-        const instructorBookings = await db.collection("bookings").aggregate([
-          {
-            $match: {
-              instructorId: staffId,
-              scheduledDate: { $gte: startDate }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              total: { $sum: 1 },
-              completed: {
-                $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
-              }
+          clientsServed: {
+            $addToSet: {
+              $cond: [
+                { $in: ["$status", ["completed", "confirmed"]] },
+                "$clientId",
+                null
+              ]
             }
           }
-        ]).toArray();
-        const instructorTotal = instructorBookings[0]?.total || 0;
-        const instructorCompleted = instructorBookings[0]?.completed || 0;
-        const instructorAttendance = instructorTotal > 0
-          ? Math.round((instructorCompleted / instructorTotal) * 100)
-          : 0;
+        }
+      }
+    ]).toArray();
 
-        return {
-          id: staffId,
-          name: staff.name,
-          role: staff.role,
-          initials: staff.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
-          avatar: staff.avatar,
-          stats: {
-            classesThisMonth: classCount,
-            clientsServed,
-            attendance: instructorAttendance,
-          },
-          trend: classCount > 10 ? "up" : classCount > 5 ? "stable" : "down",
-        };
-      })
-    );
+    // Get classes count for all staff in one query
+    const classMetrics = await db.collection("classes").aggregate([
+      {
+        $match: {
+          instructorId: { $in: staffIds },
+          scheduledDate: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: "$instructorId",
+          classCount: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    // Create lookup maps for O(1) access
+    const metricsMap = new Map(staffMetrics.map(m => [m._id, m]));
+    const classCountMap = new Map(classMetrics.map(c => [c._id, c.classCount]));
+
+    // Format staff performance with pre-computed metrics
+    const staffPerformance = staffList.map((staff: any) => {
+      const staffId = staff._id.toString();
+      const metrics = metricsMap.get(staffId);
+      const classCount = classCountMap.get(staffId) || 0;
+
+      // Calculate stats from aggregated data
+      const totalBookings = metrics?.totalBookings || 0;
+      const completedBookings = metrics?.completedBookings || 0;
+      const clientsServed = metrics?.clientsServed?.filter((c: any) => c !== null).length || 0;
+      const attendance = totalBookings > 0
+        ? Math.round((completedBookings / totalBookings) * 100)
+        : 0;
+
+      return {
+        id: staffId,
+        name: staff.name,
+        role: staff.role,
+        initials: staff.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
+        avatar: staff.avatar,
+        stats: {
+          classesThisMonth: classCount,
+          clientsServed,
+          attendance,
+        },
+        trend: classCount > 10 ? "up" : classCount > 5 ? "stable" : "down",
+      };
+    });
 
     // Format today's classes
     const formattedClasses = todayClasses.map((cls: any) => ({

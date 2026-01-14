@@ -102,20 +102,20 @@ export interface RegionalPricing {
 
 export const regionalPricing: Record<PlanTier, RegionalPricing> = {
   starter: {
-    USD: { monthly: 49, annual: 39, annualTotal: 468 },
-    BRL: { monthly: 197, annual: 157, annualTotal: 1884 },
+    USD: { monthly: 99, annual: 79, annualTotal: 948 },
+    BRL: { monthly: 497, annual: 397, annualTotal: 4764 },
   },
   growth: {
-    USD: { monthly: 99, annual: 79, annualTotal: 948 },
-    BRL: { monthly: 397, annual: 317, annualTotal: 3804 },
+    USD: { monthly: 179, annual: 143, annualTotal: 1716 },
+    BRL: { monthly: 897, annual: 717, annualTotal: 8604 },
   },
   business: {
-    USD: { monthly: 249, annual: 199, annualTotal: 2388 },
-    BRL: { monthly: 997, annual: 797, annualTotal: 9564 },
+    USD: { monthly: 299, annual: 239, annualTotal: 2868 },
+    BRL: { monthly: 1497, annual: 1197, annualTotal: 14364 },
   },
   enterprise: {
-    USD: { monthly: 0, annual: 0, annualTotal: 0 }, // Custom
-    BRL: { monthly: 0, annual: 0, annualTotal: 0 }, // Custom
+    USD: { monthly: 499, annual: 399, annualTotal: 4788 },
+    BRL: { monthly: 2497, annual: 1997, annualTotal: 23964 },
   },
 };
 
@@ -130,9 +130,9 @@ export const pricingPlans: PricingPlan[] = [
     description: "For solo instructors getting started.",
     tagline: "For solo instructors",
     pricing: {
-      monthly: 49,
-      annual: 39,
-      annualTotal: 468,
+      monthly: 99,
+      annual: 79,
+      annualTotal: 948,
       currency: "USD",
     },
     limits: {
@@ -180,9 +180,9 @@ export const pricingPlans: PricingPlan[] = [
     description: "For growing studios ready to scale.",
     tagline: "For growing studios",
     pricing: {
-      monthly: 99,
-      annual: 79,
-      annualTotal: 948,
+      monthly: 179,
+      annual: 143,
+      annualTotal: 1716,
       currency: "USD",
     },
     limits: {
@@ -230,9 +230,9 @@ export const pricingPlans: PricingPlan[] = [
     description: "Maximize revenue with AI-powered waitlist and predictive insights.",
     tagline: "Revenue optimization",
     pricing: {
-      monthly: 249,
-      annual: 199,
-      annualTotal: 2388,
+      monthly: 299,
+      annual: 239,
+      annualTotal: 2868,
       currency: "USD",
     },
     limits: {
@@ -281,15 +281,14 @@ export const pricingPlans: PricingPlan[] = [
   },
   {
     id: "enterprise",
-    name: "Enterprise",
+    name: "Professional",
     description: "For studio networks and franchises with maximum control.",
-    tagline: "Custom solution",
+    tagline: "Premium solution",
     pricing: {
-      monthly: 0, // Custom pricing - contact sales
-      annual: 0,
-      annualTotal: 0,
+      monthly: 499,
+      annual: 399,
+      annualTotal: 4788,
       currency: "USD",
-      customPricing: true,
     },
     limits: {
       clients: "unlimited",

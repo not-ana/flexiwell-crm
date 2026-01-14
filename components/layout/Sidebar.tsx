@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { getInitials } from "@/lib/utils/formatters";
 import {
   DashboardIcon,
   ClassesIcon,
@@ -94,11 +95,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
   },
 };
 
-// Helper function to generate initials from name
-function getInitials(name: string): string {
-  if (!name) return "??";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
+// getInitials moved to @/lib/utils/formatters
 
 const accountTypeStyles: Record<AccountType, { bg: string; text: string; label: string }> = {
   client: { bg: "bg-primary-50", text: "text-primary-700", label: "Client" },

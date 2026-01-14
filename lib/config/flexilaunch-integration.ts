@@ -253,7 +253,7 @@ export const earlyAdopterOfferConfig: Omit<EarlyAdopterOffer, "claimed"> = {
   limited: 10,
   benefits: [
     "30% discount on Growth Accelerator bundle",
-    "6 months FlexiWell Growth plan FREE (value: $594)",
+    "6 months FlexiWell Growth plan FREE (value: $1,074)",
     "Professional photoshoot included (value: $500)",
     "Lifetime 20% discount on CRM renewals",
     "Priority feature requests",
@@ -429,7 +429,7 @@ export const comparisonTable = {
     {
       name: "DIY (Wix + Separate CRM)",
       website: 300,
-      crm: 1188, // $99/mo x 12
+      crm: 2148, // $179/mo x 12
       integration: 0,
       support: 0,
       total: 1488,
@@ -444,7 +444,7 @@ export const comparisonTable = {
     {
       name: "Traditional Agency + Mindbody",
       website: 5000,
-      crm: 2388, // $199/mo x 12
+      crm: 5988, // $499/mo x 12
       integration: 500,
       support: 600,
       total: 8488,
@@ -459,7 +459,7 @@ export const comparisonTable = {
     {
       name: "FlexiLaunch + FlexiWell Bundle",
       website: 3999,
-      crm: 0, // 6 months free, then $948/year
+      crm: 0, // 6 months free, then $1,716/year
       integration: 0,
       support: 0,
       total: 3999,
@@ -507,7 +507,7 @@ export function calculateROI(
 export const growthBundleROI = calculateROI(
   3999, // bundle price
   6, // free months
-  99, // CRM monthly price
+  179, // CRM monthly price
   50, // hours saved
   50 // value per hour
 );
