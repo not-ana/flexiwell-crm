@@ -153,7 +153,7 @@ function ChangePlanModal({
   return (
     <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -197,7 +197,7 @@ function ChangePlanModal({
 
         <div className="p-4 sm:p-6 overflow-y-auto">
           {/* Responsive grid for 4 plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 gap-y-6 items-stretch">
             {flexiwellPlans.map((plan) => {
               const price = selectedCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
               const isCurrentPlan = currentPlanId === plan.id;
@@ -207,7 +207,7 @@ function ChangePlanModal({
                 <div className="relative h-full" key={plan.id}>
                   <button
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`relative w-full h-full p-4 sm:p-5 rounded-xl border-2 text-left transition-all flex flex-col ${
+                    className={`relative w-full h-full p-5 sm:p-6 rounded-xl border-2 text-left transition-all flex flex-col ${
                       isSelected
                         ? "border-primary-600 bg-primary-50 ring-2 ring-primary-200"
                         : plan.highlight
