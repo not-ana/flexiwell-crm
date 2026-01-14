@@ -10,6 +10,7 @@ import {
 } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TeacherUser {
   name: string;
@@ -77,10 +78,48 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 
 export default function TeacherProfilePage() {
   const router = useRouter();
-  const [teacherUser, setTeacherUser] = useState<TeacherUser>(defaultUser);
+  const { user: authUser } = useAuth();
+
+  // Use auth context data as initial values
+  const getInitialUser = (): TeacherUser => {
+    if (authUser) {
+      const initials = authUser.name
+        ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+        : authUser.email.substring(0, 2).toUpperCase();
+      return {
+        name: authUser.name || authUser.email.split("@")[0],
+        avatar: authUser.avatar,
+        initials,
+        location: "Brasil",
+        locationFlag: "🇧🇷",
+        email: authUser.email,
+        phone: authUser.phone || "",
+        role: authUser.role === "teacher" ? "Instructor" : authUser.role.charAt(0).toUpperCase() + authUser.role.slice(1),
+        specialties: [],
+      };
+    }
+    return defaultUser;
+  };
+
+  const [teacherUser, setTeacherUser] = useState<TeacherUser>(getInitialUser);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [stats, setStats] = useState<TeacherStats>(defaultStats);
   const [loading, setLoading] = useState(true);
+
+  // Update teacherUser when authUser changes (including avatar changes)
+  useEffect(() => {
+    if (authUser) {
+      setTeacherUser(prev => ({
+        ...prev,
+        name: authUser.name || authUser.email.split("@")[0],
+        email: authUser.email,
+        avatar: authUser.avatar,
+        initials: authUser.name
+          ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+          : authUser.email.substring(0, 2).toUpperCase(),
+      }));
+    }
+  }, [authUser]);
 
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {

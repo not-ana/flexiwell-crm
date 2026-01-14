@@ -1,10 +1,19 @@
-// Social OAuth Configuration and Utilities
+import { ObjectId } from "mongodb";
+import jwt from "jsonwebtoken";
 import { generateTokenPair, getRefreshTokenExpiry, type JWTPayload } from "./jwt";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { User, RefreshToken } from "@/lib/db/schemas";
-import jwt from "jsonwebtoken";
 
-// OAuth Provider Types
+// Fail fast if secret is not configured
+function getOAuthStateSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required for OAuth");
+  }
+  return secret;
+}
+
+// Types
 export type OAuthProvider = "google";
 
 export interface OAuthUserInfo {
@@ -15,27 +24,30 @@ export interface OAuthUserInfo {
   provider: OAuthProvider;
 }
 
-export interface OAuthTokens {
+interface OAuthTokens {
   accessToken: string;
   refreshToken?: string;
   idToken?: string;
   expiresIn?: number;
 }
 
-// OAuth state payload
 interface OAuthStatePayload {
   provider: OAuthProvider;
   mode: "login" | "signup" | "link";
-  userId?: string; // For linking mode, store the user ID
-  userRole?: string; // For linking mode, store the user role for redirect
+  userId?: string;
+  userRole?: string;
 }
 
-const OAUTH_STATE_SECRET = process.env.JWT_SECRET || "oauth-state-fallback-secret";
+// Google OAuth endpoints
+const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
-/**
- * Generate a secure state parameter for OAuth flow using JWT
- * This works in serverless environments where in-memory state doesn't persist
- */
+function getGoogleRedirectUri(): string {
+  return `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/social/google/callback`;
+}
+
+// State management for CSRF protection
 export function generateOAuthState(
   provider: OAuthProvider,
   mode: "login" | "signup" | "link" = "login",
@@ -43,38 +55,27 @@ export function generateOAuthState(
   userRole?: string
 ): string {
   const payload: OAuthStatePayload = { provider, mode, userId, userRole };
-  return jwt.sign(payload, OAUTH_STATE_SECRET, { expiresIn: "10m" });
+  return jwt.sign(payload, getOAuthStateSecret(), { expiresIn: "10m" });
 }
 
-/**
- * Validate a state parameter (JWT-based, works in serverless)
- */
-export function validateOAuthState(state: string): { provider: OAuthProvider; mode: "login" | "signup" | "link"; userId?: string; userRole?: string } | null {
+export function validateOAuthState(state: string): OAuthStatePayload | null {
   try {
-    const decoded = jwt.verify(state, OAUTH_STATE_SECRET) as OAuthStatePayload;
-    return { provider: decoded.provider, mode: decoded.mode, userId: decoded.userId, userRole: decoded.userRole };
+    return jwt.verify(state, getOAuthStateSecret()) as OAuthStatePayload;
   } catch {
     return null;
   }
 }
 
-// ==================== GOOGLE ====================
-
-const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
-
+// Google OAuth
 export function getGoogleAuthUrl(state: string): string {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/social/google/callback`;
-
   if (!clientId) {
     throw new Error("GOOGLE_CLIENT_ID is not configured");
   }
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: redirectUri,
+    redirect_uri: getGoogleRedirectUri(),
     response_type: "code",
     scope: "openid email profile",
     state,
@@ -88,7 +89,6 @@ export function getGoogleAuthUrl(state: string): string {
 export async function exchangeGoogleCode(code: string): Promise<OAuthTokens> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/social/google/callback`;
 
   if (!clientId || !clientSecret) {
     throw new Error("Google OAuth credentials are not configured");
@@ -102,7 +102,7 @@ export async function exchangeGoogleCode(code: string): Promise<OAuthTokens> {
       client_secret: clientSecret,
       code,
       grant_type: "authorization_code",
-      redirect_uri: redirectUri,
+      redirect_uri: getGoogleRedirectUri(),
     }),
   });
 
@@ -139,56 +139,38 @@ export async function getGoogleUserInfo(accessToken: string): Promise<OAuthUserI
   };
 }
 
-// ==================== SHARED ====================
-
-/**
- * Find existing user from OAuth info
- * IMPORTANT: This does NOT create new accounts. Users must have an existing account
- * (created through subscription purchase) to log in with social auth.
- */
-export async function findOrCreateOAuthUser(
-  userInfo: OAuthUserInfo,
-  mode: "login" | "signup"
-): Promise<{ user: User; isNew: boolean }> {
+// User lookup - only finds existing users, does NOT create accounts
+export async function findOAuthUser(userInfo: OAuthUserInfo): Promise<User> {
   const db = await getDatabase();
   const usersCollection = db.collection<User>("users");
 
-  // Try to find existing user by email
   const user = await usersCollection.findOne({ email: userInfo.email.toLowerCase() });
 
-  if (user) {
-    // User exists - update with OAuth data (avatar, name from Google)
-    const updates: Partial<User> = { updatedAt: new Date() };
-
-    // Always update avatar from OAuth if provided (overwrite existing)
-    if (userInfo.avatar) {
-      updates.avatar = userInfo.avatar;
-      user.avatar = userInfo.avatar;
-    }
-
-    // Update name from OAuth if user doesn't have one or it's just the email prefix
-    if (userInfo.name && (!user.name || user.name === user.email.split("@")[0])) {
-      updates.name = userInfo.name;
-      user.name = userInfo.name;
-    }
-
-    // Always update to sync OAuth data
-    await usersCollection.updateOne(
-      { _id: user._id },
-      { $set: updates }
-    );
-
-    return { user, isNew: false };
+  if (!user) {
+    throw new Error("NO_ACCOUNT_FOUND");
   }
 
-  // User doesn't exist - DO NOT create new account automatically
-  // They need to purchase a subscription first which will create their account
-  throw new Error("NO_ACCOUNT_FOUND");
+  // Update user with OAuth data (avatar, name)
+  const updates: Partial<User> = { updatedAt: new Date() };
+
+  if (userInfo.avatar) {
+    updates.avatar = userInfo.avatar;
+    user.avatar = userInfo.avatar;
+  }
+
+  // Update name only if user doesn't have one or it's just the email prefix
+  const emailPrefix = user.email.split("@")[0];
+  if (userInfo.name && (!user.name || user.name === emailPrefix)) {
+    updates.name = userInfo.name;
+    user.name = userInfo.name;
+  }
+
+  await usersCollection.updateOne({ _id: user._id }, { $set: updates });
+
+  return user;
 }
 
-/**
- * Generate auth response (tokens + user) for OAuth login
- */
+// Generate tokens and update login timestamp
 export async function generateOAuthResponse(user: User): Promise<{
   user: {
     id: string;
@@ -205,7 +187,6 @@ export async function generateOAuthResponse(user: User): Promise<{
   const db = await getDatabase();
   const userId = user._id!.toString();
 
-  // Generate tokens
   const payload: JWTPayload = {
     userId,
     email: user.email,
@@ -215,28 +196,20 @@ export async function generateOAuthResponse(user: User): Promise<{
 
   const tokens = generateTokenPair(payload);
 
-  // Invalidate old refresh tokens
-  await db.collection<RefreshToken>("refresh_tokens").deleteMany({ userId });
-
-  // Store new refresh token
-  const refreshTokenDoc: Omit<RefreshToken, "_id"> = {
+  // Replace old refresh tokens with new one
+  const refreshTokensCollection = db.collection<RefreshToken>("refresh_tokens");
+  await refreshTokensCollection.deleteMany({ userId });
+  await refreshTokensCollection.insertOne({
     userId,
     token: tokens.refreshToken,
     expiresAt: getRefreshTokenExpiry(),
     createdAt: new Date(),
-  };
-
-  await db.collection<RefreshToken>("refresh_tokens").insertOne(refreshTokenDoc);
+  });
 
   // Update last login
   await db.collection("users").updateOne(
     { _id: user._id },
-    {
-      $set: {
-        lastLoginAt: new Date(),
-        updatedAt: new Date(),
-      },
-    }
+    { $set: { lastLoginAt: new Date(), updatedAt: new Date() } }
   );
 
   return {
@@ -254,56 +227,47 @@ export async function generateOAuthResponse(user: User): Promise<{
   };
 }
 
-/**
- * Link a social account to an existing user
- */
+// Link/unlink social accounts - consider removing for MVP
 export async function linkSocialAccount(
   userId: string,
   userInfo: OAuthUserInfo
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDatabase();
   const usersCollection = db.collection<User>("users");
-  const { ObjectId } = await import("mongodb");
 
-  // Find the user
   const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
   if (!user) {
     return { success: false, error: "User not found" };
   }
 
-  // Check if this provider account is already linked to another user
+  // Check if provider is already linked to another user
   const existingLink = await usersCollection.findOne({
     "linkedAccounts.provider": userInfo.provider,
     "linkedAccounts.providerId": userInfo.id,
+    _id: { $ne: new ObjectId(userId) },
   });
 
-  if (existingLink && existingLink._id?.toString() !== userId) {
+  if (existingLink) {
     return { success: false, error: "This Google account is already linked to another user" };
   }
 
-  // Check if user already has this provider linked
-  const alreadyLinked = user.linkedAccounts?.some(
-    (acc) => acc.provider === userInfo.provider
-  );
-
-  if (alreadyLinked) {
+  if (user.linkedAccounts?.some((acc) => acc.provider === userInfo.provider)) {
     return { success: false, error: "You already have a Google account linked" };
   }
-
-  // Add the linked account
-  const linkedAccount = {
-    provider: userInfo.provider,
-    providerId: userInfo.id,
-    email: userInfo.email,
-    name: userInfo.name,
-    avatar: userInfo.avatar,
-    linkedAt: new Date(),
-  };
 
   await usersCollection.updateOne(
     { _id: new ObjectId(userId) },
     {
-      $push: { linkedAccounts: linkedAccount },
+      $push: {
+        linkedAccounts: {
+          provider: userInfo.provider,
+          providerId: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          avatar: userInfo.avatar,
+          linkedAt: new Date(),
+        },
+      },
       $set: { updatedAt: new Date() },
     }
   );
@@ -311,30 +275,22 @@ export async function linkSocialAccount(
   return { success: true };
 }
 
-/**
- * Unlink a social account from a user
- */
 export async function unlinkSocialAccount(
   userId: string,
   provider: OAuthProvider
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDatabase();
   const usersCollection = db.collection<User>("users");
-  const { ObjectId } = await import("mongodb");
 
-  // Find the user
   const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
   if (!user) {
     return { success: false, error: "User not found" };
   }
 
-  // Check if the account is linked
-  const isLinked = user.linkedAccounts?.some((acc) => acc.provider === provider);
-  if (!isLinked) {
+  if (!user.linkedAccounts?.some((acc) => acc.provider === provider)) {
     return { success: false, error: "No linked account found for this provider" };
   }
 
-  // Remove the linked account
   await usersCollection.updateOne(
     { _id: new ObjectId(userId) },
     {
@@ -345,3 +301,12 @@ export async function unlinkSocialAccount(
 
   return { success: true };
 }
+
+// Backwards compatibility alias - remove after updating consumers
+export const findOrCreateOAuthUser = async (
+  userInfo: OAuthUserInfo,
+  _mode: "login" | "signup"
+): Promise<{ user: User; isNew: boolean }> => {
+  const user = await findOAuthUser(userInfo);
+  return { user, isNew: false };
+};

@@ -10,19 +10,16 @@ import {
   ClassesIcon,
   NotificationIcon,
   SettingsIcon,
-  SupportIcon,
   ChevronIcon,
   ClientsIcon,
-  UserIcon,
-  DocumentIcon,
   LogoutIcon,
   SwitchIcon,
-  IntegrationsIcon,
-  ChatIcon,
   ReportIcon,
   PaymentIcon,
   CloseIcon,
   WaitlistIcon,
+  UserIcon,
+  GoogleIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -50,9 +47,8 @@ interface MenuItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   hasBadge?: boolean;
-  status?: string;
-  requiresFeature?: string; // Feature key from PlanFeatures
-  onboardingId?: string; // ID for onboarding highlight
+  requiresFeature?: string;
+  onboardingId?: string;
 }
 
 export interface SidebarProps {
@@ -71,7 +67,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/dashboard/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/dashboard/support", icon: SupportIcon, status: "Online" },
     ],
   },
   admin: {
@@ -81,13 +76,10 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
       { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
-      { name: "Conversations", href: "/admin/conversations", icon: ChatIcon, hasBadge: true, requiresFeature: "whatsappBot" },
       { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
-      { name: "Integrations", href: "/admin/integrations", icon: IntegrationsIcon, onboardingId: "sidebar-integrations" },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/admin/support", icon: SupportIcon, status: "Online" },
     ],
   },
   teacher: {
@@ -98,7 +90,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/teacher/support", icon: SupportIcon, status: "Online" },
     ],
   },
 };
@@ -194,7 +185,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     }
 
     setIsAddingAccount(true);
-    // Simulate API call for account authentication
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsAddingAccount(false);
     setShowAddAccountModal(false);
@@ -202,7 +192,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     setNewAccountEmail("");
     setNewAccountPassword("");
 
-    // Redirect based on account type
     switch (newAccountRole) {
       case "admin":
         router.push("/admin");
@@ -318,12 +307,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                 >
                   <Icon className="w-5 h-5 text-gray-500" />
                   <span className="flex-1">{item.name}</span>
-                  {item.status && (
-                    <span className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <span className="w-2 h-2 bg-success-500 rounded-full" />
-                      {item.status}
-                    </span>
-                  )}
                 </Link>
               </li>
             );
@@ -337,13 +320,15 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
           onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center overflow-hidden">
-            {activeAccount.avatar ? (
-              <img src={activeAccount.avatar} alt={activeAccount.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-sm font-semibold text-primary-700">{activeAccount.initials}</span>
-            )}
-          </div>
+          {activeAccount.type !== "admin" && (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center overflow-hidden">
+              {activeAccount.avatar ? (
+                <img src={activeAccount.avatar} alt={activeAccount.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold text-primary-700">{activeAccount.initials}</span>
+              )}
+            </div>
+          )}
           <div className="flex-1 text-left">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-gray-900">{activeAccount.name}</p>
@@ -360,28 +345,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
         {/* Profile Dropdown Menu */}
         {isProfileMenuOpen && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-            {/* Menu Items */}
-            <div className="py-1 border-b border-gray-100">
-              <Link
-                href={variant === "admin" ? "/admin/profile" : variant === "teacher" ? "/teacher/profile" : "/dashboard/profile"}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                onClick={() => setIsProfileMenuOpen(false)}
-              >
-                <UserIcon className="w-4 h-4 text-gray-500" />
-                <span className="flex-1">View profile</span>
-                <span className="text-xs text-gray-400">Ctrl+K P</span>
-              </Link>
-              <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                onClick={() => {
-                  setIsProfileMenuOpen(false);
-                  alert('Documentation coming soon!');
-                }}
-              >
-                <DocumentIcon className="w-4 h-4 text-gray-500" />
-                <span>Documentation</span>
-              </button>
-            </div>
 
             {/* Switch Account Section - Dev only */}
             {isDev && (
@@ -396,12 +359,14 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
                     onClick={() => handleSwitchAccount(account.id)}
                   >
-                    <div className="relative">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
-                        <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
+                    {account.type !== "admin" && (
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                          <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
+                        </div>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
                       </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
-                    </div>
+                    )}
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-gray-900 truncate">{account.name}</p>
@@ -551,6 +516,23 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    <a
+                      href={`/api/auth/social/google?mode=login`}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <GoogleIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium text-gray-700">Sign in with Google</span>
+                    </a>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-200" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">or</span>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                       <input

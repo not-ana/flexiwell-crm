@@ -9,6 +9,7 @@ import {
 } from "@/components/icons";
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Types
 interface ScheduledClass {
@@ -432,10 +433,50 @@ export default function ProfilePage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
 
+  // Auth context for initial user data
+  const { user: authUser } = useAuth();
+
+  // Use auth context data as initial values
+  const getInitialUser = (): ProfileData["user"] => {
+    if (authUser) {
+      const initials = authUser.name
+        ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+        : authUser.email.substring(0, 2).toUpperCase();
+      return {
+        name: authUser.name || authUser.email.split("@")[0],
+        avatar: authUser.avatar,
+        initials,
+        location: "Brasil",
+        locationFlag: "🇧🇷",
+        email: authUser.email,
+        phone: authUser.phone || "",
+        plan: "Loading...",
+        classesRemaining: 0,
+        classesUsed: 0,
+      };
+    }
+    return defaultUser;
+  };
+
   // Profile data states
   const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState(defaultUser);
+  const [userData, setUserData] = useState(getInitialUser);
   const [currentInstructor, setCurrentInstructor] = useState<Instructor>(defaultInstructor);
+
+  // Update userData when authUser changes (including avatar changes)
+  useEffect(() => {
+    if (authUser) {
+      setUserData(prev => ({
+        ...prev,
+        name: authUser.name || authUser.email.split("@")[0],
+        email: authUser.email,
+        avatar: authUser.avatar,
+        initials: authUser.name
+          ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+          : authUser.email.substring(0, 2).toUpperCase(),
+      }));
+    }
+  }, [authUser]);
 
   // Onboarding replay
   const { resetOnboarding } = useInteractiveOnboarding("client");

@@ -131,8 +131,8 @@ function ProfileSettings() {
     setSuccess("");
 
     try {
-      // Validate passwords if changing
-      if (passwords.new || passwords.current) {
+      // Validate passwords if changing (only when user actually wants to change password)
+      if (passwords.new) {
         if (!passwords.current) {
           setError("Current password is required to change password");
           setIsSaving(false);

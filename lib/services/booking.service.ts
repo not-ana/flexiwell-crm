@@ -4,7 +4,7 @@ import { getDatabase } from "@/lib/db/mongodb";
 import { notificationService } from "@/lib/services/notification.service";
 import { syncBookingToCalendar, removeBookingFromCalendar, getBookingEventData } from "@/lib/google-calendar/events";
 import { updateClassAvailability } from "@/lib/wellhub/classes";
-import type { Booking, Class, Client, Activity } from "@/lib/db/schemas";
+import type { Booking, Class, Client } from "@/lib/db/schemas";
 
 export interface CreateBookingParams {
   clientId: string;
@@ -163,17 +163,6 @@ export class BookingService {
           }
         );
       }
-
-      // 12. Log activity
-      await this.logActivity({
-        type: "booking",
-        action: "create",
-        description: `${client.name} agendou ${classDoc.title} para ${new Date(classDoc.scheduledDate).toLocaleDateString("pt-BR")} às ${classDoc.startTime}`,
-        entityId: bookingResult.insertedId.toString(),
-        entityType: "booking",
-        userId: clientId,
-        userName: client.name,
-      });
 
       const booking: Booking = {
         _id: bookingResult.insertedId,
@@ -338,20 +327,6 @@ export class BookingService {
           }
         );
       }
-
-      // Log activity
-      await this.logActivity({
-        type: "cancel",
-        action: "cancel_booking",
-        description: `Agendamento de ${booking.clientName} para ${booking.className} foi cancelado${reason ? `: ${reason}` : ""}`,
-        entityId: bookingId,
-        entityType: "booking",
-        metadata: {
-          cancelledBy,
-          reason,
-          creditRefunded: shouldRefundCredit,
-        },
-      });
 
       // Notify waitlist if there are people waiting
       await this.notifyWaitlistForClass(booking.classId);
@@ -547,15 +522,6 @@ export class BookingService {
     }
   }
 
-  // Log activity
-  private async logActivity(activity: Omit<Activity, "_id" | "createdAt">) {
-    const db = await getDatabase();
-    await db.collection<Activity>("activities").insertOne({
-      ...activity,
-      createdAt: new Date(),
-    });
-  }
-
   // Mark attendance
   async markAttendance(bookingId: string, attended: boolean, markedBy: string): Promise<BookingResult> {
     const db = await getDatabase();
@@ -593,18 +559,6 @@ export class BookingService {
         arrayFilters: [{ "elem.clientId": booking.clientId }],
       }
     );
-
-    // If no-show, potentially handle credit (depends on policy)
-    // For now, we don't refund no-shows
-
-    await this.logActivity({
-      type: "booking",
-      action: attended ? "mark_attended" : "mark_no_show",
-      description: `${booking.clientName} ${attended ? "compareceu" : "não compareceu"} à aula ${booking.className}`,
-      entityId: bookingId,
-      entityType: "booking",
-      userId: markedBy,
-    });
 
     return { success: true, booking: { ...booking, status: newStatus } };
   }

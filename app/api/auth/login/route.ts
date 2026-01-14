@@ -9,9 +9,7 @@ import {
 } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security";
 
-// POST /api/auth/login - Login user
 export async function POST(request: NextRequest) {
-  // Rate limiting - prevent brute force attacks
   const clientIp = getClientIp(request);
   const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.login);
 
@@ -29,10 +27,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await request.json();
 
-    // Validation
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -42,7 +38,6 @@ export async function POST(request: NextRequest) {
 
     const db = await getDatabase();
 
-    // Find user by email
     const user = await db
       .collection<User>("users")
       .findOne({ email: email.toLowerCase() });
@@ -54,7 +49,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is active
     if (!user.isActive) {
       return NextResponse.json(
         { error: "Account is deactivated. Please contact support." },
@@ -62,7 +56,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password
     const isValidPassword = await verifyPassword(password, user.password);
 
     if (!isValidPassword) {
@@ -74,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     const userId = user._id!.toString();
 
-    // Generate tokens
     const tokens = generateTokenPair({
       userId,
       email: user.email,
@@ -82,31 +74,20 @@ export async function POST(request: NextRequest) {
       name: user.name,
     });
 
-    // Invalidate old refresh tokens for this user
     await db.collection<RefreshToken>("refresh_tokens").deleteMany({ userId });
 
-    // Store new refresh token
-    const refreshTokenDoc: Omit<RefreshToken, "_id"> = {
+    await db.collection<RefreshToken>("refresh_tokens").insertOne({
       userId,
       token: tokens.refreshToken,
       expiresAt: getRefreshTokenExpiry(),
       createdAt: new Date(),
-    };
+    });
 
-    await db.collection<RefreshToken>("refresh_tokens").insertOne(refreshTokenDoc);
-
-    // Update last login
     await db.collection("users").updateOne(
       { _id: new ObjectId(userId) },
-      {
-        $set: {
-          lastLoginAt: new Date(),
-          updatedAt: new Date(),
-        },
-      }
+      { $set: { lastLoginAt: new Date(), updatedAt: new Date() } }
     );
 
-    // Return user data (without password) and tokens
     return NextResponse.json({
       success: true,
       user: {
@@ -122,11 +103,7 @@ export async function POST(request: NextRequest) {
       tokens,
     });
   } catch (error) {
-    // Don't log sensitive details in production
     console.error("Login error occurred");
-    return NextResponse.json(
-      { error: "Failed to login" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to login" }, { status: 500 });
   }
 }

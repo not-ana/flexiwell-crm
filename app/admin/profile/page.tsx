@@ -101,10 +101,18 @@ export default function AdminProfilePage() {
   const [stats, setStats] = useState<AdminStats>(defaultStats);
   const [loading, setLoading] = useState(true);
 
-  // Update adminUser when authUser changes
+  // Update adminUser when authUser changes (including avatar changes)
   useEffect(() => {
-    if (authUser && adminUser.name === "Loading...") {
-      setAdminUser(getInitialUser());
+    if (authUser) {
+      setAdminUser(prev => ({
+        ...prev,
+        name: authUser.name || authUser.email.split("@")[0],
+        email: authUser.email,
+        avatar: authUser.avatar,
+        initials: authUser.name
+          ? authUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+          : authUser.email.substring(0, 2).toUpperCase(),
+      }));
     }
   }, [authUser]);
 
