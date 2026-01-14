@@ -15,7 +15,7 @@ export interface WellnessData {
   monthlyGoal: number;
 }
 
-interface ProgressDonutCardProps {
+export interface ProgressDonutCardProps {
   data: ProgressData;
   wellnessData?: WellnessData;
 }

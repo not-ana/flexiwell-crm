@@ -66,11 +66,10 @@ export function WhatsAppSettings() {
   useEffect(() => {
     async function loadConfig() {
       try {
-        const res = await fetch("/api/admin/integrations");
+        const res = await fetch("/api/admin/whatsapp/status");
         if (res.ok) {
           const data = await res.json();
-          const whatsapp = data.integrations?.find((i: { id: string }) => i.id === "whatsapp");
-          if (whatsapp?.status === "connected") {
+          if (data.connected) {
             setIsEnabled(true);
           }
         }
@@ -89,16 +88,13 @@ export function WhatsAppSettings() {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/integrations", {
+      const res = await fetch("/api/admin/whatsapp/configure", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          integrationId: "whatsapp",
-          credentials: {
-            accountSid: twilioConfig.accountSid,
-            authToken: twilioConfig.authToken,
-            phoneNumber: twilioConfig.whatsappNumber,
-          },
+          accountSid: twilioConfig.accountSid,
+          authToken: twilioConfig.authToken,
+          phoneNumber: twilioConfig.whatsappNumber,
         }),
       });
 

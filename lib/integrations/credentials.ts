@@ -39,6 +39,18 @@ interface WellhubCredentials {
   webhookSecret: string;
 }
 
+interface TotalPassCredentials {
+  apiKey: string;
+  partnerId: string;
+  webhookSecret: string;
+}
+
+interface ClassPassCredentials {
+  apiKey: string;
+  venueId: string;
+  webhookSecret: string;
+}
+
 // Get WhatsApp (Twilio) credentials from database
 export async function getWhatsAppCredentials(): Promise<WhatsAppCredentials | null> {
   try {
@@ -179,6 +191,16 @@ export async function getWellhubCredentials(): Promise<WellhubCredentials | null
     const db = await getDatabase();
     const settings = await db.collection("integration_credentials").findOne({});
 
+    // Check provider-based document
+    const providerCreds = await db.collection("integration_credentials").findOne({ provider: "wellhub" });
+    if (providerCreds?.bearerToken) {
+      return {
+        bearerToken: providerCreds.bearerToken,
+        gymId: providerCreds.gymId,
+        webhookSecret: providerCreds.webhookSecret || "",
+      };
+    }
+
     if (settings?.wellhub?.bearerToken) {
       return {
         bearerToken: settings.wellhub.bearerToken,
@@ -203,11 +225,96 @@ export async function getWellhubCredentials(): Promise<WellhubCredentials | null
   }
 }
 
+// Get TotalPass credentials from database (with env fallback)
+export async function getTotalPassCredentials(): Promise<TotalPassCredentials | null> {
+  try {
+    const db = await getDatabase();
+
+    // Check provider-based document
+    const providerCreds = await db.collection("integration_credentials").findOne({ provider: "totalpass" });
+    if (providerCreds?.apiKey) {
+      return {
+        apiKey: providerCreds.apiKey,
+        partnerId: providerCreds.partnerId,
+        webhookSecret: providerCreds.webhookSecret || "",
+      };
+    }
+
+    // Check settings document
+    const settings = await db.collection("integration_credentials").findOne({});
+    if (settings?.totalpass?.apiKey) {
+      return {
+        apiKey: settings.totalpass.apiKey,
+        partnerId: settings.totalpass.partnerId,
+        webhookSecret: settings.totalpass.webhookSecret || "",
+      };
+    }
+
+    // Fallback to environment variables
+    if (process.env.TOTALPASS_API_KEY) {
+      return {
+        apiKey: process.env.TOTALPASS_API_KEY,
+        partnerId: process.env.TOTALPASS_PARTNER_ID || "",
+        webhookSecret: process.env.TOTALPASS_WEBHOOK_SECRET || "",
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching TotalPass credentials:", error);
+    return null;
+  }
+}
+
+// Get ClassPass credentials from database (with env fallback)
+export async function getClassPassCredentials(): Promise<ClassPassCredentials | null> {
+  try {
+    const db = await getDatabase();
+
+    // Check provider-based document
+    const providerCreds = await db.collection("integration_credentials").findOne({ provider: "classpass" });
+    if (providerCreds?.apiKey) {
+      return {
+        apiKey: providerCreds.apiKey,
+        venueId: providerCreds.venueId,
+        webhookSecret: providerCreds.webhookSecret || "",
+      };
+    }
+
+    // Check settings document
+    const settings = await db.collection("integration_credentials").findOne({});
+    if (settings?.classpass?.apiKey) {
+      return {
+        apiKey: settings.classpass.apiKey,
+        venueId: settings.classpass.venueId,
+        webhookSecret: settings.classpass.webhookSecret || "",
+      };
+    }
+
+    // Fallback to environment variables
+    if (process.env.CLASSPASS_API_KEY) {
+      return {
+        apiKey: process.env.CLASSPASS_API_KEY,
+        venueId: process.env.CLASSPASS_VENUE_ID || "",
+        webhookSecret: process.env.CLASSPASS_WEBHOOK_SECRET || "",
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching ClassPass credentials:", error);
+    return null;
+  }
+}
+
 // Check if an integration is connected
 export async function isIntegrationConnected(integrationId: string): Promise<boolean> {
   try {
     const db = await getDatabase();
     const settings = await db.collection("integration_credentials").findOne({});
+
+    // Check for provider-based document
+    const providerCreds = await db.collection("integration_credentials").findOne({ provider: integrationId });
 
     switch (integrationId) {
       case "stripe":
@@ -223,7 +330,11 @@ export async function isIntegrationConnected(integrationId: string): Promise<boo
       case "zapier":
         return !!settings?.zapier?.webhookUrl;
       case "wellhub":
-        return !!settings?.wellhub?.bearerToken || !!process.env.WELLHUB_BEARER_TOKEN;
+        return !!providerCreds?.bearerToken || !!settings?.wellhub?.bearerToken || !!process.env.WELLHUB_BEARER_TOKEN;
+      case "totalpass":
+        return !!providerCreds?.apiKey || !!settings?.totalpass?.apiKey || !!process.env.TOTALPASS_API_KEY;
+      case "classpass":
+        return !!providerCreds?.apiKey || !!settings?.classpass?.apiKey || !!process.env.CLASSPASS_API_KEY;
       default:
         return false;
     }

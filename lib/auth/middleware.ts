@@ -152,3 +152,11 @@ export async function requireRoleFromCookie(
 
   return { user, error: null };
 }
+
+/**
+ * Get user from request (alias for getAuthUser for backwards compatibility)
+ * Returns the user payload with clientId if available
+ */
+export function getUserFromRequest(request: NextRequest): (JWTPayload & { clientId?: string }) | null {
+  return getAuthUser(request);
+}

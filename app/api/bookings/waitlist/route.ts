@@ -26,12 +26,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       position: result.position,
-      message: `Você foi adicionado à lista de espera na posição ${result.position}`,
+      message: `You have been added to the waitlist at position ${result.position}`,
     });
   } catch (error) {
     console.error("Error adding to waitlist:", error);
     return NextResponse.json(
-      { error: "Erro ao adicionar à lista de espera" },
+      { error: "Failed to add to waitlist" },
       { status: 500 }
     );
   }

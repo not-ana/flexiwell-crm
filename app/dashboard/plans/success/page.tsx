@@ -58,41 +58,41 @@ function CheckoutSuccessContent() {
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Compra Confirmada!
+            Purchase Confirmed!
           </h1>
 
           <p className="text-gray-600 mb-6">
             {purchaseDetails ? (
               <>
-                Seu plano <strong>{purchaseDetails.planName}</strong> com{" "}
-                <strong>{purchaseDetails.classes} aulas</strong> foi ativado com sucesso.
+                Your <strong>{purchaseDetails.planName}</strong> plan with{" "}
+                <strong>{purchaseDetails.classes} classes</strong> has been successfully activated.
               </>
             ) : (
-              "Seu plano foi ativado com sucesso!"
+              "Your plan has been successfully activated!"
             )}
           </p>
 
           {/* What's Next */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-            <h3 className="font-medium text-gray-900 mb-3">Agora você pode:</h3>
+            <h3 className="font-medium text-gray-900 mb-3">Now you can:</h3>
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-sm text-gray-600">
                 <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Agendar suas aulas online
+                Book your classes online
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-600">
                 <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Ver seus créditos no dashboard
+                View your credits on the dashboard
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-600">
                 <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Receber lembretes por email e WhatsApp
+                Receive reminders via email and WhatsApp
               </li>
             </ul>
           </div>
@@ -103,19 +103,19 @@ function CheckoutSuccessContent() {
               href="/dashboard/classes/book"
               className="block w-full py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Agendar Minha Primeira Aula
+              Book My First Class
             </Link>
             <Link
               href="/dashboard"
               className="block w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Ir para o Dashboard
+              Go to Dashboard
             </Link>
           </div>
 
           {/* Receipt Notice */}
           <p className="text-xs text-gray-500 mt-6">
-            Um recibo foi enviado para seu email.
+            A receipt has been sent to your email.
           </p>
         </div>
       </div>

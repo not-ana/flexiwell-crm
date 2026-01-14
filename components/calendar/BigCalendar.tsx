@@ -36,7 +36,7 @@ export interface CalendarEvent {
   instructor?: string;
 }
 
-interface BigCalendarProps {
+export interface BigCalendarProps {
   events: CalendarEvent[];
   onCreateClass?: () => void;
   onEventClick?: (event: CalendarEvent) => void;

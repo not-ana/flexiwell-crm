@@ -244,11 +244,6 @@ export function RoomsSettings() {
                 <div key={room.id} className={`p-4 sm:p-6 ${!room.isActive ? "bg-gray-50" : ""}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${room.isActive ? "bg-blue-100" : "bg-gray-200"}`}>
-                        <svg className={`w-6 h-6 ${room.isActive ? "text-blue-600" : "text-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
-                      </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className={`font-medium ${room.isActive ? "text-gray-900" : "text-gray-500"}`}>{room.name}</h4>

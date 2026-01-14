@@ -165,8 +165,8 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "brl",
             product_data: {
-              name: planName || `Plano ${planId}`,
-              description: `${classes} aulas - Validade: ${duration}`,
+              name: planName || `Plan ${planId}`,
+              description: `${classes} classes - Validity: ${duration}`,
             },
             unit_amount: Math.round(price * 100), // Convert to cents
           },

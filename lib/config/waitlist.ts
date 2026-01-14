@@ -1,232 +1,105 @@
-// Waitlist Management System Configuration
+// Waitlist Configuration - Simplified for MVP
+// Priority based on client source (direct clients > aggregators)
 
 export type ClientSource =
-  | "native"        // Direct client - pays studio directly
-  | "classpass"     // ClassPass integration
-  | "gympass"       // Gympass/Wellhub
-  | "totalpass"     // TotalPass
-  | "urban"         // Urban Sports Club
-  | "package"       // Purchased package/credits
-  | "trial";        // Trial/first-time
+  | "direct"       // Direct client - pays studio directly
+  | "package"      // Purchased package/credits
+  | "classpass"    // ClassPass
+  | "gympass"      // Gympass/Wellhub
+  | "totalpass"    // TotalPass
+  | "trial";       // Trial/first-time
 
-export type PriorityTier = "vip" | "high" | "medium" | "low";
-
-export interface WaitlistPriorityConfig {
-  tier: PriorityTier;
+export interface SourcePriority {
+  source: ClientSource;
   label: string;
-  responseTimeMinutes: number;      // Time to confirm before moving to next
-  cancellationGraceHours: number;   // Hours before class when cancellation is penalty-free
-  sources: ClientSource[];
+  points: number;
   color: string;
-  description: string;
+}
+
+// Priority by client source - direct clients first
+export const sourcePriorities: SourcePriority[] = [
+  { source: "direct", label: "Direct Client", points: 100, color: "#6938EF" },
+  { source: "package", label: "Package", points: 75, color: "#8870E9" },
+  { source: "classpass", label: "ClassPass", points: 50, color: "#DD2590" },
+  { source: "gympass", label: "Gympass", points: 25, color: "#F79009" },
+  { source: "totalpass", label: "TotalPass", points: 25, color: "#12B76A" },
+  { source: "trial", label: "Trial", points: 10, color: "#98A2B3" },
+];
+
+export interface SourcePriorityConfig {
+  source: ClientSource;
+  enabled: boolean;
+  points: number;
 }
 
 export interface WaitlistSettings {
   enabled: boolean;
-  maxWaitlistSize: number;           // Max people on waitlist per class
-  autoNotifyOnCancel: boolean;       // Auto-notify next in line
-  notificationChannels: ("whatsapp" | "sms" | "email" | "push")[];
-  confirmationMethod: "link" | "reply" | "app";
-  showPositionToClient: boolean;     // Show queue position
-  allowAutoConfirm: boolean;         // Let clients set auto-confirm
-  noShowPenalty: {
-    enabled: boolean;
-    maxNoShows: number;              // Max no-shows before penalty
-    penaltyDays: number;             // Days banned from waitlist
-  };
-  priorityBoost: {
-    enabled: boolean;
-    attendanceThreshold: number;     // Classes per month for boost
-    boostPercentage: number;         // Priority boost (e.g., 20%)
-  };
+  maxPerClass: number;
+  notifyViaWhatsapp: boolean;
+  autoConfirmDirect: boolean; // Auto-confirm direct clients
+  sourcePriorities: SourcePriorityConfig[];
 }
 
-// Default priority tiers
-export const defaultPriorityTiers: WaitlistPriorityConfig[] = [
-  {
-    tier: "vip",
-    label: "VIP Members",
-    responseTimeMinutes: 240,        // 4 hours to respond
-    cancellationGraceHours: 2,       // Can cancel up to 2h before
-    sources: ["native"],
-    color: "#6938EF",
-    description: "Premium members with highest priority",
-  },
-  {
-    tier: "high",
-    label: "Direct Clients",
-    responseTimeMinutes: 120,        // 2 hours to respond
-    cancellationGraceHours: 4,       // Can cancel up to 4h before
-    sources: ["native", "package"],
-    color: "#8870E9",
-    description: "Clients who pay directly or have packages",
-  },
-  {
-    tier: "medium",
-    label: "ClassPass",
-    responseTimeMinutes: 60,         // 1 hour to respond
-    cancellationGraceHours: 12,      // Must cancel 12h before
-    sources: ["classpass"],
-    color: "#DD2590",
-    description: "ClassPass members",
-  },
-  {
-    tier: "low",
-    label: "Aggregators",
-    responseTimeMinutes: 30,         // 30 min to respond
-    cancellationGraceHours: 24,      // Must cancel 24h before
-    sources: ["gympass", "totalpass", "urban"],
-    color: "#98A2B3",
-    description: "Gympass, TotalPass, and other aggregators",
-  },
+export const defaultSourcePriorities: SourcePriorityConfig[] = [
+  { source: "direct", enabled: true, points: 100 },
+  { source: "package", enabled: true, points: 75 },
+  { source: "classpass", enabled: false, points: 50 },
+  { source: "gympass", enabled: false, points: 25 },
+  { source: "totalpass", enabled: false, points: 25 },
+  { source: "trial", enabled: true, points: 10 },
 ];
 
 export const defaultWaitlistSettings: WaitlistSettings = {
   enabled: true,
-  maxWaitlistSize: 10,
-  autoNotifyOnCancel: true,
-  notificationChannels: ["whatsapp", "email"],
-  confirmationMethod: "link",
-  showPositionToClient: true,
-  allowAutoConfirm: true,
-  noShowPenalty: {
-    enabled: true,
-    maxNoShows: 2,
-    penaltyDays: 7,
-  },
-  priorityBoost: {
-    enabled: true,
-    attendanceThreshold: 8,          // 8+ classes/month
-    boostPercentage: 20,
-  },
+  maxPerClass: 10,
+  notifyViaWhatsapp: true,
+  autoConfirmDirect: false,
+  sourcePriorities: defaultSourcePriorities,
 };
 
-// Waitlist entry interface
-export interface WaitlistEntry {
-  id: string;
-  classId: string;
-  clientId: string;
-  clientName: string;
-  clientSource: ClientSource;
-  priorityTier: PriorityTier;
-  position: number;
-  joinedAt: Date;
-  notifiedAt?: Date;
-  respondBy?: Date;
-  status: "waiting" | "notified" | "confirmed" | "expired" | "cancelled";
-  autoConfirm: boolean;
-  attendanceScore?: number;          // For priority boost calculation
+// Simple priority calculation: source points + time in queue
+export function calculatePriority(source: ClientSource, joinedAt: Date): number {
+  const sourcePriority = sourcePriorities.find(s => s.source === source);
+  const basePoints = sourcePriority?.points || 25;
+
+  // +1 point per hour in queue (max 24 points = 1 day)
+  const hoursWaiting = (Date.now() - joinedAt.getTime()) / (1000 * 60 * 60);
+  const timePoints = Math.min(Math.floor(hoursWaiting), 24);
+
+  return basePoints + timePoints;
 }
 
-// Waitlist analytics
-export interface WaitlistAnalytics {
-  totalEnqueued: number;
-  totalConverted: number;
-  conversionRate: number;
-  avgWaitTime: number;               // Minutes
-  bySource: Record<ClientSource, {
-    enqueued: number;
-    converted: number;
-    rate: number;
-  }>;
-  peakDemandClasses: string[];       // Classes with most waitlist activity
+export function getSourceInfo(source: ClientSource): SourcePriority {
+  return sourcePriorities.find(s => s.source === source) || sourcePriorities[0];
 }
 
-// Helper functions
-export function getClientPriorityTier(
-  source: ClientSource,
-  isVip: boolean,
-  tiers: WaitlistPriorityConfig[] = defaultPriorityTiers
-): WaitlistPriorityConfig {
-  if (isVip) {
-    return tiers.find(t => t.tier === "vip")!;
-  }
-  return tiers.find(t => t.sources.includes(source)) || tiers[tiers.length - 1];
-}
-
-export function calculateEffectivePriority(
-  entry: WaitlistEntry,
-  settings: WaitlistSettings
-): number {
-  // Base priority from tier (vip=100, high=75, medium=50, low=25)
-  const tierPriority: Record<PriorityTier, number> = {
-    vip: 100,
-    high: 75,
-    medium: 50,
-    low: 25,
-  };
-
-  let priority = tierPriority[entry.priorityTier];
-
-  // Apply attendance boost if enabled
-  if (settings.priorityBoost.enabled && entry.attendanceScore) {
-    if (entry.attendanceScore >= settings.priorityBoost.attendanceThreshold) {
-      priority += (priority * settings.priorityBoost.boostPercentage) / 100;
-    }
-  }
-
-  // Time in queue factor (longer wait = slight boost, max 10%)
-  const minutesWaiting = (Date.now() - entry.joinedAt.getTime()) / 60000;
-  const timeBoost = Math.min(minutesWaiting / 60, 10); // Cap at 10%
-  priority += timeBoost;
-
-  return priority;
-}
-
-export function sortWaitlistByPriority(
-  entries: WaitlistEntry[],
-  settings: WaitlistSettings
-): WaitlistEntry[] {
+export function sortByPriority<T extends { source: ClientSource; joinedAt: Date }>(
+  entries: T[]
+): T[] {
   return [...entries].sort((a, b) => {
-    const priorityA = calculateEffectivePriority(a, settings);
-    const priorityB = calculateEffectivePriority(b, settings);
-    return priorityB - priorityA; // Higher priority first
+    const priorityA = calculatePriority(a.source, a.joinedAt);
+    const priorityB = calculatePriority(b.source, b.joinedAt);
+    return priorityB - priorityA;
   });
 }
 
 // Notification templates
-export const waitlistNotificationTemplates = {
+export const notificationTemplates = {
   spotAvailable: {
-    whatsapp: `🎉 Great news! A spot opened in {{className}} on {{date}} at {{time}}!
+    whatsapp: `Hi {{clientName}}! A spot opened up in {{className}} ({{date}} at {{time}}).
 
-You have {{responseTime}} minutes to confirm.
+Want to confirm? Reply YES to secure your spot.
 
-👉 Tap to confirm: {{confirmLink}}
-
-Your spot will go to the next person if not confirmed in time.`,
-
-    email: {
-      subject: "A spot opened up in {{className}}!",
-      body: `A spot just opened in your waitlisted class!
-
-Class: {{className}}
-Date: {{date}}
-Time: {{time}}
-Instructor: {{instructor}}
-
-You have {{responseTime}} minutes to confirm your spot.
-
-[Confirm My Spot]
-
-If you don't confirm in time, the spot will go to the next person on the waitlist.`,
-    },
+The spot will go to the next person in 30 minutes if not confirmed.`,
   },
+  confirmed: {
+    whatsapp: `Confirmed! You're in the {{className}} class on {{date}} at {{time}}.
 
-  positionUpdate: {
-    whatsapp: `📊 Waitlist update: You're now #{{position}} for {{className}} on {{date}}.
-
-We'll notify you immediately when a spot opens!`,
+See you there!`,
   },
+  expired: {
+    whatsapp: `The time to confirm your spot in {{className}} has expired.
 
-  spotConfirmed: {
-    whatsapp: `✅ Confirmed! You're booked for {{className}} on {{date}} at {{time}}.
-
-See you there! 🧘‍♀️`,
-  },
-
-  spotExpired: {
-    whatsapp: `⏰ Time expired. The spot in {{className}} went to the next person.
-
-You're still on the waitlist. We'll notify you if another spot opens.`,
+You're still on the waitlist and we'll notify you when another spot opens up.`,
   },
 };

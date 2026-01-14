@@ -602,7 +602,8 @@ export function SubscriptionSettings() {
     { id: "4", date: "Sep 1, 2024", description: "Growth Plan", amount: "$179.00", status: "Paid" },
   ];
 
-  const usagePercentage = (used: number, limit: number) => {
+  const usagePercentage = (used: number, limit: number | string) => {
+    if (typeof limit === "string" || limit === 0) return 0;
     return Math.round((used / limit) * 100);
   };
 

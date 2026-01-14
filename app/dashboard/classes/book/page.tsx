@@ -102,19 +102,19 @@ function ConfirmBookingModal({
             <CheckCircleIcon className="w-8 h-8 text-green-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Aula agendada com sucesso!
+            Class booked successfully!
           </h3>
           <p className="text-gray-600 mb-4">
-            Sua aula de {classInfo.title} foi confirmada para{" "}
-            {formatDate(classInfo.scheduledDate)} às {classInfo.startTime}.
+            Your {classInfo.title} class has been confirmed for{" "}
+            {formatDate(classInfo.scheduledDate)} at {classInfo.startTime}.
           </p>
           <div className="bg-green-50 p-4 rounded-lg mb-4">
             <p className="text-sm text-green-800">
-              Você receberá um lembrete por WhatsApp 24h antes da aula.
+              You will receive a WhatsApp reminder 24h before the class.
             </p>
           </div>
           <Button fullWidth onClick={onCancel}>
-            Ver Minhas Aulas
+            View My Classes
           </Button>
         </div>
       </div>
@@ -127,7 +127,7 @@ function ConfirmBookingModal({
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Confirmar Agendamento
+            Confirm Booking
           </h3>
 
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -136,12 +136,12 @@ function ConfirmBookingModal({
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />
                 <span>
-                  {formatDate(classInfo.scheduledDate)} às {classInfo.startTime}
+                  {formatDate(classInfo.scheduledDate)} at {classInfo.startTime}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <UserIcon className="w-4 h-4" />
-                <span>Instrutor: {classInfo.instructorName}</span>
+                <span>Instructor: {classInfo.instructorName}</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg
@@ -158,7 +158,7 @@ function ConfirmBookingModal({
                   />
                 </svg>
                 <span>
-                  {classInfo.availableSpots} vagas disponíveis
+                  {classInfo.availableSpots} spots available
                 </span>
               </div>
             </div>
@@ -216,10 +216,10 @@ function ClassCard({
   const colors = classTypeColors[classInfo.type] || classTypeColors.other;
   const spotsText =
     classInfo.availableSpots === 0
-      ? "Lotada"
+      ? "Full"
       : classInfo.availableSpots === 1
-      ? "1 vaga"
-      : `${classInfo.availableSpots} vagas`;
+      ? "1 spot"
+      : `${classInfo.availableSpots} spots`;
 
   return (
     <button
@@ -289,7 +289,7 @@ function ClassCard({
             }}
             className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
-            Entrar na lista de espera →
+            Join waitlist →
           </button>
         </div>
       )}
@@ -315,15 +315,15 @@ function ClassFilters({
     { id: "all", label: "Todas" },
     { id: "pilates", label: "Pilates" },
     { id: "yoga", label: "Yoga" },
-    { id: "stretching", label: "Alongamento" },
-    { id: "meditation", label: "Meditação" },
+    { id: "stretching", label: "Stretching" },
+    { id: "meditation", label: "Meditation" },
   ];
 
   return (
     <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg mb-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo de aula
+          Class type
         </label>
         <div className="flex flex-wrap gap-2">
           {types.map((type) => (
@@ -345,14 +345,14 @@ function ClassFilters({
       {instructors.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Instrutor
+            Instructor
           </label>
           <select
             value={selectedInstructor}
             onChange={(e) => onInstructorChange(e.target.value)}
             className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500"
           >
-            <option value="all">Todos</option>
+            <option value="all">All</option>
             {instructors.map((inst) => (
               <option key={inst.id} value={inst.id}>
                 {inst.name}
@@ -472,7 +472,7 @@ export default function BookClassPage() {
       if (!response.ok) {
         setBookingState({
           loading: false,
-          error: data.error || "Erro ao agendar aula",
+          error: data.error || "Failed to book class",
           success: false,
         });
         return;
@@ -490,7 +490,7 @@ export default function BookClassPage() {
     } catch {
       setBookingState({
         loading: false,
-        error: "Erro de conexão. Tente novamente.",
+        error: "Connection error. Please try again.",
         success: false,
       });
     }
@@ -519,8 +519,8 @@ export default function BookClassPage() {
             <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Agendar Aula</h1>
-            <p className="text-gray-600">Escolha uma aula disponível para agendar</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Book a Class</h1>
+            <p className="text-gray-600">Choose an available class to book</p>
           </div>
         </div>
       </div>
@@ -577,7 +577,7 @@ export default function BookClassPage() {
                 }`}
               >
                 <div className="text-xs uppercase">
-                  {date.toLocaleDateString("pt-BR", { weekday: "short" })}
+                  {date.toLocaleDateString("en-US", { weekday: "short" })}
                 </div>
                 <div className={`text-lg font-semibold ${isToday && !isSelected ? "text-primary-600" : ""}`}>
                   {date.getDate()}
@@ -592,7 +592,7 @@ export default function BookClassPage() {
                         : "text-gray-400"
                     }`}
                   >
-                    {count} {count === 1 ? "aula" : "aulas"}
+                    {count} {count === 1 ? "class" : "classes"}
                   </div>
                 )}
               </button>
@@ -611,10 +611,10 @@ export default function BookClassPage() {
           <div className="text-center py-12">
             <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhuma aula disponível
+              No classes available
             </h3>
             <p className="text-gray-600">
-              Não há aulas agendadas para {formatDate(selectedDate)}.
+              There are no classes scheduled for {formatDate(selectedDate)}.
             </p>
             <button
               onClick={() => {
@@ -622,14 +622,14 @@ export default function BookClassPage() {
               }}
               className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
             >
-              Entrar na lista de espera →
+              Join waitlist →
             </button>
           </div>
         ) : (
           <div className="space-y-3 max-w-2xl mx-auto">
             <h3 className="text-sm font-medium text-gray-700 mb-3">
               {formatDate(selectedDate)} - {classesForSelectedDate.length}{" "}
-              {classesForSelectedDate.length === 1 ? "aula disponível" : "aulas disponíveis"}
+              {classesForSelectedDate.length === 1 ? "class available" : "classes available"}
             </h3>
             {classesForSelectedDate.map((classInfo) => (
               <ClassCard

@@ -123,7 +123,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
       </td>
     </tr>
   );
-}
+});
 
 function ClientCard({ client, onApprove, onReject, onEdit, onDelete }: {
   client: Client;
@@ -217,7 +217,7 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete }: {
       )}
     </div>
   );
-});
+}
 
 const UnitSection = memo(function UnitSection({ unit, isExpanded, onToggle, onApprove, onReject, onEdit, onDelete }: {
   unit: Unit;

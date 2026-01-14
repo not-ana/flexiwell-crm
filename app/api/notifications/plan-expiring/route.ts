@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
         // Send custom expired notification
         await notificationService.sendCustomMessage(
           client._id?.toString() || "",
-          "Seu plano expirou",
-          `Olá ${client.name}!\n\nSeu plano ${client.plan.type} expirou. Renove agora para continuar aproveitando nossas aulas!`,
+          "Your plan has expired",
+          `Hi ${client.name}!\n\nYour ${client.plan.type} plan has expired. Renew now to continue enjoying our classes!`,
         );
 
         results.sent++;

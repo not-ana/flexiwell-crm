@@ -10,9 +10,9 @@ import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings
 import { NotificationsSettings } from "@/components/settings/NotificationsSettings";
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
-import { WhatsAppSettings } from "@/components/settings/WhatsAppSettings";
+import { AddonsSettings } from "@/components/settings/AddonsSettings";
 
-type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "whatsapp";
+type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -21,10 +21,10 @@ const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "team", label: "Team" },
   { id: "establishments", label: "Establishments" },
   { id: "rooms", label: "Rooms" },
+  { id: "integrations", label: "Integrations" },
+  { id: "addons", label: "Add-ons" },
   { id: "subscription", label: "Subscription" },
   { id: "notifications", label: "Notifications" },
-  { id: "integrations", label: "Integrations" },
-  { id: "whatsapp", label: "WhatsApp" },
 ];
 
 export default function AdminSettingsPage() {
@@ -50,8 +50,8 @@ export default function AdminSettingsPage() {
         return <TeamSettings />;
       case "integrations":
         return <IntegrationsSettings />;
-      case "whatsapp":
-        return <WhatsAppSettings />;
+      case "addons":
+        return <AddonsSettings />;
       default:
         return <GeneralSettings />;
     }

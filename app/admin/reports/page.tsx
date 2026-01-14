@@ -85,6 +85,52 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const barAreaHeight = height - 24;
 
+  // Se tem 1-2 meses, mostrar visualização alternativa
+  if (data.length <= 2) {
+    const current = data[data.length - 1];
+    const previous = data.length > 1 ? data[data.length - 2] : null;
+    const change = previous ? current.value - previous.value : null;
+    const changePercent = previous && previous.value > 0
+      ? Math.round(((current.value - previous.value) / previous.value) * 100)
+      : null;
+
+    return (
+      <div style={{ height }} className="flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl sm:text-5xl font-bold text-primary-600 mb-2">
+            R$ {current.value.toLocaleString()}
+          </div>
+          <div className="text-sm text-gray-500 mb-3">
+            {current.label}
+          </div>
+          {change !== null && previous && (
+            <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+              change >= 0
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {change >= 0 ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              )}
+              {change >= 0 ? '+' : ''}R$ {Math.abs(change).toLocaleString()} ({changePercent}%) vs {previous.label}
+            </div>
+          )}
+          {change === null && (
+            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+              First month with data
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ height }}>
       <div className="flex items-end gap-3" style={{ height: barAreaHeight }}>

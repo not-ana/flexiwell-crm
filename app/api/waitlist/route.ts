@@ -1,78 +1,97 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import type { WaitlistEntry, Client, Booking } from "@/lib/db/schemas";
-import { requireRole } from "@/lib/auth/middleware";
+import type { Client } from "@/lib/db/schemas";
+import { requireRole, getUserFromRequest } from "@/lib/auth/middleware";
+import { calculatePriority, type ClientSource } from "@/lib/config/waitlist";
 
-// GET /api/waitlist - List all waitlist entries
+// Simplified waitlist entry for MVP
+interface WaitlistEntry {
+  _id?: ObjectId;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  clientSource: ClientSource;
+  classId: string;
+  className: string;
+  priority: number;
+  position?: number;
+  status: "waiting" | "notified" | "confirmed" | "expired";
+  notifiedAt?: Date;
+  expiresAt?: Date;
+  confirmedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// GET /api/waitlist - List waitlist entries
 export async function GET(request: NextRequest) {
-  // Require authentication - only admin and teacher can view waitlist
-  const { error } = requireRole(request, ["admin", "teacher"]);
+  const { error } = requireRole(request, ["admin", "teacher", "client"]);
   if (error) return error;
 
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
-    const requestType = searchParams.get("requestType");
-    const clientId = searchParams.get("clientId");
+    const classId = searchParams.get("classId");
+    const clientIdParam = searchParams.get("clientId");
     const limit = parseInt(searchParams.get("limit") || "100");
 
     const db = await getDatabase();
-
-    // Build filter query
     const filter: Record<string, unknown> = {};
+
+    // If client is requesting their own waitlist
+    if (clientIdParam === "me") {
+      const user = getUserFromRequest(request);
+      if (user?.clientId) {
+        filter.clientId = user.clientId;
+      }
+    } else if (clientIdParam) {
+      filter.clientId = clientIdParam;
+    }
 
     if (status && status !== "all") {
       filter.status = status;
     }
 
-    if (requestType && requestType !== "all") {
-      filter.requestType = requestType;
+    if (classId) {
+      filter.classId = classId;
     }
 
-    if (clientId) {
-      filter.clientId = clientId;
-    }
+    const entries = await db
+      .collection<WaitlistEntry>("waitlist")
+      .find(filter)
+      .sort({ priority: -1, createdAt: 1 })
+      .limit(limit)
+      .toArray();
 
-    const [entries, stats] = await Promise.all([
-      db
-        .collection<WaitlistEntry>("waitlist")
-        .find(filter)
-        .sort({ priorityScore: -1, createdAt: 1 })
-        .limit(limit)
-        .toArray(),
-      db
-        .collection<WaitlistEntry>("waitlist")
-        .aggregate([
-          {
-            $group: {
-              _id: "$status",
-              count: { $sum: 1 },
-            },
-          },
-        ])
-        .toArray(),
-    ]);
+    // Calculate positions
+    const entriesWithPosition = entries.map((entry, index) => ({
+      ...entry,
+      id: entry._id?.toString(),
+      position: index + 1,
+    }));
 
-    // Calculate stats
+    // Stats for admin
+    const stats = await db
+      .collection<WaitlistEntry>("waitlist")
+      .aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ])
+      .toArray();
+
     const statsMap = stats.reduce(
-      (acc, s) => {
-        acc[s._id] = s.count;
-        return acc;
-      },
-      {} as Record<string, number>
+      (acc, s) => ({ ...acc, [s._id as string]: s.count }),
+      { waiting: 0, notified: 0, confirmed: 0, expired: 0 }
     );
 
+    // Calculate "protected revenue" - direct clients served before aggregators
+    const protectedRevenue = await calculateProtectedRevenue(db);
+
     return NextResponse.json({
-      entries,
-      stats: {
-        waiting: statsMap.waiting || 0,
-        notified: statsMap.notified || 0,
-        confirmed: statsMap.confirmed || 0,
-        expired: statsMap.expired || 0,
-        declined: statsMap.declined || 0,
-        total: entries.length,
-      },
+      entries: entriesWithPosition,
+      stats: { ...statsMap, total: entries.length },
+      protectedRevenue,
     });
   } catch (error) {
     console.error("Error fetching waitlist:", error);
@@ -83,228 +102,154 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/waitlist - Create a new waitlist entry
+// POST /api/waitlist - Join waitlist (simplified - 1 click)
 export async function POST(request: NextRequest) {
-  // Require authentication - admin, teacher, or client can create entries
   const { error } = requireRole(request, ["admin", "teacher", "client"]);
   if (error) return error;
 
   try {
     const body = await request.json();
-    const {
-      clientId,
-      clientName,
-      clientEmail,
-      clientPhone,
-      requestType,
-      reason,
-      isUrgent,
-      preferredClassId,
-      preferredClassName,
-      preferredClassTypes,
-      preferredInstructorIds,
-      preferredDays,
-      preferredTimeSlots,
-      originalBookingId,
-      originalClassId,
-      originalClassName,
-      originalDate,
-    } = body;
+    const { classId, className } = body;
 
-    // Validation
-    if (!clientId || !clientName || !clientEmail || !requestType) {
+    if (!classId) {
       return NextResponse.json(
-        { error: "Client ID, name, email, and request type are required" },
-        { status: 400 }
-      );
-    }
-
-    const validTypes = ["reschedule", "extra_class", "cancelled_by_studio"];
-    if (!validTypes.includes(requestType)) {
-      return NextResponse.json(
-        { error: `Invalid request type. Must be one of: ${validTypes.join(", ")}` },
+        { error: "Class ID is required" },
         { status: 400 }
       );
     }
 
     const db = await getDatabase();
+    const user = getUserFromRequest(request);
 
-    // Calculate priority score with real data from database
-    const priorityBreakdown = await calculatePriorityScore(
-      db,
-      clientId,
-      requestType,
-      isUrgent
-    );
+    // Get client info
+    let client: Client | null = null;
+    let clientId = body.clientId;
 
-    const priorityScore = Object.values(priorityBreakdown).reduce((a, b) => a + b, 0);
+    if (user?.clientId) {
+      clientId = user.clientId;
+      if (ObjectId.isValid(clientId)) {
+        client = await db.collection<Client>("clients").findOne({
+          _id: new ObjectId(clientId),
+        });
+      }
+    }
+
+    if (!client && !body.clientName) {
+      return NextResponse.json(
+        { error: "Client information required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if already on waitlist
+    const existing = await db.collection<WaitlistEntry>("waitlist").findOne({
+      clientId: clientId,
+      classId: classId,
+      status: { $in: ["waiting", "notified"] },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "You are already on the waitlist for this class" },
+        { status: 400 }
+      );
+    }
+
+    // Determine client source for priority
+    const clientSource = getClientSource(client);
+    const now = new Date();
+    const priority = calculatePriority(clientSource, now);
 
     const newEntry: Omit<WaitlistEntry, "_id"> = {
-      clientId,
-      clientName,
-      clientEmail,
-      clientPhone,
-      requestType,
-      reason,
-      isUrgent: isUrgent || false,
-      preferredClassId,
-      preferredClassName,
-      preferredClassTypes,
-      preferredInstructorIds,
-      preferredDays,
-      preferredTimeSlots,
-      originalBookingId,
-      originalClassId,
-      originalClassName,
-      originalDate: originalDate ? new Date(originalDate) : undefined,
-      priorityScore,
-      priorityBreakdown,
+      clientId: clientId,
+      clientName: client?.name || body.clientName,
+      clientEmail: client?.email || body.clientEmail,
+      clientPhone: client?.phone,
+      clientSource,
+      classId,
+      className: className || "Aula",
+      priority,
       status: "waiting",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     const result = await db.collection<WaitlistEntry>("waitlist").insertOne(newEntry);
+
+    // Get position in queue
+    const position = await db.collection<WaitlistEntry>("waitlist").countDocuments({
+      classId,
+      status: "waiting",
+      priority: { $gt: priority },
+    }) + 1;
 
     return NextResponse.json(
       {
         success: true,
         entry: {
-          _id: result.insertedId,
+          id: result.insertedId.toString(),
           ...newEntry,
+          position,
         },
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating waitlist entry:", error);
+    console.error("Error joining waitlist:", error);
     return NextResponse.json(
-      { error: "Failed to create waitlist entry" },
+      { error: "Failed to join waitlist" },
       { status: 500 }
     );
   }
 }
 
-// Calculate priority score based on real client data
-async function calculatePriorityScore(
-  db: Awaited<ReturnType<typeof getDatabase>>,
-  clientId: string,
-  requestType: string,
-  isUrgent: boolean
-): Promise<WaitlistEntry["priorityBreakdown"]> {
-  const breakdown: WaitlistEntry["priorityBreakdown"] = {
-    planTypePoints: 0,
-    waitingTimePoints: 0,
-    attendancePoints: 0,
-    vipPoints: 0,
-    cancelledByStudioPoints: 0,
-    urgentReasonPoints: 0,
+// Helper: Determine client source from client data
+function getClientSource(client: Client | null): ClientSource {
+  if (!client) return "direct";
+
+  // Check client source field if exists
+  const source = (client as any).source?.toLowerCase();
+
+  if (source === "gympass" || source === "wellhub") return "gympass";
+  if (source === "classpass") return "classpass";
+  if (source === "totalpass") return "totalpass";
+  if (source === "trial") return "trial";
+
+  // Check if has package (any plan type that's not drop-in indicates a package)
+  if (client.plan?.type && client.plan.type !== "drop-in") return "package";
+
+  return "direct";
+}
+
+// Helper: Calculate "protected revenue" metric for admin dashboard
+async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDatabase>>): Promise<{
+  thisMonth: number;
+  directClientsServed: number;
+  aggregatorsWaiting: number;
+}> {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  // Count direct clients confirmed this month
+  const directConfirmed = await db.collection<WaitlistEntry>("waitlist").countDocuments({
+    status: "confirmed",
+    clientSource: { $in: ["direct", "package"] },
+    confirmedAt: { $gte: startOfMonth },
+  });
+
+  // Count aggregators still waiting
+  const aggregatorsWaiting = await db.collection<WaitlistEntry>("waitlist").countDocuments({
+    status: "waiting",
+    clientSource: { $in: ["gympass", "totalpass", "classpass"] },
+  });
+
+  // Estimate protected revenue (average class value R$80 for direct vs R$20 for aggregator)
+  const protectedRevenue = directConfirmed * 60; // R$60 difference per spot
+
+  return {
+    thisMonth: protectedRevenue,
+    directClientsServed: directConfirmed,
+    aggregatorsWaiting,
   };
-
-  try {
-    // 1. Get client info for plan type
-    let client: Client | null = null;
-    if (ObjectId.isValid(clientId)) {
-      client = await db.collection<Client>("clients").findOne({
-        _id: new ObjectId(clientId),
-      });
-    }
-
-    if (client) {
-      // Plan type points based on plan value
-      const planPoints: Record<string, number> = {
-        "drop-in": 5,
-        "monthly": 20,
-        "quarterly": 35,
-        "annual": 50,
-      };
-      breakdown.planTypePoints = planPoints[client.plan.type] || 15;
-
-      // VIP points - check if client has high revenue or is marked as VIP
-      const totalPayments = await db.collection("payments").aggregate([
-        { $match: { clientId: clientId, status: "completed" } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]).toArray();
-
-      const totalSpent = totalPayments[0]?.total || 0;
-      if (totalSpent >= 5000 || client.plan.type === "annual") {
-        breakdown.vipPoints = 30;
-      } else if (totalSpent >= 2000 || client.plan.type === "quarterly") {
-        breakdown.vipPoints = 15;
-      }
-    }
-
-    // 2. Calculate attendance score (last 30 days)
-    if (ObjectId.isValid(clientId)) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const bookingStats = await db.collection<Booking>("bookings").aggregate([
-        {
-          $match: {
-            clientId: clientId,
-            scheduledDate: { $gte: thirtyDaysAgo },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: 1 },
-            completed: {
-              $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-            },
-            noShows: {
-              $sum: { $cond: [{ $eq: ["$status", "no-show"] }, 1, 0] },
-            },
-          },
-        },
-      ]).toArray();
-
-      if (bookingStats.length > 0) {
-        const stats = bookingStats[0];
-        const total = stats.total || 0;
-        const completed = stats.completed || 0;
-
-        if (total > 0) {
-          const attendanceRate = (completed / total) * 100;
-          // Higher attendance = higher priority
-          if (attendanceRate >= 90) {
-            breakdown.attendancePoints = 40;
-          } else if (attendanceRate >= 75) {
-            breakdown.attendancePoints = 30;
-          } else if (attendanceRate >= 50) {
-            breakdown.attendancePoints = 20;
-          } else {
-            breakdown.attendancePoints = 10;
-          }
-        } else {
-          // New client with no history
-          breakdown.attendancePoints = 25;
-        }
-      } else {
-        // New client
-        breakdown.attendancePoints = 25;
-      }
-    }
-
-    // 3. Cancelled by studio gets highest priority
-    if (requestType === "cancelled_by_studio") {
-      breakdown.cancelledByStudioPoints = 100;
-    }
-
-    // 4. Urgent reason bonus
-    if (isUrgent) {
-      breakdown.urgentReasonPoints = 25;
-    }
-
-    // 5. Waiting time starts at 0 - will increase over time via scheduled job
-
-  } catch (error) {
-    console.error("Error calculating priority score:", error);
-    // Return default values on error
-    breakdown.planTypePoints = 15;
-    breakdown.attendancePoints = 25;
-  }
-
-  return breakdown;
 }

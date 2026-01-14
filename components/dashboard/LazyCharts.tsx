@@ -1,21 +1,20 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import { ComponentType } from 'react';
 
 /**
  * Lazy-loaded chart components to reduce initial bundle size
  * Charts are only loaded when needed, improving initial page load performance
  */
 
-// Import component types for type-safe dynamic imports
-import type YearlyBarChart from './YearlyBarChart';
-import type ProgressDonutCard from './ProgressDonutCard';
-import type BigCalendar from '../calendar/BigCalendar';
+// Import component props types
+import type { YearlyBarChartProps } from './YearlyBarChart';
+import type { ProgressDonutCardProps } from './ProgressDonutCard';
+import type { BigCalendarProps } from '../calendar/BigCalendar';
 
 // Lazy load YearlyBarChart (includes recharts library)
-export const LazyYearlyBarChart = dynamic<ComponentType<React.ComponentProps<typeof YearlyBarChart>>>(
-  () => import('./YearlyBarChart'),
+export const LazyYearlyBarChart = dynamic<YearlyBarChartProps>(
+  () => import('./YearlyBarChart').then(mod => mod.default),
   {
     loading: () => (
       <div className="h-[200px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
@@ -27,8 +26,8 @@ export const LazyYearlyBarChart = dynamic<ComponentType<React.ComponentProps<typ
 );
 
 // Lazy load ProgressDonutCard (includes recharts library)
-export const LazyProgressDonutCard = dynamic<ComponentType<React.ComponentProps<typeof ProgressDonutCard>>>(
-  () => import('./ProgressDonutCard'),
+export const LazyProgressDonutCard = dynamic<ProgressDonutCardProps>(
+  () => import('./ProgressDonutCard').then(mod => mod.default),
   {
     loading: () => (
       <div className="h-full flex items-center justify-center bg-white border border-gray-200 rounded-xl p-6 animate-pulse">
@@ -43,8 +42,8 @@ export const LazyProgressDonutCard = dynamic<ComponentType<React.ComponentProps<
 );
 
 // Lazy load BigCalendar (heavy calendar library)
-export const LazyBigCalendar = dynamic<ComponentType<React.ComponentProps<typeof BigCalendar>>>(
-  () => import('../calendar/BigCalendar'),
+export const LazyBigCalendar = dynamic<BigCalendarProps>(
+  () => import('../calendar/BigCalendar').then(mod => mod.default),
   {
     loading: () => (
       <div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">

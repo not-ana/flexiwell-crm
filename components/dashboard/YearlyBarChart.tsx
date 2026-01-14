@@ -9,7 +9,7 @@ export interface DataPoint {
   value: number;
 }
 
-interface YearlyBarChartProps {
+export interface YearlyBarChartProps {
   weekData?: DataPoint[];
   monthData?: DataPoint[];
   yearData?: DataPoint[];

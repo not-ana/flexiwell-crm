@@ -29,7 +29,7 @@ interface PricingPlan {
   limits: {
     activeClients: number | "unlimited";
     staff: number | "unlimited";
-    locations: number;
+    locations: number | "unlimited";
     storageGB: number;
   };
   support: string;
