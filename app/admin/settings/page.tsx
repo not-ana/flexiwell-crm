@@ -95,8 +95,10 @@ function GeneralSettings() {
       studio: "Studio",
     },
   });
+  const [originalSettings, setOriginalSettings] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -143,7 +145,9 @@ function GeneralSettings() {
         if (res.ok) {
           const data = await res.json();
           if (data.general) {
-            setSettings(prev => ({ ...prev, ...data.general }));
+            const loadedSettings = { ...settings, ...data.general };
+            setSettings(loadedSettings);
+            setOriginalSettings(loadedSettings);
           }
         }
       } catch (error) {
@@ -154,6 +158,12 @@ function GeneralSettings() {
     }
     loadSettings();
   }, []);
+
+  // Check for unsaved changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
+    setHasUnsavedChanges(hasChanges);
+  }, [settings, originalSettings]);
 
   const updateSetting = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -230,6 +240,7 @@ function GeneralSettings() {
         body: JSON.stringify({ section: "general", data: settings }),
       });
       if (res.ok) {
+        setOriginalSettings(settings);
         showToast("Settings saved successfully");
       } else {
         showToast("Failed to save settings", "error");
@@ -436,11 +447,21 @@ function GeneralSettings() {
 
         {/* Terminology Preview / Custom Terminology */}
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm font-medium text-gray-700 mb-3">
-            {settings.businessType === "other"
-              ? "Customize your terminology:"
-              : `Terminology preview for ${selectedBusinessType.name}:`}
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-gray-700">
+              {settings.businessType === "other"
+                ? "Customize your terminology:"
+                : `Terminology preview for ${selectedBusinessType.name}:`}
+            </p>
+            {hasUnsavedChanges && (
+              <span className="text-xs text-amber-600 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Unsaved changes
+              </span>
+            )}
+          </div>
           {settings.businessType === "other" ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
@@ -516,6 +537,17 @@ function GeneralSettings() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Save Button */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+          <Button
+            onClick={handleSave}
+            disabled={saving || !hasUnsavedChanges}
+            className={hasUnsavedChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""}
+          >
+            {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "Saved"}
+          </Button>
         </div>
       </div>
 
@@ -1519,7 +1551,7 @@ const flexiwellPlans = [
     id: "business",
     name: "Business",
     monthlyPrice: 179,
-    yearlyPrice: 149,
+    yearlyPrice: 143,
     description: "For established studios",
     limits: {
       clients: 500,

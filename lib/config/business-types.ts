@@ -4,10 +4,7 @@
 export type BusinessType =
   | "pilates"
   | "yoga"
-  | "crossfit"
-  | "dance"
   | "personal_training"
-  | "martial_arts"
   | "fitness"
   | "spa"
   | "physical_therapy"
@@ -110,45 +107,6 @@ export const businessTypes: Record<BusinessType, BusinessTypeConfig> = {
     },
   },
 
-  crossfit: {
-    id: "crossfit",
-    name: "CrossFit Box",
-    description: "CrossFit gyms and functional fitness",
-    icon: "🏋️",
-    terminology: {
-      ...defaultTerminology,
-      class: "WOD",
-      classes: "WODs",
-      classType: "Workout Type",
-      teacher: "Coach",
-      teachers: "Coaches",
-      client: "Athlete",
-      clients: "Athletes",
-      student: "Athlete",
-      students: "Athletes",
-      studio: "Box",
-      session: "Workout",
-      workout: "WOD",
-    },
-  },
-
-  dance: {
-    id: "dance",
-    name: "Dance Studio",
-    description: "Dance schools and academies",
-    icon: "💃",
-    terminology: {
-      ...defaultTerminology,
-      class: "Class",
-      classes: "Classes",
-      teacher: "Instructor",
-      teachers: "Instructors",
-      student: "Dancer",
-      students: "Dancers",
-      session: "Rehearsal",
-    },
-  },
-
   personal_training: {
     id: "personal_training",
     name: "Personal Training",
@@ -167,24 +125,6 @@ export const businessTypes: Record<BusinessType, BusinessTypeConfig> = {
       students: "Clients",
       session: "Training Session",
       appointment: "Session",
-    },
-  },
-
-  martial_arts: {
-    id: "martial_arts",
-    name: "Martial Arts",
-    description: "Martial arts dojos and academies",
-    icon: "🥋",
-    terminology: {
-      ...defaultTerminology,
-      class: "Class",
-      classes: "Classes",
-      teacher: "Sensei",
-      teachers: "Instructors",
-      student: "Student",
-      students: "Students",
-      studio: "Dojo",
-      session: "Training",
     },
   },
 
