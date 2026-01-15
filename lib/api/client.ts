@@ -199,6 +199,16 @@ export const authApi = {
 };
 
 // Clients API
+export interface ClientPlan {
+  type: "monthly" | "quarterly" | "annual" | "drop-in";
+  totalClasses: number;
+  usedClasses: number;
+  remainingClasses: number;
+  startDate: Date;
+  endDate: Date;
+  price: number;
+}
+
 export interface Client {
   _id: string;
   name: string;
@@ -207,15 +217,7 @@ export interface Client {
   whatsappId?: string;
   instagramId?: string;
   avatar?: string;
-  plan?: string; // Plan name for display
-  planDetails?: {
-    type: string;
-    classesPerMonth: number;
-    classesUsed: number;
-    startDate: Date;
-    endDate: Date;
-    price: number;
-  };
+  plan?: ClientPlan | string; // Can be object from DB or string for display
   status: "active" | "inactive" | "pending" | "paused" | "expired";
   preferences?: {
     preferredInstructors?: string[];

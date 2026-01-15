@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ChevronIcon } from "@/components/icons";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import { useCurrency } from "@/hooks/useCurrency";
+import { api } from "@/lib/api/client";
 
 interface StaffPerformance {
   id: string;
@@ -139,6 +141,9 @@ export default function AdminDashboard() {
   // Onboarding
   const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("admin");
 
+  // Currency
+  const { formatCurrency, symbol: currencySymbol } = useCurrency();
+
   const availableYears = [currentYear, currentYear - 1];
 
   // Fetch dashboard data
@@ -146,10 +151,9 @@ export default function AdminDashboard() {
     async function fetchDashboardData() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/admin/dashboard?period=${selectedPeriod}`);
-        if (response.ok) {
-          const data = await response.json();
-          setDashboardData(data);
+        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}`);
+        if (response.data) {
+          setDashboardData(response.data);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -161,14 +165,7 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, [selectedPeriod]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // formatCurrency is now provided by useCurrency hook
 
   const stats = dashboardData?.stats || {
     revenue: 0,
@@ -379,7 +376,7 @@ export default function AdminDashboard() {
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} tickFormatter={(value) => `$${value / 1000}k`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} tickFormatter={(value) => `${currencySymbol}${value / 1000}k`} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: "#fff",
@@ -387,7 +384,7 @@ export default function AdminDashboard() {
                           borderRadius: "12px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
-                        formatter={(value) => [`$${(value as number).toLocaleString()}`, ""]}
+                        formatter={(value) => [formatCurrency(value as number), ""]}
                       />
                       <Area type="monotone" dataKey="lastYear" stroke="#D1D5DB" strokeWidth={2} fill="transparent" />
                       <Area type="monotone" dataKey="revenue" stroke="#6938EF" strokeWidth={3} fill="url(#colorRevenue)" />

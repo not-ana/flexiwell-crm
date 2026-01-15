@@ -417,6 +417,13 @@ function MonthView({ events, selectedDate, onEventClick, selectedEventId, onDayC
   );
 }
 
+// Establishment interface for the modal
+interface EstablishmentOption {
+  id: string;
+  name: string;
+  rooms: string[];
+}
+
 // Create Class Modal
 function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [formData, setFormData] = useState({
@@ -425,13 +432,91 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     date: "",
     time: "",
     duration: "50",
-    unit: "FlexiWell Centro",
-    room: "Room 1",
+    establishmentId: "",
+    unit: "",
+    room: "",
     capacity: "8",
+    recurrence: "none" as "none" | "daily" | "weekly" | "biweekly" | "monthly",
+    recurrenceEndDate: "",
+    recurrenceDays: [] as string[],
   });
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [createdClass, setCreatedClass] = useState<typeof formData | null>(null);
+  const [createdClass, setCreatedClass] = useState<typeof formData & { classesCreated?: number } | null>(null);
+  const [establishments, setEstablishments] = useState<EstablishmentOption[]>([]);
+  const [loadingEstablishments, setLoadingEstablishments] = useState(true);
+
+  // Fetch teacher's establishments
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchEstablishments = async () => {
+      setLoadingEstablishments(true);
+      try {
+        // First get the current user to get teacherId
+        const userResponse = await fetch("/api/auth/me");
+        if (!userResponse.ok) {
+          // Fallback: fetch all establishments if auth fails
+          const response = await fetch("/api/establishments?active=true");
+          const data = await response.json();
+          const estabs = (data.establishments || []).map((e: { _id?: { toString(): string }; name: string; rooms?: string[] }) => ({
+            id: e._id?.toString() || "",
+            name: e.name,
+            rooms: e.rooms || ["Room 1", "Room 2", "Studio A"],
+          }));
+          setEstablishments(estabs);
+          if (estabs.length > 0 && !formData.establishmentId) {
+            setFormData(prev => ({
+              ...prev,
+              establishmentId: estabs[0].id,
+              unit: estabs[0].name,
+              room: estabs[0].rooms[0] || "Room 1",
+            }));
+          }
+          return;
+        }
+
+        const userData = await userResponse.json();
+        const teacherId = userData.user?.userId || userData.user?.id;
+
+        // Fetch establishments for this teacher
+        const url = teacherId
+          ? `/api/establishments?active=true&teacherId=${teacherId}`
+          : "/api/establishments?active=true";
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const estabs = (data.establishments || []).map((e: { _id?: { toString(): string }; name: string; rooms?: string[] }) => ({
+          id: e._id?.toString() || "",
+          name: e.name,
+          rooms: e.rooms || ["Room 1", "Room 2", "Studio A"],
+        }));
+
+        setEstablishments(estabs);
+
+        // Set default establishment if not already set
+        if (estabs.length > 0 && !formData.establishmentId) {
+          setFormData(prev => ({
+            ...prev,
+            establishmentId: estabs[0].id,
+            unit: estabs[0].name,
+            room: estabs[0].rooms[0] || "Room 1",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching establishments:", error);
+      } finally {
+        setLoadingEstablishments(false);
+      }
+    };
+
+    fetchEstablishments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Get rooms for selected establishment
+  const selectedEstablishment = establishments.find(e => e.id === formData.establishmentId);
+  const availableRooms = selectedEstablishment?.rooms || ["Room 1", "Room 2", "Studio A"];
 
   if (!isOpen) return null;
 
@@ -439,6 +524,17 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     if (!formData.name || !formData.date || !formData.time) {
       return;
     }
+
+    // Validate recurrence fields
+    if (formData.recurrence !== "none" && !formData.recurrenceEndDate) {
+      alert("Please select an end date for the recurring classes");
+      return;
+    }
+    if (formData.recurrence === "weekly" && formData.recurrenceDays.length === 0) {
+      alert("Please select at least one day for weekly recurrence");
+      return;
+    }
+
     setIsCreating(true);
     try {
       // Calculate end time based on duration
@@ -448,28 +544,66 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       const endMinutes = (hours * 60 + minutes + durationMinutes) % 60;
       const endTime = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
 
-      const response = await fetch("/api/classes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formData.name,
-          type: formData.type.toLowerCase(),
-          scheduledDate: formData.date,
-          startTime: formData.time,
-          endTime: endTime,
-          duration: parseInt(formData.duration),
-          maxCapacity: parseInt(formData.capacity),
-          roomId: formData.room,
-          location: `${formData.unit} - ${formData.room}`,
-        }),
-      });
+      // Generate dates for recurring classes
+      const dates: string[] = [];
+      const startDate = new Date(formData.date);
 
-      if (response.ok) {
-        setCreatedClass({ ...formData });
+      if (formData.recurrence === "none") {
+        dates.push(formData.date);
+      } else {
+        const endDate = new Date(formData.recurrenceEndDate);
+        const currentDate = new Date(startDate);
+
+        while (currentDate <= endDate) {
+          if (formData.recurrence === "daily") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+          } else if (formData.recurrence === "weekly") {
+            const dayOfWeek = currentDate.getDay().toString();
+            if (formData.recurrenceDays.includes(dayOfWeek)) {
+              dates.push(currentDate.toISOString().split("T")[0]);
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+          } else if (formData.recurrence === "biweekly") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setDate(currentDate.getDate() + 14);
+          } else if (formData.recurrence === "monthly") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setMonth(currentDate.getMonth() + 1);
+          }
+        }
+      }
+
+      // Create classes for each date
+      let successCount = 0;
+      for (const date of dates) {
+        const response = await fetch("/api/classes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formData.name,
+            type: formData.type.toLowerCase(),
+            scheduledDate: date,
+            startTime: formData.time,
+            endTime: endTime,
+            duration: parseInt(formData.duration),
+            maxCapacity: parseInt(formData.capacity),
+            roomId: formData.room,
+            establishmentId: formData.establishmentId,
+            location: `${formData.unit} - ${formData.room}`,
+          }),
+        });
+
+        if (response.ok) {
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setCreatedClass({ ...formData, classesCreated: successCount });
         setShowSuccess(true);
       } else {
-        const error = await response.json();
-        alert(error.error || "Failed to create class");
+        alert("Failed to create class");
       }
     } catch (error) {
       console.error("Error creating class:", error);
@@ -482,21 +616,39 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const handleClose = () => {
     setShowSuccess(false);
     setCreatedClass(null);
+    const defaultEstab = establishments[0];
     setFormData({
       name: "",
       type: "Pilates",
       date: "",
       time: "",
       duration: "50",
-      unit: "FlexiWell Centro",
-      room: "Room 1",
+      establishmentId: defaultEstab?.id || "",
+      unit: defaultEstab?.name || "",
+      room: defaultEstab?.rooms[0] || "Room 1",
       capacity: "8",
+      recurrence: "none",
+      recurrenceEndDate: "",
+      recurrenceDays: [],
     });
     onClose();
   };
 
+  // Helper to get recurrence label
+  const getRecurrenceLabel = (recurrence: string) => {
+    const labels: Record<string, string> = {
+      none: "One-time",
+      daily: "Daily",
+      weekly: "Weekly",
+      biweekly: "Every 2 weeks",
+      monthly: "Monthly",
+    };
+    return labels[recurrence] || recurrence;
+  };
+
   // Success state
   if (showSuccess && createdClass) {
+    const classCount = createdClass.classesCreated || 1;
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
@@ -506,8 +658,14 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Class Created Successfully!</h2>
-            <p className="text-gray-600 mb-6">Your new class has been scheduled.</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {classCount > 1 ? `${classCount} Classes Created!` : "Class Created Successfully!"}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {classCount > 1
+                ? `Your recurring classes have been scheduled.`
+                : "Your new class has been scheduled."}
+            </p>
 
             <div className="bg-gray-50 rounded-xl p-4 text-left mb-6">
               <h3 className="font-semibold text-gray-900 mb-3">{createdClass.name}</h3>
@@ -516,8 +674,20 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>{createdClass.date}</span>
+                  <span>
+                    {createdClass.recurrence !== "none"
+                      ? `${createdClass.date} to ${createdClass.recurrenceEndDate}`
+                      : createdClass.date}
+                  </span>
                 </div>
+                {createdClass.recurrence !== "none" && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>{getRecurrenceLabel(createdClass.recurrence)}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-gray-600">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -640,17 +810,106 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          {/* Recurrence Section */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence</label>
             <select
-              value={formData.unit}
-              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              value={formData.recurrence}
+              onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as typeof formData.recurrence })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
             >
-              <option value="FlexiWell Centro">FlexiWell Centro</option>
-              <option value="FlexiWell Jardins">FlexiWell Jardins</option>
-              <option value="FlexiWell Moema">FlexiWell Moema</option>
+              <option value="none">Does not repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Every 2 weeks</option>
+              <option value="monthly">Monthly</option>
             </select>
+          </div>
+
+          {formData.recurrence !== "none" && (
+            <>
+              {formData.recurrence === "weekly" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Repeat on</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "0", label: "Sun" },
+                      { value: "1", label: "Mon" },
+                      { value: "2", label: "Tue" },
+                      { value: "3", label: "Wed" },
+                      { value: "4", label: "Thu" },
+                      { value: "5", label: "Fri" },
+                      { value: "6", label: "Sat" },
+                    ].map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => {
+                          const days = formData.recurrenceDays.includes(day.value)
+                            ? formData.recurrenceDays.filter((d) => d !== day.value)
+                            : [...formData.recurrenceDays, day.value];
+                          setFormData({ ...formData, recurrenceDays: days });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          formData.recurrenceDays.includes(day.value)
+                            ? "bg-primary-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.recurrenceEndDate}
+                  onChange={(e) => setFormData({ ...formData, recurrenceEndDate: e.target.value })}
+                  min={formData.date}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Location Section */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            {loadingEstablishments ? (
+              <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                Loading locations...
+              </div>
+            ) : establishments.length === 0 ? (
+              <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                No locations assigned. Contact admin.
+              </div>
+            ) : (
+              <select
+                value={formData.establishmentId}
+                onChange={(e) => {
+                  const estab = establishments.find((est) => est.id === e.target.value);
+                  setFormData({
+                    ...formData,
+                    establishmentId: e.target.value,
+                    unit: estab?.name || "",
+                    room: estab?.rooms[0] || "Room 1",
+                  });
+                }}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+              >
+                {establishments.map((estab) => (
+                  <option key={estab.id} value={estab.id}>
+                    {estab.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -660,12 +919,13 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 value={formData.room}
                 onChange={(e) => setFormData({ ...formData, room: e.target.value })}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                disabled={loadingEstablishments || establishments.length === 0}
               >
-                <option value="Room 1">Room 1</option>
-                <option value="Room 2">Room 2</option>
-                <option value="Room 3">Room 3</option>
-                <option value="Studio A">Studio A</option>
-                <option value="Studio B">Studio B</option>
+                {availableRooms.map((room) => (
+                  <option key={room} value={room}>
+                    {room}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

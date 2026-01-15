@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/ui";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface ClientPlan {
   type: string;
@@ -84,6 +85,7 @@ const planPackages: PlanPackage[] = [
 export default function PlansPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [currentPlan, setCurrentPlan] = useState<ClientPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<PlanPackage | null>(null);
@@ -254,7 +256,7 @@ export default function PlansPage() {
 
                 <div className="mb-4">
                   <span className="text-3xl font-bold text-gray-900">
-                    R${plan.price.toLocaleString("pt-BR")}
+                    {formatCurrency(plan.price)}
                   </span>
                   <span className="text-gray-500 text-sm">/{plan.duration}</span>
                 </div>

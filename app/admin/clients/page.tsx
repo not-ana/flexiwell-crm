@@ -64,7 +64,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
         <StatusBadge status={status} />
       </td>
       <td className="px-4 py-3">
-        <p className="text-sm text-gray-900">{client.plan || "No plan"}</p>
+        <p className="text-sm text-gray-900">{typeof client.plan === "string" ? client.plan : (client.plan?.type || "No plan")}</p>
         {classesTotal > 0 && (
           <div className="flex items-center gap-2 mt-1">
             <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -155,7 +155,7 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete }: {
       <div className="grid grid-cols-2 gap-3 text-sm mb-3">
         <div>
           <p className="text-gray-500 text-xs">Plan</p>
-          <p className="font-medium text-gray-900 truncate">{client.plan || "No plan"}</p>
+          <p className="font-medium text-gray-900 truncate">{typeof client.plan === "string" ? client.plan : (client.plan?.type || "No plan")}</p>
           {classesTotal > 0 && (
             <div className="flex items-center gap-2 mt-1">
               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -1123,7 +1123,7 @@ function EditClientModal({
         name: client.name || "",
         email: client.email || "",
         phone: client.phone || "",
-        plan: client.plan || "",
+        plan: typeof client.plan === 'string' ? client.plan : (client.plan?.type || ""),
         status: (client.status as ClientStatus) || "active",
       });
     }

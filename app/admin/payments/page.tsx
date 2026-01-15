@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon } from "@/components/icons";
+import { useCurrency } from "@/hooks/useCurrency";
 
 // Toast notification helper
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -85,9 +86,7 @@ function StatusBadge({ status, daysOverdue }: { status: PaymentStatus; daysOverd
   );
 }
 
-function formatCurrency(value: number, currency: string = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
-}
+// formatCurrency is now provided by useCurrency hook
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -151,6 +150,7 @@ function transformPayment(payment: Payment): DisplayPayment {
 type PeriodFilter = "this_month" | "last_month" | "this_quarter" | "this_year";
 
 export default function PaymentsPage() {
+  const { formatCurrency } = useCurrency();
   const [payments, setPayments] = useState<DisplayPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -650,7 +650,7 @@ export default function PaymentsPage() {
   };
 
   const handleRefundPayment = async (payment: DisplayPayment) => {
-    if (!confirm(`Are you sure you want to refund ${formatCurrency(payment.amount, payment.currency)} to ${payment.clientName}?`)) {
+    if (!confirm(`Are you sure you want to refund ${formatCurrency(payment.amount)} to ${payment.clientName}?`)) {
       return;
     }
 
@@ -914,7 +914,7 @@ export default function PaymentsPage() {
                 <div className="mt-3 pl-[4.25rem] grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-0.5">Amount</p>
-                    <p className="text-lg font-bold text-primary-600">{formatCurrency(payment.amount, payment.currency)}</p>
+                    <p className="text-lg font-bold text-primary-600">{formatCurrency(payment.amount)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-0.5">Due Date</p>
@@ -1037,7 +1037,7 @@ export default function PaymentsPage() {
                     <p className="text-sm text-gray-900">{payment.planName}</p>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount, payment.currency)}</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount)}</p>
                   </td>
                   <td className="px-4 py-4">
                     <p className="text-sm text-gray-600">{payment.dueDate}</p>
@@ -1193,7 +1193,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Amount Due</span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(reminderTarget.amount, reminderTarget.currency)}</span>
+                  <span className="font-semibold text-gray-900">{formatCurrency(reminderTarget.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm gap-2">
                   <span className="text-gray-500">Due Date</span>
@@ -1698,7 +1698,7 @@ export default function PaymentsPage() {
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Amount</span>
-                  <span className="text-xl font-bold text-green-600">{formatCurrency(markPaidTarget.amount, markPaidTarget.currency)}</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(markPaidTarget.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Due Date</span>
@@ -1948,7 +1948,7 @@ export default function PaymentsPage() {
                 Are you sure you want to delete this payment?
               </p>
               <p className="text-sm font-medium text-gray-700 mb-6">
-                {deleteTarget.clientName} - {formatCurrency(deleteTarget.amount, deleteTarget.currency)}
+                {deleteTarget.clientName} - {formatCurrency(deleteTarget.amount)}
               </p>
               <div className="flex gap-3">
                 <button
@@ -2006,7 +2006,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900 truncate">{historyTarget.clientName}</p>
-                  <p className="text-sm text-gray-500">{formatCurrency(historyTarget.amount, historyTarget.currency)}</p>
+                  <p className="text-sm text-gray-500">{formatCurrency(historyTarget.amount)}</p>
                 </div>
                 <StatusBadge status={historyTarget.status} />
               </div>
@@ -2179,7 +2179,7 @@ export default function PaymentsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{payment.clientName}</p>
                         <p className="text-sm text-gray-500">
-                          {formatCurrency(payment.amount, payment.currency)} • {payment.planName}
+                          {formatCurrency(payment.amount)} • {payment.planName}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           Deleted {formatDate(payment.deletedAt)}

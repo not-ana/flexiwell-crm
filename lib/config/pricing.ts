@@ -103,19 +103,19 @@ export interface RegionalPricing {
 export const regionalPricing: Record<PlanTier, RegionalPricing> = {
   starter: {
     USD: { monthly: 99, annual: 79, annualTotal: 948 },
-    BRL: { monthly: 497, annual: 397, annualTotal: 4764 },
+    BRL: { monthly: 349, annual: 279, annualTotal: 3348 },
   },
   growth: {
     USD: { monthly: 179, annual: 143, annualTotal: 1716 },
-    BRL: { monthly: 897, annual: 717, annualTotal: 8604 },
+    BRL: { monthly: 629, annual: 499, annualTotal: 5988 },
   },
   business: {
     USD: { monthly: 299, annual: 239, annualTotal: 2868 },
-    BRL: { monthly: 1497, annual: 1197, annualTotal: 14364 },
+    BRL: { monthly: 1049, annual: 839, annualTotal: 10068 },
   },
   enterprise: {
     USD: { monthly: 499, annual: 399, annualTotal: 4788 },
-    BRL: { monthly: 2497, annual: 1997, annualTotal: 23964 },
+    BRL: { monthly: 1749, annual: 1399, annualTotal: 16788 },
   },
 };
 

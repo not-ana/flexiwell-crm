@@ -485,6 +485,49 @@ export function GeneralSettings() {
           )}
         </div>
 
+        {/* Currency Selection */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-gray-900">Currency</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Select the currency used for payments and reports.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { value: "USD", label: "US Dollar", symbol: "$", flag: "🇺🇸" },
+              { value: "BRL", label: "Brazilian Real", symbol: "R$", flag: "🇧🇷" },
+              { value: "EUR", label: "Euro", symbol: "€", flag: "🇪🇺" },
+              { value: "GBP", label: "British Pound", symbol: "£", flag: "🇬🇧" },
+            ].map((currency) => {
+              const isSelected = settings.currency === currency.value;
+              return (
+                <button
+                  key={currency.value}
+                  type="button"
+                  onClick={() => updateSetting("currency", currency.value)}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                    isSelected
+                      ? "border-primary-600 bg-primary-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-2xl">{currency.flag}</span>
+                  <div className="text-left">
+                    <span className={`block text-sm font-medium ${
+                      isSelected ? "text-primary-700" : "text-gray-700"
+                    }`}>
+                      {currency.symbol} {currency.value}
+                    </span>
+                    <span className="block text-xs text-gray-500">{currency.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Save Button */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
           <Button

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui";
 import { showToast } from "./shared";
+import { useCurrency } from "@/hooks/useCurrency";
 
 const flexiwellPlans = [
   {
@@ -120,6 +121,7 @@ function ChangePlanModal({
   const [selectedCycle, setSelectedCycle] = useState(billingCycle);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const { formatCurrency, symbol: currencySymbol } = useCurrency();
 
   if (!isOpen) return null;
 
@@ -245,13 +247,13 @@ function ChangePlanModal({
                   {/* Pricing */}
                   <div className="mb-5">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-4xl font-bold text-gray-900 tracking-tight">${price}</span>
+                      <span className="text-4xl font-bold text-gray-900 tracking-tight">{currencySymbol}{price}</span>
                       <span className="text-base text-gray-500">/mo</span>
                     </div>
                     {selectedCycle === "yearly" && (
                       <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-md">
                         <span className="text-xs text-green-700 font-semibold">
-                          💰 Save ${(plan.monthlyPrice - price) * 12}/year
+                          💰 Save {formatCurrency((plan.monthlyPrice - price) * 12)}/year
                         </span>
                       </div>
                     )}
@@ -381,7 +383,7 @@ function ChangePlanModal({
                 <div className="text-center">
                   <p className="text-xs text-gray-500 mb-1">Current Plan</p>
                   <p className="font-semibold text-gray-900">{currentPlan?.name}</p>
-                  <p className="text-sm text-gray-600">R$ {currentPrice}/mo</p>
+                  <p className="text-sm text-gray-600">{formatCurrency(currentPrice || 0)}/mo</p>
                 </div>
                 <div className="px-3">
                   <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -391,7 +393,7 @@ function ChangePlanModal({
                 <div className="text-center">
                   <p className="text-xs text-gray-500 mb-1">New Plan</p>
                   <p className="font-semibold text-gray-900">{newPlan?.name}</p>
-                  <p className="text-sm text-gray-600">R$ {newPrice}/mo</p>
+                  <p className="text-sm text-gray-600">{formatCurrency(newPrice || 0)}/mo</p>
                 </div>
               </div>
 
@@ -411,8 +413,8 @@ function ChangePlanModal({
             {/* Billing info */}
             <p className="text-xs text-gray-500 text-center">
               {selectedCycle === "yearly"
-                ? `Billed annually at R$ ${(newPrice || 0) * 12}/year`
-                : `Billed monthly at R$ ${newPrice}/month`
+                ? `Billed annually at ${formatCurrency((newPrice || 0) * 12)}/year`
+                : `Billed monthly at ${formatCurrency(newPrice || 0)}/month`
               }
             </p>
           </div>
@@ -569,6 +571,7 @@ function UpdatePaymentModalAdmin({
 export function SubscriptionSettings() {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const { formatCurrency } = useCurrency();
 
   const currentPlan = {
     id: "business",
@@ -626,7 +629,7 @@ export function SubscriptionSettings() {
             </div>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{currentPlan.name}</p>
             <p className="text-sm text-gray-500">
-              R$ {currentPlan.monthlyPrice}/month
+              {formatCurrency(currentPlan.monthlyPrice)}/month
               {currentPlan.billingCycle === "yearly" && " (yearly)"}
             </p>
           </div>
@@ -727,7 +730,7 @@ export function SubscriptionSettings() {
             <div className="flex-1">
               <p className="text-sm font-medium text-green-800">Save 20% with yearly plan</p>
               <p className="text-sm text-green-700 mt-0.5">
-                Switch to yearly billing and save R$ {Math.round((currentPlan.monthlyPrice - currentPlan.yearlyPrice) * 12)}/year
+                Switch to yearly billing and save {formatCurrency(Math.round((currentPlan.monthlyPrice - currentPlan.yearlyPrice) * 12))}/year
               </p>
             </div>
             <button

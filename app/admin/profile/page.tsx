@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface AdminUser {
   name: string;
@@ -75,6 +76,7 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
 export default function AdminProfilePage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const { formatCurrency } = useCurrency();
 
   // Use auth context data as initial values
   const getInitialUser = (): AdminUser => {
@@ -147,7 +149,7 @@ export default function AdminProfilePage() {
   const quickStats = [
     { label: "Total Clients", value: String(stats.totalClients) },
     { label: "Active Staff", value: String(stats.totalStaff) },
-    { label: "This Month's Revenue", value: `R$${stats.totalRevenue.toLocaleString()}` },
+    { label: "This Month's Revenue", value: formatCurrency(stats.totalRevenue) },
     { label: "Classes This Month", value: String(stats.totalClasses) },
   ];
 

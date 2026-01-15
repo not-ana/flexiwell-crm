@@ -11,18 +11,37 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  // Get verify token from database or environment
-  const credentials = await getWhatsAppCredentials();
-  const verifyToken =
-    (credentials?.provider === "cloud-api" ? (credentials as CloudApiCredentials).verifyToken : null) ||
-    process.env.WHATSAPP_VERIFY_TOKEN;
+  // Get verify token from database or environment variable
+  let verifyToken: string | undefined;
+
+  try {
+    const credentials = await getWhatsAppCredentials();
+    if (credentials?.provider === "cloud-api") {
+      verifyToken = (credentials as CloudApiCredentials).verifyToken;
+    }
+  } catch (error) {
+    console.log("[WhatsApp Webhook] Error fetching credentials:", error);
+  }
+
+  // Fallback to environment variable
+  if (!verifyToken) {
+    verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+  }
+
+  console.log("[WhatsApp Webhook] Verification attempt:", {
+    mode,
+    tokenReceived: token?.slice(0, 10) + "...",
+    verifyTokenConfigured: verifyToken ? verifyToken.slice(0, 10) + "..." : "NOT_SET",
+    envVar: process.env.WHATSAPP_VERIFY_TOKEN ? "SET" : "NOT_SET"
+  });
 
   // Check if this is a subscription verification
   if (mode === "subscribe" && token === verifyToken) {
-    console.log("WhatsApp webhook verified");
+    console.log("[WhatsApp Webhook] Verified successfully");
     return new NextResponse(challenge, { status: 200 });
   }
 
+  console.log("[WhatsApp Webhook] Verification failed - token mismatch");
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 

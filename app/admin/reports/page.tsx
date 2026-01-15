@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useCurrency } from "@/hooks/useCurrency";
 
 // Types for API response
 interface RevenueData {
@@ -81,9 +82,10 @@ function StatCard({ title, value, change, changeType, suffix = "" }: {
   );
 }
 
-function BarChart({ data, height = 200 }: { data: { label: string; value: number }[]; height?: number }) {
+function BarChart({ data, height = 200, formatValue }: { data: { label: string; value: number }[]; height?: number; formatValue?: (amount: number) => string }) {
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const barAreaHeight = height - 24;
+  const format = formatValue || ((v: number) => v.toLocaleString());
 
   // Se tem 1-2 meses, mostrar visualização alternativa
   if (data.length <= 2) {
@@ -98,7 +100,7 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
       <div style={{ height }} className="flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl sm:text-5xl font-bold text-primary-600 mb-2">
-            R$ {current.value.toLocaleString()}
+            {format(current.value)}
           </div>
           <div className="text-sm text-gray-500 mb-3">
             {current.label}
@@ -118,7 +120,7 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               )}
-              {change >= 0 ? '+' : ''}R$ {Math.abs(change).toLocaleString()} ({changePercent}%) vs {previous.label}
+              {change >= 0 ? '+' : ''}{format(Math.abs(change))} ({changePercent}%) vs {previous.label}
             </div>
           )}
           {change === null && (
@@ -141,7 +143,7 @@ function BarChart({ data, height = 200 }: { data: { label: string; value: number
               <div
                 className="w-[60%] bg-primary-500 rounded-t-lg transition-all hover:bg-primary-600 cursor-pointer"
                 style={{ height: `${barHeight}%` }}
-                title={`${item.label}: R$ ${item.value.toLocaleString()}`}
+                title={`${item.label}: ${format(item.value)}`}
               />
             </div>
           );
@@ -276,6 +278,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { formatCurrency, symbol: currencySymbol, loading: currencyLoading } = useCurrency();
+
   const fetchReports = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -309,7 +313,7 @@ export default function ReportsPage() {
         return {
           headers: [
             { key: "month", label: "Month" },
-            { key: "revenue", label: "Revenue (R$)" },
+            { key: "revenue", label: `Revenue (${currencySymbol})` },
             { key: "clients", label: "Clients" },
           ],
           data: (data?.revenue?.monthly || []).map(m => ({
@@ -317,7 +321,7 @@ export default function ReportsPage() {
             revenue: m.revenue,
             clients: m.clients,
           })),
-          summary: `Overview Report - ${periodLabel}\nTotal Revenue: R$ ${(data?.revenue?.total || 0).toLocaleString()}\nGrowth: ${data?.revenue?.growth || 0}%`,
+          summary: `Overview Report - ${periodLabel}\nTotal Revenue: ${formatCurrency(data?.revenue?.total || 0)}\nGrowth: ${data?.revenue?.growth || 0}%`,
         };
       case "classes":
         return {
@@ -325,7 +329,7 @@ export default function ReportsPage() {
             { key: "name", label: "Class Name" },
             { key: "sessions", label: "Sessions" },
             { key: "avgAttendance", label: "Avg Attendance (%)" },
-            { key: "revenue", label: "Revenue (R$)" },
+            { key: "revenue", label: `Revenue (${currencySymbol})` },
           ],
           data: (data?.classes?.popularClasses || []).map(c => ({
             name: c.name,
@@ -341,7 +345,7 @@ export default function ReportsPage() {
             { key: "name", label: "Instructor" },
             { key: "classes", label: "Classes" },
             { key: "students", label: "Students" },
-            { key: "revenue", label: "Revenue (R$)" },
+            { key: "revenue", label: `Revenue (${currencySymbol})` },
           ],
           data: (data?.instructors?.instructors || []).map(i => ({
             name: i.name,
@@ -370,7 +374,7 @@ export default function ReportsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || currencyLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -459,7 +463,7 @@ export default function ReportsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
               <StatCard
                 title="Total Revenue"
-                value={`R$ ${revenue.total.toLocaleString()}`}
+                value={formatCurrency(revenue.total)}
                 change={revenue.growth}
                 changeType={revenue.growth >= 0 ? "positive" : "negative"}
               />
@@ -500,6 +504,7 @@ export default function ReportsPage() {
                     <BarChart
                       data={revenue.monthly.map(m => ({ label: m.month, value: m.revenue }))}
                       height={250}
+                      formatValue={formatCurrency}
                     />
                   ) : (
                     <div className="h-[250px] flex items-center justify-center text-gray-500">
@@ -603,7 +608,7 @@ export default function ReportsPage() {
                           </div>
                           <div>
                             <p className="text-gray-500">Revenue</p>
-                            <p className="font-medium text-gray-900">R$ {cls.revenue.toLocaleString()}</p>
+                            <p className="font-medium text-gray-900">{formatCurrency(cls.revenue)}</p>
                           </div>
                         </div>
                         <ProgressBar value={cls.avgAttendance} max={100} color="green" />
@@ -634,7 +639,7 @@ export default function ReportsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {cls.revenue.toLocaleString()}</td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">{formatCurrency(cls.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -689,7 +694,7 @@ export default function ReportsPage() {
                           </div>
                           <div>
                             <p className="text-gray-500">Revenue</p>
-                            <p className="font-medium text-gray-900">R$ {instructor.revenue.toLocaleString()}</p>
+                            <p className="font-medium text-gray-900">{formatCurrency(instructor.revenue)}</p>
                           </div>
                         </div>
                       </div>
@@ -721,7 +726,7 @@ export default function ReportsPage() {
                           </td>
                           <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.classes}</td>
                           <td className="px-4 sm:px-6 py-4 text-gray-600">{instructor.students}</td>
-                          <td className="px-4 sm:px-6 py-4 text-gray-600">R$ {instructor.revenue.toLocaleString()}</td>
+                          <td className="px-4 sm:px-6 py-4 text-gray-600">{formatCurrency(instructor.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>
