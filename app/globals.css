@@ -158,6 +158,15 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Fix input text color when system is in dark mode */
+input, textarea, select {
+  color: var(--gray-900);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--gray-400);
+}
+
 * {
   box-sizing: border-box;
 }

@@ -112,11 +112,11 @@ export async function GET(request: NextRequest) {
           },
         },
       ]).toArray(),
-      // Recent activity (last 10)
+      // Recent activity (last 5)
       db.collection("bookings")
         .find()
         .sort({ createdAt: -1 })
-        .limit(10)
+        .limit(5)
         .toArray(),
       // Staff list with their class counts
       db.collection("staff")

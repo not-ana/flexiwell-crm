@@ -267,7 +267,7 @@ export function GeneralSettings() {
               type="text"
               value={profileData.firstName}
               onChange={(e) => handleProfileChange("firstName", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
             />
           </div>
           <div>
@@ -276,7 +276,7 @@ export function GeneralSettings() {
               type="text"
               value={profileData.lastName}
               onChange={(e) => handleProfileChange("lastName", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
             />
           </div>
         </div>
@@ -297,7 +297,7 @@ export function GeneralSettings() {
             type="tel"
             value={profileData.phone}
             onChange={(e) => handleProfileChange("phone", e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
           />
         </div>
 
@@ -312,7 +312,7 @@ export function GeneralSettings() {
                 placeholder="Enter current password"
                 value={passwords.current}
                 onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
               />
             </div>
             <div>
@@ -322,7 +322,7 @@ export function GeneralSettings() {
                 placeholder="Enter new password"
                 value={passwords.new}
                 onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
               />
             </div>
             <div>
@@ -332,7 +332,7 @@ export function GeneralSettings() {
                 placeholder="Confirm new password"
                 value={passwords.confirm}
                 onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
               />
             </div>
           </div>
