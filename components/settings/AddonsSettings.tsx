@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { CheckCircleIcon } from "@/components/icons";
 
+interface AddonsSettingsProps {
+  onNavigate?: (tab: "whatsapp" | "sms" | "addons") => void;
+}
+
 interface AddonPricing {
   usd: string;
   brl: string;
@@ -204,7 +208,7 @@ const AddonIcon = ({ id, className }: { id: string; className?: string }) => {
   }
 };
 
-export function AddonsSettings() {
+export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
   const [activeAddons, setActiveAddons] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -308,7 +312,15 @@ export function AddonsSettings() {
                   </button>
                 ) : isActive ? (
                   <button
-                    onClick={() => handleToggleAddon(addon.id, true)}
+                    onClick={() => {
+                      if (addon.id === "whatsapp-bot" && onNavigate) {
+                        onNavigate("whatsapp");
+                      } else if (addon.id === "sms-pack" && onNavigate) {
+                        onNavigate("sms");
+                      } else {
+                        handleToggleAddon(addon.id, true);
+                      }
+                    }}
                     disabled={isLoading}
                     className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
                   >

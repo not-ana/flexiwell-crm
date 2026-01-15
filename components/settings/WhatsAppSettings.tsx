@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { showToast, Toggle } from "./shared";
 
+interface WhatsAppSettingsProps {
+  onBack?: () => void;
+}
+
 type WhatsAppPlan = "starter" | "pro" | "enterprise";
 
 interface WhatsAppPlanDetails {
@@ -51,7 +55,7 @@ const whatsappPlans: Record<WhatsAppPlan, WhatsAppPlanDetails> = {
   },
 };
 
-export function WhatsAppSettings() {
+export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<WhatsAppPlan>("pro");
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -117,6 +121,17 @@ export function WhatsAppSettings() {
   return (
     <div className="space-y-6">
       <div>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Voltar para Add-ons
+          </button>
+        )}
         <h2 className="text-lg font-semibold text-gray-900">WhatsApp Business</h2>
         <p className="text-sm text-gray-600 mt-1">
           Let your clients check classes, confirm attendance, and cancel via WhatsApp.

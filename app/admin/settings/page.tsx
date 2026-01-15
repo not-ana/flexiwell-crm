@@ -11,8 +11,10 @@ import { NotificationsSettings } from "@/components/settings/NotificationsSettin
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
 import { AddonsSettings } from "@/components/settings/AddonsSettings";
+import { WhatsAppSettings } from "@/components/settings/WhatsAppSettings";
+import { SMSSettings } from "@/components/settings/SMSSettings";
 
-type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons";
+type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons" | "whatsapp" | "sms";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -51,7 +53,11 @@ export default function AdminSettingsPage() {
       case "integrations":
         return <IntegrationsSettings />;
       case "addons":
-        return <AddonsSettings />;
+        return <AddonsSettings onNavigate={setActiveTab} />;
+      case "whatsapp":
+        return <WhatsAppSettings onBack={() => setActiveTab("addons")} />;
+      case "sms":
+        return <SMSSettings onBack={() => setActiveTab("addons")} />;
       default:
         return <GeneralSettings />;
     }
