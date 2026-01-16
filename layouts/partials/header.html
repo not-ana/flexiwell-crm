@@ -1,0 +1,68 @@
+<header class="header">
+    <div class="container-wide">
+        <a href="{{ .Site.BaseURL | relLangURL }}" class="logo">
+            <img src="{{ "images/flexiwell-logo.svg" | relURL }}" alt="FlexiWell" class="logo-image">
+        </a>
+        <nav class="nav">
+            <button class="nav-toggle" aria-label="Toggle navigation">
+                <span class="hamburger"></span>
+            </button>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{{ "/#ai-features" | relLangURL }}" class="nav-link">{{ i18n "nav_features" }}</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ "/pricing/" | relLangURL }}" class="nav-link">{{ i18n "nav_pricing" }}</a>
+                </li>
+                {{/* FlexiLaunch hidden - moved to features futuras
+                <li class="nav-item">
+                    <a href="{{ "/flexilaunch/" | relLangURL }}" class="nav-link">{{ i18n "nav_flexilaunch" }} <span class="nav-badge-new">{{ i18n "nav_new_badge" }}</span></a>
+                </li>
+                */}}
+                {{/* Articles link hidden temporarily
+                <li class="nav-item">
+                    <a href="{{ "/articles/" | relLangURL }}" class="nav-link">{{ i18n "nav_articles" }}</a>
+                </li>
+                */}}
+            </ul>
+        </nav>
+        <div class="header-actions">
+            <!-- Language Switcher -->
+            <div class="language-switcher">
+                <button class="language-btn" aria-label="{{ i18n "language_select" }}">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                        <span class="lang-flag">🇧🇷</span>
+                        <span class="lang-code">PT</span>
+                    {{ else if eq .Site.Language.Lang "es" }}
+                        <span class="lang-flag">🇪🇸</span>
+                        <span class="lang-code">ES</span>
+                    {{ else }}
+                        <span class="lang-flag">🇺🇸</span>
+                        <span class="lang-code">EN</span>
+                    {{ end }}
+                    <svg class="lang-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="language-dropdown">
+                    {{ range .Site.Languages }}
+                        <a href="{{ $.Site.BaseURL }}{{ if ne .Lang "en" }}{{ .Lang }}/{{ end }}" class="language-option {{ if eq $.Site.Language.Lang .Lang }}active{{ end }}">
+                            {{ if eq .Lang "pt-br" }}
+                                <span class="lang-flag">🇧🇷</span>
+                                <span>Português (Brasil)</span>
+                            {{ else if eq .Lang "es" }}
+                                <span class="lang-flag">🇪🇸</span>
+                                <span>Español</span>
+                            {{ else }}
+                                <span class="lang-flag">🇺🇸</span>
+                                <span>English</span>
+                            {{ end }}
+                        </a>
+                    {{ end }}
+                </div>
+            </div>
+            <a href="https://app.flexiwell.net/login" class="btn btn-ghost">{{ i18n "nav_login" }}</a>
+            <a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-header-cta">{{ i18n "nav_start_trial" }}</a>
+        </div>
+    </div>
+</header>
