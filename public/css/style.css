@@ -3228,7 +3228,7 @@ section {
     }
 
     .client-experience-image {
-        order: -1;
+        order: 1;
     }
 
     .early-access-grid {
@@ -3236,7 +3236,7 @@ section {
     }
 
     .early-access-image {
-        order: -1;
+        order: 1;
     }
 
     .early-access-header {
@@ -10760,7 +10760,11 @@ section {
     }
 
     .finances-image-large {
-        order: -1;
+        order: 2;
+    }
+
+    .finances-cards {
+        order: 1;
     }
 
     .finances-header h2 {
@@ -10783,7 +10787,7 @@ section {
     }
 
     .finances-image {
-        order: -1;
+        order: 1;
     }
 
     .finances-content h2,
