@@ -1,0 +1,116 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient-pilates" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1033;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#261B53;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3d2d6b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg-gradient-pilates)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="650" cy="80" r="120" fill="white" fill-opacity="0.02"/>
+  <circle cx="100" cy="380" r="80" fill="white" fill-opacity="0.02"/>
+  <circle cx="720" cy="350" r="60" fill="white" fill-opacity="0.03"/>
+
+  <!-- Main content card -->
+  <rect x="80" y="100" width="320" height="260" rx="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15"/>
+
+  <!-- Software logos row -->
+  <g transform="translate(100, 125)">
+    <!-- FlexiWell -->
+    <g>
+      <rect width="60" height="50" rx="10" fill="white" fill-opacity="0.15"/>
+      <rect x="8" y="12" width="44" height="18" rx="4" fill="#7c3aed"/>
+      <text x="30" y="24" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="7" font-weight="700">FlexiWell</text>
+      <path d="M22 35 L27 40 L38 30" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Momence -->
+    <g transform="translate(70, 0)">
+      <rect width="60" height="50" rx="10" fill="white" fill-opacity="0.15"/>
+      <rect x="8" y="12" width="44" height="18" rx="4" fill="#5046e5"/>
+      <text x="30" y="24" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="7" font-weight="700">Momence</text>
+      <path d="M22 35 L27 40 L38 30" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- WellnessLiving -->
+    <g transform="translate(140, 0)">
+      <rect width="60" height="50" rx="10" fill="white" fill-opacity="0.15"/>
+      <rect x="5" y="12" width="50" height="18" rx="4" fill="#0891b2"/>
+      <text x="30" y="24" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="6" font-weight="700">Wellness</text>
+      <path d="M22 35 L27 40 L38 30" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Glofox -->
+    <g transform="translate(210, 0)">
+      <rect width="60" height="50" rx="10" fill="white" fill-opacity="0.15"/>
+      <rect x="8" y="12" width="44" height="18" rx="4" fill="#ff6b35"/>
+      <text x="30" y="24" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="700">glofox</text>
+      <path d="M22 35 L27 40 L38 30" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Feature list -->
+  <g transform="translate(100, 195)">
+    <rect width="260" height="14" rx="7" fill="white" fill-opacity="0.2"/>
+    <text x="130" y="11" text-anchor="middle" fill="white" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="9">Scheduling &amp; Booking</text>
+  </g>
+  <g transform="translate(100, 218)">
+    <rect width="220" height="14" rx="7" fill="white" fill-opacity="0.15"/>
+    <text x="110" y="11" text-anchor="middle" fill="white" fill-opacity="0.8" font-family="system-ui, -apple-system, sans-serif" font-size="9">Client Management</text>
+  </g>
+  <g transform="translate(100, 241)">
+    <rect width="240" height="14" rx="7" fill="white" fill-opacity="0.12"/>
+    <text x="120" y="11" text-anchor="middle" fill="white" fill-opacity="0.7" font-family="system-ui, -apple-system, sans-serif" font-size="9">Payment Processing</text>
+  </g>
+  <g transform="translate(100, 264)">
+    <rect width="200" height="14" rx="7" fill="white" fill-opacity="0.1"/>
+    <text x="100" y="11" text-anchor="middle" fill="white" fill-opacity="0.6" font-family="system-ui, -apple-system, sans-serif" font-size="9">AI Automation</text>
+  </g>
+  <g transform="translate(100, 287)">
+    <rect width="260" height="14" rx="7" fill="white" fill-opacity="0.08"/>
+    <text x="130" y="11" text-anchor="middle" fill="white" fill-opacity="0.5" font-family="system-ui, -apple-system, sans-serif" font-size="9">WhatsApp Integration</text>
+  </g>
+
+  <!-- Pilates figure illustration -->
+  <g transform="translate(460, 100)">
+    <!-- Reformer base -->
+    <rect x="0" y="200" width="250" height="22" rx="5" fill="white" fill-opacity="0.1" stroke="white" stroke-opacity="0.15"/>
+    <rect x="15" y="180" width="220" height="28" rx="5" fill="white" fill-opacity="0.08"/>
+
+    <!-- Person doing pilates - stylized -->
+    <ellipse cx="125" cy="80" rx="28" ry="30" fill="white" fill-opacity="0.9"/>
+    <rect x="97" y="107" width="56" height="70" rx="12" fill="white" fill-opacity="0.85"/>
+
+    <!-- Arms -->
+    <rect x="65" y="115" width="45" height="14" rx="7" fill="white" fill-opacity="0.8" transform="rotate(-25 65 115)"/>
+    <rect x="140" y="115" width="45" height="14" rx="7" fill="white" fill-opacity="0.8" transform="rotate(25 185 115)"/>
+
+    <!-- Legs on reformer -->
+    <rect x="95" y="168" width="16" height="55" rx="8" fill="white" fill-opacity="0.8" transform="rotate(-10 95 168)"/>
+    <rect x="135" y="168" width="16" height="55" rx="8" fill="white" fill-opacity="0.8" transform="rotate(10 151 168)"/>
+  </g>
+
+  <!-- Trophy/ranking icon -->
+  <g transform="translate(440, 295)">
+    <path d="M30 0 L55 0 L55 25 C55 42 42 55 42 55 C42 55 30 42 30 25 Z" fill="#fbbf24"/>
+    <rect x="36" y="55" width="12" height="18" fill="#fbbf24"/>
+    <rect x="25" y="73" width="35" height="10" rx="3" fill="#fbbf24"/>
+    <text x="42" y="38" text-anchor="middle" fill="#261B53" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="800">1</text>
+  </g>
+
+  <!-- Star ratings -->
+  <g transform="translate(505, 310)">
+    <polygon points="12,0 14,8 22,8 16,13 18,21 12,16 6,21 8,13 2,8 10,8" fill="#fbbf24"/>
+    <polygon points="37,0 39,8 47,8 41,13 43,21 37,16 31,21 33,13 27,8 35,8" fill="#fbbf24"/>
+    <polygon points="62,0 64,8 72,8 66,13 68,21 62,16 56,21 58,13 52,8 60,8" fill="#fbbf24"/>
+    <polygon points="87,0 89,8 97,8 91,13 93,21 87,16 81,21 83,13 77,8 85,8" fill="#fbbf24"/>
+    <polygon points="112,0 114,8 122,8 116,13 118,21 112,16 106,21 108,13 102,8 110,8" fill="#fbbf24"/>
+  </g>
+
+  <!-- Bottom text -->
+  <text x="400" y="395" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill-opacity="0.95">Best Pilates Studio Software 2026</text>
+</svg>

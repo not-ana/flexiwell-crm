@@ -1,0 +1,82 @@
+<svg width="400" height="320" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-success" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1033;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d1f54;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="320" rx="16" fill="url(#bg-success)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="330" cy="70" r="90" fill="white" fill-opacity="0.02"/>
+  <circle cx="70" cy="270" r="60" fill="white" fill-opacity="0.02"/>
+
+  <!-- Case study card -->
+  <g transform="translate(40, 40)">
+    <rect width="200" height="130" rx="12" fill="white" fill-opacity="0.1" stroke="white" stroke-opacity="0.15"/>
+
+    <!-- Studio photo placeholder -->
+    <rect x="12" y="12" width="80" height="60" rx="8" fill="#7c3aed" fill-opacity="0.3"/>
+    <circle cx="52" cy="35" r="15" fill="white" fill-opacity="0.3"/>
+    <rect x="37" y="55" width="30" height="8" rx="4" fill="white" fill-opacity="0.3"/>
+
+    <!-- Case study text -->
+    <text x="105" y="30" text-anchor="left" fill="white" fill-opacity="0.6" font-family="system-ui, -apple-system, sans-serif" font-size="8">CASE STUDY</text>
+    <text x="105" y="48" text-anchor="left" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600">Zen Pilates</text>
+    <text x="105" y="65" text-anchor="left" fill="#10b981" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600">+127% bookings</text>
+
+    <!-- Quote -->
+    <text x="20" y="95" fill="white" fill-opacity="0.8" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-style="italic">"FlexiWell transformed our</text>
+    <text x="20" y="108" fill="white" fill-opacity="0.8" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-style="italic">studio operations..."</text>
+  </g>
+
+  <!-- Video testimonial card -->
+  <g transform="translate(160, 130)">
+    <rect width="190" height="100" rx="12" fill="white" fill-opacity="0.1" stroke="white" stroke-opacity="0.15"/>
+
+    <!-- Video thumbnail -->
+    <rect x="12" y="12" width="166" height="76" rx="8" fill="#1a1033"/>
+
+    <!-- Play button -->
+    <circle cx="95" cy="50" r="20" fill="white" fill-opacity="0.9"/>
+    <polygon points="90,42 90,58 103,50" fill="#7c3aed"/>
+
+    <!-- Video label -->
+    <rect x="20" y="20" width="70" height="20" rx="4" fill="#ef4444"/>
+    <text x="55" y="34" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600">VIDEO</text>
+  </g>
+
+  <!-- Founding member badge -->
+  <g transform="translate(50, 195)">
+    <rect width="100" height="80" rx="12" fill="white" fill-opacity="0.1" stroke="#fbbf24" stroke-opacity="0.5"/>
+    <!-- Badge icon -->
+    <g transform="translate(30, 15)">
+      <polygon points="20,0 25,12 38,14 28,23 31,36 20,30 9,36 12,23 2,14 15,12" fill="#fbbf24"/>
+      <text x="20" y="22" text-anchor="middle" fill="#1a1033" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="800">FM</text>
+    </g>
+    <text x="50" y="62" text-anchor="middle" fill="white" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600">FOUNDING</text>
+    <text x="50" y="73" text-anchor="middle" fill="white" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600">MEMBER</text>
+  </g>
+
+  <!-- Social sharing icons -->
+  <g transform="translate(260, 250)">
+    <rect width="100" height="40" rx="8" fill="white" fill-opacity="0.08"/>
+    <text x="50" y="15" text-anchor="middle" fill="white" fill-opacity="0.6" font-family="system-ui, -apple-system, sans-serif" font-size="8">WE'LL SHARE ON</text>
+
+    <!-- Social icons -->
+    <circle cx="25" cy="28" r="8" fill="#1877f2"/>
+    <circle cx="50" cy="28" r="8" fill="#e4405f"/>
+    <circle cx="75" cy="28" r="8" fill="#0077b5"/>
+  </g>
+
+  <!-- Stats -->
+  <g transform="translate(270, 50)">
+    <text x="0" y="0" fill="white" fill-opacity="0.5" font-family="system-ui, -apple-system, sans-serif" font-size="9">YOUR RESULTS</text>
+    <text x="0" y="25" fill="#10b981" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="800">90</text>
+    <text x="45" y="25" fill="white" fill-opacity="0.7" font-family="system-ui, -apple-system, sans-serif" font-size="10">day</text>
+    <text x="0" y="40" fill="white" fill-opacity="0.7" font-family="system-ui, -apple-system, sans-serif" font-size="10">transformation</text>
+    <text x="0" y="55" fill="white" fill-opacity="0.7" font-family="system-ui, -apple-system, sans-serif" font-size="10">report included</text>
+  </g>
+</svg>

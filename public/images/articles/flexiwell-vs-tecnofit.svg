@@ -1,0 +1,94 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-grad-vs2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1033;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#261B53;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3d2d6b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg-grad-vs2)"/>
+
+  <!-- Subtle pattern -->
+  <circle cx="400" cy="225" r="200" fill="white" fill-opacity="0.02"/>
+  <circle cx="400" cy="225" r="160" fill="white" fill-opacity="0.02"/>
+
+  <!-- Left card - FlexiWell -->
+  <rect x="80" y="100" width="260" height="250" rx="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15"/>
+
+  <!-- FlexiWell Logo -->
+  <g transform="translate(100, 125)">
+    <rect width="100" height="32" rx="6" fill="#7c3aed"/>
+    <text x="50" y="21" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.5">FlexiWell</text>
+  </g>
+
+  <!-- FlexiWell features -->
+  <g fill="white" fill-opacity="0.95">
+    <circle cx="110" cy="185" r="8" fill="#10b981"/>
+    <path d="M106 185 L109 188 L114 181" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="189" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">AI Support "Flexi"</text>
+
+    <circle cx="110" cy="215" r="8" fill="#10b981"/>
+    <path d="M106 215 L109 218 L114 211" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="219" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">WhatsApp + Instagram</text>
+
+    <circle cx="110" cy="245" r="8" fill="#10b981"/>
+    <path d="M106 245 L109 248 L114 241" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="249" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Smart Waitlist AI</text>
+
+    <circle cx="110" cy="275" r="8" fill="#10b981"/>
+    <path d="M106 275 L109 278 L114 271" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="279" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">From $49/month</text>
+
+    <circle cx="110" cy="305" r="8" fill="#10b981"/>
+    <path d="M106 305 L109 308 L114 301" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="128" y="309" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Open API</text>
+  </g>
+
+  <!-- VS badge -->
+  <circle cx="400" cy="225" r="42" fill="white"/>
+  <text x="400" y="233" text-anchor="middle" fill="#261B53" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="800">VS</text>
+
+  <!-- Right card - Tecnofit -->
+  <rect x="460" y="100" width="260" height="250" rx="16" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15"/>
+
+  <!-- Tecnofit Logo -->
+  <g transform="translate(480, 125)">
+    <rect width="100" height="32" rx="6" fill="#00a651"/>
+    <text x="50" y="21" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="0.3">tecnofit</text>
+  </g>
+
+  <!-- Brazil flag -->
+  <g transform="translate(665, 125)">
+    <rect width="44" height="30" rx="3" fill="#009c3b"/>
+    <polygon points="22,4 40,15 22,26 4,15" fill="#ffdf00"/>
+    <circle cx="22" cy="15" r="7" fill="#002776"/>
+    <path d="M15 15 Q22 12 29 15" stroke="white" stroke-width="1" fill="none"/>
+  </g>
+
+  <!-- Tecnofit features -->
+  <g fill="white" fill-opacity="0.95">
+    <circle cx="490" cy="185" r="8" fill="#ef4444"/>
+    <path d="M486 181 L494 189 M494 181 L486 189" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <text x="508" y="189" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">No AI features</text>
+
+    <circle cx="490" cy="215" r="8" fill="#ef4444"/>
+    <path d="M486 211 L494 219 M494 211 L486 219" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <text x="508" y="219" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">No messaging bots</text>
+
+    <circle cx="490" cy="245" r="8" fill="#10b981"/>
+    <path d="M486 245 L489 248 L494 241" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="508" y="249" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Brazil-focused</text>
+
+    <circle cx="490" cy="275" r="8" fill="#f59e0b"/>
+    <text x="508" y="279" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Contact for pricing</text>
+
+    <circle cx="490" cy="305" r="8" fill="#10b981"/>
+    <path d="M486 305 L489 308 L494 301" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="508" y="309" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Local integrations</text>
+  </g>
+
+  <!-- Bottom text -->
+  <text x="400" y="395" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill-opacity="0.95">Complete Comparison Guide 2026</text>
+</svg>
