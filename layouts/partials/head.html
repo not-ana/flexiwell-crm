@@ -1,0 +1,180 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Primary Meta Tags -->
+{{ if .IsHome }}
+<title>{{ .Site.Title }}</title>
+<meta name="title" content="{{ .Site.Title }}">
+<meta name="description" content="{{ .Site.Params.description }}">
+{{ else }}
+<title>{{ .Title }} | FlexiWell</title>
+<meta name="title" content="{{ .Title }} | FlexiWell">
+<meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+{{ end }}
+<meta name="keywords" content="{{ .Site.Params.keywords }}">
+<meta name="author" content="{{ .Site.Params.author }}">
+<meta name="language" content="English">
+<meta name="robots" content="index, follow">
+<meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | FlexiWell{{ end }}">
+<meta property="og:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<meta property="og:image" content="{{ .Site.BaseURL }}{{ .Site.Params.ogImage }}">
+<meta property="og:site_name" content="FlexiWell">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="{{ .Site.Params.twitterCard }}">
+<meta name="twitter:url" content="{{ .Permalink }}">
+<meta name="twitter:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | FlexiWell{{ end }}">
+<meta name="twitter:description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<meta name="twitter:image" content="{{ .Site.BaseURL }}{{ .Site.Params.ogImage }}">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="{{ .Permalink }}">
+
+<!-- Schema.org Structured Data - SoftwareApplication -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "FlexiWell",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "CRM Software",
+  "operatingSystem": "Web Browser",
+  "offers": {
+    "@type": "AggregateOffer",
+    "lowPrice": "0",
+    "highPrice": "99",
+    "priceCurrency": "USD",
+    "offerCount": "3",
+    "priceValidUntil": "2026-12-31"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "200",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "description": "{{ .Site.Params.description }}",
+  "url": "{{ .Site.BaseURL }}",
+  "image": "{{ .Site.BaseURL }}images/flexiwell-logo.svg",
+  "screenshot": "{{ .Site.BaseURL }}images/og-image.png",
+  "featureList": [
+    "AI-Powered Smart Waitlist",
+    "WhatsApp & SMS Booking Integration",
+    "Automated Client Support Chatbot",
+    "Class Scheduling & Management",
+    "Payment & Subscription Processing",
+    "Analytics & Reporting Dashboard",
+    "Client Portal & Online Booking",
+    "Email & Communication Automation"
+  ],
+  "audience": {
+    "@type": "BusinessAudience",
+    "audienceType": "Fitness and Wellness Studios"
+  },
+  "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "{{ .Site.BaseURL }}articles/"
+  }
+}
+</script>
+
+<!-- Schema.org Structured Data - Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "FlexiWell",
+  "alternateName": "FlexiWell CRM",
+  "url": "{{ .Site.BaseURL }}",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "{{ .Site.BaseURL }}images/flexiwell-logo.svg",
+    "width": "200",
+    "height": "50"
+  },
+  "description": "{{ .Site.Params.description }}",
+  "slogan": "{{ .Site.Params.tagline }}",
+  "sameAs": [
+    "https://www.facebook.com/flexiwell",
+    "https://twitter.com/flexiwell",
+    "https://www.linkedin.com/company/flexiwell",
+    "https://www.instagram.com/flexiwell"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "Customer Support",
+    "email": "support@flexiwell.net",
+    "availableLanguage": ["English", "Portuguese", "Spanish"]
+  },
+  "knowsAbout": [
+    "Fitness Studio Management",
+    "Pilates Studio Software",
+    "Yoga Studio CRM",
+    "Gym Management Systems",
+    "Wellness Business Software"
+  ]
+}
+</script>
+
+<!-- Schema.org Structured Data - WebSite with SearchAction -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "FlexiWell",
+  "url": "{{ .Site.BaseURL }}",
+  "description": "{{ .Site.Params.description }}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "FlexiWell"
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "{{ .Site.BaseURL }}articles/?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+{{ if .IsPage }}
+<!-- Schema.org Structured Data - Article (for blog posts) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ .Title }}",
+  "description": "{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify | truncate 160 }}{{ end }}",
+  "url": "{{ .Permalink }}",
+  "datePublished": "{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
+  "dateModified": "{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
+  "author": {
+    "@type": "Organization",
+    "name": "FlexiWell"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "FlexiWell",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ .Site.BaseURL }}images/flexiwell-logo.svg"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ .Permalink }}"
+  }
+}
+</script>
+{{ end }}
+
+<link rel="stylesheet" href="{{ "css/style.css" | relURL }}?v={{ now.Unix }}">

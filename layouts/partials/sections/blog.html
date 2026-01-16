@@ -1,0 +1,80 @@
+<section id="blog" class="blog-section">
+    <div class="container">
+        <div class="blog-header">
+            <h2>Recent blog posts</h2>
+        </div>
+
+        {{ $articles := where .Site.RegularPages "Section" "articles" }}
+        {{ $articles = $articles.ByDate.Reverse }}
+        {{ $articles = first 3 $articles }}
+
+        <div class="blog-layout">
+            {{ range $index, $article := $articles }}
+                {{ if eq $index 0 }}
+                <!-- Featured Article (Large, Left) -->
+                <article class="blog-card-featured">
+                    <a href="{{ $article.Permalink }}" class="blog-featured-link">
+                        <div class="blog-image-featured">
+                            {{ if $article.Params.image }}
+                            <img src="{{ $article.Params.image }}" alt="{{ $article.Title }}" class="blog-featured-img">
+                            {{ else }}
+                            <div class="blog-image-placeholder">
+                                <span class="blog-icon">📊</span>
+                            </div>
+                            {{ end }}
+                        </div>
+                        <div class="blog-featured-meta">
+                            <span class="blog-author">{{ $article.Params.author | default "FlexiWell Team" }}</span>
+                            <span class="blog-separator">•</span>
+                            <span class="blog-date">{{ $article.Date.Format "2 Jan 2006" }}</span>
+                        </div>
+                        <h3 class="blog-featured-title">{{ $article.Title }}<span class="blog-arrow">↗</span></h3>
+                        <p class="blog-featured-description">{{ $article.Description }}</p>
+                        <div class="blog-tags">
+                            {{ range first 3 $article.Params.tags }}
+                            <span class="blog-tag">{{ . }}</span>
+                            {{ end }}
+                        </div>
+                    </a>
+                </article>
+                {{ end }}
+
+                {{ if eq $index 1 }}
+                <!-- Smaller Articles (Right Stack) -->
+                <div class="blog-cards-stack">
+                {{ end }}
+
+                {{ if ge $index 1 }}
+                <article class="blog-card-small">
+                    <a href="{{ $article.Permalink }}" class="blog-small-link">
+                        <div class="blog-small-image">
+                            {{ if $article.Params.image }}
+                            <img src="{{ $article.Params.image }}" alt="{{ $article.Title }}" class="blog-small-img">
+                            {{ else }}
+                            <div class="blog-image-placeholder">
+                                <span class="blog-icon">🎯</span>
+                            </div>
+                            {{ end }}
+                        </div>
+                        <div class="blog-small-text">
+                            <div class="blog-small-meta">
+                                <span class="blog-author">{{ $article.Params.author | default "FlexiWell Team" }}</span>
+                                <span class="blog-separator">•</span>
+                                <span class="blog-date">{{ $article.Date.Format "2 Jan 2006" }}</span>
+                            </div>
+                            <h4 class="blog-small-title">{{ $article.Title }}</h4>
+                            <p class="blog-small-description">{{ $article.Description }}</p>
+                            <div class="blog-tags">
+                                {{ range first 2 $article.Params.tags }}
+                                <span class="blog-tag">{{ . }}</span>
+                                {{ end }}
+                            </div>
+                        </div>
+                    </a>
+                </article>
+                {{ end }}
+            {{ end }}
+                </div>
+        </div>
+    </div>
+</section>

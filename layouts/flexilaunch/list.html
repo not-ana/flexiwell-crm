@@ -1,0 +1,364 @@
+{{ define "main" }}
+<!-- Hero Section -->
+<section class="flexilaunch-hero">
+    <div class="container">
+        <div class="flexilaunch-hero-grid">
+            <!-- Left Content -->
+            <div class="flexilaunch-hero-content">
+                <div class="flexilaunch-badges">
+                    <span class="flexilaunch-badge-urgent">Only 5 spots available</span>
+                    <span class="flexilaunch-badge-outline">Early Launch Program</span>
+                </div>
+                <h1 class="flexilaunch-hero-title">
+                    Websites That Convert for Pilates Studios, Spas & Wellness Brands
+                </h1>
+                <p class="flexilaunch-hero-subtitle">
+                    We're looking for 5 founding clients who want a premium website with special conditions. Get 30% off when you bundle with FlexiWell CRM.
+                </p>
+
+                <ul class="hero-benefits">
+                    <li><span class="hero-benefit-check">✓</span> <strong>30% off website</strong> when bundled with FlexiWell annual</li>
+                    <li><span class="hero-benefit-check">✓</span> <strong>Priority support</strong> with direct Slack access</li>
+                    <li><span class="hero-benefit-check">✓</span> <strong>Founding member pricing</strong> locked forever</li>
+                </ul>
+            </div>
+
+            <!-- Right Form -->
+            <div class="flexilaunch-hero-form">
+                <div class="flexilaunch-form-card">
+                    <h3>Get 30% off your website</h3>
+                    <p>Bundle with FlexiWell annual and save up to $3,600</p>
+                    <form action="https://formspree.io/f/xpqwvlwd" method="POST" class="flexilaunch-form">
+                        <input type="hidden" name="_subject" value="FlexiLaunch - New Lead">
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <div class="input-with-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                    <path d="M22 7l-10 6L2 7"/>
+                                </svg>
+                                <input type="email" id="email" name="email" placeholder="you@yourbusiness.com" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="studio">Business name</label>
+                            <input type="text" id="studio" name="studio" placeholder="Your wellness business">
+                        </div>
+                        <button type="submit" class="btn btn-dark btn-block">Get started</button>
+                        <p class="form-note">No commitment. We'll reach out within 48h.</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Process Timeline -->
+<section class="flexilaunch-process">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-label">The process</span>
+            <h2>How It Works</h2>
+        </div>
+
+        <div class="process-timeline">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <div class="step-content">
+                    <h3>Book a call</h3>
+                    <p>We'll discuss your studio, goals, and timeline</p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <div class="step-content">
+                    <h3>We recommend a platform</h3>
+                    <p>Hugo for simplicity, Webflow for flexibility</p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <div class="step-content">
+                    <h3>We build your website</h3>
+                    <p>2-4 weeks depending on complexity</p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-marker">4</div>
+                <div class="step-content">
+                    <h3>We set up FlexiWell</h3>
+                    <p>Migration from your old system included</p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-marker">5</div>
+                <div class="step-content">
+                    <h3>You launch</h3>
+                    <p>Website + CRM live on the same day 🚀</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section class="flexilaunch-pricing" id="pricing">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-label">Pricing</span>
+            <h2>Choose Your Website Package</h2>
+            <p class="section-subtitle">Get 30% off when you bundle with FlexiWell CRM</p>
+        </div>
+
+        <!-- Pricing Table -->
+        <div class="pricing-table-wrapper">
+            <table class="pricing-table">
+                <thead>
+                    <tr>
+                        <th class="tier-header"></th>
+                        <th class="tier-header">
+                            <span class="tier-name">Essential</span>
+                            <span class="tier-desc">Hugo · 5 pages</span>
+                        </th>
+                        <th class="tier-header tier-featured">
+                            <span class="tier-badge-inline">Popular</span>
+                            <span class="tier-name">Professional</span>
+                            <span class="tier-desc">Hugo/Webflow · 8-10 pages</span>
+                        </th>
+                        <th class="tier-header">
+                            <span class="tier-name">Enterprise</span>
+                            <span class="tier-desc">Webflow · Unlimited</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="price-row">
+                        <td class="row-label">Site Only</td>
+                        <td>$3,500</td>
+                        <td class="cell-featured">$6,000</td>
+                        <td>$12,000+</td>
+                    </tr>
+                    <tr class="price-row bundle-row">
+                        <td class="row-label">
+                            <span>Site + FlexiWell</span>
+                            <span class="save-badge">Save 30%</span>
+                        </td>
+                        <td><del>$3,500</del> <strong>$2,450</strong></td>
+                        <td class="cell-featured"><del>$6,000</del> <strong>$4,200</strong></td>
+                        <td><del>$12,000</del> <strong>$8,400</strong></td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">Custom pages</td>
+                        <td>5 pages</td>
+                        <td class="cell-featured">8-10 pages</td>
+                        <td>Unlimited</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">Blog/Articles</td>
+                        <td>—</td>
+                        <td class="cell-featured">✓</td>
+                        <td>✓</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">SEO optimization</td>
+                        <td>Basic</td>
+                        <td class="cell-featured">Advanced</td>
+                        <td>Full</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">Custom animations</td>
+                        <td>—</td>
+                        <td class="cell-featured">Basic</td>
+                        <td>Advanced</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">Monthly hosting</td>
+                        <td>$0 (Netlify)</td>
+                        <td class="cell-featured">$0-39/mo</td>
+                        <td>$14-39/mo</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="row-label">Delivery</td>
+                        <td>2 weeks</td>
+                        <td class="cell-featured">2-3 weeks</td>
+                        <td>3-4 weeks</td>
+                    </tr>
+                    <tr class="cta-row">
+                        <td></td>
+                        <td><a href="mailto:manager@flexiwell.net?subject=FlexiLaunch Essential" class="btn btn-outline btn-sm">Get started</a></td>
+                        <td class="cell-featured"><a href="mailto:manager@flexiwell.net?subject=FlexiLaunch Professional" class="btn btn-primary btn-sm">Get started</a></td>
+                        <td><a href="mailto:manager@flexiwell.net?subject=FlexiLaunch Enterprise" class="btn btn-outline btn-sm">Get started</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bundle Benefits -->
+        <div class="bundle-benefits">
+            <div class="bundle-benefits-header">
+                <h3>What's included in the FlexiWell Bundle?</h3>
+            </div>
+            <div class="bundle-benefits-grid">
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>FlexiWell CRM (annual plan)</span>
+                </div>
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>AI assistant for your studio</span>
+                </div>
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>WhatsApp-native booking</span>
+                </div>
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>Smart waitlist management</span>
+                </div>
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>Free migration from Mindbody, Glofox, etc.</span>
+                </div>
+                <div class="bundle-benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>30-day post-launch support</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="pricing-note">
+            <strong>Note:</strong> Bundle requires FlexiWell annual subscription (from $470/year). Hugo = $0/mo hosting. Webflow = $14-39/mo paid to Webflow.
+        </p>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="flexilaunch-faq">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-label">Questions?</span>
+            <h2>Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-list">
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>Can I get just the website without FlexiWell?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes! You can purchase the website only. Prices start at $3,500 for Essential, $6,000 for Professional, and $12,000+ for Enterprise. However, bundling with FlexiWell annual gives you 30% off the website price.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>What FlexiWell plan do I need for the bundle?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Any annual FlexiWell plan qualifies for the 30% website discount:<br>
+                    <strong>Starter:</strong> $470/year (~$39/mo)<br>
+                    <strong>Growth:</strong> $950/year (~$79/mo)<br>
+                    <strong>Business:</strong> $1,718/year (~$143/mo)<br>
+                    <strong>Professional:</strong> $1,910/year (~$159/mo)</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>Hugo or Webflow - which should I choose?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>We'll help you decide. Generally:<br>
+                    <strong>Hugo</strong> = faster, $0/mo hosting, great for simple sites with 5-8 pages<br>
+                    <strong>Webflow</strong> = visual editor, more flexible, better for complex sites you want to edit yourself</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>What if I'm already on Mindbody, Glofox, or another CRM?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>We'll migrate everything for free when you get the bundle. Client data, class schedules, packages - we've done hundreds of migrations.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>What's included in FlexiWell?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>FlexiWell is an all-in-one CRM for wellness businesses. It includes:<br>
+                    • AI assistant that handles client messages 24/7<br>
+                    • WhatsApp-native booking and scheduling<br>
+                    • Smart waitlist management<br>
+                    • Client management and analytics<br>
+                    • Payment processing and packages</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span>How long until my site is live?</span>
+                    <span class="faq-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p><strong>Essential:</strong> 2 weeks<br>
+                    <strong>Professional:</strong> 2-3 weeks<br>
+                    <strong>Enterprise:</strong> 3-4 weeks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // FAQ Accordion
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(function(item) {
+        const question = item.querySelector('.faq-question');
+
+        question.addEventListener('click', function() {
+            const isOpen = item.classList.contains('open');
+
+            // Close all items
+            faqItems.forEach(function(i) {
+                i.classList.remove('open');
+                i.querySelector('.faq-icon').textContent = '+';
+            });
+
+            // Open clicked item if it wasn't open
+            if (!isOpen) {
+                item.classList.add('open');
+                item.querySelector('.faq-icon').textContent = '−';
+            }
+        });
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{{ end }}

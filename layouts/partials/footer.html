@@ -1,0 +1,26 @@
+<footer class="footer-new">
+    <div class="container">
+        <div class="footer-content">
+            <a href="{{ .Site.BaseURL | relLangURL }}" class="footer-logo">
+                <span class="footer-logo-text">flexiwell</span>
+            </a>
+            <nav class="footer-nav-horizontal">
+                <a href="{{ "/#ai-features" | relLangURL }}">{{ i18n "nav_features" }}</a>
+                <a href="{{ "/pricing/" | relLangURL }}">{{ i18n "nav_pricing" }}</a>
+                <a href="{{ "/flexilaunch/" | relLangURL }}">{{ i18n "nav_flexilaunch" }}</a>
+                <a href="#help">{{ i18n "nav_help" }}</a>
+                <a href="#privacy">{{ i18n "nav_privacy" }}</a>
+            </nav>
+        </div>
+
+        <div class="footer-bottom-new">
+            <p>&copy; {{ now.Year }} flexiwell. {{ i18n "footer_copyright" }}</p>
+            <span class="footer-address">{{ i18n "footer_address" }}</span>
+            <nav class="footer-legal-new">
+                <a href="#terms">{{ i18n "nav_terms" }}</a>
+                <a href="#privacy">{{ i18n "nav_privacy" }}</a>
+                <a href="#cookies">{{ i18n "nav_cookies" }}</a>
+            </nav>
+        </div>
+    </div>
+</footer>

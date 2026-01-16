@@ -1,0 +1,142 @@
+{{ define "main" }}
+<article class="article-single">
+    <header class="article-header">
+        <div class="container">
+            <span class="article-category">{{ index .Params.tags 0 }}</span>
+            <h1 class="article-single-title">{{ .Title }}</h1>
+            <p class="article-single-description">{{ .Params.description }}</p>
+            <div class="article-single-meta">
+                <div class="article-author-info">
+                    {{ if eq .Params.author "FlexiWell Team" }}
+                    <div class="article-author-avatar article-author-avatar-img">
+                        <img src="/images/flexiwell-team.jpeg" alt="FlexiWell Team" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
+                    </div>
+                    {{ else }}
+                    <div class="article-author-avatar">
+                        {{ $initial := substr .Params.author 0 1 }}
+                        <span>{{ $initial }}</span>
+                    </div>
+                    {{ end }}
+                    <div class="article-author-details">
+                        <span class="article-author-name">{{ .Params.author }}</span>
+                        <span class="article-date">{{ .Date.Format "2 Jan 2006" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {{ if .Params.image }}
+    <div class="article-featured-image-full">
+        <div class="container-wide">
+            <img src="{{ .Params.image }}" alt="{{ .Title }}">
+        </div>
+    </div>
+    {{ end }}
+
+    <div class="article-body">
+        <div class="container">
+            <div class="article-content">
+                {{ .Content }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+        </svg>
+    </button>
+
+    <script>
+    (function() {
+        const scrollBtn = document.getElementById('scrollToTop');
+        if (!scrollBtn) return;
+
+        function updateScrollButton() {
+            if (window.scrollY > 400) {
+                scrollBtn.classList.add('visible');
+            } else {
+                scrollBtn.classList.remove('visible');
+            }
+        }
+
+        scrollBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        window.addEventListener('scroll', updateScrollButton, { passive: true });
+        updateScrollButton();
+    })();
+    </script>
+
+    <footer class="article-footer">
+        <div class="container container-narrow">
+            <div class="article-tags-footer">
+                {{ range .Params.tags }}
+                <span class="article-tag">{{ . }}</span>
+                {{ end }}
+            </div>
+
+            <div class="article-share">
+                <span class="share-label">Share this article</span>
+                <div class="share-buttons">
+                    <a href="https://twitter.com/intent/tweet?url={{ .Permalink }}&text={{ .Title }}" target="_blank" rel="noopener" class="share-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ .Permalink }}&title={{ .Title }}" target="_blank" rel="noopener" class="share-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                    <a href="mailto:?subject={{ .Title }}&body={{ .Permalink }}" class="share-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</article>
+
+<!-- Related Articles -->
+{{ $related := where .Site.RegularPages "Section" "articles" | first 3 }}
+{{ if gt (len $related) 1 }}
+<section class="related-articles">
+    <div class="container">
+        <h2 class="related-title">Related articles</h2>
+        <div class="articles-grid articles-grid-3">
+            {{ range $related }}
+            {{ if ne .Permalink $.Permalink }}
+            <article class="article-card">
+                <a href="{{ .Permalink }}" class="article-card-link">
+                    <div class="article-card-image">
+                        {{ if .Params.image }}
+                        <img src="{{ .Params.image }}" alt="{{ .Title }}">
+                        {{ else }}
+                        <div class="article-image-placeholder">
+                            <span class="article-icon">📝</span>
+                        </div>
+                        {{ end }}
+                    </div>
+                    <div class="article-card-content">
+                        <div class="article-meta">
+                            <span class="article-author">{{ .Params.author }}</span>
+                            <span class="article-separator">•</span>
+                            <span class="article-date">{{ .Date.Format "2 Jan 2006" }}</span>
+                        </div>
+                        <h3 class="article-card-title">{{ .Title }}<span class="article-arrow">↗</span></h3>
+                        <p class="article-card-description">{{ .Params.description }}</p>
+                        <div class="article-tags">
+                            {{ range .Params.tags }}
+                            <span class="article-tag">{{ . }}</span>
+                            {{ end }}
+                        </div>
+                    </div>
+                </a>
+            </article>
+            {{ end }}
+            {{ end }}
+        </div>
+    </div>
+</section>
+{{ end }}
+{{ end }}

@@ -1,0 +1,261 @@
+<section id="pricing" class="pricing">
+    <div class="pricing-wrapper">
+        <div class="pricing-header">
+            <span class="pricing-label">{{ i18n "pricing_label" }}</span>
+            <h2>{{ i18n "pricing_title" }}</h2>
+            <p class="pricing-subtitle">{{ i18n "pricing_subtitle" }}</p>
+            <p class="pricing-trial-note">{{ i18n "pricing_all_plans_include" }}</p>
+            <div class="pricing-toggle">
+                <button class="toggle-btn active" data-plan="monthly">{{ i18n "pricing_monthly" }}</button>
+                <button class="toggle-btn" data-plan="yearly">{{ i18n "pricing_yearly" }} <span class="save-badge">{{ i18n "pricing_save_badge" }}</span></button>
+            </div>
+        </div>
+
+        <div class="pricing-grid-3">
+            <!-- Starter Plan -->
+            <div class="pricing-card">
+                <div class="pricing-card-header">
+                    <h3 class="plan-name">{{ i18n "plan_starter" }}</h3>
+                </div>
+                <div class="pricing-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="price-currency">R$</span>
+                    <span class="price-amount" data-monthly="349" data-yearly="279">349</span>
+                    {{ else }}
+                    <span class="price-currency">$</span>
+                    <span class="price-amount" data-monthly="99" data-yearly="79">99</span>
+                    {{ end }}
+                    <span class="price-period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-subtitle">{{ i18n "plan_starter_subtitle" }}</p>
+
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-select-plan">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Growth Plan -->
+            <div class="pricing-card">
+                <div class="pricing-card-header">
+                    <h3 class="plan-name">{{ i18n "plan_growth" }}</h3>
+                </div>
+                <div class="pricing-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="price-currency">R$</span>
+                    <span class="price-amount" data-monthly="629" data-yearly="499">629</span>
+                    {{ else }}
+                    <span class="price-currency">$</span>
+                    <span class="price-amount" data-monthly="179" data-yearly="143">179</span>
+                    {{ end }}
+                    <span class="price-period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-subtitle">{{ i18n "plan_growth_subtitle" }}</p>
+
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-select-plan">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Business Plan - MOST POPULAR -->
+            <div class="pricing-card pricing-card-featured">
+                <div class="popular-badge">{{ i18n "pricing_most_popular" }}</div>
+                <div class="pricing-card-header">
+                    <h3 class="plan-name">{{ i18n "plan_business" }}</h3>
+                </div>
+                <div class="pricing-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="price-currency">R$</span>
+                    <span class="price-amount" data-monthly="1049" data-yearly="839">1.049</span>
+                    {{ else }}
+                    <span class="price-currency">$</span>
+                    <span class="price-amount" data-monthly="299" data-yearly="239">299</span>
+                    {{ end }}
+                    <span class="price-period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-subtitle">{{ i18n "plan_business_subtitle" }}</p>
+
+                <a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-select-plan">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Professional Plan -->
+            <div class="pricing-card">
+                <div class="pricing-card-header">
+                    <h3 class="plan-name">{{ i18n "plan_professional" }}</h3>
+                </div>
+                <div class="pricing-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="price-currency">R$</span>
+                    <span class="price-amount" data-monthly="1749" data-yearly="1399">1.749</span>
+                    {{ else }}
+                    <span class="price-currency">$</span>
+                    <span class="price-amount" data-monthly="499" data-yearly="399">499</span>
+                    {{ end }}
+                    <span class="price-period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-subtitle">{{ i18n "plan_professional_subtitle" }}</p>
+
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-select-plan">{{ i18n "pricing_get_started" }}</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FEATURES COMPARISON TABLE -->
+    <div class="container">
+        <div class="features-comparison-header">
+            <h2>{{ i18n "compare_title" }}</h2>
+            <p>{{ i18n "compare_subtitle" }}</p>
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: 3rem;">
+            <table border="1" cellpadding="12" cellspacing="0" style="width: 100%; border-collapse: collapse; background: white;">
+                <thead style="background: #ede9fe;">
+                    <tr>
+                        <th style="text-align: left; padding: 1rem;">{{ i18n "compare_feature" }}</th>
+                        <th style="text-align: center; padding: 1rem;">{{ i18n "plan_starter" }}</th>
+                        <th style="text-align: center; padding: 1rem;">{{ i18n "plan_growth" }}</th>
+                        <th style="text-align: center; padding: 1rem; background: #f3e8ff;">{{ i18n "plan_business" }}</th>
+                        <th style="text-align: center; padding: 1rem;">{{ i18n "plan_professional" }}</th>
+                    </tr>
+                    <tr style="background: white;">
+                        <th style="text-align: left; padding: 1rem;">{{ i18n "compare_monthly_price" }}</th>
+                        {{ if eq .Site.Language.Lang "pt-br" }}
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">R$349</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">R$629</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed; background: #faf5ff;">R$1.049</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">R$1.749</th>
+                        {{ else }}
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">$99</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">$179</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed; background: #faf5ff;">$299</th>
+                        <th style="text-align: center; padding: 1rem; color: #7c3aed;">$499</th>
+                        {{ end }}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- LIMITS SECTION -->
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_limits" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_active_clients" }}</td>
+                        <td style="text-align: center; padding: 1rem;">100</td>
+                        <td style="text-align: center; padding: 1rem;">500</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff;">2,000</td>
+                        <td style="text-align: center; padding: 1rem;">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_team_members" }}</td>
+                        <td style="text-align: center; padding: 1rem;">{{ i18n "plan_unlimited" }}</td>
+                        <td style="text-align: center; padding: 1rem;">{{ i18n "plan_unlimited" }}</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff;">{{ i18n "plan_unlimited" }}</td>
+                        <td style="text-align: center; padding: 1rem;">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_locations" }}</td>
+                        <td style="text-align: center; padding: 1rem;">1</td>
+                        <td style="text-align: center; padding: 1rem;">2</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff;">5</td>
+                        <td style="text-align: center; padding: 1rem;">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_storage" }}</td>
+                        <td style="text-align: center; padding: 1rem;">5GB</td>
+                        <td style="text-align: center; padding: 1rem;">25GB</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff;">100GB</td>
+                        <td style="text-align: center; padding: 1rem;">500GB</td>
+                    </tr>
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_core_features" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_online_scheduling" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_client_portal" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_payment_processing" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_email_reminders" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_communication" }}</td>
+                    </tr>
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_whatsapp_notifications" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    {{ else }}
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_sms_notifications" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    {{ end }}
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_ai_features" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_ai_assistant" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_advanced_features" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_custom_branding" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_api_access" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                    <tr style="background: #ede9fe;">
+                        <td colspan="5" style="padding: 1rem; font-weight: bold;">{{ i18n "compare_support" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1rem;">{{ i18n "compare_priority_support" }}</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; color: #cbd5e1;">-</td>
+                        <td style="text-align: center; padding: 1rem; background: #faf5ff; color: #059669;">&#10003;</td>
+                        <td style="text-align: center; padding: 1rem; color: #059669;">&#10003;</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-large">{{ i18n "pricing_start_trial" }}</a>
+            <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem;">{{ i18n "pricing_trial_info" }}</p>
+        </div>
+    </div>
+</section>

@@ -23,8 +23,13 @@
             <div class="pricing-card-new" data-plan="starter">
                 <h3 class="plan-name">{{ i18n "plan_starter" }}</h3>
                 <div class="plan-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="currency">R$</span>
+                    <span class="amount" data-monthly="349" data-annual="279">349</span>
+                    {{ else }}
                     <span class="currency">$</span>
                     <span class="amount" data-monthly="99" data-annual="79">99</span>
+                    {{ end }}
                     <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
                 </div>
                 <p class="plan-description">{{ i18n "plan_starter_subtitle" }}</p>
@@ -35,8 +40,13 @@
             <div class="pricing-card-new" data-plan="growth">
                 <h3 class="plan-name">{{ i18n "plan_growth" }}</h3>
                 <div class="plan-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="currency">R$</span>
+                    <span class="amount" data-monthly="629" data-annual="499">629</span>
+                    {{ else }}
                     <span class="currency">$</span>
                     <span class="amount" data-monthly="179" data-annual="143">179</span>
+                    {{ end }}
                     <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
                 </div>
                 <p class="plan-description">{{ i18n "plan_growth_subtitle" }}</p>
@@ -48,8 +58,13 @@
                 <div class="popular-label">{{ i18n "pricing_most_popular" }}</div>
                 <h3 class="plan-name">{{ i18n "plan_business" }}</h3>
                 <div class="plan-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="currency">R$</span>
+                    <span class="amount" data-monthly="1049" data-annual="839">1.049</span>
+                    {{ else }}
                     <span class="currency">$</span>
                     <span class="amount" data-monthly="299" data-annual="239">299</span>
+                    {{ end }}
                     <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
                 </div>
                 <p class="plan-description">{{ i18n "plan_business_subtitle" }}</p>
@@ -60,8 +75,13 @@
             <div class="pricing-card-new" data-plan="professional">
                 <h3 class="plan-name">{{ i18n "plan_professional" }}</h3>
                 <div class="plan-price">
+                    {{ if eq .Site.Language.Lang "pt-br" }}
+                    <span class="currency">R$</span>
+                    <span class="amount" data-monthly="1749" data-annual="1399">1.749</span>
+                    {{ else }}
                     <span class="currency">$</span>
                     <span class="amount" data-monthly="499" data-annual="399">499</span>
+                    {{ end }}
                     <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
                 </div>
                 <p class="plan-description">{{ i18n "plan_professional_subtitle" }}</p>
@@ -149,7 +169,7 @@
                     <tr class="category-header">
                         <td colspan="5">{{ i18n "compare_communication" }}</td>
                     </tr>
-                    {{ if eq .Site.Params.messagingChannel "WhatsApp" }}
+                    {{ if eq .Site.Language.Lang "pt-br" }}
                     <tr class="feature-row">
                         <td class="feature-name">{{ i18n "compare_whatsapp_notifications" }}</td>
                         <td class="feature-value"><span class="check">&#10003;</span></td>
