@@ -1,0 +1,282 @@
+{{ define "main" }}
+<!-- Hero Section with Dark Purple Background -->
+<section class="pricing-hero">
+    <div class="container">
+        <span class="pricing-hero-label">{{ i18n "pricing_label" }}</span>
+        <h1 class="pricing-hero-title">{{ i18n "pricing_title" }}</h1>
+        <p class="pricing-hero-subtitle">{{ i18n "pricing_subtitle" }}</p>
+        <p class="pricing-hero-note">{{ i18n "pricing_all_plans_include" }}</p>
+
+        <!-- Billing Toggle -->
+        <div class="billing-toggle">
+            <button class="billing-btn active" data-billing="monthly">{{ i18n "pricing_monthly" }}</button>
+            <button class="billing-btn" data-billing="annual">{{ i18n "pricing_yearly" }} <span class="billing-discount">{{ i18n "pricing_save_badge" }}</span></button>
+        </div>
+    </div>
+</section>
+
+<section class="pricing-page">
+    <div class="container">
+        <!-- Pricing Cards - All 5 plans -->
+        <div class="pricing-cards-row">
+            <!-- Starter -->
+            <div class="pricing-card-new" data-plan="starter">
+                <h3 class="plan-name">{{ i18n "plan_starter" }}</h3>
+                <div class="plan-price">
+                    <span class="currency">$</span>
+                    <span class="amount" data-monthly="99" data-annual="79">99</span>
+                    <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-description">{{ i18n "plan_starter_subtitle" }}</p>
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-block">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Growth -->
+            <div class="pricing-card-new" data-plan="growth">
+                <h3 class="plan-name">{{ i18n "plan_growth" }}</h3>
+                <div class="plan-price">
+                    <span class="currency">$</span>
+                    <span class="amount" data-monthly="179" data-annual="143">179</span>
+                    <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-description">{{ i18n "plan_growth_subtitle" }}</p>
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-block">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Business - Featured -->
+            <div class="pricing-card-new featured" data-plan="business">
+                <div class="popular-label">{{ i18n "pricing_most_popular" }}</div>
+                <h3 class="plan-name">{{ i18n "plan_business" }}</h3>
+                <div class="plan-price">
+                    <span class="currency">$</span>
+                    <span class="amount" data-monthly="299" data-annual="239">299</span>
+                    <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-description">{{ i18n "plan_business_subtitle" }}</p>
+                <a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-block">{{ i18n "pricing_get_started" }}</a>
+            </div>
+
+            <!-- Professional -->
+            <div class="pricing-card-new" data-plan="professional">
+                <h3 class="plan-name">{{ i18n "plan_professional" }}</h3>
+                <div class="plan-price">
+                    <span class="currency">$</span>
+                    <span class="amount" data-monthly="499" data-annual="399">499</span>
+                    <span class="period">/{{ i18n "pricing_month_abbr" }}</span>
+                </div>
+                <p class="plan-description">{{ i18n "plan_professional_subtitle" }}</p>
+                <a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-block">{{ i18n "pricing_get_started" }}</a>
+            </div>
+        </div>
+
+        <!-- Features Comparison Table -->
+        <div class="features-table-section">
+            <table class="features-comparison-table">
+                <thead>
+                    <tr>
+                        <th class="feature-col"></th>
+                        <th class="plan-col">{{ i18n "plan_starter" }}</th>
+                        <th class="plan-col">{{ i18n "plan_growth" }}</th>
+                        <th class="plan-col featured">{{ i18n "plan_business" }}</th>
+                        <th class="plan-col">{{ i18n "plan_professional" }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Limits -->
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_active_clients" }}</td>
+                        <td class="feature-value">100</td>
+                        <td class="feature-value">500</td>
+                        <td class="feature-value featured">2,000</td>
+                        <td class="feature-value">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_team_members" }}</td>
+                        <td class="feature-value">{{ i18n "plan_unlimited" }}</td>
+                        <td class="feature-value">{{ i18n "plan_unlimited" }}</td>
+                        <td class="feature-value featured">{{ i18n "plan_unlimited" }}</td>
+                        <td class="feature-value">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_locations" }}</td>
+                        <td class="feature-value">1</td>
+                        <td class="feature-value">2</td>
+                        <td class="feature-value featured">5</td>
+                        <td class="feature-value">{{ i18n "plan_unlimited" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_storage" }}</td>
+                        <td class="feature-value">5GB</td>
+                        <td class="feature-value">25GB</td>
+                        <td class="feature-value featured">100GB</td>
+                        <td class="feature-value">500GB</td>
+                    </tr>
+
+                    <!-- Category: Core Features -->
+                    <tr class="category-header">
+                        <td colspan="5">{{ i18n "compare_core_features" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_online_scheduling" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_client_portal" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_payment_processing" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_email_reminders" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+
+                    <!-- Category: Communication -->
+                    <tr class="category-header">
+                        <td colspan="5">{{ i18n "compare_communication" }}</td>
+                    </tr>
+                    {{ if eq .Site.Params.messagingChannel "WhatsApp" }}
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_whatsapp_notifications" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    {{ else }}
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_sms_notifications" }}</td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    {{ end }}
+
+                    <!-- Category: AI Features -->
+                    <tr class="category-header">
+                        <td colspan="5">{{ i18n "compare_ai_features" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_ai_assistant" }}</td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+
+                    <!-- Category: Advanced -->
+                    <tr class="category-header">
+                        <td colspan="5">{{ i18n "compare_advanced_features" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_custom_branding" }}</td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_api_access" }}</td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value featured"><span class="dash">-</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+
+                    <!-- Category: Support -->
+                    <tr class="category-header">
+                        <td colspan="5">{{ i18n "compare_support" }}</td>
+                    </tr>
+                    <tr class="feature-row">
+                        <td class="feature-name">{{ i18n "compare_priority_support" }}</td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value"><span class="dash">-</span></td>
+                        <td class="feature-value featured"><span class="check">&#10003;</span></td>
+                        <td class="feature-value"><span class="check">&#10003;</span></td>
+                    </tr>
+
+                    <!-- CTA Row -->
+                    <tr class="cta-row">
+                        <td></td>
+                        <td><a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-sm">{{ i18n "pricing_get_started" }}</a></td>
+                        <td><a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-sm">{{ i18n "pricing_get_started" }}</a></td>
+                        <td class="featured"><a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-sm">{{ i18n "pricing_get_started" }}</a></td>
+                        <td><a href="https://app.flexiwell.net/signup" class="btn btn-outline btn-sm">{{ i18n "pricing_get_started" }}</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Note -->
+        <div class="pricing-note">
+            <p>{{ i18n "pricing_trial_info" }}</p>
+        </div>
+    </div>
+</section>
+
+{{- partial "sections/faq.html" . -}}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentBilling = 'monthly';
+
+    const pricingCards = document.querySelectorAll('.pricing-card-new');
+    const featuredCard = document.querySelector('.pricing-card-new.featured');
+
+    // Billing Toggle
+    const billingBtns = document.querySelectorAll('.billing-btn');
+    const amountElements = document.querySelectorAll('.amount');
+
+    billingBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            billingBtns.forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            currentBilling = btn.getAttribute('data-billing');
+
+            amountElements.forEach(function(priceEl) {
+                const monthlyPrice = priceEl.getAttribute('data-monthly');
+                const annualPrice = priceEl.getAttribute('data-annual');
+                priceEl.textContent = (currentBilling === 'monthly') ? monthlyPrice : annualPrice;
+            });
+        });
+    });
+
+    // Pricing Card Selection
+    pricingCards.forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't select card if clicking on a button
+            if (e.target.closest('.btn')) return;
+
+            pricingCards.forEach(function(c) {
+                c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+
+            if (featuredCard && card !== featuredCard) {
+                featuredCard.classList.add('inactive');
+            } else if (featuredCard && card === featuredCard) {
+                featuredCard.classList.remove('inactive');
+            }
+        });
+    });
+});
+</script>
+{{ end }}

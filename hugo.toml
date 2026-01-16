@@ -1,0 +1,65 @@
+baseURL = 'https://www.flexiwell.net/'
+title = 'FlexiWell: CRM + AI for Pilates, Yoga & Fitness Studios'
+
+# Default language
+defaultContentLanguage = 'en'
+defaultContentLanguageInSubdir = false
+
+# Languages configuration
+[languages]
+  [languages.en]
+    languageCode = 'en-US'
+    languageName = 'English (US)'
+    weight = 1
+    title = 'FlexiWell: CRM + AI for Pilates, Yoga & Fitness Studios'
+    [languages.en.params]
+      description = "FlexiWell is a specialized CRM for wellness and fitness studios. All-in-one studio management software with AI-powered smart waitlist, SMS messaging, automated client support, and class scheduling for Pilates, Yoga, CrossFit, Dance, and Martial Arts studios."
+      region = "us"
+      currency = "USD"
+      currencySymbol = "$"
+      messagingChannel = "SMS"
+
+  [languages.pt-br]
+    languageCode = 'pt-BR'
+    languageName = 'Português (Brasil)'
+    weight = 2
+    title = 'FlexiWell: CRM + IA para Estúdios de Pilates, Yoga e Fitness'
+    [languages.pt-br.params]
+      description = "FlexiWell é um CRM especializado para estúdios de bem-estar e fitness. Software completo de gestão de estúdio com lista de espera inteligente, WhatsApp integrado, suporte automatizado e agendamento de aulas para estúdios de Pilates, Yoga, CrossFit, Dança e Artes Marciais."
+      region = "br"
+      currency = "USD"
+      currencySymbol = "$"
+      messagingChannel = "WhatsApp"
+
+  [languages.es]
+    languageCode = 'es'
+    languageName = 'Español'
+    weight = 3
+    title = 'FlexiWell: CRM + IA para Estudios de Pilates, Yoga y Fitness'
+    [languages.es.params]
+      description = "FlexiWell es un CRM especializado para estudios de bienestar y fitness. Software completo de gestión de estudio con lista de espera inteligente, WhatsApp integrado, soporte automatizado y programación de clases para estudios de Pilates, Yoga, CrossFit, Danza y Artes Marciales."
+      region = "latam"
+      currency = "USD"
+      currencySymbol = "$"
+      messagingChannel = "WhatsApp"
+
+[params]
+  author = "FlexiWell"
+  keywords = "fitness studio CRM, pilates studio software, yoga studio management, gym CRM software, wellness CRM, CrossFit box management, dance studio software, personal trainer CRM, martial arts software, spa management system, class scheduling app, fitness management system, studio booking software, wellness business software, fitness client management, online booking fitness, WhatsApp booking fitness, AI fitness software, mindbody alternative, glofox alternative, tecnofit alternative"
+  ogImage = "/images/og-image.png"
+  twitterCard = "summary_large_image"
+  tagline = "Get your finances right. Say goodbye to spreadsheets and complicated software. FlexiWell makes studio management simple."
+
+[menu]
+  [[menu.main]]
+    name = "Features"
+    url = "/#ai-features"
+    weight = 1
+  [[menu.main]]
+    name = "Pricing"
+    url = "/pricing/"
+    weight = 2
+  [[menu.main]]
+    name = "Articles"
+    url = "/articles/"
+    weight = 3

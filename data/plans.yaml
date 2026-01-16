@@ -1,0 +1,187 @@
+# Planos FlexiWell - Alinhados com o CRM
+# Baseado em lib/plans/index.ts
+
+plans:
+  - id: starter
+    name: Starter
+    price: 29
+    currency: USD
+    period: mês
+    description: Perfeito para instrutores independentes começando sua jornada
+    highlighted: false
+    cta: Começar Grátis
+    trial_days: 14
+    limits:
+      clients: 50
+      staff: 1
+      locations: 1
+    features:
+      - Até 50 clientes ativos
+      - 1 usuário/instrutor
+      - Agendamento online
+      - Gestão de aulas
+      - Controle financeiro básico
+      - Notificações por email
+      - Suporte por email e chat
+    unavailable:
+      - Bot WhatsApp
+      - Relatórios avançados
+      - Reposição de aulas
+      - Acesso à API
+      - Multi-localização
+      - Suporte por telefone
+
+  - id: professional
+    name: Professional
+    price: 79
+    currency: USD
+    period: mês
+    description: Para estúdios em crescimento que precisam de automação
+    highlighted: true
+    badge: Mais Popular
+    cta: Começar Trial Grátis
+    trial_days: 14
+    limits:
+      clients: 200
+      staff: 5
+      locations: 1
+    features:
+      - Até 200 clientes ativos
+      - Até 5 usuários/instrutores
+      - Tudo do Starter, mais
+      - Bot WhatsApp integrado
+      - Relatórios avançados
+      - Reposição de aulas automática
+      - Campanhas de email marketing
+      - Integrações premium
+      - Suporte prioritário
+    unavailable:
+      - Acesso à API
+      - Multi-localização
+      - Suporte por telefone
+
+  - id: enterprise
+    name: Enterprise
+    price: 199
+    currency: USD
+    period: mês
+    description: Solução completa para redes de estúdios e academias
+    highlighted: false
+    cta: Falar com Vendas
+    trial_days: 0
+    limits:
+      clients: unlimited
+      staff: unlimited
+      locations: unlimited
+    features:
+      - Clientes ilimitados
+      - Usuários ilimitados
+      - Tudo do Professional, mais
+      - Acesso completo à API
+      - Multi-localização
+      - White-label disponível
+      - Gerente de conta dedicado
+      - Suporte por telefone 24/7
+      - Onboarding personalizado
+      - SLA garantido
+    unavailable: []
+
+# Features para comparação detalhada
+feature_comparison:
+  - category: Gestão de Clientes
+    features:
+      - name: Clientes ativos
+        starter: "50"
+        professional: "200"
+        enterprise: "Ilimitado"
+      - name: Ficha do aluno
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Histórico de aulas
+        starter: true
+        professional: true
+        enterprise: true
+
+  - category: Agendamento
+    features:
+      - name: Agenda online
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Aulas em grupo
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Reposição automática
+        starter: false
+        professional: true
+        enterprise: true
+
+  - category: Comunicação
+    features:
+      - name: Notificações por email
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Bot WhatsApp
+        starter: false
+        professional: true
+        enterprise: true
+      - name: Email marketing
+        starter: false
+        professional: true
+        enterprise: true
+
+  - category: Relatórios
+    features:
+      - name: Relatórios básicos
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Relatórios avançados
+        starter: false
+        professional: true
+        enterprise: true
+      - name: Exportação de dados
+        starter: false
+        professional: true
+        enterprise: true
+
+  - category: Integrações & API
+    features:
+      - name: Google Calendar
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Stripe/Pagamentos
+        starter: true
+        professional: true
+        enterprise: true
+      - name: API REST
+        starter: false
+        professional: false
+        enterprise: true
+
+  - category: Suporte
+    features:
+      - name: Central de ajuda
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Chat e email
+        starter: true
+        professional: true
+        enterprise: true
+      - name: Suporte prioritário
+        starter: false
+        professional: true
+        enterprise: true
+      - name: Telefone 24/7
+        starter: false
+        professional: false
+        enterprise: true
+      - name: Gerente dedicado
+        starter: false
+        professional: false
+        enterprise: true

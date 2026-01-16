@@ -1,0 +1,363 @@
+# ==============================================
+# FLEXIWELL - Traducciones Español
+# ==============================================
+
+# ============ NAVIGATION ============
+nav_features:
+  other: "Funcionalidades"
+nav_pricing:
+  other: "Precios"
+nav_articles:
+  other: "Artículos"
+nav_flexilaunch:
+  other: "FlexiLaunch"
+nav_help:
+  other: "Ayuda"
+nav_privacy:
+  other: "Privacidad"
+nav_terms:
+  other: "Términos"
+nav_cookies:
+  other: "Cookies"
+nav_login:
+  other: "Iniciar sesión"
+nav_start_trial:
+  other: "Prueba Gratis"
+nav_new_badge:
+  other: "Nuevo"
+
+# ============ HERO SECTION ============
+hero_title:
+  other: "CRM + IA + Lista de Espera Inteligente para Estudios de Pilates, Yoga y Fitness"
+hero_subtitle:
+  other: "Automatiza reservas, predice cancelaciones y aumenta tus ingresos con el poder de la IA y WhatsApp integrado."
+hero_cta:
+  other: "Comienza Gratis por 30 Días"
+hero_dashboard_alt:
+  other: "Panel FlexiWell"
+hero_mobile_alt:
+  other: "App Móvil FlexiWell"
+
+# ============ WHY SWITCH SECTION ============
+why_switch_tag:
+  other: "¿Por qué cambiar?"
+why_switch_title:
+  other: "Organiza tus finanzas"
+why_switch_description:
+  other: "Di adiós a las hojas de cálculo y software complicado. FlexiWell simplifica la gestión de tu estudio."
+
+why_switch_waitlist_title:
+  other: "Lista de Espera Inteligente"
+why_switch_waitlist_desc:
+  other: "Notifica a los clientes automáticamente cuando se abren lugares. Nunca más tengas clases vacías o pierdas ingresos por cancelaciones de último minuto."
+
+why_switch_booking_title:
+  other: "Reservas Inteligentes de Clases"
+why_switch_booking_desc:
+  other: "Tus alumnos reservan 24/7 desde cualquier dispositivo. Recordatorios automáticos vía WhatsApp reducen las faltas hasta un 70%."
+
+why_switch_confirmations_title:
+  other: "Confirmaciones Proactivas"
+why_switch_confirmations_desc:
+  other: "Envía solicitudes de confirmación automáticas 24 horas antes de la clase. ¿Lugares sin confirmar? Los llenamos automáticamente desde la lista de espera."
+
+why_switch_support_title:
+  other: "Soporte 24/7"
+why_switch_support_desc:
+  other: "Personas reales, ayuda real—a cualquier hora. Llama, envía mensaje o email a nuestro equipo. Tiempo promedio de respuesta: menos de 2 minutos."
+
+# ============ WHATSAPP/MESSAGING SECTION ============
+messaging_tag:
+  other: "Automatizaciones"
+messaging_title:
+  other: "Confirmaciones por WhatsApp que funcionan mientras duermes"
+messaging_description_1:
+  other: "Personas reales, ayuda real—a cualquier hora que la necesites. Llama, envía mensaje o email a nuestro equipo de soporte. Tiempo promedio de respuesta: menos de 2 minutos."
+messaging_description_2:
+  other: "Tus clientes reciben recordatorios amigables 24 horas antes de la clase—automáticamente. Sin más perseguir personas o lidiar con excusas de 'se me olvidó'. Cuando alguien cancela, el siguiente en la lista de espera es notificado instantáneamente."
+
+messaging_benefit_1:
+  other: "Recordatorios automáticos 24h vía WhatsApp"
+messaging_benefit_2:
+  other: "Notificaciones instantáneas de lista de espera cuando se abren lugares"
+messaging_benefit_3:
+  other: "Plantillas de mensajes personalizadas con tu voz"
+messaging_benefit_4:
+  other: "Reducción promedio del 70% en faltas"
+
+# ============ ANALYTICS SECTION ============
+analytics_tag:
+  other: "Analíticas"
+analytics_title:
+  other: "Funcionalidades avanzadas para analíticas de punta"
+analytics_description:
+  other: "Rastrea lo que más importa: asistencia a clases, tendencias de ingresos, consistencia de clientes y capacidad del estudio - todo en tiempo real. Toma decisiones basadas en datos que hacen crecer tu negocio."
+
+analytics_revenue_title:
+  other: "Seguimiento de Ingresos"
+analytics_revenue_desc:
+  other: "Monitorea los ingresos diarios, semanales y mensuales de tu estudio de un vistazo. Identifica tus horarios más rentables para servir mejor a tus clientes y planificar tu agenda."
+
+analytics_insights_title:
+  other: "Insights de Alumnos"
+analytics_insights_desc:
+  other: "Obtén detalles sobre actividad, asistencia, cancelaciones, reprogramaciones y rachas de tus alumnos. Descubre qué los hace volver."
+
+analytics_capacity_title:
+  other: "Optimización de Capacidad"
+analytics_capacity_desc:
+  other: "Rastrea tus tasas de utilización para ver dónde existen oportunidades. Nuestros algoritmos inteligentes predicen demanda y te ayudan a maximizar cada lugar."
+
+# ============ CLIENT EXPERIENCE SECTION ============
+experience_tag:
+  other: "Experiencia del Cliente"
+experience_title:
+  other: "Reservas tan fáciles que tus clientes realmente las usarán"
+experience_description:
+  other: "Dale a tus alumnos una experiencia de reserva premium que amarán. Ven disponibilidad en tiempo real, gestionan sus reservas sin llamarte. Funciona en cualquier celular, sin necesidad de descargar app."
+
+experience_benefit_1:
+  other: "Disponibilidad de clases en tiempo real"
+experience_benefit_2:
+  other: "Reserva, cancela o reprograma en segundos"
+experience_benefit_3:
+  other: "Sincronización automática con calendario"
+experience_benefit_4:
+  other: "Saldo de paquetes visible"
+
+# ============ INTEGRATIONS SECTION ============
+integrations_tag:
+  other: "Integraciones"
+integrations_title:
+  other: "Conéctate con las herramientas que ya usas"
+integrations_description:
+  other: "FlexiWell funciona bien con tu configuración actual. Sincroniza pagos, calendarios y herramientas de comunicación sin alternar entre apps. Todo fluye hacia un solo panel."
+
+# ============ PRICING SECTION ============
+pricing_label:
+  other: "PRECIOS"
+pricing_title:
+  other: "Elige el plan ideal para tu estudio"
+pricing_subtitle:
+  other: "Precios simples y transparentes que crecen contigo. Prueba el plan Business gratis por 30 días."
+pricing_all_plans_include:
+  other: "Todos los planes incluyen acceso web y móvil (PWA)"
+pricing_monthly:
+  other: "Mensual"
+pricing_yearly:
+  other: "Anual"
+pricing_save_badge:
+  other: "-20%"
+pricing_month_abbr:
+  other: "mes"
+pricing_per_month:
+  other: "/mes"
+pricing_save_year:
+  other: "Ahorra"
+pricing_year:
+  other: "/año"
+pricing_select_plan:
+  other: "Seleccionar Plan"
+pricing_get_started:
+  other: "Comenzar"
+pricing_talk_sales:
+  other: "Hablar con Ventas"
+pricing_most_popular:
+  other: "Más popular"
+pricing_custom:
+  other: "Personalizado"
+pricing_start_trial:
+  other: "Comenzar Prueba Gratis"
+pricing_trial_info:
+  other: "30 días gratis · No requiere tarjeta de crédito"
+
+# Plan names and subtitles
+plan_starter:
+  other: "Starter"
+plan_starter_subtitle:
+  other: "Para instructores independientes"
+plan_growth:
+  other: "Growth"
+plan_growth_subtitle:
+  other: "Para estudios en crecimiento"
+plan_business:
+  other: "Business"
+plan_business_subtitle:
+  other: "Para estudios establecidos"
+plan_professional:
+  other: "Professional"
+plan_professional_subtitle:
+  other: "Para múltiples ubicaciones"
+plan_enterprise:
+  other: "Enterprise"
+plan_enterprise_subtitle:
+  other: "Para redes de estudios"
+
+# Plan limits
+plan_clients:
+  other: "clientes"
+plan_team:
+  other: "equipo"
+plan_location:
+  other: "ubicación"
+plan_locations:
+  other: "ubicaciones"
+plan_unlimited:
+  other: "Ilimitado"
+plan_storage:
+  other: "almacenamiento"
+
+# Plan features
+feature_up_to:
+  other: "Hasta"
+feature_clients:
+  other: "clientes"
+feature_team_member:
+  other: "miembro del equipo"
+feature_team_members:
+  other: "miembros del equipo"
+feature_online_scheduling:
+  other: "Programación online"
+feature_email_reminders:
+  other: "Recordatorios por email"
+feature_basic_reports:
+  other: "Reportes básicos"
+feature_sms_notifications:
+  other: "Notificaciones por SMS"
+feature_whatsapp_notifications:
+  other: "Notificaciones por WhatsApp"
+feature_advanced_reports:
+  other: "Reportes avanzados"
+feature_ai_support:
+  other: "Soporte IA"
+feature_chats_month:
+  other: "chats/mes"
+feature_whatsapp_bot:
+  other: "Bot WhatsApp"
+feature_sms_bot:
+  other: "Bot SMS"
+feature_msgs_month:
+  other: "msgs/mes"
+feature_custom_branding:
+  other: "Marca personalizada"
+feature_white_label:
+  other: "White-label"
+feature_api_access:
+  other: "Acceso a API"
+feature_priority_support:
+  other: "Soporte prioritario"
+feature_unlimited_clients_team:
+  other: "Clientes y equipo ilimitados"
+feature_unlimited_team:
+  other: "Equipo ilimitado"
+feature_unlimited_clients:
+  other: "Clientes ilimitados"
+feature_unlimited_locations:
+  other: "Ubicaciones ilimitadas"
+feature_dedicated_manager:
+  other: "Gerente de cuenta dedicado"
+
+# Comparison table
+compare_title:
+  other: "Compara Todas las Funcionalidades por Plan"
+compare_subtitle:
+  other: "Ve exactamente qué está incluido en cada plan"
+compare_feature:
+  other: "Funcionalidad"
+compare_monthly_price:
+  other: "Precio Mensual"
+compare_limits:
+  other: "Límites & Capacidad"
+compare_active_clients:
+  other: "Clientes Activos"
+compare_team_members:
+  other: "Miembros del Equipo"
+compare_locations:
+  other: "Ubicaciones"
+compare_storage:
+  other: "Almacenamiento"
+compare_core_features:
+  other: "Funcionalidades Principales"
+compare_online_scheduling:
+  other: "Programación Online"
+compare_client_portal:
+  other: "Portal del Cliente"
+compare_payment_processing:
+  other: "Procesamiento de Pagos"
+compare_email_reminders:
+  other: "Recordatorios por Email"
+compare_calendar_sync:
+  other: "Sincronización de Calendario"
+compare_communication:
+  other: "Comunicación"
+compare_sms_notifications:
+  other: "Notificaciones SMS"
+compare_whatsapp_notifications:
+  other: "Notificaciones WhatsApp"
+compare_whatsapp_bot:
+  other: "Bot WhatsApp"
+compare_sms_bot:
+  other: "Bot SMS"
+compare_ai_features:
+  other: "Funcionalidades con IA"
+compare_ai_assistant:
+  other: "Asistente IA de Soporte"
+compare_advanced_features:
+  other: "Funcionalidades Avanzadas"
+compare_custom_branding:
+  other: "Marca Personalizada"
+compare_api_access:
+  other: "Acceso a API"
+compare_support:
+  other: "Soporte"
+compare_priority_support:
+  other: "Soporte Prioritario"
+
+# ============ FAQ SECTION ============
+faq_title:
+  other: "Preguntas frecuentes"
+faq_subtitle:
+  other: "Todo lo que necesitas saber sobre el producto y facturación."
+
+faq_q1:
+  other: "¿Cómo importo clientes de Mindbody, Glofox u otros sistemas?"
+faq_a1:
+  other: "FlexiWell facilita la migración con herramientas de importación integradas. Ve a Configuración > Migración de Datos y selecciona tu plataforma anterior (Mindbody, Glofox o Tecnofit). Puedes subir un CSV exportado de tu sistema anterior, y nuestro importador mapeará automáticamente nombres de clientes, información de contacto, planes de membresía e historial de reservas. Una pantalla de vista previa te permite revisar y corregir problemas antes de confirmar. Para migraciones complejas, nuestro Servicio de Migración Asistida ($299 USD único) ofrece soporte hands-on de nuestro equipo."
+
+faq_q2:
+  other: "¿Cómo funciona el sistema de prioridad de lista de espera?"
+faq_a2:
+  other: "Nuestra Lista de Espera Inteligente clasifica clientes automáticamente basándose en múltiples factores: Tipo de plan – Alumnos anuales tienen mayor prioridad que los de pase único. Origen del cliente – Clientes directos tienen prioridad sobre agregadores (Wellhub, ClassPass). Historial de asistencia – Clientes con mejor tasa de asistencia suben en la lista. Tiempo de espera – Entre más tiempo esperando, mayor prioridad. Cuando un lugar se abre, el cliente de mayor prioridad es notificado instantáneamente vía WhatsApp. Tiene un tiempo configurable para confirmar antes de que el lugar vaya al siguiente. También puedes asignar estatus VIP manualmente para clientes especiales."
+
+faq_q3:
+  other: "¿Qué puede hacer el asistente de soporte con IA?"
+faq_a3:
+  other: "El asistente IA atiende consultas comunes de clientes 24/7 vía WhatsApp, email y chat web. Puede verificar clases y horarios disponibles, agendar o cancelar clases para clientes, responder preguntas sobre planes de membresía, verificar estado de pago y fechas de vencimiento, informar posición en lista de espera, recomendar clases basadas en preferencias y responder FAQs sobre tu estudio. Cuando es necesario, las conversaciones se escalan a soporte humano. Puedes personalizar el tono del asistente (profesional, amigable, casual o entusiasta) para que coincida con tu marca."
+
+faq_q4:
+  other: "¿Qué métodos de pago se aceptan?"
+faq_a4:
+  other: "FlexiWell soporta múltiples opciones de pago: Tarjetas de crédito/débito vía integración Stripe, Transferencia bancaria para clientes que prefieren pagos manuales, y Efectivo para registrar pagos presenciales manualmente. Puedes configurar cobros recurrentes para suscripciones, enviar recordatorios automáticos de pago y generar facturas y recibos. Todas las transacciones se rastrean en un panel con reportes detallados."
+
+faq_q5:
+  other: "¿Cómo me conecto con Wellhub (Gympass)?"
+faq_a5:
+  other: "Ve a Configuración > Integraciones > Wellhub y haz clic en Conectar. Ingresarás tus credenciales de socio Wellhub, y FlexiWell sincronizará automáticamente. Una vez conectado: Tus clases aparecen en la app Wellhub, Check-ins de Wellhub se registran en tu sistema, Reportes de ingresos muestran reservas Wellhub por separado, y la prioridad de lista de espera distingue clientes Wellhub de miembros directos. El mismo proceso funciona para ClassPass, TotalPass y Urban Sports Club. Esto te permite expandir tu alcance manteniendo todas las reservas centralizadas en FlexiWell."
+
+# ============ FOOTER ============
+footer_copyright:
+  other: "Todos los derechos reservados."
+footer_address:
+  other: "São Paulo, Brasil"
+
+# ============ LANGUAGE SWITCHER ============
+language_select:
+  other: "Idioma"
+language_pt_br:
+  other: "Português (Brasil)"
+language_en_us:
+  other: "English (US)"
+language_en_int:
+  other: "English (Internacional)"
+language_es:
+  other: "Español"

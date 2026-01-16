@@ -1,0 +1,63 @@
+<section id="hero" class="hero">
+    <div class="hero-content-center">
+        <h1 class="hero-title-center">{{ i18n "hero_title" }}</h1>
+        <p class="hero-subtitle-center">{{ i18n "hero_subtitle" }}</p>
+        <div class="hero-cta-wrapper">
+            <a href="https://app.flexiwell.net/signup" class="btn btn-primary btn-hero">{{ i18n "hero_cta" }}</a>
+        </div>
+    </div>
+
+    <div class="hero-dashboard" id="hero-parallax">
+        <div class="hero-image-wrapper">
+            <img src="/images/hero-image-1.png" alt="{{ i18n "hero_dashboard_alt" }}" class="hero-img hero-img-back" data-parallax-speed="0.06">
+            <img src="/images/hero-image-2.png" alt="{{ i18n "hero_mobile_alt" }}" class="hero-img hero-img-front" data-parallax-speed="0.12">
+        </div>
+    </div>
+</section>
+
+<script>
+(function() {
+    const parallaxContainer = document.getElementById('hero-parallax');
+    if (!parallaxContainer) return;
+
+    const images = parallaxContainer.querySelectorAll('[data-parallax-speed]');
+    let mouseX = 0, mouseY = 0;
+    let currentX = 0, currentY = 0;
+
+    // Mouse move handler - only track when near the hero section
+    document.addEventListener('mousemove', (e) => {
+        const rect = parallaxContainer.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Normalize mouse position (-1 to 1)
+        mouseX = (e.clientX - centerX) / (rect.width / 2);
+        mouseY = (e.clientY - centerY) / (rect.height / 2);
+
+        // Clamp values for smoother edges
+        mouseX = Math.max(-1, Math.min(1, mouseX));
+        mouseY = Math.max(-1, Math.min(1, mouseY));
+    });
+
+    // Animation loop with very smooth interpolation
+    function animate() {
+        // Very slow interpolation for ultra-smooth movement (0.03 = ~3% per frame)
+        currentX += (mouseX - currentX) * 0.03;
+        currentY += (mouseY - currentY) * 0.03;
+
+        images.forEach(img => {
+            const speed = parseFloat(img.dataset.parallaxSpeed) || 0.02;
+
+            // Subtle movement - max ~8px for back image, ~20px for front
+            const moveX = currentX * (speed * 400);
+            const moveY = currentY * (speed * 200);
+
+            img.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+})();
+</script>
