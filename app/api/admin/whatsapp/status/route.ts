@@ -1,66 +1,64 @@
 import { NextResponse } from "next/server";
-import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
 
-// GET - Check WhatsApp connection status (uses env vars automatically)
-// Note: This endpoint doesn't require auth since it only checks if WhatsApp is configured
-// and doesn't expose sensitive data
+// GET - Check WhatsApp connection status (uses env vars directly)
 export async function GET() {
   try {
-    const credentials = await getWhatsAppCredentials();
+    // Read directly from environment variables
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
-    if (!credentials) {
+    // Debug: check if env vars exist
+    if (!phoneNumberId || !accessToken) {
       return NextResponse.json({
         connected: false,
         message: "WhatsApp not configured",
+        debug: {
+          hasPhoneNumberId: !!phoneNumberId,
+          hasAccessToken: !!accessToken,
+        },
       });
     }
 
-    // Test the connection by making a simple API call
-    if (credentials.provider === "cloud-api") {
-      try {
-        const response = await fetch(
-          `https://graph.facebook.com/v18.0/${credentials.phoneNumberId}?fields=verified_name,quality_rating`,
-          {
-            headers: {
-              Authorization: `Bearer ${credentials.accessToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          return NextResponse.json({
-            connected: true,
-            provider: "cloud-api",
-            phoneNumber: data.verified_name || "WhatsApp Business",
-            qualityRating: data.quality_rating || "unknown",
-          });
-        } else {
-          const errorData = await response.json();
-          return NextResponse.json({
-            connected: false,
-            error: errorData.error?.message || "Failed to connect to WhatsApp API",
-          });
+    // Test the connection by making a simple API call to Meta
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${phoneNumberId}?fields=verified_name,quality_rating`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      } catch {
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return NextResponse.json({
+          connected: true,
+          provider: "cloud-api",
+          phoneNumber: data.verified_name || "WhatsApp Business",
+          qualityRating: data.quality_rating || "unknown",
+        });
+      } else {
         return NextResponse.json({
           connected: false,
-          error: "Failed to verify WhatsApp connection",
+          error: data.error?.message || "Failed to connect to WhatsApp API",
+          errorCode: data.error?.code,
         });
       }
+    } catch (fetchError) {
+      return NextResponse.json({
+        connected: false,
+        error: "Failed to verify WhatsApp connection",
+        details: String(fetchError),
+      });
     }
-
-    // Twilio provider
-    return NextResponse.json({
-      connected: true,
-      provider: "twilio",
-      phoneNumber: (credentials as { phoneNumber?: string }).phoneNumber || "Unknown",
-    });
   } catch (error) {
     console.error("WhatsApp status error:", error);
-    return NextResponse.json(
-      { error: "Failed to check WhatsApp status" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      connected: false,
+      error: "Failed to check WhatsApp status",
+      details: String(error),
+    });
   }
 }
