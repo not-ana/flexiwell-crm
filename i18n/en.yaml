@@ -1,0 +1,363 @@
+# ==============================================
+# FLEXIWELL - English Translations
+# ==============================================
+
+# ============ NAVIGATION ============
+nav_features:
+  other: "Features"
+nav_pricing:
+  other: "Pricing"
+nav_articles:
+  other: "Articles"
+nav_flexilaunch:
+  other: "FlexiLaunch"
+nav_help:
+  other: "Help"
+nav_privacy:
+  other: "Privacy"
+nav_terms:
+  other: "Terms"
+nav_cookies:
+  other: "Cookies"
+nav_login:
+  other: "Log in"
+nav_start_trial:
+  other: "Start Free Trial"
+nav_new_badge:
+  other: "NEW"
+
+# ============ HERO SECTION ============
+hero_title:
+  other: "CRM + AI + Smart Waitlist for Pilates, Yoga & Fitness Studios"
+hero_subtitle:
+  other: "Automate bookings, predict cancellations, and boost revenue with AI power and integrated messaging."
+hero_cta:
+  other: "Start Free for 30 Days"
+hero_dashboard_alt:
+  other: "FlexiWell Dashboard"
+hero_mobile_alt:
+  other: "FlexiWell Mobile App"
+
+# ============ WHY SWITCH SECTION ============
+why_switch_tag:
+  other: "Why switch?"
+why_switch_title:
+  other: "Get your finances right"
+why_switch_description:
+  other: "Say goodbye to spreadsheets and complicated software. FlexiWell makes studio management simple."
+
+why_switch_waitlist_title:
+  other: "Smart Waitlist"
+why_switch_waitlist_desc:
+  other: "Automatically notify clients when spots open up. Never have empty classes or lose revenue from last-minute cancellations again."
+
+why_switch_booking_title:
+  other: "Smart Class Booking"
+why_switch_booking_desc:
+  other: "Your students book 24/7 from any device. Automatic reminders via SMS reduce no-shows by up to 70%."
+
+why_switch_confirmations_title:
+  other: "Proactive Confirmations"
+why_switch_confirmations_desc:
+  other: "Send automatic confirmation requests 24 hours before class. Unconfirmed spots? We fill them automatically from the waitlist."
+
+why_switch_support_title:
+  other: "24/7 Support"
+why_switch_support_desc:
+  other: "Real people, real help—anytime. Call, text, or email our team. Average response time: under 2 minutes."
+
+# ============ WHATSAPP/MESSAGING SECTION ============
+messaging_tag:
+  other: "Automations"
+messaging_title:
+  other: "SMS confirmations that work while you sleep"
+messaging_description_1:
+  other: "Real people, real help—anytime you need it. Call, text, or email our support team. Average response time: under 2 minutes."
+messaging_description_2:
+  other: "Your clients get friendly reminders 24 hours before class—automatically. No more chasing people or dealing with 'I forgot' excuses. When someone cancels, the next person on the waitlist is notified instantly."
+
+messaging_benefit_1:
+  other: "Automatic 24h reminders via SMS"
+messaging_benefit_2:
+  other: "Instant waitlist notifications when spots open"
+messaging_benefit_3:
+  other: "Custom message templates with your voice"
+messaging_benefit_4:
+  other: "Average 70% reduction in no-shows"
+
+# ============ ANALYTICS SECTION ============
+analytics_tag:
+  other: "Analytics"
+analytics_title:
+  other: "Cutting-edge features for advanced analytics"
+analytics_description:
+  other: "Track what matters most: class attendance, revenue trends, client consistency, and studio capacity - all in real-time. Make data-driven decisions that grow your business."
+
+analytics_revenue_title:
+  other: "Revenue Tracking"
+analytics_revenue_desc:
+  other: "Monitor your studio's daily, weekly, and monthly revenue at a glance. Identify your most profitable time slots to better serve your clients and plan your schedule."
+
+analytics_insights_title:
+  other: "Student Insights"
+analytics_insights_desc:
+  other: "Get details on student activity, attendance, cancellations, reschedules, and streaks. Discover what keeps them coming back."
+
+analytics_capacity_title:
+  other: "Capacity Optimization"
+analytics_capacity_desc:
+  other: "Track your utilization rates to see where opportunities exist. Our smart algorithms predict demand and help you maximize every spot."
+
+# ============ CLIENT EXPERIENCE SECTION ============
+experience_tag:
+  other: "Client Experience"
+experience_title:
+  other: "Booking so easy your clients will actually use it"
+experience_description:
+  other: "Give your students a premium booking experience they'll love. They see real-time availability, manage their bookings without calling you. Works on any phone, no app download needed."
+
+experience_benefit_1:
+  other: "Real-time class availability"
+experience_benefit_2:
+  other: "Book, cancel, or reschedule in seconds"
+experience_benefit_3:
+  other: "Automatic calendar sync"
+experience_benefit_4:
+  other: "Package balance visible"
+
+# ============ INTEGRATIONS SECTION ============
+integrations_tag:
+  other: "Integrations"
+integrations_title:
+  other: "Connect with the tools you already use"
+integrations_description:
+  other: "FlexiWell plays nice with your current setup. Sync payments, calendars, and communication tools without switching between apps. Everything flows into one dashboard."
+
+# ============ PRICING SECTION ============
+pricing_label:
+  other: "PRICING"
+pricing_title:
+  other: "Choose the perfect plan for your studio"
+pricing_subtitle:
+  other: "Simple, transparent pricing that grows with you. Try Business free for 30 days."
+pricing_all_plans_include:
+  other: "All plans include web and mobile access (PWA)"
+pricing_monthly:
+  other: "Monthly"
+pricing_yearly:
+  other: "Yearly"
+pricing_save_badge:
+  other: "-20%"
+pricing_month_abbr:
+  other: "mo"
+pricing_per_month:
+  other: "/mo"
+pricing_save_year:
+  other: "Save"
+pricing_year:
+  other: "/year"
+pricing_select_plan:
+  other: "Select Plan"
+pricing_get_started:
+  other: "Get Started"
+pricing_talk_sales:
+  other: "Talk to Sales"
+pricing_most_popular:
+  other: "Most popular"
+pricing_custom:
+  other: "Custom"
+pricing_start_trial:
+  other: "Start Free Trial"
+pricing_trial_info:
+  other: "30 days free · No credit card required"
+
+# Plan names and subtitles
+plan_starter:
+  other: "Starter"
+plan_starter_subtitle:
+  other: "For independent instructors"
+plan_growth:
+  other: "Growth"
+plan_growth_subtitle:
+  other: "For growing studios"
+plan_business:
+  other: "Business"
+plan_business_subtitle:
+  other: "For established studios"
+plan_professional:
+  other: "Professional"
+plan_professional_subtitle:
+  other: "For multiple locations"
+plan_enterprise:
+  other: "Enterprise"
+plan_enterprise_subtitle:
+  other: "For studio networks"
+
+# Plan limits
+plan_clients:
+  other: "clients"
+plan_team:
+  other: "team"
+plan_location:
+  other: "location"
+plan_locations:
+  other: "locations"
+plan_unlimited:
+  other: "Unlimited"
+plan_storage:
+  other: "storage"
+
+# Plan features
+feature_up_to:
+  other: "Up to"
+feature_clients:
+  other: "clients"
+feature_team_member:
+  other: "team member"
+feature_team_members:
+  other: "team members"
+feature_online_scheduling:
+  other: "Online scheduling"
+feature_email_reminders:
+  other: "Email reminders"
+feature_basic_reports:
+  other: "Basic reports"
+feature_sms_notifications:
+  other: "SMS notifications"
+feature_whatsapp_notifications:
+  other: "WhatsApp notifications"
+feature_advanced_reports:
+  other: "Advanced reports"
+feature_ai_support:
+  other: "AI Support"
+feature_chats_month:
+  other: "chats/month"
+feature_whatsapp_bot:
+  other: "WhatsApp Bot"
+feature_sms_bot:
+  other: "SMS Bot"
+feature_msgs_month:
+  other: "msgs/month"
+feature_custom_branding:
+  other: "Custom branding"
+feature_white_label:
+  other: "White-label"
+feature_api_access:
+  other: "API access"
+feature_priority_support:
+  other: "Priority support"
+feature_unlimited_clients_team:
+  other: "Unlimited clients and team"
+feature_unlimited_team:
+  other: "Unlimited team"
+feature_unlimited_clients:
+  other: "Unlimited clients"
+feature_unlimited_locations:
+  other: "Unlimited locations"
+feature_dedicated_manager:
+  other: "Dedicated account manager"
+
+# Comparison table
+compare_title:
+  other: "Compare All Features by Plan"
+compare_subtitle:
+  other: "See exactly what's included in each plan"
+compare_feature:
+  other: "Feature"
+compare_monthly_price:
+  other: "Monthly Price"
+compare_limits:
+  other: "Limits & Capacity"
+compare_active_clients:
+  other: "Active Clients"
+compare_team_members:
+  other: "Team Members"
+compare_locations:
+  other: "Locations"
+compare_storage:
+  other: "Storage"
+compare_core_features:
+  other: "Core Features"
+compare_online_scheduling:
+  other: "Online Scheduling"
+compare_client_portal:
+  other: "Client Portal"
+compare_payment_processing:
+  other: "Payment Processing"
+compare_email_reminders:
+  other: "Email Reminders"
+compare_calendar_sync:
+  other: "Calendar Sync"
+compare_communication:
+  other: "Communication"
+compare_sms_notifications:
+  other: "SMS Notifications"
+compare_whatsapp_notifications:
+  other: "WhatsApp Notifications"
+compare_whatsapp_bot:
+  other: "WhatsApp Bot"
+compare_sms_bot:
+  other: "SMS Bot"
+compare_ai_features:
+  other: "AI Features"
+compare_ai_assistant:
+  other: "AI Support Assistant"
+compare_advanced_features:
+  other: "Advanced Features"
+compare_custom_branding:
+  other: "Custom Branding"
+compare_api_access:
+  other: "API Access"
+compare_support:
+  other: "Support"
+compare_priority_support:
+  other: "Priority Support"
+
+# ============ FAQ SECTION ============
+faq_title:
+  other: "Frequently asked questions"
+faq_subtitle:
+  other: "Everything you need to know about the product and billing."
+
+faq_q1:
+  other: "How do I import clients from Mindbody, Glofox, or other systems?"
+faq_a1:
+  other: "FlexiWell makes migration easy with built-in import tools. Go to Settings > Data Migration and select your previous platform (Mindbody, Glofox, or Tecnofit). You can upload an exported CSV from your old system, and our importer will automatically map client names, contact info, membership plans, and booking history. A preview screen lets you review and fix any issues before confirming. For complex migrations, our Assisted Migration Service ($299 USD one-time) provides hands-on support from our team."
+
+faq_q2:
+  other: "How does the waitlist priority system work?"
+faq_a2:
+  other: "Our Smart Waitlist ranks clients automatically based on multiple factors: Plan type – Annual students get higher priority than drop-in pass holders. Client source – Direct clients get priority over aggregators (Wellhub, ClassPass). Attendance history – Clients with better attendance rates move up the list. Wait time – The longer someone has been waiting, the higher their priority. When a spot opens, the highest-priority client is notified instantly via SMS. They have a configurable time window to confirm before the spot goes to the next person. You can also manually assign VIP status to special clients."
+
+faq_q3:
+  other: "What can the AI support assistant do?"
+faq_a3:
+  other: "The AI assistant handles common client inquiries 24/7 via SMS, email, and web chat. It can check available classes and schedules, book or cancel classes for clients, answer questions about membership plans, check payment status and due dates, report waitlist position, recommend classes based on preferences, and answer FAQs about your studio. When needed, conversations escalate to human support. You can customize the assistant's tone (professional, friendly, casual, or enthusiastic) to match your brand."
+
+faq_q4:
+  other: "What payment methods are accepted?"
+faq_a4:
+  other: "FlexiWell supports multiple payment options: Credit/debit cards via Stripe integration, Bank transfer for clients who prefer manual payments, and Cash for recording in-person payments manually. You can set up recurring billing for subscriptions, send automatic payment reminders, and generate invoices and receipts. All transactions are tracked in a dashboard with detailed reporting."
+
+faq_q5:
+  other: "How do I connect with Wellhub (Gympass)?"
+faq_a5:
+  other: "Go to Settings > Integrations > Wellhub and click Connect. You'll enter your Wellhub partner credentials, and FlexiWell will sync automatically. Once connected: Your classes appear in the Wellhub app, Wellhub check-ins are recorded in your system, Revenue reports show Wellhub bookings separately, and waitlist priority distinguishes Wellhub clients from direct members. The same process works for ClassPass, TotalPass, and Urban Sports Club. This lets you expand your reach while keeping all bookings centralized in FlexiWell."
+
+# ============ FOOTER ============
+footer_copyright:
+  other: "All rights reserved."
+footer_address:
+  other: "São Paulo, Brazil"
+
+# ============ LANGUAGE SWITCHER ============
+language_select:
+  other: "Language"
+language_pt_br:
+  other: "Português (Brasil)"
+language_en_us:
+  other: "English (US)"
+language_en_int:
+  other: "English (International)"
+language_es:
+  other: "Español"
