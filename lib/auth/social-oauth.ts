@@ -178,8 +178,7 @@ export async function createOAuthUser(userInfo: OAuthUserInfo): Promise<User> {
   // Check if user already exists
   const existingUser = await usersCollection.findOne({ email: userInfo.email.toLowerCase() });
   if (existingUser) {
-    // User exists, just return them (they can login)
-    return existingUser;
+    throw new Error("ACCOUNT_EXISTS");
   }
 
   // Calculate 30-day trial for admin users (default role for OAuth signup)

@@ -105,6 +105,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Handle error when user already has an account (during signup)
+    if (error instanceof Error && error.message === "ACCOUNT_EXISTS") {
+      const errorMessage = "An account with this email already exists. Please log in instead.";
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=${encodeURIComponent(errorMessage)}`
+      );
+    }
+
     const errorMessage = error instanceof Error ? error.message : "Failed to complete Google login";
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/login?error=${encodeURIComponent(errorMessage)}`
