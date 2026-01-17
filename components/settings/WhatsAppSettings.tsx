@@ -16,102 +16,38 @@ interface WhatsAppSettingsProps {
   onBack?: () => void;
 }
 
-type WhatsAppPlan = "starter" | "pro" | "enterprise";
-
-interface WhatsAppPlanDetails {
-  name: string;
-  priceUSD: string;
-  priceBRL: string;
-  features: {
-    en: string[];
-    pt: string[];
-  };
-  highlighted?: boolean;
+interface CloudApiConfig {
+  phoneNumberId: string;
+  accessToken: string;
+  businessAccountId: string;
+  verifyToken: string;
 }
 
-interface TwilioConfig {
-  accountSid: string;
-  authToken: string;
-  whatsappNumber: string;
+interface BotFeatureToggle {
+  viewClasses: boolean;
+  confirmAttendance: boolean;
+  cancelClass: boolean;
+  bookNewClass: boolean;
+  automaticReminders: boolean;
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const WHATSAPP_PLANS: Record<WhatsAppPlan, WhatsAppPlanDetails> = {
-  starter: {
-    name: "Starter",
-    priceUSD: "$49/month",
-    priceBRL: "R$149/mês",
-    features: {
-      en: [
-        "View scheduled classes",
-        "Confirm attendance",
-        "500 conversations/month",
-        "Basic automated messages",
-      ],
-      pt: [
-        "Ver aulas agendadas",
-        "Confirmar presença",
-        "500 conversas/mês",
-        "Mensagens automatizadas básicas",
-      ],
-    },
-  },
-  pro: {
-    name: "Pro",
-    priceUSD: "$99/month",
-    priceBRL: "R$299/mês",
-    features: {
-      en: [
-        "Everything in Starter",
-        "Cancel classes",
-        "Book new classes",
-        "2,000 conversations/month",
-        "Proactive notifications",
-        "Automatic reminders",
-      ],
-      pt: [
-        "Tudo do Starter",
-        "Cancelar aulas",
-        "Agendar novas aulas",
-        "2.000 conversas/mês",
-        "Notificações proativas",
-        "Lembretes automáticos",
-      ],
-    },
-    highlighted: true,
-  },
-  enterprise: {
-    name: "Enterprise",
-    priceUSD: "$199/month",
-    priceBRL: "R$599/mês",
-    features: {
-      en: [
-        "Everything in Pro",
-        "Unlimited conversations",
-        "Multiple phone numbers",
-        "Advanced reports",
-        "Priority support",
-        "Custom integrations",
-      ],
-      pt: [
-        "Tudo do Pro",
-        "Conversas ilimitadas",
-        "Múltiplos números",
-        "Relatórios avançados",
-        "Suporte prioritário",
-        "Integrações customizadas",
-      ],
-    },
-  },
+const INITIAL_CONFIG: CloudApiConfig = {
+  phoneNumberId: "",
+  accessToken: "",
+  businessAccountId: "",
+  verifyToken: "",
 };
 
-const INITIAL_TWILIO_CONFIG: TwilioConfig = {
-  accountSid: "",
-  authToken: "",
-  whatsappNumber: "",
+const INITIAL_FEATURES: BotFeatureToggle = {
+  viewClasses: true,
+  confirmAttendance: true,
+  cancelClass: true,
+  bookNewClass: true,
+  automaticReminders: true,
 };
 
 // ============================================================================
@@ -125,16 +61,14 @@ const TRANSLATIONS = {
     "pt-BR": "Permita que seus clientes vejam aulas, confirmem presença e cancelem via WhatsApp.",
     "en-US": "Let your clients check classes, confirm attendance, and cancel via WhatsApp.",
   },
-  active: { "pt-BR": "Ativo", "en-US": "Active" },
+  connected: { "pt-BR": "Conectado", "en-US": "Connected" },
   notConfigured: { "pt-BR": "Não configurado", "en-US": "Not configured" },
   configure: { "pt-BR": "Configurar", "en-US": "Configure" },
-  enableWhatsApp: { "pt-BR": "Ativar WhatsApp", "en-US": "Enable WhatsApp" },
+  enableWhatsApp: { "pt-BR": "Conectar WhatsApp", "en-US": "Connect WhatsApp" },
+  disconnect: { "pt-BR": "Desconectar", "en-US": "Disconnect" },
   messagesThisMonth: { "pt-BR": "Mensagens este mês", "en-US": "Messages this month" },
   responseRate: { "pt-BR": "Taxa de resposta", "en-US": "Response rate" },
   botConfirmations: { "pt-BR": "Confirmações via bot", "en-US": "Bot confirmations" },
-  whatsappPlans: { "pt-BR": "Planos WhatsApp", "en-US": "WhatsApp Plans" },
-  currentPlan: { "pt-BR": "Plano Atual", "en-US": "Current Plan" },
-  select: { "pt-BR": "Selecionar", "en-US": "Select" },
   botFeatures: { "pt-BR": "Recursos do Bot", "en-US": "Bot Features" },
   viewClasses: { "pt-BR": "Ver Aulas", "en-US": "View Classes" },
   viewClassesDesc: { "pt-BR": "Cliente visualiza suas aulas agendadas", "en-US": "Client views their upcoming scheduled classes" },
@@ -146,27 +80,34 @@ const TRANSLATIONS = {
   bookNewClassDesc: { "pt-BR": "Cliente agenda novas aulas via WhatsApp", "en-US": "Client books new classes via WhatsApp" },
   automaticReminders: { "pt-BR": "Lembretes Automáticos", "en-US": "Automatic Reminders" },
   automaticRemindersDesc: { "pt-BR": "Enviar lembrete 24h antes da aula", "en-US": "Send reminder 24h before class" },
-  configureTwilio: { "pt-BR": "Configurar Twilio", "en-US": "Configure Twilio" },
-  twilioAccountNeeded: {
-    "pt-BR": "Para usar o WhatsApp Business, você precisa de uma conta Twilio.",
-    "en-US": "To use WhatsApp Business, you need a Twilio account.",
+  configureWhatsApp: { "pt-BR": "Configurar WhatsApp Business API", "en-US": "Configure WhatsApp Business API" },
+  metaInstructions: {
+    "pt-BR": "Você precisa criar um app no Meta Developer para usar o WhatsApp Business API.",
+    "en-US": "You need to create an app on Meta Developer to use WhatsApp Business API.",
   },
-  createFreeAccount: { "pt-BR": "Criar conta gratuita", "en-US": "Create free account" },
-  foundInTwilio: { "pt-BR": "Encontrado no Console Twilio", "en-US": "Found in Twilio Console" },
-  whatsappNumber: { "pt-BR": "Número WhatsApp", "en-US": "WhatsApp Number" },
-  whatsappApprovedNumber: { "pt-BR": "Número aprovado pelo WhatsApp no Twilio", "en-US": "WhatsApp approved number in Twilio" },
+  openMetaDeveloper: { "pt-BR": "Abrir Meta Developer", "en-US": "Open Meta Developer" },
+  phoneNumberId: { "pt-BR": "Phone Number ID", "en-US": "Phone Number ID" },
+  phoneNumberIdHint: { "pt-BR": "Encontrado em WhatsApp > API Setup", "en-US": "Found in WhatsApp > API Setup" },
+  accessToken: { "pt-BR": "Access Token", "en-US": "Access Token" },
+  accessTokenHint: { "pt-BR": "Token de acesso permanente", "en-US": "Permanent access token" },
+  businessAccountId: { "pt-BR": "Business Account ID", "en-US": "Business Account ID" },
+  businessAccountIdHint: { "pt-BR": "ID da conta WhatsApp Business", "en-US": "WhatsApp Business account ID" },
+  verifyToken: { "pt-BR": "Verify Token", "en-US": "Verify Token" },
+  verifyTokenHint: { "pt-BR": "Token para verificar webhook (você define)", "en-US": "Token to verify webhook (you define)" },
   webhookUrl: { "pt-BR": "Webhook URL", "en-US": "Webhook URL" },
   webhookInstructions: {
-    "pt-BR": "Configure esta URL no Console Twilio → Messaging → WhatsApp Sandbox",
-    "en-US": "Configure this URL in Twilio Console → Messaging → WhatsApp Sandbox",
+    "pt-BR": "Configure esta URL no Meta Developer > WhatsApp > Configuration",
+    "en-US": "Configure this URL in Meta Developer > WhatsApp > Configuration",
   },
   cancel: { "pt-BR": "Cancelar", "en-US": "Cancel" },
-  saveAndEnable: { "pt-BR": "Salvar e Ativar", "en-US": "Save and Enable" },
+  saveAndConnect: { "pt-BR": "Salvar e Conectar", "en-US": "Save and Connect" },
   saving: { "pt-BR": "Salvando...", "en-US": "Saving..." },
-  allFieldsRequired: { "pt-BR": "Todos os campos são obrigatórios", "en-US": "All fields are required" },
-  connectedSuccess: { "pt-BR": "WhatsApp conectado com sucesso", "en-US": "WhatsApp connected successfully" },
+  allFieldsRequired: { "pt-BR": "Phone Number ID e Access Token são obrigatórios", "en-US": "Phone Number ID and Access Token are required" },
+  connectedSuccess: { "pt-BR": "WhatsApp conectado com sucesso!", "en-US": "WhatsApp connected successfully!" },
+  disconnectedSuccess: { "pt-BR": "WhatsApp desconectado", "en-US": "WhatsApp disconnected" },
   failedToSave: { "pt-BR": "Falha ao salvar configuração", "en-US": "Failed to save configuration" },
-  plan: { "pt-BR": "Plano", "en-US": "Plan" },
+  copied: { "pt-BR": "Copiado!", "en-US": "Copied!" },
+  copy: { "pt-BR": "Copiar", "en-US": "Copy" },
 } as const;
 
 type TranslationKey = keyof typeof TRANSLATIONS;
@@ -176,7 +117,7 @@ type TranslationKey = keyof typeof TRANSLATIONS;
 // ============================================================================
 
 function useWhatsAppTranslations() {
-  const { isBrazil, locale } = useLocale();
+  const { isBrazil } = useLocale();
   const lang = isBrazil ? "pt-BR" : "en-US";
 
   const t = (key: TranslationKey): string => {
@@ -187,7 +128,7 @@ function useWhatsAppTranslations() {
     return key;
   };
 
-  return { t, isBrazil, locale };
+  return { t, isBrazil };
 }
 
 // ============================================================================
@@ -206,9 +147,9 @@ const WhatsAppIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   </svg>
 );
 
-const CheckIcon = () => (
-  <svg className="w-4 h-4 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+const ExternalLinkIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
   </svg>
 );
 
@@ -217,13 +158,13 @@ const CheckIcon = () => (
 // ============================================================================
 
 interface StatusCardProps {
-  isEnabled: boolean;
-  selectedPlan: WhatsAppPlan;
+  isConnected: boolean;
   onConfigure: () => void;
+  onDisconnect: () => void;
   t: (key: TranslationKey) => string;
 }
 
-function StatusCard({ isEnabled, selectedPlan, onConfigure, t }: StatusCardProps) {
+function StatusCard({ isConnected, onConfigure, onDisconnect, t }: StatusCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6">
       <div className="flex items-center justify-between">
@@ -234,20 +175,21 @@ function StatusCard({ isEnabled, selectedPlan, onConfigure, t }: StatusCardProps
           <div>
             <p className="font-medium text-gray-900">WhatsApp Bot</p>
             <p className="text-sm text-gray-500">
-              {isEnabled
-                ? `${t("active")} • ${WHATSAPP_PLANS[selectedPlan].name} ${t("plan")}`
-                : t("notConfigured")}
+              {isConnected ? t("connected") : t("notConfigured")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {isEnabled ? (
+          {isConnected ? (
             <>
               <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                {t("active")}
+                {t("connected")}
               </span>
               <Button variant="secondary" onClick={onConfigure}>
                 {t("configure")}
+              </Button>
+              <Button variant="secondary" onClick={onDisconnect} className="text-red-600 hover:text-red-700">
+                {t("disconnect")}
               </Button>
             </>
           ) : (
@@ -256,19 +198,19 @@ function StatusCard({ isEnabled, selectedPlan, onConfigure, t }: StatusCardProps
         </div>
       </div>
 
-      {isEnabled && (
+      {isConnected && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">1,247</p>
+              <p className="text-2xl font-bold text-gray-900">-</p>
               <p className="text-xs text-gray-500">{t("messagesThisMonth")}</p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">89%</p>
+              <p className="text-2xl font-bold text-gray-900">-</p>
               <p className="text-xs text-gray-500">{t("responseRate")}</p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">156</p>
+              <p className="text-2xl font-bold text-gray-900">-</p>
               <p className="text-xs text-gray-500">{t("botConfirmations")}</p>
             </div>
           </div>
@@ -278,119 +220,64 @@ function StatusCard({ isEnabled, selectedPlan, onConfigure, t }: StatusCardProps
   );
 }
 
-interface PlanCardProps {
-  planKey: WhatsAppPlan;
-  plan: WhatsAppPlanDetails;
-  isSelected: boolean;
-  onSelect: () => void;
-  isBrazil: boolean;
-  t: (key: TranslationKey) => string;
-}
-
-function PlanCard({ planKey, plan, isSelected, onSelect, isBrazil, t }: PlanCardProps) {
-  const features = isBrazil ? plan.features.pt : plan.features.en;
-  const price = isBrazil ? plan.priceBRL : plan.priceUSD;
-
-  return (
-    <div
-      className={`relative bg-white border-2 rounded-xl p-5 transition-all cursor-pointer flex flex-col h-full ${
-        isSelected
-          ? "border-primary-500 ring-2 ring-primary-100"
-          : "border-gray-200 hover:border-gray-300"
-      } ${plan.highlighted ? "shadow-lg" : ""}`}
-      onClick={onSelect}
-    >
-      {plan.highlighted && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full">
-            Popular
-          </span>
-        </div>
-      )}
-      <div className="text-center mb-4">
-        <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{price}</p>
-      </div>
-      <ul className="space-y-2 flex-1">
-        {features.map((feature, idx) => (
-          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-            <CheckIcon />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <button
-          className={`w-full py-2 text-sm font-medium rounded-lg transition-colors ${
-            isSelected
-              ? "bg-primary-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          {isSelected ? t("currentPlan") : t("select")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 interface BotFeature {
+  key: keyof BotFeatureToggle;
   titleKey: TranslationKey;
   descKey: TranslationKey;
-  requiresPro: boolean;
 }
 
 const BOT_FEATURES: BotFeature[] = [
-  { titleKey: "viewClasses", descKey: "viewClassesDesc", requiresPro: false },
-  { titleKey: "confirmAttendance", descKey: "confirmAttendanceDesc", requiresPro: false },
-  { titleKey: "cancelClass", descKey: "cancelClassDesc", requiresPro: true },
-  { titleKey: "bookNewClass", descKey: "bookNewClassDesc", requiresPro: true },
-  { titleKey: "automaticReminders", descKey: "automaticRemindersDesc", requiresPro: true },
+  { key: "viewClasses", titleKey: "viewClasses", descKey: "viewClassesDesc" },
+  { key: "confirmAttendance", titleKey: "confirmAttendance", descKey: "confirmAttendanceDesc" },
+  { key: "cancelClass", titleKey: "cancelClass", descKey: "cancelClassDesc" },
+  { key: "bookNewClass", titleKey: "bookNewClass", descKey: "bookNewClassDesc" },
+  { key: "automaticReminders", titleKey: "automaticReminders", descKey: "automaticRemindersDesc" },
 ];
 
 interface BotFeaturesCardProps {
-  selectedPlan: WhatsAppPlan;
+  features: BotFeatureToggle;
+  onToggle: (key: keyof BotFeatureToggle) => void;
   t: (key: TranslationKey) => string;
 }
 
-function BotFeaturesCard({ selectedPlan, t }: BotFeaturesCardProps) {
+function BotFeaturesCard({ features, onToggle, t }: BotFeaturesCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6">
       <h3 className="text-base font-semibold text-gray-900 mb-4">{t("botFeatures")}</h3>
       <div className="space-y-4">
-        {BOT_FEATURES.map((feature, idx) => {
-          const isEnabled = !feature.requiresPro || selectedPlan !== "starter";
-          return (
-            <div
-              key={feature.titleKey}
-              className={`flex items-center justify-between py-3 ${
-                idx < BOT_FEATURES.length - 1 ? "border-b border-gray-100" : ""
-              }`}
-            >
-              <div>
-                <p className="text-sm font-medium text-gray-900">{t(feature.titleKey)}</p>
-                <p className="text-xs text-gray-500">{t(feature.descKey)}</p>
-              </div>
-              <Toggle enabled={isEnabled} onChange={() => {}} />
+        {BOT_FEATURES.map((feature, idx) => (
+          <div
+            key={feature.key}
+            className={`flex items-center justify-between py-3 ${
+              idx < BOT_FEATURES.length - 1 ? "border-b border-gray-100" : ""
+            }`}
+          >
+            <div>
+              <p className="text-sm font-medium text-gray-900">{t(feature.titleKey)}</p>
+              <p className="text-xs text-gray-500">{t(feature.descKey)}</p>
             </div>
-          );
-        })}
+            <Toggle
+              enabled={features[feature.key]}
+              onChange={() => onToggle(feature.key)}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-interface TwilioConfigModalProps {
+interface ConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
-  config: TwilioConfig;
-  onConfigChange: (config: TwilioConfig) => void;
+  config: CloudApiConfig;
+  onConfigChange: (config: CloudApiConfig) => void;
   saving: boolean;
   t: (key: TranslationKey) => string;
 }
 
-function TwilioConfigModal({
+function ConfigModal({
   isOpen,
   onClose,
   onSave,
@@ -398,66 +285,87 @@ function TwilioConfigModal({
   onConfigChange,
   saving,
   t,
-}: TwilioConfigModalProps) {
-  const isValid = config.accountSid && config.authToken && config.whatsappNumber;
+}: ConfigModalProps) {
+  const isValid = config.phoneNumberId && config.accessToken;
+  const webhookUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/api/webhook/whatsapp`
+    : "https://flexiwell.net/api/webhook/whatsapp";
+
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    showToast(t("copied"));
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalHeader onClose={onClose}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             <WhatsAppIcon className="w-5 h-5 text-green-600" />
           </div>
-          <ModalTitle>{t("configureTwilio")}</ModalTitle>
+          <ModalTitle>{t("configureWhatsApp")}</ModalTitle>
         </div>
       </ModalHeader>
       <ModalBody className="space-y-4">
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            {t("twilioAccountNeeded")}
-            <a
-              href="https://www.twilio.com/try-twilio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium underline ml-1"
-            >
-              {t("createFreeAccount")}
-            </a>
+            {t("metaInstructions")}
           </p>
+          <a
+            href="https://developers.facebook.com/apps"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-blue-700 hover:text-blue-800"
+          >
+            {t("openMetaDeveloper")}
+            <ExternalLinkIcon />
+          </a>
         </div>
 
         <FormField
-          label="Account SID"
-          value={config.accountSid}
-          onChange={(e) => onConfigChange({ ...config, accountSid: e.target.value })}
-          placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-          hint={t("foundInTwilio")}
+          label={t("phoneNumberId")}
+          value={config.phoneNumberId}
+          onChange={(e) => onConfigChange({ ...config, phoneNumberId: e.target.value })}
+          placeholder="1234567890123456"
+          hint={t("phoneNumberIdHint")}
         />
 
         <FormField
-          label="Auth Token"
+          label={t("accessToken")}
           type="password"
-          value={config.authToken}
-          onChange={(e) => onConfigChange({ ...config, authToken: e.target.value })}
-          placeholder="••••••••••••••••••••••••••••••••"
+          value={config.accessToken}
+          onChange={(e) => onConfigChange({ ...config, accessToken: e.target.value })}
+          placeholder="EAAxxxxxxx..."
+          hint={t("accessTokenHint")}
         />
 
         <FormField
-          label={t("whatsappNumber")}
-          value={config.whatsappNumber}
-          onChange={(e) => onConfigChange({ ...config, whatsappNumber: e.target.value })}
-          placeholder="+15551234567"
-          hint={t("whatsappApprovedNumber")}
+          label={t("businessAccountId")}
+          value={config.businessAccountId}
+          onChange={(e) => onConfigChange({ ...config, businessAccountId: e.target.value })}
+          placeholder="9876543210"
+          hint={t("businessAccountIdHint")}
+        />
+
+        <FormField
+          label={t("verifyToken")}
+          value={config.verifyToken}
+          onChange={(e) => onConfigChange({ ...config, verifyToken: e.target.value })}
+          placeholder="flexiwell_whatsapp_2024"
+          hint={t("verifyTokenHint")}
         />
 
         <div className="p-4 bg-gray-50 rounded-lg">
           <p className="text-sm font-medium text-gray-700 mb-2">{t("webhookUrl")}</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded text-xs text-gray-600 overflow-x-auto">
-              https://your-domain.com/api/webhook/whatsapp/twilio
+              {webhookUrl}
             </code>
-            <button className="px-3 py-2 text-xs font-medium text-primary-600 border border-primary-200 rounded hover:bg-primary-50">
-              Copy
+            <button
+              onClick={() => handleCopy(webhookUrl)}
+              className="px-3 py-2 text-xs font-medium text-primary-600 border border-primary-200 rounded hover:bg-primary-50"
+            >
+              {t("copy")}
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2">{t("webhookInstructions")}</p>
@@ -468,7 +376,7 @@ function TwilioConfigModal({
           {t("cancel")}
         </Button>
         <Button onClick={onSave} disabled={!isValid || saving} className="flex-1">
-          {saving ? t("saving") : t("saveAndEnable")}
+          {saving ? t("saving") : t("saveAndConnect")}
         </Button>
       </ModalFooter>
     </Modal>
@@ -480,23 +388,24 @@ function TwilioConfigModal({
 // ============================================================================
 
 export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<WhatsAppPlan>("pro");
+  const [isConnected, setIsConnected] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [twilioConfig, setTwilioConfig] = useState<TwilioConfig>(INITIAL_TWILIO_CONFIG);
+  const [config, setConfig] = useState<CloudApiConfig>(INITIAL_CONFIG);
+  const [features, setFeatures] = useState<BotFeatureToggle>(INITIAL_FEATURES);
 
-  const { t, isBrazil } = useWhatsAppTranslations();
+  const { t } = useWhatsAppTranslations();
 
   // Load WhatsApp config on mount
   useEffect(() => {
     async function loadConfig() {
       try {
-        const res = await fetch("/api/admin/whatsapp/status");
+        const res = await fetch("/api/admin/integrations/status");
         if (res.ok) {
           const data = await res.json();
-          if (data.connected) {
-            setIsEnabled(true);
+          const whatsapp = data.integrations?.find((i: { id: string }) => i.id === "whatsapp");
+          if (whatsapp?.status === "connected") {
+            setIsConnected(true);
           }
         }
       } catch (error) {
@@ -507,27 +416,32 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   }, []);
 
   const handleSaveConfig = async () => {
-    if (!twilioConfig.accountSid || !twilioConfig.authToken || !twilioConfig.whatsappNumber) {
+    if (!config.phoneNumberId || !config.accessToken) {
       showToast(t("allFieldsRequired"), "error");
       return;
     }
 
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/whatsapp/configure", {
+      const res = await fetch("/api/admin/integrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountSid: twilioConfig.accountSid,
-          authToken: twilioConfig.authToken,
-          phoneNumber: twilioConfig.whatsappNumber,
+          integrationId: "whatsapp",
+          credentials: {
+            provider: "cloud-api",
+            phoneNumberId: config.phoneNumberId,
+            accessToken: config.accessToken,
+            businessAccountId: config.businessAccountId,
+            verifyToken: config.verifyToken,
+          },
         }),
       });
 
       if (res.ok) {
         showToast(t("connectedSuccess"));
         setShowConfigModal(false);
-        setIsEnabled(true);
+        setIsConnected(true);
       } else {
         const data = await res.json();
         showToast(data.error || t("failedToSave"), "error");
@@ -538,6 +452,26 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const res = await fetch("/api/admin/integrations?id=whatsapp", {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        showToast(t("disconnectedSuccess"));
+        setIsConnected(false);
+        setConfig(INITIAL_CONFIG);
+      }
+    } catch (error) {
+      console.error("Disconnect error:", error);
+    }
+  };
+
+  const handleToggleFeature = (key: keyof BotFeatureToggle) => {
+    setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -559,40 +493,28 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
 
       {/* Status Card */}
       <StatusCard
-        isEnabled={isEnabled}
-        selectedPlan={selectedPlan}
+        isConnected={isConnected}
         onConfigure={() => setShowConfigModal(true)}
+        onDisconnect={handleDisconnect}
         t={t}
       />
 
-      {/* Pricing Plans */}
-      <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">{t("whatsappPlans")}</h3>
-        <div className="grid grid-cols-3 gap-4">
-          {(Object.keys(WHATSAPP_PLANS) as WhatsAppPlan[]).map((planKey) => (
-            <PlanCard
-              key={planKey}
-              planKey={planKey}
-              plan={WHATSAPP_PLANS[planKey]}
-              isSelected={selectedPlan === planKey}
-              onSelect={() => setSelectedPlan(planKey)}
-              isBrazil={isBrazil}
-              t={t}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Bot Features */}
-      <BotFeaturesCard selectedPlan={selectedPlan} t={t} />
+      {isConnected && (
+        <BotFeaturesCard
+          features={features}
+          onToggle={handleToggleFeature}
+          t={t}
+        />
+      )}
 
-      {/* Twilio Configuration Modal */}
-      <TwilioConfigModal
+      {/* Configuration Modal */}
+      <ConfigModal
         isOpen={showConfigModal}
         onClose={() => setShowConfigModal(false)}
         onSave={handleSaveConfig}
-        config={twilioConfig}
-        onConfigChange={setTwilioConfig}
+        config={config}
+        onConfigChange={setConfig}
         saving={saving}
         t={t}
       />

@@ -57,10 +57,10 @@ export async function GET() {
       {
         id: "whatsapp",
         name: "WhatsApp Business",
-        description: "Send notifications and chat with clients via Twilio",
+        description: "Send notifications and chat with clients via WhatsApp Business API",
         icon: "📱",
         category: "messaging",
-        status: settings?.whatsapp?.accountSid ? "connected" : "available",
+        status: (settings?.whatsapp?.accountSid || settings?.whatsapp?.phoneNumberId) ? "connected" : "available",
         connectedAt: settings?.whatsapp?.connectedAt || null,
       },
       {
@@ -225,18 +225,39 @@ export async function POST(request: NextRequest) {
         break;
 
       case "whatsapp":
-        if (!credentials.accountSid || !credentials.authToken || !credentials.phoneNumber) {
-          return NextResponse.json(
-            { error: "WhatsApp requires accountSid, authToken, and phoneNumber (Twilio)" },
-            { status: 400 }
-          );
+        // Support both Twilio and Meta Cloud API providers
+        if (credentials.provider === "cloud-api") {
+          // Meta WhatsApp Cloud API
+          if (!credentials.phoneNumberId || !credentials.accessToken) {
+            return NextResponse.json(
+              { error: "WhatsApp Cloud API requires phoneNumberId and accessToken" },
+              { status: 400 }
+            );
+          }
+          credentialData = {
+            provider: "cloud-api",
+            phoneNumberId: credentials.phoneNumberId,
+            accessToken: credentials.accessToken,
+            businessAccountId: credentials.businessAccountId || "",
+            verifyToken: credentials.verifyToken || "",
+            connectedAt: new Date(),
+          };
+        } else {
+          // Twilio (legacy)
+          if (!credentials.accountSid || !credentials.authToken || !credentials.phoneNumber) {
+            return NextResponse.json(
+              { error: "WhatsApp Twilio requires accountSid, authToken, and phoneNumber" },
+              { status: 400 }
+            );
+          }
+          credentialData = {
+            provider: "twilio",
+            accountSid: credentials.accountSid,
+            authToken: credentials.authToken,
+            phoneNumber: credentials.phoneNumber,
+            connectedAt: new Date(),
+          };
         }
-        credentialData = {
-          accountSid: credentials.accountSid,
-          authToken: credentials.authToken,
-          phoneNumber: credentials.phoneNumber,
-          connectedAt: new Date(),
-        };
         break;
 
       case "sms":
