@@ -576,6 +576,44 @@ export interface CompanyClient {
   updatedAt: Date;
 }
 
+// WhatsApp Credentials per Establishment
+export interface EstablishmentWhatsAppCredentials {
+  _id?: ObjectId;
+  establishmentId: string; // Reference to establishment/company
+  companyId: string; // Same as establishmentId for backwards compat
+  provider: "cloud-api" | "twilio";
+  // Cloud API (Meta) credentials
+  phoneNumberId?: string;
+  accessToken?: string;
+  businessAccountId?: string;
+  verifyToken?: string;
+  // Twilio credentials
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  twilioPhoneNumber?: string;
+  // Phone number for lookup (normalized, e.g., "5511999999999")
+  phoneNumber: string;
+  displayPhoneNumber?: string; // Human readable, e.g., "+55 11 99999-9999"
+  // Status
+  isConnected: boolean;
+  connectionStatus?: "active" | "disconnected" | "pending_verification";
+  qualityRating?: "GREEN" | "YELLOW" | "RED";
+  lastVerifiedAt?: Date;
+  // Bot settings
+  botEnabled: boolean;
+  botFeatures?: {
+    viewClasses: boolean;
+    confirmAttendance: boolean;
+    cancelClass: boolean;
+    bookNewClass: boolean;
+    automaticReminders: boolean;
+  };
+  // Timestamps
+  connectedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Teacher/Staff Review system
 export interface Review {
   _id?: ObjectId;

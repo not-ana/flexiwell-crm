@@ -5,9 +5,13 @@ import type {
   CloudApiCredentials,
   WhatsAppProvider,
 } from "@/lib/whatsapp/types";
+import type { EstablishmentWhatsAppCredentials } from "@/lib/db/schemas";
 
 // Re-export for convenience
 export type { WhatsAppCredentials, TwilioCredentials, CloudApiCredentials };
+
+// Collection name for per-establishment WhatsApp credentials
+const WHATSAPP_CREDENTIALS_COLLECTION = "establishment_whatsapp_credentials";
 
 // Legacy interface for backwards compatibility
 interface LegacyWhatsAppCredentials {
@@ -409,5 +413,171 @@ export async function isIntegrationConnected(integrationId: string): Promise<boo
   } catch (error) {
     console.error("Error checking integration status:", error);
     return false;
+  }
+}
+
+// ============================================================================
+// Per-Establishment WhatsApp Credentials (Multi-tenant)
+// ============================================================================
+
+/**
+ * Get WhatsApp credentials for a specific establishment
+ */
+export async function getEstablishmentWhatsAppCredentials(
+  establishmentId: string
+): Promise<EstablishmentWhatsAppCredentials | null> {
+  try {
+    const db = await getDatabase();
+    const credentials = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .findOne({ establishmentId, isConnected: true });
+
+    return credentials;
+  } catch (error) {
+    console.error("Error fetching establishment WhatsApp credentials:", error);
+    return null;
+  }
+}
+
+/**
+ * Get WhatsApp credentials by phone number ID (for webhook routing)
+ * Used when a message comes in to identify which establishment it belongs to
+ */
+export async function getEstablishmentByPhoneNumberId(
+  phoneNumberId: string
+): Promise<EstablishmentWhatsAppCredentials | null> {
+  try {
+    const db = await getDatabase();
+    const credentials = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .findOne({ phoneNumberId, isConnected: true });
+
+    return credentials;
+  } catch (error) {
+    console.error("Error fetching establishment by phone number ID:", error);
+    return null;
+  }
+}
+
+/**
+ * Get WhatsApp credentials by normalized phone number (for webhook routing)
+ */
+export async function getEstablishmentByPhoneNumber(
+  phoneNumber: string
+): Promise<EstablishmentWhatsAppCredentials | null> {
+  try {
+    // Normalize phone number (remove non-digits)
+    const normalizedPhone = phoneNumber.replace(/\D/g, "");
+
+    const db = await getDatabase();
+    const credentials = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .findOne({ phoneNumber: normalizedPhone, isConnected: true });
+
+    return credentials;
+  } catch (error) {
+    console.error("Error fetching establishment by phone number:", error);
+    return null;
+  }
+}
+
+/**
+ * Save or update WhatsApp credentials for an establishment
+ */
+export async function saveEstablishmentWhatsAppCredentials(
+  establishmentId: string,
+  credentials: Partial<EstablishmentWhatsAppCredentials>
+): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const now = new Date();
+
+    // Normalize phone number if provided
+    let normalizedPhone = credentials.phoneNumber;
+    if (normalizedPhone) {
+      normalizedPhone = normalizedPhone.replace(/\D/g, "");
+    }
+
+    const updateDoc = {
+      ...credentials,
+      establishmentId,
+      companyId: establishmentId, // For backwards compatibility
+      phoneNumber: normalizedPhone || "",
+      updatedAt: now,
+    };
+
+    const result = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .updateOne(
+        { establishmentId },
+        {
+          $set: updateDoc,
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true }
+      );
+
+    return result.acknowledged;
+  } catch (error) {
+    console.error("Error saving establishment WhatsApp credentials:", error);
+    return false;
+  }
+}
+
+/**
+ * Disconnect WhatsApp for an establishment
+ */
+export async function disconnectEstablishmentWhatsApp(
+  establishmentId: string
+): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const result = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .updateOne(
+        { establishmentId },
+        {
+          $set: {
+            isConnected: false,
+            connectionStatus: "disconnected" as const,
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error("Error disconnecting establishment WhatsApp:", error);
+    return false;
+  }
+}
+
+/**
+ * Check if an establishment has WhatsApp connected
+ */
+export async function isEstablishmentWhatsAppConnected(
+  establishmentId: string
+): Promise<boolean> {
+  const credentials = await getEstablishmentWhatsAppCredentials(establishmentId);
+  return credentials?.isConnected === true;
+}
+
+/**
+ * Get all establishments with WhatsApp connected (for admin overview)
+ */
+export async function getAllConnectedWhatsAppEstablishments(): Promise<
+  EstablishmentWhatsAppCredentials[]
+> {
+  try {
+    const db = await getDatabase();
+    const credentials = await db
+      .collection<EstablishmentWhatsAppCredentials>(WHATSAPP_CREDENTIALS_COLLECTION)
+      .find({ isConnected: true })
+      .toArray();
+
+    return credentials;
+  } catch (error) {
+    console.error("Error fetching all connected WhatsApp establishments:", error);
+    return [];
   }
 }
