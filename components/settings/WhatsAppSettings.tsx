@@ -293,7 +293,7 @@ function PlanCard({ planKey, plan, isSelected, onSelect, isBrazil, t }: PlanCard
 
   return (
     <div
-      className={`relative bg-white border-2 rounded-xl p-5 transition-all cursor-pointer ${
+      className={`relative bg-white border-2 rounded-xl p-5 transition-all cursor-pointer flex flex-col h-full ${
         isSelected
           ? "border-primary-500 ring-2 ring-primary-100"
           : "border-gray-200 hover:border-gray-300"
@@ -311,7 +311,7 @@ function PlanCard({ planKey, plan, isSelected, onSelect, isBrazil, t }: PlanCard
         <h4 className="font-semibold text-gray-900">{plan.name}</h4>
         <p className="text-2xl font-bold text-gray-900 mt-1">{price}</p>
       </div>
-      <ul className="space-y-2">
+      <ul className="space-y-2 flex-1">
         {features.map((feature, idx) => (
           <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
             <CheckIcon />
