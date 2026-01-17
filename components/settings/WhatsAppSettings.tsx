@@ -294,7 +294,9 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   const checkStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/whatsapp/status");
+      const res = await fetch("/api/admin/whatsapp/status", {
+        credentials: "include",
+      });
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
