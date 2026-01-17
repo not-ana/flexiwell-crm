@@ -92,7 +92,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-4xl">
+        <div className="max-w-5xl">
           {renderTabContent()}
         </div>
       </div>

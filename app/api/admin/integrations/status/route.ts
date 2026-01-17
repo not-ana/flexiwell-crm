@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import { requireRoleFromCookie } from "@/lib/auth/middleware";
+import { requireRole } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireRoleFromCookie(["admin"]);
+    const { error } = requireRole(request, ["admin"]);
     if (error) return error;
 
     const db = await getDatabase();

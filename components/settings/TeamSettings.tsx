@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle, ModalDescription } from "@/components/ui/Modal";
 import { FormField } from "@/components/ui/FormField";
-import { useLocale } from "@/hooks/useLocale";
 import { showToast } from "./shared";
 
 // ============================================================================
@@ -71,6 +70,7 @@ const TRANSLATIONS = {
     "en-US": (name: string) => `Are you sure you want to remove ${name} from the team? They will lose access to the system immediately.`,
   },
   fillNameEmail: { "pt-BR": "Preencha nome e e-mail", "en-US": "Please fill in name and email" },
+  invalidEmail: { "pt-BR": "Por favor, insira um e-mail válido", "en-US": "Please enter a valid email address" },
   memberAddedSuccess: {
     "pt-BR": (name: string) => `Membro ${name} adicionado com sucesso`,
     "en-US": (name: string) => `Team member ${name} added successfully`,
@@ -98,8 +98,8 @@ type TranslationKey = keyof typeof TRANSLATIONS;
 // ============================================================================
 
 function useTeamTranslations() {
-  const { isBrazil } = useLocale();
-  const lang = isBrazil ? "pt-BR" : "en-US";
+  // Force English for this component
+  const lang = "en-US";
 
   const t = (key: TranslationKey): string => {
     const translation = TRANSLATIONS[key];
@@ -116,7 +116,7 @@ function useTeamTranslations() {
     return fn(param);
   };
 
-  return { t, getMessage, isBrazil };
+  return { t, getMessage };
 }
 
 // ============================================================================
@@ -310,6 +310,13 @@ function InviteMemberModal({ isOpen, onClose, onSuccess, t, getMessage }: Invite
       showToast(t("fillNameEmail"), "error");
       return;
     }
+
+    // Validate email format
+    if (!formData.email.includes("@") || !formData.email.includes(".")) {
+      showToast(t("invalidEmail"), "error");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/staff", {

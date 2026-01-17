@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ReactElement } from "react";
+import Image from "next/image";
 import { CheckCircleIcon } from "@/components/icons";
 import { useLocale } from "@/hooks/useLocale";
 
@@ -27,6 +28,7 @@ interface Addon {
   pricing: AddonPricing;
   iconBg: string;
   iconColor: string;
+  iconImage?: string;
   features: string[];
   featuresBrl?: string[];
   active?: boolean;
@@ -36,40 +38,66 @@ interface Addon {
   hasVariants?: boolean;
 }
 
-type AddonNavigationId = "whatsapp-bot" | "sms-pack" | "sms-bot";
+type AddonNavigationId = "whatsapp-bot" | "sms-bot";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const ADDON_NAVIGATION_MAP: Record<AddonNavigationId, "whatsapp" | "sms" | "sms-bot"> = {
+const ADDON_NAVIGATION_MAP: Record<AddonNavigationId, "whatsapp" | "sms-bot"> = {
   "whatsapp-bot": "whatsapp",
-  "sms-pack": "sms",
   "sms-bot": "sms-bot",
 };
 
 const ADDONS: Addon[] = [
   {
     id: "whatsapp-bot",
-    name: "WhatsApp AI Bot",
-    description: "Automated booking assistant that handles reservations 24/7 via WhatsApp. Includes 1,000 messages/month.",
-    descriptionBrl: "Assistente de reservas automatizado 24/7 via WhatsApp. Inclui 1.000 mensagens/mês.",
+    name: "WhatsApp Automation",
+    description: "AI booking assistant + notifications via WhatsApp. Includes 1,000 messages/month with bot and bulk messaging.",
+    descriptionBrl: "Assistente de reservas IA + notificações via WhatsApp. Inclui 1.000 mensagens/mês com bot e envio em massa.",
     pricing: { usd: "$29", brl: "R$79", note: "/month", noteBrl: "/mês" },
     iconBg: "bg-green-500",
     iconColor: "text-white",
     features: [
       "1,000 messages/month included",
+      "AI bot for bookings & cancellations",
+      "Class reminders & campaigns",
       "24/7 automated responses",
-      "Book, cancel & reschedule classes",
-      "Answer FAQs about schedules & plans",
     ],
     featuresBrl: [
       "1.000 mensagens/mês incluídas",
+      "Bot IA para agendamentos e cancelamentos",
+      "Lembretes de aulas e campanhas",
       "Respostas automáticas 24/7",
-      "Agendar, cancelar e remarcar aulas",
-      "Responder dúvidas sobre horários e planos",
     ],
     active: false,
+    includedInPlans: ["Included in Business & Professional plans"],
+    includedInPlansBrl: ["Incluso nos planos Business e Professional"],
+  },
+  {
+    id: "sms-bot",
+    name: "SMS Automation",
+    description: "AI booking assistant + notifications via SMS. Includes 500 SMS/month. US market only.",
+    descriptionBrl: "Assistente de reservas IA + notificações via SMS. Inclui 500 SMS/mês. Apenas mercado EUA.",
+    pricing: { usd: "$19", brl: "R$49", note: "/month", noteBrl: "/mês" },
+    iconBg: "bg-transparent",
+    iconColor: "text-white",
+    iconImage: "/message.svg",
+    features: [
+      "500 SMS/month included",
+      "AI bot for bookings & cancellations",
+      "Class reminders & campaigns",
+      "24/7 automated responses",
+    ],
+    featuresBrl: [
+      "500 SMS/mês incluídos",
+      "Bot IA para agendamentos e cancelamentos",
+      "Lembretes de aulas e campanhas",
+      "Respostas automáticas 24/7",
+    ],
+    active: false,
+    includedInPlans: ["Included in Business & Professional plans"],
+    includedInPlansBrl: ["Incluso nos planos Business e Professional"],
   },
   {
     id: "extra-storage",
@@ -92,53 +120,6 @@ const ADDONS: Addon[] = [
       "Backups automáticos",
     ],
     active: false,
-  },
-  {
-    id: "sms-bot",
-    name: "SMS AI Bot",
-    description: "Automated booking assistant via SMS. Clients can book, cancel & check classes by texting. US market only.",
-    descriptionBrl: "Assistente de reservas via SMS. Clientes podem agendar, cancelar e consultar aulas por mensagem. Apenas mercado EUA.",
-    pricing: { usd: "$19", brl: "R$49", note: "/month + SMS credits", noteBrl: "/mês + créditos SMS" },
-    iconBg: "bg-purple-500",
-    iconColor: "text-white",
-    features: [
-      "24/7 automated SMS replies",
-      "Book & cancel classes via text",
-      "Check upcoming schedule",
-      "Natural language understanding",
-    ],
-    featuresBrl: [
-      "Respostas SMS automáticas 24/7",
-      "Agendar e cancelar aulas por texto",
-      "Consultar agenda de aulas",
-      "Compreensão de linguagem natural",
-    ],
-    active: false,
-  },
-  {
-    id: "sms-pack",
-    name: "SMS Credits Pack",
-    description: "Bulk SMS credits for notifications and marketing campaigns. Multiple pack sizes available.",
-    descriptionBrl: "Créditos SMS para notificações e campanhas de marketing. Vários tamanhos de pacote disponíveis.",
-    pricing: { usd: "$5", brl: "R$15", note: "starting price (250 SMS)", noteBrl: "a partir de (250 SMS)" },
-    iconBg: "bg-violet-500",
-    iconColor: "text-white",
-    features: [
-      "250 SMS: $5 | 500 SMS: $10",
-      "1000 SMS: $18 | 2500 SMS: $40",
-      "Class reminders & campaigns",
-      "Credits never expire",
-    ],
-    featuresBrl: [
-      "250 SMS: R$15 | 500 SMS: R$29",
-      "1000 SMS: R$49 | 2500 SMS: R$109",
-      "Lembretes de aulas e campanhas",
-      "Créditos nunca expiram",
-    ],
-    active: false,
-    hasVariants: true,
-    includedInPlans: ["Included in Growth, Business & Enterprise plans"],
-    includedInPlansBrl: ["Incluso nos planos Growth, Business e Enterprise"],
   },
   {
     id: "advanced-reports",
@@ -226,11 +207,6 @@ const AddonIcon = ({ id, className }: { id: string; className?: string }) => {
     "extra-storage": (
       <svg className={className} viewBox="0 0 24 24" fill="currentColor">
         <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
-      </svg>
-    ),
-    "sms-pack": (
-      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12zM7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
       </svg>
     ),
     "advanced-reports": (
@@ -332,8 +308,12 @@ function AddonCard({ addon, isActive, isLoading, translations, onToggle, onNavig
 
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 ${addon.iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-          <AddonIcon id={addon.id} className={`w-6 h-6 ${addon.iconColor}`} />
+        <div className={`w-12 h-12 ${addon.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+          {addon.iconImage ? (
+            <Image src={addon.iconImage} alt={addon.name} width={48} height={48} className="w-full h-full object-cover" />
+          ) : (
+            <AddonIcon id={addon.id} className={`w-6 h-6 ${addon.iconColor}`} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900">{addon.name}</h3>

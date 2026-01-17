@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
+import { api } from "@/lib/api/client";
 
 interface IntegrationStatus {
   connected: boolean;
@@ -25,7 +26,6 @@ const allIntegrations: IntegrationInfo[] = [
   { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true },
   { id: "paypal", name: "PayPal", icon: "PP", color: "blue", description: "Accept PayPal payments", hasSettings: true },
   { id: "googleCalendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true },
-  { id: "google_calendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true },
   { id: "whatsapp", name: "WhatsApp", icon: "WA", color: "green", description: "Client messaging via Twilio", hasSettings: true },
   { id: "sms", name: "SMS", icon: "SMS", color: "blue", description: "SMS notifications via Twilio", hasSettings: true },
   { id: "mailchimp", name: "Mailchimp", icon: "MC", color: "yellow", description: "Email marketing & newsletters", hasSettings: true },
@@ -49,9 +49,8 @@ export function IntegrationsSettings() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/admin/integrations/status");
-        if (res.ok) {
-          const data = await res.json();
+        const { data } = await api.get<Record<string, IntegrationStatus>>("/api/admin/integrations/status");
+        if (data) {
           setIntegrationStatus(data);
         }
       } catch (error) {
@@ -63,12 +62,9 @@ export function IntegrationsSettings() {
     fetchStatus();
   }, []);
 
-  // Filter to only show connected integrations
-  const connectedIntegrations = allIntegrations.filter(
+  const connectedCount = allIntegrations.filter(
     (integration) => integrationStatus[integration.id]?.connected
-  );
-
-  const connectedCount = connectedIntegrations.length;
+  ).length;
 
   const toggleExpanded = (id: string) => {
     setExpandedIntegration(expandedIntegration === id ? null : id);
@@ -92,17 +88,9 @@ export function IntegrationsSettings() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
-            <p className="text-sm text-gray-600 mt-1">Connected apps and services.</p>
-          </div>
-          <a
-            href="/admin/integrations"
-            className="text-sm font-medium text-primary-600 hover:text-primary-700"
-          >
-            Manage all integrations →
-          </a>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
+          <p className="text-sm text-gray-600 mt-1">Connect apps and services to extend FlexiWell.</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <div className="animate-pulse space-y-3">
@@ -117,91 +105,74 @@ export function IntegrationsSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
-          <p className="text-sm text-gray-600 mt-1">Connected apps and services.</p>
-        </div>
-        <a
-          href="/admin/integrations"
-          className="text-sm font-medium text-primary-600 hover:text-primary-700"
-        >
-          Manage all integrations →
-        </a>
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Connect apps and services to extend FlexiWell.
+          {connectedCount > 0 && ` ${connectedCount} connected.`}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {connectedCount === 0 ? (
-          <div className="text-center py-8 px-6">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">No integrations connected</h3>
-            <p className="text-sm text-gray-500 mb-4">Connect apps to extend FlexiWell's functionality.</p>
-            <a
-              href="/admin/integrations"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+      <div className="grid gap-4 sm:grid-cols-2">
+        {allIntegrations.map((integration) => {
+          const isConnected = integrationStatus[integration.id]?.connected;
+          const status = integrationStatus[integration.id];
+          const isExpanded = expandedIntegration === integration.id;
+
+          return (
+            <div
+              key={integration.id}
+              className={`bg-white border rounded-xl overflow-hidden transition-all ${
+                isConnected ? "border-green-200 ring-1 ring-green-100" : "border-gray-200 hover:border-gray-300"
+              }`}
             >
-              Browse integrations
-            </a>
-          </div>
-        ) : (
-          <>
-            <div className="px-6 py-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600">
-                {connectedCount} integration{connectedCount !== 1 ? "s" : ""} connected
-              </p>
-            </div>
-
-            <div className="divide-y divide-gray-200">
-              {connectedIntegrations.map((integration) => {
-                const status = integrationStatus[integration.id];
-                const isExpanded = expandedIntegration === integration.id;
-
-                return (
-                  <div key={integration.id}>
-                    <button
-                      onClick={() => integration.hasSettings && toggleExpanded(integration.id)}
-                      className={`w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors ${
-                        integration.hasSettings ? "cursor-pointer" : "cursor-default"
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[integration.color]}`}>
-                        <span className="font-bold text-xs">{integration.icon}</span>
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-sm font-medium text-gray-900">{integration.name}</p>
-                        <p className="text-xs text-gray-500 truncate">
-                          Connected{status?.lastSync ? ` • Last sync: ${new Date(status.lastSync).toLocaleDateString()}` : ""}
-                        </p>
-                      </div>
-                      <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                        <CheckCircleIcon className="w-3 h-3" />
-                        Active
-                      </span>
-                      {integration.hasSettings && (
-                        <ChevronIcon
-                          direction={isExpanded ? "up" : "down"}
-                          className="w-5 h-5 text-gray-400"
-                        />
-                      )}
-                    </button>
-
-                    {isExpanded && integration.hasSettings && (
-                      <div className="px-4 pb-4 bg-gray-50 border-t border-gray-100">
-                        <div className="pt-4">
-                          {renderIntegrationSettings(integration.id)}
-                        </div>
-                      </div>
+              <div
+                onClick={() => isConnected && integration.hasSettings && toggleExpanded(integration.id)}
+                className={`flex items-center gap-4 p-4 ${
+                  isConnected && integration.hasSettings ? "cursor-pointer hover:bg-gray-50" : ""
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses[integration.color]}`}>
+                  <span className="font-bold text-xs">{integration.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{integration.name}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {isConnected
+                      ? `Connected${status?.lastSync ? ` • Last sync: ${new Date(status.lastSync).toLocaleDateString()}` : ""}`
+                      : integration.description}
+                  </p>
+                </div>
+                {isConnected ? (
+                  <>
+                    <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                      <CheckCircleIcon className="w-3 h-3" />
+                      Active
+                    </span>
+                    {integration.hasSettings && (
+                      <ChevronIcon
+                        direction={isExpanded ? "up" : "down"}
+                        className="w-5 h-5 text-gray-400"
+                      />
                     )}
+                  </>
+                ) : (
+                  <button className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
+                    Connect
+                  </button>
+                )}
+              </div>
+
+              {isExpanded && isConnected && integration.hasSettings && (
+                <div className="px-4 pb-4 bg-gray-50 border-t border-gray-100">
+                  <div className="pt-4">
+                    {renderIntegrationSettings(integration.id)}
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
-          </>
-        )}
+          );
+        })}
       </div>
     </div>
   );

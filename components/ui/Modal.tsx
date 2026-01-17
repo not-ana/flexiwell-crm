@@ -73,30 +73,43 @@ export function Modal({
     }
   };
 
-  // Focus management and event listeners
+  // Track if modal was just opened
+  const wasOpen = useRef(false);
+
+  // Focus management - only on initial open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpen.current) {
       // Store current active element
       previousActiveElement.current = document.activeElement as HTMLElement;
 
-      // Focus modal
+      // Focus modal only on initial open
       modalRef.current?.focus();
-
-      // Add event listener
-      document.addEventListener("keydown", handleKeyDown);
 
       // Prevent body scroll
       document.body.style.overflow = "hidden";
     }
 
+    wasOpen.current = isOpen;
+
+    return () => {
+      if (!isOpen) {
+        document.body.style.overflow = "";
+
+        // Restore focus
+        if (previousActiveElement.current) {
+          previousActiveElement.current.focus();
+        }
+      }
+    };
+  }, [isOpen]);
+
+  // Handle ESC key - separate effect to avoid re-focusing
+  useEffect(() => {
+    if (!isOpen) return;
+
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-
-      // Restore focus
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
     };
   }, [isOpen, handleKeyDown]);
 
