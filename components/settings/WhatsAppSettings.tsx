@@ -18,8 +18,12 @@ interface WhatsAppStatus {
   connected: boolean;
   provider?: string;
   phoneNumber?: string;
+  phoneNumberId?: string;
   qualityRating?: string;
+  botEnabled?: boolean;
+  botFeatures?: BotFeatureToggle;
   error?: string;
+  pendingRequest?: boolean;
 }
 
 interface BotFeatureToggle {
@@ -79,6 +83,67 @@ const TRANSLATIONS = {
   qualityRating: { "pt-BR": "Qualidade", "en-US": "Quality" },
   connectionSuccess: { "pt-BR": "WhatsApp conectado com sucesso!", "en-US": "WhatsApp connected successfully!" },
   connectionFailed: { "pt-BR": "Falha na conexão com WhatsApp", "en-US": "Failed to connect to WhatsApp" },
+  savingSettings: { "pt-BR": "Salvando...", "en-US": "Saving..." },
+  settingsSaved: { "pt-BR": "Configurações salvas!", "en-US": "Settings saved!" },
+  // Request Activation
+  activateTitle: { "pt-BR": "Ative o WhatsApp Bot", "en-US": "Activate WhatsApp Bot" },
+  activateDescription: {
+    "pt-BR": "Permita que seus clientes interajam com seu estúdio 24/7 via WhatsApp.",
+    "en-US": "Let your clients interact with your studio 24/7 via WhatsApp.",
+  },
+  activateBenefit1: { "pt-BR": "Agendamento automático de aulas", "en-US": "Automatic class booking" },
+  activateBenefit2: { "pt-BR": "Confirmação de presença via bot", "en-US": "Attendance confirmation via bot" },
+  activateBenefit3: { "pt-BR": "Lembretes automáticos 24h antes", "en-US": "Automatic reminders 24h before" },
+  activateBenefit4: { "pt-BR": "Cancelamentos sem ligar", "en-US": "Cancel without calling" },
+  requestActivation: { "pt-BR": "Solicitar Ativação", "en-US": "Request Activation" },
+  requesting: { "pt-BR": "Enviando...", "en-US": "Sending..." },
+  requestSent: { "pt-BR": "Solicitação enviada!", "en-US": "Request sent!" },
+  requestSentDesc: {
+    "pt-BR": "Entraremos em contato em breve para configurar seu WhatsApp Bot.",
+    "en-US": "We'll contact you soon to set up your WhatsApp Bot.",
+  },
+  pendingActivation: { "pt-BR": "Ativação Pendente", "en-US": "Pending Activation" },
+  pendingActivationDesc: {
+    "pt-BR": "Sua solicitação está sendo processada. Entraremos em contato em breve.",
+    "en-US": "Your request is being processed. We'll contact you soon.",
+  },
+  // How it works section
+  howItWorksTitle: { "pt-BR": "Como Funciona", "en-US": "How It Works" },
+  howItWorksDesc: {
+    "pt-BR": "Quando conectado, seus clientes podem interagir com seu estúdio pelo WhatsApp.",
+    "en-US": "When connected, your clients can interact with your studio via WhatsApp.",
+  },
+  clientExperience: { "pt-BR": "Experiência do Cliente", "en-US": "Client Experience" },
+  clientExperienceDesc: {
+    "pt-BR": "Clientes enviam mensagem para seu número do WhatsApp Business e o bot responde automaticamente.",
+    "en-US": "Clients message your WhatsApp Business number and the bot responds automatically.",
+  },
+  availableCommands: { "pt-BR": "Comandos Disponíveis", "en-US": "Available Commands" },
+  commandMenu: { "pt-BR": "menu, oi, olá", "en-US": "menu, hi, hello" },
+  commandMenuDesc: { "pt-BR": "Mostra o menu principal", "en-US": "Shows the main menu" },
+  commandClasses: { "pt-BR": "aulas, minhas aulas", "en-US": "classes, my classes" },
+  commandClassesDesc: { "pt-BR": "Lista aulas agendadas", "en-US": "Lists scheduled classes" },
+  commandPlan: { "pt-BR": "plano", "en-US": "plan" },
+  commandPlanDesc: { "pt-BR": "Mostra aulas restantes", "en-US": "Shows remaining classes" },
+  commandBook: { "pt-BR": "agendar, marcar", "en-US": "book, schedule" },
+  commandBookDesc: { "pt-BR": "Agenda uma nova aula", "en-US": "Books a new class" },
+  commandCancel: { "pt-BR": "cancelar", "en-US": "cancel" },
+  commandCancelDesc: { "pt-BR": "Cancela uma aula", "en-US": "Cancels a class" },
+  commandConfirm: { "pt-BR": "confirmar presença", "en-US": "confirm attendance" },
+  commandConfirmDesc: { "pt-BR": "Confirma presença em uma aula", "en-US": "Confirms attendance for a class" },
+  commandHelp: { "pt-BR": "ajuda", "en-US": "help" },
+  commandHelpDesc: { "pt-BR": "Lista comandos disponíveis", "en-US": "Lists available commands" },
+  interactiveButtons: { "pt-BR": "Botões Interativos", "en-US": "Interactive Buttons" },
+  interactiveButtonsDesc: {
+    "pt-BR": "O bot também oferece botões clicáveis para facilitar a navegação.",
+    "en-US": "The bot also provides clickable buttons for easier navigation.",
+  },
+  clientRegistration: { "pt-BR": "Registro de Clientes", "en-US": "Client Registration" },
+  clientRegistrationDesc: {
+    "pt-BR": "Clientes precisam ter o WhatsApp cadastrado no sistema para usar o bot. Vincule o número no cadastro do cliente.",
+    "en-US": "Clients need their WhatsApp registered in the system to use the bot. Link their number in the client profile.",
+  },
+  exampleConversation: { "pt-BR": "Exemplo de Conversa", "en-US": "Example Conversation" },
 } as const;
 
 type TranslationKey = keyof typeof TRANSLATIONS;
@@ -134,6 +199,18 @@ const LoadingSpinner = () => (
   <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+const CopyIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
+const ExternalLinkIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
   </svg>
 );
 
@@ -280,6 +357,260 @@ function BotFeaturesCard({ features, onToggle, t }: BotFeaturesCardProps) {
 }
 
 // ============================================================================
+// RequestActivationCard Component - For requesting WhatsApp activation
+// ============================================================================
+
+interface RequestActivationCardProps {
+  onRequestActivation: () => void;
+  requesting: boolean;
+  requestSent: boolean;
+  pendingRequest: boolean;
+  t: (key: TranslationKey) => string;
+}
+
+const BenefitCheckIcon = () => (
+  <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+function RequestActivationCard({ onRequestActivation, requesting, requestSent, pendingRequest, t }: RequestActivationCardProps) {
+  const benefits = [
+    t("activateBenefit1"),
+    t("activateBenefit2"),
+    t("activateBenefit3"),
+    t("activateBenefit4"),
+  ];
+
+  // Show pending state if request was already sent previously
+  if (pendingRequest) {
+    return (
+      <div className="bg-white border border-amber-200 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{t("pendingActivation")}</h3>
+            <p className="text-sm text-gray-600 mt-1">{t("pendingActivationDesc")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show success state after request is sent
+  if (requestSent) {
+    return (
+      <div className="bg-white border border-green-200 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+            <CheckIcon />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-green-700">{t("requestSent")}</h3>
+            <p className="text-sm text-gray-600 mt-1">{t("requestSentDesc")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="flex items-start gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+          <WhatsAppIcon className="w-6 h-6 text-green-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{t("activateTitle")}</h3>
+          <p className="text-sm text-gray-600 mt-1">{t("activateDescription")}</p>
+        </div>
+      </div>
+
+      {/* Benefits list */}
+      <div className="space-y-3 mb-6">
+        {benefits.map((benefit, idx) => (
+          <div key={idx} className="flex items-center gap-3">
+            <BenefitCheckIcon />
+            <span className="text-sm text-gray-700">{benefit}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Request Button */}
+      <Button
+        onClick={onRequestActivation}
+        disabled={requesting}
+        className="w-full"
+      >
+        {requesting ? (
+          <span className="flex items-center justify-center gap-2">
+            <LoadingSpinner />
+            {t("requesting")}
+          </span>
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <WhatsAppIcon className="w-5 h-5" />
+            {t("requestActivation")}
+          </span>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// HowItWorksCard Component - Explains how the bot works
+// ============================================================================
+
+interface HowItWorksCardProps {
+  t: (key: TranslationKey) => string;
+  isBrazil: boolean;
+}
+
+const MessageBubbleIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
+);
+
+const CommandIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+function HowItWorksCard({ t, isBrazil }: HowItWorksCardProps) {
+  const commands = [
+    { cmd: t("commandMenu"), desc: t("commandMenuDesc") },
+    { cmd: t("commandClasses"), desc: t("commandClassesDesc") },
+    { cmd: t("commandPlan"), desc: t("commandPlanDesc") },
+    { cmd: t("commandBook"), desc: t("commandBookDesc") },
+    { cmd: t("commandCancel"), desc: t("commandCancelDesc") },
+    { cmd: t("commandConfirm"), desc: t("commandConfirmDesc") },
+    { cmd: t("commandHelp"), desc: t("commandHelpDesc") },
+  ];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("howItWorksTitle")}</h3>
+      <p className="text-sm text-gray-600 mb-6">{t("howItWorksDesc")}</p>
+
+      {/* Client Experience */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+            <MessageBubbleIcon />
+          </div>
+          <h4 className="font-medium text-gray-900">{t("clientExperience")}</h4>
+        </div>
+        <p className="text-sm text-gray-600 ml-10">{t("clientExperienceDesc")}</p>
+      </div>
+
+      {/* Available Commands */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+            <CommandIcon />
+          </div>
+          <h4 className="font-medium text-gray-900">{t("availableCommands")}</h4>
+        </div>
+        <div className="ml-10 bg-gray-50 rounded-lg p-4">
+          <div className="space-y-2">
+            {commands.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-3">
+                <code className="text-xs bg-gray-200 px-2 py-1 rounded font-mono text-gray-700 whitespace-nowrap">
+                  {item.cmd}
+                </code>
+                <span className="text-sm text-gray-600">{item.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Buttons */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+            <WhatsAppIcon className="w-5 h-5" />
+          </div>
+          <h4 className="font-medium text-gray-900">{t("interactiveButtons")}</h4>
+        </div>
+        <p className="text-sm text-gray-600 ml-10">{t("interactiveButtonsDesc")}</p>
+      </div>
+
+      {/* Client Registration Note */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+            <UserIcon />
+          </div>
+          <h4 className="font-medium text-gray-900">{t("clientRegistration")}</h4>
+        </div>
+        <p className="text-sm text-gray-600 ml-10">{t("clientRegistrationDesc")}</p>
+      </div>
+
+      {/* Example Conversation */}
+      <div>
+        <h4 className="font-medium text-gray-900 mb-3">{t("exampleConversation")}</h4>
+        <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+          {/* Client message */}
+          <div className="flex justify-end">
+            <div className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg max-w-[80%]">
+              {isBrazil ? "oi" : "hi"}
+            </div>
+          </div>
+          {/* Bot response */}
+          <div className="flex justify-start">
+            <div className="bg-gray-700 text-white text-sm px-3 py-2 rounded-lg max-w-[80%]">
+              <p className="mb-2">{isBrazil ? "Olá Maria! 👋" : "Hello Maria! 👋"}</p>
+              <p className="text-gray-300 text-xs mb-2">
+                {isBrazil ? "O que você gostaria de fazer?" : "What would you like to do?"}
+              </p>
+              <div className="flex flex-wrap gap-1 mt-2">
+                <span className="bg-gray-600 px-2 py-1 rounded text-xs">
+                  {isBrazil ? "📅 Ver Aulas" : "📅 View Classes"}
+                </span>
+                <span className="bg-gray-600 px-2 py-1 rounded text-xs">
+                  {isBrazil ? "✅ Confirmar" : "✅ Confirm"}
+                </span>
+                <span className="bg-gray-600 px-2 py-1 rounded text-xs">
+                  {isBrazil ? "📖 Agendar" : "📖 Book"}
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Client clicks button */}
+          <div className="flex justify-end">
+            <div className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg">
+              {isBrazil ? "📅 Ver Aulas" : "📅 View Classes"}
+            </div>
+          </div>
+          {/* Bot shows classes */}
+          <div className="flex justify-start">
+            <div className="bg-gray-700 text-white text-sm px-3 py-2 rounded-lg max-w-[80%]">
+              <p className="font-medium mb-1">{isBrazil ? "Suas próximas aulas:" : "Your upcoming classes:"}</p>
+              <p className="text-xs text-gray-300">1. Pilates - {isBrazil ? "Seg" : "Mon"} 10:00</p>
+              <p className="text-xs text-gray-300">2. Yoga - {isBrazil ? "Qua" : "Wed"} 14:00</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -287,24 +618,27 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [features, setFeatures] = useState<BotFeatureToggle>(INITIAL_FEATURES);
+  const [requesting, setRequesting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [savingFeatures, setSavingFeatures] = useState(false);
 
-  const { t } = useWhatsAppTranslations();
+  const { t, isBrazil } = useWhatsAppTranslations();
 
   // Check WhatsApp connection status on mount
   const checkStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/whatsapp/status", {
+      const res = await fetch("/api/admin/whatsapp/credentials", {
         credentials: "include",
       });
       const data = await res.json();
       if (res.ok) {
         setStatus(data);
-        if (data.connected) {
-          showToast(t("connectionSuccess"));
+        // Load bot features from server
+        if (data.botFeatures) {
+          setFeatures(data.botFeatures);
         }
       } else {
-        // Show the actual error message from API
         setStatus({ connected: false, error: data.error || "Failed to check status" });
       }
     } catch (error) {
@@ -320,8 +654,54 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleToggleFeature = (key: keyof BotFeatureToggle) => {
-    setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleRequestActivation = async () => {
+    setRequesting(true);
+    try {
+      const res = await fetch("/api/admin/whatsapp/request-activation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        setRequestSent(true);
+        showToast(t("requestSent"));
+      } else {
+        const data = await res.json();
+        showToast(data.error || t("connectionFailed"));
+      }
+    } catch (error) {
+      console.error("Failed to request activation:", error);
+      showToast(t("connectionFailed"));
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const handleToggleFeature = async (key: keyof BotFeatureToggle) => {
+    const newFeatures = { ...features, [key]: !features[key] };
+    setFeatures(newFeatures);
+
+    // Save to server
+    setSavingFeatures(true);
+    try {
+      const res = await fetch("/api/admin/whatsapp/credentials", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ botFeatures: newFeatures }),
+      });
+
+      if (res.ok) {
+        showToast(t("settingsSaved"));
+      }
+    } catch (error) {
+      console.error("Failed to save feature settings:", error);
+      // Revert on error
+      setFeatures(features);
+    } finally {
+      setSavingFeatures(false);
+    }
   };
 
   return (
@@ -349,14 +729,35 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         t={t}
       />
 
-      {/* Bot Features - only show when connected */}
-      {status?.connected && (
-        <BotFeaturesCard
-          features={features}
-          onToggle={handleToggleFeature}
+      {/* Request Activation Card - when not connected */}
+      {!status?.connected && !loading && (
+        <RequestActivationCard
+          onRequestActivation={handleRequestActivation}
+          requesting={requesting}
+          requestSent={requestSent}
+          pendingRequest={status?.pendingRequest || false}
           t={t}
         />
       )}
+
+      {/* Bot Features - only show when connected */}
+      {status?.connected && (
+        <div className="relative">
+          {savingFeatures && (
+            <div className="absolute top-2 right-2">
+              <LoadingSpinner />
+            </div>
+          )}
+          <BotFeaturesCard
+            features={features}
+            onToggle={handleToggleFeature}
+            t={t}
+          />
+        </div>
+      )}
+
+      {/* How It Works - always show */}
+      <HowItWorksCard t={t} isBrazil={isBrazil} />
     </div>
   );
 }
