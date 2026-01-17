@@ -297,14 +297,15 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
       const res = await fetch("/api/admin/whatsapp/status", {
         credentials: "include",
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setStatus(data);
         if (data.connected) {
           showToast(t("connectionSuccess"));
         }
       } else {
-        setStatus({ connected: false, error: "Failed to check status" });
+        // Show the actual error message from API
+        setStatus({ connected: false, error: data.error || "Failed to check status" });
       }
     } catch (error) {
       console.error("Failed to check WhatsApp status:", error);
