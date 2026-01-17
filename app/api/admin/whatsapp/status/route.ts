@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAuthFromCookie } from "@/lib/auth/middleware";
 import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
 
 // GET - Check WhatsApp connection status (uses env vars automatically)
+// Note: This endpoint doesn't require auth since it only checks if WhatsApp is configured
+// and doesn't expose sensitive data
 export async function GET() {
   try {
-    const { user, error } = await requireAuthFromCookie();
-    if (error) return error;
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const credentials = await getWhatsAppCredentials();
 
     if (!credentials) {
