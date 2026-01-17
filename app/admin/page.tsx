@@ -117,23 +117,18 @@ function StaffAvatar({ name, initials, avatar }: { name: string; initials: strin
 type TimePeriod = "week" | "month" | "year";
 
 interface Establishment {
-  id: string;
+  _id: string;
   name: string;
   location: string;
 }
-
-const establishments: Establishment[] = [
-  { id: "1", name: "FlexiWell Downtown", location: "Downtown, New York" },
-  { id: "2", name: "FlexiWell Midtown", location: "Midtown, New York" },
-  { id: "3", name: "FlexiWell Uptown", location: "Uptown, New York" },
-];
 
 export default function AdminDashboard() {
   const currentYear = new Date().getFullYear();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("month");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment>(establishments[0]);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment | null>(null);
   const [showEstablishmentDropdown, setShowEstablishmentDropdown] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,12 +141,29 @@ export default function AdminDashboard() {
 
   const availableYears = [currentYear, currentYear - 1];
 
+  // Fetch establishments
+  useEffect(() => {
+    async function fetchEstablishments() {
+      try {
+        const response = await api.get<{ establishments: Establishment[] }>("/api/establishments?active=true");
+        if (response.data?.establishments && response.data.establishments.length > 0) {
+          setEstablishments(response.data.establishments);
+          setSelectedEstablishment(response.data.establishments[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching establishments:", error);
+      }
+    }
+    fetchEstablishments();
+  }, []);
+
   // Fetch dashboard data
   useEffect(() => {
     async function fetchDashboardData() {
       setLoading(true);
       try {
-        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}`);
+        const establishmentParam = selectedEstablishment ? `&establishmentId=${selectedEstablishment._id}` : "";
+        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}&year=${selectedYear}${establishmentParam}`);
         if (response.data) {
           setDashboardData(response.data);
         }
@@ -163,7 +175,7 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, selectedYear, selectedEstablishment]);
 
   // formatCurrency is now provided by useCurrency hook
 
@@ -215,39 +227,41 @@ export default function AdminDashboard() {
                 Good morning, Alex
               </h1>
               {/* Establishment Selector */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowEstablishmentDropdown(!showEstablishmentDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
-                >
-                  <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <span className="truncate">{selectedEstablishment.name}</span>
-                  <ChevronIcon className="w-4 h-4 text-gray-400 shrink-0" direction={showEstablishmentDropdown ? "up" : "down"} />
-                </button>
-                {showEstablishmentDropdown && (
-                  <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px]">
-                    {establishments.map((establishment) => (
-                      <button
-                        key={establishment.id}
-                        onClick={() => {
-                          setSelectedEstablishment(establishment);
-                          setShowEstablishmentDropdown(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                          selectedEstablishment.id === establishment.id ? "bg-primary-50" : ""
-                        }`}
-                      >
-                        <p className={`text-sm font-medium ${selectedEstablishment.id === establishment.id ? "text-primary-600" : "text-gray-900"}`}>
-                          {establishment.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{establishment.location}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {establishments.length > 0 && selectedEstablishment && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEstablishmentDropdown(!showEstablishmentDropdown)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span className="truncate">{selectedEstablishment.name}</span>
+                    <ChevronIcon className="w-4 h-4 text-gray-400 shrink-0" direction={showEstablishmentDropdown ? "up" : "down"} />
+                  </button>
+                  {showEstablishmentDropdown && (
+                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px]">
+                      {establishments.map((establishment) => (
+                        <button
+                          key={establishment._id}
+                          onClick={() => {
+                            setSelectedEstablishment(establishment);
+                            setShowEstablishmentDropdown(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                            selectedEstablishment._id === establishment._id ? "bg-primary-50" : ""
+                          }`}
+                        >
+                          <p className={`text-sm font-medium ${selectedEstablishment._id === establishment._id ? "text-primary-600" : "text-gray-900"}`}>
+                            {establishment.name}
+                          </p>
+                          <p className="text-xs text-gray-500">{establishment.location}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Year Selector */}

@@ -11,28 +11,53 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "month"; // week, month, year
+    const yearParam = searchParams.get("year");
+    const establishmentId = searchParams.get("establishmentId");
 
     const db = await getDatabase();
 
-    // Calculate date ranges
+    // Build establishment filter for queries
+    const establishmentFilter = establishmentId ? { establishmentId } : {};
+
+    // Calculate date ranges based on selected year
     const now = new Date();
+    const selectedYear = yearParam ? parseInt(yearParam) : now.getFullYear();
+    const isCurrentYear = selectedYear === now.getFullYear();
+
     let startDate: Date;
     let previousStartDate: Date;
     let previousEndDate: Date;
+    let endDate: Date;
 
     if (period === "week") {
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // For week, use current week if current year, otherwise last week of selected year
+      if (isCurrentYear) {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else {
+        endDate = new Date(selectedYear, 11, 31);
+        startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
       previousEndDate = startDate;
       previousStartDate = new Date(startDate.getTime() - 7 * 24 * 60 * 60 * 1000);
     } else if (period === "year") {
-      startDate = new Date(now.getFullYear(), 0, 1);
+      startDate = new Date(selectedYear, 0, 1);
+      endDate = isCurrentYear ? now : new Date(selectedYear, 11, 31);
       previousEndDate = startDate;
-      previousStartDate = new Date(now.getFullYear() - 1, 0, 1);
+      previousStartDate = new Date(selectedYear - 1, 0, 1);
     } else {
-      // month
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      previousEndDate = startDate;
-      previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      // month - use current month if current year, otherwise December of selected year
+      if (isCurrentYear) {
+        startDate = new Date(selectedYear, now.getMonth(), 1);
+        endDate = now;
+        previousEndDate = startDate;
+        previousStartDate = new Date(selectedYear, now.getMonth() - 1, 1);
+      } else {
+        startDate = new Date(selectedYear, 11, 1); // December of selected year
+        endDate = new Date(selectedYear, 11, 31);
+        previousEndDate = startDate;
+        previousStartDate = new Date(selectedYear, 10, 1); // November
+      }
     }
 
     // Run all queries in parallel
@@ -58,21 +83,24 @@ export async function GET(request: NextRequest) {
       classTypeDistribution,
     ] = await Promise.all([
       // Total clients
-      db.collection("clients").countDocuments(),
+      db.collection("clients").countDocuments(establishmentFilter),
       // Active clients
-      db.collection("clients").countDocuments({ status: "active" }),
+      db.collection("clients").countDocuments({ status: "active", ...establishmentFilter }),
       // New clients this period
       db.collection("clients").countDocuments({
         createdAt: { $gte: startDate },
+        ...establishmentFilter,
       }),
       // Total classes this period
       db.collection("classes").countDocuments({
         scheduledDate: { $gte: startDate },
+        ...establishmentFilter,
       }),
       // Completed bookings this period
       db.collection("bookings").countDocuments({
         status: "completed",
         scheduledDate: { $gte: startDate },
+        ...establishmentFilter,
       }),
       // Total revenue this period
       db.collection("payments").aggregate([
@@ -80,6 +108,7 @@ export async function GET(request: NextRequest) {
           $match: {
             status: "completed",
             createdAt: { $gte: startDate },
+            ...establishmentFilter,
           },
         },
         {
@@ -92,10 +121,12 @@ export async function GET(request: NextRequest) {
       // Previous period new clients
       db.collection("clients").countDocuments({
         createdAt: { $gte: previousStartDate, $lt: previousEndDate },
+        ...establishmentFilter,
       }),
       // Previous period classes
       db.collection("classes").countDocuments({
         scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+        ...establishmentFilter,
       }),
       // Previous period revenue
       db.collection("payments").aggregate([
@@ -103,6 +134,7 @@ export async function GET(request: NextRequest) {
           $match: {
             status: "completed",
             createdAt: { $gte: previousStartDate, $lt: previousEndDate },
+            ...establishmentFilter,
           },
         },
         {
@@ -114,13 +146,13 @@ export async function GET(request: NextRequest) {
       ]).toArray(),
       // Recent activity (last 5)
       db.collection("bookings")
-        .find()
+        .find(establishmentFilter)
         .sort({ createdAt: -1 })
         .limit(5)
         .toArray(),
       // Staff list with their class counts
       db.collection("staff")
-        .find({ status: "active" })
+        .find({ status: "active", ...establishmentFilter })
         .limit(10)
         .toArray(),
       // Today's classes
@@ -130,6 +162,7 @@ export async function GET(request: NextRequest) {
             $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
             $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
           },
+          ...establishmentFilter,
         })
         .sort({ startTime: 1 })
         .limit(10)
@@ -139,6 +172,7 @@ export async function GET(request: NextRequest) {
         {
           $match: {
             scheduledDate: { $gte: startDate },
+            ...establishmentFilter,
           },
         },
         {
@@ -165,6 +199,7 @@ export async function GET(request: NextRequest) {
     // Calculate attendance rate
     const totalBookingsInPeriod = await db.collection("bookings").countDocuments({
       scheduledDate: { $gte: startDate },
+      ...establishmentFilter,
     });
     const attendanceRate = totalBookingsInPeriod > 0
       ? ((completedBookings / totalBookingsInPeriod) * 100).toFixed(1)
@@ -190,7 +225,8 @@ export async function GET(request: NextRequest) {
       {
         $match: {
           instructorId: { $in: staffIds },
-          scheduledDate: { $gte: startDate }
+          scheduledDate: { $gte: startDate },
+          ...establishmentFilter,
         }
       },
       {
@@ -218,7 +254,8 @@ export async function GET(request: NextRequest) {
       {
         $match: {
           instructorId: { $in: staffIds },
-          scheduledDate: { $gte: startDate }
+          scheduledDate: { $gte: startDate },
+          ...establishmentFilter,
         }
       },
       {
@@ -289,10 +326,12 @@ export async function GET(request: NextRequest) {
     // Calculate previous period attendance for change comparison
     const previousBookingsInPeriod = await db.collection("bookings").countDocuments({
       scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+      ...establishmentFilter,
     });
     const previousCompletedBookings = await db.collection("bookings").countDocuments({
       status: "completed",
       scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+      ...establishmentFilter,
     });
     const previousAttendanceRate = previousBookingsInPeriod > 0
       ? (previousCompletedBookings / previousBookingsInPeriod) * 100
@@ -302,21 +341,21 @@ export async function GET(request: NextRequest) {
       ? (currentAttendanceNum - previousAttendanceRate).toFixed(1)
       : "0";
 
-    // Get monthly revenue data for chart (last 12 months)
+    // Get monthly revenue data for chart (12 months of selected year)
     const monthlyRevenueData = [];
-    for (let i = 11; i >= 0; i--) {
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-      const lastYearMonthStart = new Date(now.getFullYear() - 1, now.getMonth() - i, 1);
-      const lastYearMonthEnd = new Date(now.getFullYear() - 1, now.getMonth() - i + 1, 0);
+    for (let i = 0; i < 12; i++) {
+      const monthStart = new Date(selectedYear, i, 1);
+      const monthEnd = new Date(selectedYear, i + 1, 0);
+      const lastYearMonthStart = new Date(selectedYear - 1, i, 1);
+      const lastYearMonthEnd = new Date(selectedYear - 1, i + 1, 0);
 
       const [currentMonthRevenue, lastYearMonthRevenue] = await Promise.all([
         db.collection("payments").aggregate([
-          { $match: { status: "completed", createdAt: { $gte: monthStart, $lte: monthEnd } } },
+          { $match: { status: "completed", createdAt: { $gte: monthStart, $lte: monthEnd }, ...establishmentFilter } },
           { $group: { _id: null, total: { $sum: "$amount" } } }
         ]).toArray(),
         db.collection("payments").aggregate([
-          { $match: { status: "completed", createdAt: { $gte: lastYearMonthStart, $lte: lastYearMonthEnd } } },
+          { $match: { status: "completed", createdAt: { $gte: lastYearMonthStart, $lte: lastYearMonthEnd }, ...establishmentFilter } },
           { $group: { _id: null, total: { $sum: "$amount" } } }
         ]).toArray()
       ]);
@@ -336,11 +375,13 @@ export async function GET(request: NextRequest) {
 
       const [weekBookings, weekCompleted] = await Promise.all([
         db.collection("bookings").countDocuments({
-          scheduledDate: { $gte: weekStart, $lt: weekEnd }
+          scheduledDate: { $gte: weekStart, $lt: weekEnd },
+          ...establishmentFilter,
         }),
         db.collection("bookings").countDocuments({
           status: "completed",
-          scheduledDate: { $gte: weekStart, $lt: weekEnd }
+          scheduledDate: { $gte: weekStart, $lt: weekEnd },
+          ...establishmentFilter,
         })
       ]);
 
@@ -356,7 +397,8 @@ export async function GET(request: NextRequest) {
     const previousPeriodClients = await db.collection("bookings").aggregate([
       {
         $match: {
-          scheduledDate: { $gte: previousStartDate, $lt: previousEndDate }
+          scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+          ...establishmentFilter,
         }
       },
       {
@@ -371,7 +413,8 @@ export async function GET(request: NextRequest) {
         {
           $match: {
             clientId: { $in: previousClientIds },
-            scheduledDate: { $gte: startDate }
+            scheduledDate: { $gte: startDate },
+            ...establishmentFilter,
           }
         },
         {
