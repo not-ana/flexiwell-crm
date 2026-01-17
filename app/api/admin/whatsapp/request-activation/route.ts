@@ -11,8 +11,11 @@ export async function POST(request: NextRequest) {
     }
 
     const establishmentId = user.userId;
-    const client = await clientPromise;
-    const db = client.db();
+    const mongoClient = await clientPromise;
+    if (!mongoClient) {
+      return NextResponse.json({ error: "Database connection failed" }, { status: 500 });
+    }
+    const db = mongoClient.db();
 
     // Check if request already exists
     const existingRequest = await db
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Get establishment info for the email
     const establishment = await db
       .collection("establishments")
-      .findOne({ _id: establishmentId });
+      .findOne({ _id: establishmentId as unknown as import("mongodb").ObjectId });
 
     // Create activation request
     const result = await db.collection("whatsapp_activation_requests").insertOne({
@@ -94,8 +97,11 @@ export async function GET(request: NextRequest) {
     }
 
     const establishmentId = user.userId;
-    const client = await clientPromise;
-    const db = client.db();
+    const mongoClient = await clientPromise;
+    if (!mongoClient) {
+      return NextResponse.json({ error: "Database connection failed" }, { status: 500 });
+    }
+    const db = mongoClient.db();
 
     const activationRequest = await db
       .collection("whatsapp_activation_requests")

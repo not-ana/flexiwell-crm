@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
       qualityRating: credentials.qualityRating,
       botEnabled: credentials.botEnabled,
       botFeatures: credentials.botFeatures,
+      botCommands: credentials.botCommands,
+      botWelcomeMessage: credentials.botWelcomeMessage,
       connectedAt: credentials.connectedAt,
       lastVerifiedAt: credentials.lastVerifiedAt,
     });
@@ -215,7 +217,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { establishmentId, botEnabled, botFeatures } = body;
+    const { establishmentId, botEnabled, botFeatures, botCommands, botWelcomeMessage } = body;
 
     const targetEstablishmentId = establishmentId || user.userId;
 
@@ -232,6 +234,12 @@ export async function PATCH(request: NextRequest) {
     }
     if (botFeatures) {
       updateData.botFeatures = botFeatures;
+    }
+    if (botCommands) {
+      updateData.botCommands = botCommands;
+    }
+    if (typeof botWelcomeMessage === "string") {
+      updateData.botWelcomeMessage = botWelcomeMessage;
     }
 
     if (Object.keys(updateData).length === 0) {

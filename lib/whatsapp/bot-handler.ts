@@ -3,7 +3,7 @@
 
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import type { Client, Class, Booking, BotSession } from "@/lib/db/schemas";
+import type { Client, Class, Booking, BotSession, EstablishmentWhatsAppCredentials, BotMenuCommand } from "@/lib/db/schemas";
 import {
   ConversationState,
   BotFlow,
@@ -32,22 +32,61 @@ interface ClientData {
   upcomingClasses: ClientClass[];
 }
 
+// Default bot commands when none are configured
+const DEFAULT_BOT_COMMANDS: BotMenuCommand[] = [
+  { id: "1", trigger: "1", label: "📅 My Classes", action: "MY_BOOKINGS", enabled: true, order: 1 },
+  { id: "2", trigger: "2", label: "📖 Book Class", action: "BOOK_CLASS", enabled: true, order: 2 },
+  { id: "3", trigger: "3", label: "❌ Cancel", action: "CANCEL_BOOKING", enabled: true, order: 3 },
+  { id: "4", trigger: "4", label: "💬 Support", action: "CONTACT_SUPPORT", enabled: true, order: 4 },
+];
+
 export class WhatsAppBotHandler {
   private establishmentId: string;
   private planFeatures: WhatsAppPlanFeatures;
+  private customCommands: BotMenuCommand[] | null = null;
+  private welcomeMessage: string | null = null;
 
   constructor(establishmentId: string, plan: string = "pro") {
     this.establishmentId = establishmentId;
     this.planFeatures = WHATSAPP_PLANS[plan] || WHATSAPP_PLANS.starter;
   }
 
+  // Load custom bot configuration for this establishment
+  private async loadBotConfig(): Promise<void> {
+    if (this.customCommands !== null) return; // Already loaded
+
+    const db = await getDatabase();
+    const credentials = await db.collection<EstablishmentWhatsAppCredentials>(
+      "establishment_whatsapp_credentials"
+    ).findOne({ establishmentId: this.establishmentId });
+
+    if (credentials?.botCommands && credentials.botCommands.length > 0) {
+      this.customCommands = credentials.botCommands;
+    } else {
+      this.customCommands = DEFAULT_BOT_COMMANDS;
+    }
+
+    this.welcomeMessage = credentials?.botWelcomeMessage || null;
+  }
+
+  // Get enabled commands sorted by order
+  private getEnabledCommands(): BotMenuCommand[] {
+    const commands = this.customCommands || DEFAULT_BOT_COMMANDS;
+    return commands
+      .filter(cmd => cmd.enabled)
+      .sort((a, b) => a.order - b.order);
+  }
+
   async handleMessage(message: IncomingMessage): Promise<InteractiveContent | { body: string }> {
+    // Load custom bot configuration
+    await this.loadBotConfig();
+
     const phoneNumber = message.from;
     const client = await this.getClientByPhone(phoneNumber);
 
     if (!client) {
       return {
-        body: "Ola! Nao encontrei seu cadastro. Por favor, entre em contato com a recepcao para vincular seu WhatsApp a sua conta.",
+        body: "Hi! I couldn't find your registration. Please contact the front desk to link your WhatsApp to your account.",
       };
     }
 
@@ -77,24 +116,23 @@ export class WhatsAppBotHandler {
     const lowerText = text.toLowerCase().trim();
 
     // Quick commands
-    if (lowerText === "menu" || lowerText === "inicio" || lowerText === "oi" || lowerText === "ola") {
+    if (lowerText === "menu" || lowerText === "home" || lowerText === "hi" || lowerText === "hello" || lowerText === "oi" || lowerText === "olá") {
       await this.updateStateFlow(state.phoneNumber, "main_menu");
       return this.getMainMenu(client);
     }
 
-    if (lowerText === "aulas" || lowerText === "minhas aulas") {
-      return this.handleViewClasses(client);
-    }
-
-    if (lowerText === "plano") {
-      return this.handleViewPlan(client);
-    }
-
-    if (lowerText === "ajuda" || lowerText === "help") {
+    if (lowerText === "help" || lowerText === "ajuda") {
       return this.handleHelp();
     }
 
-    // Handle number input for class selection
+    // Check if input matches a custom command trigger
+    const enabledCommands = this.getEnabledCommands();
+    const matchedCommand = enabledCommands.find(cmd => cmd.trigger === lowerText);
+    if (matchedCommand) {
+      return this.executeCommandAction(matchedCommand, state, client);
+    }
+
+    // Handle number input for class selection during flows
     const num = parseInt(lowerText);
     if (!isNaN(num) && num > 0) {
       if (state.currentFlow === "confirm_class") {
@@ -104,30 +142,84 @@ export class WhatsAppBotHandler {
       } else if (state.currentFlow === "book_class") {
         return this.processBookClass(num, state, client);
       }
+
+      // Check if number matches a menu command
+      const numCommand = enabledCommands.find(cmd => cmd.trigger === String(num));
+      if (numCommand) {
+        return this.executeCommandAction(numCommand, state, client);
+      }
     }
 
-    // Natural language intents
-    if (/agendar|disponive|quero\s*aula|marcar/.test(lowerText)) {
+    // Natural language intents (fallback)
+    if (/book|available|want\s*(a\s*)?class|schedule|agendar|marcar/.test(lowerText)) {
       await this.updateStateFlow(state.phoneNumber, "book_class");
       return this.getAvailableClasses(client);
     }
 
-    if (/cancelar|desmarcar/.test(lowerText)) {
+    if (/cancel|drop|unbook|cancelar/.test(lowerText)) {
       await this.updateStateFlow(state.phoneNumber, "cancel_class");
       return this.getClassSelectionForCancel(client);
     }
 
-    if (/confirmar|presenca/.test(lowerText)) {
+    if (/confirm|attendance|confirmar|presença/.test(lowerText)) {
       await this.updateStateFlow(state.phoneNumber, "confirm_class");
       return this.getClassSelectionForConfirm(client);
     }
 
-    if (/quantas?\s*aulas?|restante|saldo/.test(lowerText)) {
+    if (/how\s*many\s*classes|remaining|left|balance|quantas|restantes|créditos/.test(lowerText)) {
       return this.handleViewPlan(client);
+    }
+
+    if (/classes|my classes|aulas|minhas aulas/.test(lowerText)) {
+      return this.handleViewClasses(client);
     }
 
     // Default: show menu
     return this.getMainMenu(client);
+  }
+
+  // Execute action based on custom command
+  private async executeCommandAction(
+    command: BotMenuCommand,
+    state: ConversationState,
+    client: ClientData
+  ): Promise<InteractiveContent | { body: string }> {
+    switch (command.action) {
+      case "VIEW_CLASSES":
+        await this.updateStateFlow(state.phoneNumber, "book_class");
+        return this.getAvailableClasses(client);
+
+      case "BOOK_CLASS":
+        if (!this.planFeatures.bookNewClass) {
+          return { body: "This feature is not available in your current plan." };
+        }
+        await this.updateStateFlow(state.phoneNumber, "book_class");
+        return this.getAvailableClasses(client);
+
+      case "MY_BOOKINGS":
+        return this.handleViewClasses(client);
+
+      case "CANCEL_BOOKING":
+        if (!this.planFeatures.cancelClass) {
+          return { body: "This feature is not available in your current plan." };
+        }
+        await this.updateStateFlow(state.phoneNumber, "cancel_class");
+        return this.getClassSelectionForCancel(client);
+
+      case "REMAINING_CREDITS":
+        return this.handleViewPlan(client);
+
+      case "CONTACT_SUPPORT":
+        await this.updateStateFlow(state.phoneNumber, "talk_to_human");
+        await this.flagForHumanHandoff(state.phoneNumber);
+        return { body: "A support agent will respond shortly. Our business hours are Monday to Friday, 8am to 8pm." };
+
+      case "CUSTOM_MESSAGE":
+        return { body: command.customMessage || "Message not configured." };
+
+      default:
+        return this.getMainMenu(client);
+    }
   }
 
   private async handleInteractiveMessage(
@@ -148,21 +240,21 @@ export class WhatsAppBotHandler {
 
       case "confirm_class":
         if (!this.planFeatures.confirmClass) {
-          return { body: "Esta funcionalidade nao esta disponivel no seu plano atual." };
+          return { body: "This feature is not available in your current plan." };
         }
         await this.updateStateFlow(state.phoneNumber, "confirm_class");
         return this.getClassSelectionForConfirm(client);
 
       case "cancel_class":
         if (!this.planFeatures.cancelClass) {
-          return { body: "Esta funcionalidade nao esta disponivel no seu plano atual." };
+          return { body: "This feature is not available in your current plan." };
         }
         await this.updateStateFlow(state.phoneNumber, "cancel_class");
         return this.getClassSelectionForCancel(client);
 
       case "book_class":
         if (!this.planFeatures.bookNewClass) {
-          return { body: "O agendamento por WhatsApp nao esta disponivel no seu plano." };
+          return { body: "WhatsApp booking is not available in your plan." };
         }
         await this.updateStateFlow(state.phoneNumber, "book_class");
         return this.getAvailableClasses(client);
@@ -173,13 +265,23 @@ export class WhatsAppBotHandler {
       case "talk_human":
         await this.updateStateFlow(state.phoneNumber, "talk_to_human");
         await this.flagForHumanHandoff(state.phoneNumber);
-        return { body: "Um atendente ira responder em breve. Nosso horario de atendimento e de segunda a sexta, das 8h as 20h." };
+        return { body: "A support agent will respond shortly. Our business hours are Monday to Friday, 8am to 8pm." };
 
       case "back_menu":
         await this.updateStateFlow(state.phoneNumber, "main_menu");
         return this.getMainMenu(client);
 
       default:
+        // Handle custom command buttons
+        if (replyId.startsWith("custom_")) {
+          const commandId = replyId.replace("custom_", "");
+          const enabledCommands = this.getEnabledCommands();
+          const command = enabledCommands.find(cmd => cmd.id === commandId);
+          if (command) {
+            return this.executeCommandAction(command, state, client);
+          }
+        }
+
         // Handle class-specific actions
         if (replyId.startsWith("confirm_")) {
           const classId = replyId.replace("confirm_", "");
@@ -200,28 +302,46 @@ export class WhatsAppBotHandler {
 
   private getMainMenu(client: ClientData): InteractiveContent {
     const pendingClasses = client.upcomingClasses.filter(c => !c.confirmed).length;
+    const enabledCommands = this.getEnabledCommands();
 
-    const buttons: Array<{ type: "reply"; reply: { id: string; title: string } }> = [
-      { type: "reply", reply: { id: "view_classes", title: "Minhas Aulas" } },
-    ];
+    // Build buttons from custom commands (WhatsApp supports max 3 buttons)
+    const buttons: Array<{ type: "reply"; reply: { id: string; title: string } }> = [];
 
-    if (this.planFeatures.bookNewClass) {
-      buttons.push({ type: "reply", reply: { id: "book_class", title: "Agendar Aula" } });
+    enabledCommands.slice(0, 3).forEach(cmd => {
+      buttons.push({
+        type: "reply",
+        reply: {
+          id: `custom_${cmd.id}`,
+          title: cmd.label.slice(0, 20), // WhatsApp button title max 20 chars
+        },
+      });
+    });
+
+    // Build welcome message
+    const defaultWelcome = `Hi ${client.name}! How can I help?\n\n${
+      pendingClasses > 0
+        ? `You have ${pendingClasses} class(es) pending confirmation.`
+        : "All your classes are confirmed!"
+    }\n\nClasses remaining: ${client.classesRemaining}`;
+
+    const welcomeText = this.welcomeMessage
+      ? this.welcomeMessage.replace("{name}", client.name).replace("{remaining}", String(client.classesRemaining))
+      : defaultWelcome;
+
+    // If there are more than 3 commands, show them as text options
+    let menuText = welcomeText;
+    if (enabledCommands.length > 3) {
+      menuText += "\n\nOr type a number:\n";
+      enabledCommands.forEach(cmd => {
+        menuText += `${cmd.trigger}. ${cmd.label}\n`;
+      });
     }
-
-    buttons.push({ type: "reply", reply: { id: "talk_human", title: "Atendimento" } });
 
     return {
       type: "button",
       header: { type: "text", text: "FlexiWell" },
-      body: {
-        text: `Ola ${client.name}! Como posso ajudar?\n\n${
-          pendingClasses > 0
-            ? `Voce tem ${pendingClasses} aula(s) pendente(s) de confirmacao.`
-            : "Todas as suas aulas estao confirmadas!"
-        }\n\nAulas restantes: ${client.classesRemaining}`,
-      },
-      footer: { text: "Digite 'menu' a qualquer momento para voltar" },
+      body: { text: menuText },
+      footer: { text: "Type 'menu' at any time to return" },
       action: { buttons },
     };
   }
@@ -232,9 +352,9 @@ export class WhatsAppBotHandler {
     if (!freshClient) {
       return {
         type: "button",
-        body: { text: "Erro ao buscar suas aulas." },
+        body: { text: "Error fetching your classes." },
         action: {
-          buttons: [{ type: "reply", reply: { id: "back_menu", title: "Voltar" } }],
+          buttons: [{ type: "reply", reply: { id: "back_menu", title: "Back" } }],
         },
       };
     }
@@ -242,36 +362,36 @@ export class WhatsAppBotHandler {
     if (freshClient.upcomingClasses.length === 0) {
       return {
         type: "button",
-        body: { text: "Voce nao tem aulas agendadas no momento.\n\nQue tal agendar uma?" },
+        body: { text: "You don't have any classes scheduled.\n\nWould you like to book one?" },
         action: {
           buttons: [
-            { type: "reply", reply: { id: "book_class", title: "Agendar Aula" } },
-            { type: "reply", reply: { id: "back_menu", title: "Voltar" } },
+            { type: "reply", reply: { id: "book_class", title: "Book Class" } },
+            { type: "reply", reply: { id: "back_menu", title: "Back" } },
           ],
         },
       };
     }
 
     const classesText = freshClient.upcomingClasses
-      .map((c, i) => `${i + 1}. ${c.name}\n   ${c.date} as ${c.time}\n   Prof. ${c.instructor}\n   ${c.confirmed ? "Confirmada" : "Pendente"}`)
+      .map((c, i) => `${i + 1}. ${c.name}\n   ${c.date} at ${c.time}\n   Instructor: ${c.instructor}\n   ${c.confirmed ? "Confirmed" : "Pending"}`)
       .join("\n\n");
 
     const buttons: Array<{ type: "reply"; reply: { id: string; title: string } }> = [];
 
     const pendingClasses = freshClient.upcomingClasses.filter(c => !c.confirmed);
     if (pendingClasses.length > 0 && this.planFeatures.confirmClass) {
-      buttons.push({ type: "reply", reply: { id: "confirm_class", title: "Confirmar" } });
+      buttons.push({ type: "reply", reply: { id: "confirm_class", title: "Confirm" } });
     }
 
     if (this.planFeatures.cancelClass) {
-      buttons.push({ type: "reply", reply: { id: "cancel_class", title: "Cancelar" } });
+      buttons.push({ type: "reply", reply: { id: "cancel_class", title: "Cancel" } });
     }
 
     buttons.push({ type: "reply", reply: { id: "back_menu", title: "Menu" } });
 
     return {
       type: "button",
-      header: { type: "text", text: "Suas Proximas Aulas" },
+      header: { type: "text", text: "Your Upcoming Classes" },
       body: { text: classesText },
       action: { buttons },
     };
@@ -295,24 +415,24 @@ export class WhatsAppBotHandler {
     if (classes.length === 0) {
       return {
         type: "button",
-        body: { text: "Nao ha aulas disponiveis nos proximos 7 dias." },
+        body: { text: "No classes available in the next 7 days." },
         action: {
-          buttons: [{ type: "reply", reply: { id: "back_menu", title: "Voltar" } }],
+          buttons: [{ type: "reply", reply: { id: "back_menu", title: "Back" } }],
         },
       };
     }
 
-    let message = "Aulas disponiveis:\n\n";
+    let message = "Available classes:\n\n";
     classes.forEach((cls, index) => {
-      const date = new Date(cls.scheduledDate).toLocaleDateString("pt-BR");
+      const date = new Date(cls.scheduledDate).toLocaleDateString("en-US");
       const spotsLeft = cls.maxCapacity - cls.currentEnrollment;
       message += `${index + 1}. ${cls.title}\n`;
-      message += `   ${date} as ${cls.startTime}\n`;
-      message += `   Prof. ${cls.instructorName}\n`;
-      message += `   ${spotsLeft} vagas\n\n`;
+      message += `   ${date} at ${cls.startTime}\n`;
+      message += `   Instructor: ${cls.instructorName}\n`;
+      message += `   ${spotsLeft} spots left\n\n`;
     });
 
-    message += "Digite o numero da aula para agendar.";
+    message += "Type the number of the class to book.";
 
     // Store class IDs in session for later reference
     const classIds = classes.map(c => c._id?.toString() || "");
@@ -322,7 +442,7 @@ export class WhatsAppBotHandler {
       type: "button",
       body: { text: message },
       action: {
-        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Voltar" } }],
+        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Back" } }],
       },
     };
   }
@@ -333,24 +453,24 @@ export class WhatsAppBotHandler {
     if (pendingClasses.length === 0) {
       return {
         type: "button",
-        body: { text: "Todas as suas aulas ja estao confirmadas!" },
+        body: { text: "All your classes are already confirmed!" },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
       };
     }
 
-    let message = "Qual aula deseja confirmar?\n\n";
+    let message = "Which class would you like to confirm?\n\n";
     pendingClasses.forEach((c, i) => {
-      message += `${i + 1}. ${c.name}\n   ${c.date} as ${c.time}\n\n`;
+      message += `${i + 1}. ${c.name}\n   ${c.date} at ${c.time}\n\n`;
     });
-    message += "Digite o numero da aula.";
+    message += "Type the class number.";
 
     return {
       type: "button",
       body: { text: message },
       action: {
-        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Voltar" } }],
+        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Back" } }],
       },
     };
   }
@@ -359,37 +479,37 @@ export class WhatsAppBotHandler {
     if (client.upcomingClasses.length === 0) {
       return {
         type: "button",
-        body: { text: "Voce nao tem aulas para cancelar." },
+        body: { text: "You don't have any classes to cancel." },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
       };
     }
 
-    let message = "Cancelamentos com menos de 24h podem ser cobrados.\n\nQual aula deseja cancelar?\n\n";
+    let message = "Cancellations with less than 24h notice may be charged.\n\nWhich class would you like to cancel?\n\n";
     client.upcomingClasses.forEach((c, i) => {
-      message += `${i + 1}. ${c.name}\n   ${c.date} as ${c.time}\n\n`;
+      message += `${i + 1}. ${c.name}\n   ${c.date} at ${c.time}\n\n`;
     });
-    message += "Digite o numero da aula.";
+    message += "Type the class number.";
 
     return {
       type: "button",
       body: { text: message },
       action: {
-        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Voltar" } }],
+        buttons: [{ type: "reply", reply: { id: "back_menu", title: "Back" } }],
       },
     };
   }
 
   private async processConfirmClass(
     num: number,
-    state: ConversationState,
+    _state: ConversationState,
     client: ClientData
   ): Promise<InteractiveContent | { body: string }> {
     const pendingClasses = client.upcomingClasses.filter(c => !c.confirmed);
 
     if (num < 1 || num > pendingClasses.length) {
-      return { body: "Numero invalido. Por favor, tente novamente." };
+      return { body: "Invalid number. Please try again." };
     }
 
     const selectedClass = pendingClasses[num - 1];
@@ -398,11 +518,11 @@ export class WhatsAppBotHandler {
 
   private async processCancelClass(
     num: number,
-    state: ConversationState,
+    _state: ConversationState,
     client: ClientData
   ): Promise<InteractiveContent | { body: string }> {
     if (num < 1 || num > client.upcomingClasses.length) {
-      return { body: "Numero invalido. Por favor, tente novamente." };
+      return { body: "Invalid number. Please try again." };
     }
 
     const selectedClass = client.upcomingClasses[num - 1];
@@ -425,7 +545,7 @@ export class WhatsAppBotHandler {
     const classIds = session?.flowData?.availableClassIds as string[] | undefined;
 
     if (!classIds || num < 1 || num > classIds.length) {
-      return { body: "Numero invalido. Por favor, tente novamente." };
+      return { body: "Invalid number. Please try again." };
     }
 
     const classId = classIds[num - 1];
@@ -444,7 +564,7 @@ export class WhatsAppBotHandler {
     if (!booking) {
       return {
         type: "button",
-        body: { text: "Aula nao encontrada." },
+        body: { text: "Class not found." },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
@@ -457,17 +577,17 @@ export class WhatsAppBotHandler {
       { $set: { status: "confirmed", updatedAt: new Date() } }
     );
 
-    const date = new Date(booking.scheduledDate).toLocaleDateString("pt-BR");
+    const date = new Date(booking.scheduledDate).toLocaleDateString("en-US");
 
     return {
       type: "button",
-      header: { type: "text", text: "Presenca Confirmada!" },
+      header: { type: "text", text: "Attendance Confirmed!" },
       body: {
-        text: `Sua presenca foi confirmada:\n\n${booking.className}\n${date} as ${booking.startTime}\nProf. ${booking.instructorName}\n\nTe esperamos!`,
+        text: `Your attendance has been confirmed:\n\n${booking.className}\n${date} at ${booking.startTime}\nInstructor: ${booking.instructorName}\n\nSee you there!`,
       },
       action: {
         buttons: [
-          { type: "reply", reply: { id: "view_classes", title: "Ver Aulas" } },
+          { type: "reply", reply: { id: "view_classes", title: "View Classes" } },
           { type: "reply", reply: { id: "back_menu", title: "Menu" } },
         ],
       },
@@ -486,7 +606,7 @@ export class WhatsAppBotHandler {
     if (!booking) {
       return {
         type: "button",
-        body: { text: "Aula nao encontrada." },
+        body: { text: "Class not found." },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
@@ -502,12 +622,12 @@ export class WhatsAppBotHandler {
       return {
         type: "button",
         body: {
-          text: `Cancelamentos devem ser feitos com pelo menos 24 horas de antecedencia.\n\nFaltam apenas ${Math.round(hoursUntilClass)} horas para sua aula.\n\nDeseja falar com um atendente?`,
+          text: `Cancellations must be made at least 24 hours in advance.\n\nThere are only ${Math.round(hoursUntilClass)} hours until your class.\n\nWould you like to speak with an agent?`,
         },
         action: {
           buttons: [
-            { type: "reply", reply: { id: "talk_human", title: "Falar com Atendente" } },
-            { type: "reply", reply: { id: "back_menu", title: "Voltar" } },
+            { type: "reply", reply: { id: "talk_human", title: "Talk to Agent" } },
+            { type: "reply", reply: { id: "back_menu", title: "Back" } },
           ],
         },
       };
@@ -537,13 +657,13 @@ export class WhatsAppBotHandler {
 
     return {
       type: "button",
-      header: { type: "text", text: "Aula Cancelada" },
+      header: { type: "text", text: "Class Cancelled" },
       body: {
-        text: `Sua aula foi cancelada:\n\n${booking.className}\n\nSua aula foi restaurada ao seu pacote.`,
+        text: `Your class has been cancelled:\n\n${booking.className}\n\nYour class credit has been restored to your plan.`,
       },
       action: {
         buttons: [
-          { type: "reply", reply: { id: "book_class", title: "Agendar Nova" } },
+          { type: "reply", reply: { id: "book_class", title: "Book New" } },
           { type: "reply", reply: { id: "back_menu", title: "Menu" } },
         ],
       },
@@ -558,11 +678,11 @@ export class WhatsAppBotHandler {
       return {
         type: "button",
         body: {
-          text: "Voce nao tem mais aulas disponiveis no seu plano atual. Entre em contato para renovar.",
+          text: "You don't have any classes left in your current plan. Please contact us to renew.",
         },
         action: {
           buttons: [
-            { type: "reply", reply: { id: "talk_human", title: "Falar com Atendente" } },
+            { type: "reply", reply: { id: "talk_human", title: "Talk to Agent" } },
             { type: "reply", reply: { id: "back_menu", title: "Menu" } },
           ],
         },
@@ -577,7 +697,7 @@ export class WhatsAppBotHandler {
     if (!classInfo) {
       return {
         type: "button",
-        body: { text: "Aula nao encontrada." },
+        body: { text: "Class not found." },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
@@ -588,11 +708,11 @@ export class WhatsAppBotHandler {
     if (classInfo.currentEnrollment >= classInfo.maxCapacity) {
       return {
         type: "button",
-        body: { text: "Esta aula esta lotada. Deseja entrar na lista de espera?" },
+        body: { text: "This class is full. Would you like to join the waitlist?" },
         action: {
           buttons: [
-            { type: "reply", reply: { id: "talk_human", title: "Lista de Espera" } },
-            { type: "reply", reply: { id: "back_menu", title: "Voltar" } },
+            { type: "reply", reply: { id: "talk_human", title: "Waitlist" } },
+            { type: "reply", reply: { id: "back_menu", title: "Back" } },
           ],
         },
       };
@@ -608,7 +728,7 @@ export class WhatsAppBotHandler {
     if (existingBooking) {
       return {
         type: "button",
-        body: { text: "Voce ja esta inscrito nesta aula." },
+        body: { text: "You're already enrolled in this class." },
         action: {
           buttons: [{ type: "reply", reply: { id: "back_menu", title: "Menu" } }],
         },
@@ -616,7 +736,7 @@ export class WhatsAppBotHandler {
     }
 
     // Get full client info
-    const fullClient = await db.collection<Client>("clients").findOne({
+    await db.collection<Client>("clients").findOne({
       _id: new ObjectId(client.id),
     });
 
@@ -666,17 +786,17 @@ export class WhatsAppBotHandler {
       }
     );
 
-    const date = new Date(classInfo.scheduledDate).toLocaleDateString("pt-BR");
+    const date = new Date(classInfo.scheduledDate).toLocaleDateString("en-US");
 
     return {
       type: "button",
-      header: { type: "text", text: "Aula Agendada!" },
+      header: { type: "text", text: "Class Booked!" },
       body: {
-        text: `Sua aula foi agendada com sucesso!\n\n${classInfo.title}\n${date} as ${classInfo.startTime}\nProf. ${classInfo.instructorName}\n\nVoce tem ${client.classesRemaining - 1} aulas restantes.`,
+        text: `Your class has been booked successfully!\n\n${classInfo.title}\n${date} at ${classInfo.startTime}\nInstructor: ${classInfo.instructorName}\n\nYou have ${client.classesRemaining - 1} classes remaining.`,
       },
       action: {
         buttons: [
-          { type: "reply", reply: { id: "view_classes", title: "Ver Aulas" } },
+          { type: "reply", reply: { id: "view_classes", title: "View Classes" } },
           { type: "reply", reply: { id: "back_menu", title: "Menu" } },
         ],
       },
@@ -686,9 +806,9 @@ export class WhatsAppBotHandler {
   private handleViewPlan(client: ClientData): InteractiveContent {
     return {
       type: "button",
-      header: { type: "text", text: "Seu Plano" },
+      header: { type: "text", text: "Your Plan" },
       body: {
-        text: `*${client.planName}*\n\nAulas restantes: *${client.classesRemaining}*\n\nPara mais detalhes ou alterar seu plano, fale com nossa equipe.`,
+        text: `*${client.planName}*\n\nClasses remaining: *${client.classesRemaining}*\n\nFor more details or to change your plan, contact our team.`,
       },
       action: {
         buttons: [
@@ -701,16 +821,16 @@ export class WhatsAppBotHandler {
   private handleHelp(): InteractiveContent {
     return {
       type: "button",
-      header: { type: "text", text: "Ajuda" },
+      header: { type: "text", text: "Help" },
       body: {
-        text: `Comandos disponiveis:\n\n` +
-          `*"menu"* - Menu principal\n` +
-          `*"aulas"* - Ver suas aulas\n` +
-          `*"agendar"* - Agendar nova aula\n` +
-          `*"cancelar"* - Cancelar aula\n` +
-          `*"confirmar"* - Confirmar presenca\n` +
-          `*"plano"* - Ver seu plano\n` +
-          `*"ajuda"* - Esta mensagem`,
+        text: `Available commands:\n\n` +
+          `*"menu"* - Main menu\n` +
+          `*"classes"* - View your classes\n` +
+          `*"book"* - Book a new class\n` +
+          `*"cancel"* - Cancel a class\n` +
+          `*"confirm"* - Confirm attendance\n` +
+          `*"plan"* - View your plan\n` +
+          `*"help"* - This message`,
       },
       action: {
         buttons: [
@@ -755,7 +875,7 @@ export class WhatsAppBotHandler {
       id: b._id?.toString() || "",
       classId: b.classId,
       name: b.className,
-      date: new Date(b.scheduledDate).toLocaleDateString("pt-BR"),
+      date: new Date(b.scheduledDate).toLocaleDateString("en-US"),
       time: b.startTime,
       instructor: b.instructorName,
       confirmed: b.status === "confirmed",
@@ -867,7 +987,7 @@ export class WhatsAppBotHandler {
 export const MESSAGE_TEMPLATES = {
   classReminder: {
     name: "class_reminder_24h",
-    language: { code: "pt_BR" },
+    language: { code: "en_US" },
     components: [
       {
         type: "body" as const,
@@ -883,7 +1003,7 @@ export const MESSAGE_TEMPLATES = {
 
   confirmationRequest: {
     name: "confirmation_request",
-    language: { code: "pt_BR" },
+    language: { code: "en_US" },
     components: [
       {
         type: "body" as const,
@@ -898,7 +1018,7 @@ export const MESSAGE_TEMPLATES = {
 
   waitlistNotification: {
     name: "waitlist_spot_available",
-    language: { code: "pt_BR" },
+    language: { code: "en_US" },
     components: [
       {
         type: "body" as const,
@@ -913,7 +1033,7 @@ export const MESSAGE_TEMPLATES = {
 
   bookingConfirmation: {
     name: "booking_confirmed",
-    language: { code: "pt_BR" },
+    language: { code: "en_US" },
     components: [
       {
         type: "body" as const,

@@ -608,10 +608,38 @@ export interface EstablishmentWhatsAppCredentials {
     bookNewClass: boolean;
     automaticReminders: boolean;
   };
+  // Custom bot commands per establishment
+  botCommands?: BotMenuCommand[];
+  botWelcomeMessage?: string;
   // Timestamps
   connectedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Custom bot menu command
+export interface BotMenuCommand {
+  id: string; // unique id
+  trigger: string; // "1", "2", "3" or keywords
+  label: string; // Display text: "View Classes"
+  action: BotCommandAction;
+  customMessage?: string; // For CUSTOM_MESSAGE action
+  enabled: boolean;
+  order: number; // Sort order
+}
+
+export type BotCommandAction =
+  | "VIEW_CLASSES" // Show upcoming classes
+  | "BOOK_CLASS" // Book a new class
+  | "MY_BOOKINGS" // Show user's bookings
+  | "CANCEL_BOOKING" // Cancel a booking
+  | "REMAINING_CREDITS" // Show remaining class credits
+  | "CONTACT_SUPPORT" // Forward to human support
+  | "CUSTOM_MESSAGE"; // Send a custom text message
+
+export interface BotCommandConfig {
+  action: BotCommandAction;
+  customMessage?: string; // For CUSTOM_MESSAGE action
 }
 
 // Teacher/Staff Review system

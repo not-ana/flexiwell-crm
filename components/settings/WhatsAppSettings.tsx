@@ -22,6 +22,8 @@ interface WhatsAppStatus {
   qualityRating?: string;
   botEnabled?: boolean;
   botFeatures?: BotFeatureToggle;
+  botCommands?: BotMenuCommand[];
+  botWelcomeMessage?: string;
   error?: string;
   pendingRequest?: boolean;
 }
@@ -32,6 +34,26 @@ interface BotFeatureToggle {
   cancelClass: boolean;
   bookNewClass: boolean;
   automaticReminders: boolean;
+}
+
+// Bot command types
+type BotCommandAction =
+  | "VIEW_CLASSES"
+  | "BOOK_CLASS"
+  | "MY_BOOKINGS"
+  | "CANCEL_BOOKING"
+  | "REMAINING_CREDITS"
+  | "CONTACT_SUPPORT"
+  | "CUSTOM_MESSAGE";
+
+interface BotMenuCommand {
+  id: string;
+  trigger: string;
+  label: string;
+  action: BotCommandAction;
+  customMessage?: string;
+  enabled: boolean;
+  order: number;
 }
 
 // ============================================================================
@@ -144,6 +166,27 @@ const TRANSLATIONS = {
     "en-US": "Clients need their WhatsApp registered in the system to use the bot. Link their number in the client profile.",
   },
   exampleConversation: { "pt-BR": "Exemplo de Conversa", "en-US": "Example Conversation" },
+  // Bot Commands Editor
+  botCommandsTitle: { "pt-BR": "Menu do Bot", "en-US": "Bot Menu" },
+  botCommandsDesc: { "pt-BR": "Configure os comandos que aparecem no menu do seu bot.", "en-US": "Configure the commands that appear in your bot menu." },
+  welcomeMessage: { "pt-BR": "Mensagem de Boas-vindas", "en-US": "Welcome Message" },
+  welcomeMessagePlaceholder: { "pt-BR": "Olá! Como posso ajudar?", "en-US": "Hello! How can I help you?" },
+  addCommand: { "pt-BR": "Adicionar Comando", "en-US": "Add Command" },
+  commandTrigger: { "pt-BR": "Gatilho", "en-US": "Trigger" },
+  commandLabel: { "pt-BR": "Texto do Botão", "en-US": "Button Text" },
+  commandAction: { "pt-BR": "Ação", "en-US": "Action" },
+  customMessageLabel: { "pt-BR": "Mensagem Personalizada", "en-US": "Custom Message" },
+  actionViewClasses: { "pt-BR": "Ver Aulas Disponíveis", "en-US": "View Available Classes" },
+  actionBookClass: { "pt-BR": "Agendar Aula", "en-US": "Book Class" },
+  actionMyBookings: { "pt-BR": "Minhas Reservas", "en-US": "My Bookings" },
+  actionCancelBooking: { "pt-BR": "Cancelar Reserva", "en-US": "Cancel Booking" },
+  actionRemainingCredits: { "pt-BR": "Créditos Restantes", "en-US": "Remaining Credits" },
+  actionContactSupport: { "pt-BR": "Falar com Suporte", "en-US": "Contact Support" },
+  actionCustomMessage: { "pt-BR": "Mensagem Personalizada", "en-US": "Custom Message" },
+  deleteCommand: { "pt-BR": "Remover", "en-US": "Remove" },
+  saveCommands: { "pt-BR": "Salvar Menu", "en-US": "Save Menu" },
+  commandsSaved: { "pt-BR": "Menu salvo com sucesso!", "en-US": "Menu saved successfully!" },
+  previewTitle: { "pt-BR": "Prévia do Menu", "en-US": "Menu Preview" },
 } as const;
 
 type TranslationKey = keyof typeof TRANSLATIONS;
@@ -463,6 +506,253 @@ function RequestActivationCard({ onRequestActivation, requesting, requestSent, p
 }
 
 // ============================================================================
+// BotCommandsEditor Component - Customizable bot menu
+// ============================================================================
+
+const DEFAULT_COMMANDS: BotMenuCommand[] = [
+  { id: "1", trigger: "1", label: "📅 Ver Aulas", action: "VIEW_CLASSES", enabled: true, order: 1 },
+  { id: "2", trigger: "2", label: "📖 Agendar", action: "BOOK_CLASS", enabled: true, order: 2 },
+  { id: "3", trigger: "3", label: "📋 Minhas Reservas", action: "MY_BOOKINGS", enabled: true, order: 3 },
+  { id: "4", trigger: "4", label: "❌ Cancelar", action: "CANCEL_BOOKING", enabled: true, order: 4 },
+  { id: "5", trigger: "5", label: "💬 Suporte", action: "CONTACT_SUPPORT", enabled: true, order: 5 },
+];
+
+const ACTION_OPTIONS: { value: BotCommandAction; labelKey: TranslationKey }[] = [
+  { value: "VIEW_CLASSES", labelKey: "actionViewClasses" },
+  { value: "BOOK_CLASS", labelKey: "actionBookClass" },
+  { value: "MY_BOOKINGS", labelKey: "actionMyBookings" },
+  { value: "CANCEL_BOOKING", labelKey: "actionCancelBooking" },
+  { value: "REMAINING_CREDITS", labelKey: "actionRemainingCredits" },
+  { value: "CONTACT_SUPPORT", labelKey: "actionContactSupport" },
+  { value: "CUSTOM_MESSAGE", labelKey: "actionCustomMessage" },
+];
+
+interface BotCommandsEditorProps {
+  commands: BotMenuCommand[];
+  welcomeMessage: string;
+  onCommandsChange: (commands: BotMenuCommand[]) => void;
+  onWelcomeMessageChange: (message: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  t: (key: TranslationKey) => string;
+  isBrazil: boolean;
+}
+
+const PlusIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
+const GripIcon = () => (
+  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+  </svg>
+);
+
+function BotCommandsEditor({
+  commands,
+  welcomeMessage,
+  onCommandsChange,
+  onWelcomeMessageChange,
+  onSave,
+  saving,
+  t,
+  isBrazil,
+}: BotCommandsEditorProps) {
+  const addCommand = () => {
+    const newId = String(Date.now());
+    const newOrder = commands.length + 1;
+    const newCommand: BotMenuCommand = {
+      id: newId,
+      trigger: String(newOrder),
+      label: isBrazil ? "Novo Comando" : "New Command",
+      action: "CUSTOM_MESSAGE",
+      customMessage: "",
+      enabled: true,
+      order: newOrder,
+    };
+    onCommandsChange([...commands, newCommand]);
+  };
+
+  const updateCommand = (id: string, updates: Partial<BotMenuCommand>) => {
+    onCommandsChange(
+      commands.map((cmd) => (cmd.id === id ? { ...cmd, ...updates } : cmd))
+    );
+  };
+
+  const deleteCommand = (id: string) => {
+    const filtered = commands.filter((cmd) => cmd.id !== id);
+    // Reorder triggers
+    const reordered = filtered.map((cmd, idx) => ({
+      ...cmd,
+      trigger: String(idx + 1),
+      order: idx + 1,
+    }));
+    onCommandsChange(reordered);
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("botCommandsTitle")}</h3>
+      <p className="text-sm text-gray-600 mb-6">{t("botCommandsDesc")}</p>
+
+      {/* Welcome Message */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {t("welcomeMessage")}
+        </label>
+        <textarea
+          value={welcomeMessage}
+          onChange={(e) => onWelcomeMessageChange(e.target.value)}
+          placeholder={t("welcomeMessagePlaceholder")}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          rows={2}
+        />
+      </div>
+
+      {/* Commands List */}
+      <div className="space-y-3 mb-4">
+        {commands.map((cmd) => (
+          <div
+            key={cmd.id}
+            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+          >
+            {/* Grip handle */}
+            <div className="mt-2 cursor-move">
+              <GripIcon />
+            </div>
+
+            {/* Trigger number */}
+            <div className="w-12">
+              <input
+                type="text"
+                value={cmd.trigger}
+                onChange={(e) => updateCommand(cmd.id, { trigger: e.target.value })}
+                className="w-full px-2 py-1.5 text-center border border-gray-300 rounded text-sm font-mono"
+                maxLength={2}
+              />
+            </div>
+
+            {/* Label */}
+            <div className="flex-1">
+              <input
+                type="text"
+                value={cmd.label}
+                onChange={(e) => updateCommand(cmd.id, { label: e.target.value })}
+                placeholder={t("commandLabel")}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
+              />
+            </div>
+
+            {/* Action select */}
+            <div className="w-44">
+              <select
+                value={cmd.action}
+                onChange={(e) => updateCommand(cmd.id, { action: e.target.value as BotCommandAction })}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-white"
+              >
+                {ACTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Toggle enabled */}
+            <Toggle
+              enabled={cmd.enabled}
+              onChange={() => updateCommand(cmd.id, { enabled: !cmd.enabled })}
+            />
+
+            {/* Delete button */}
+            <button
+              onClick={() => deleteCommand(cmd.id)}
+              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+              title={t("deleteCommand")}
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        ))}
+
+        {/* Custom message input for CUSTOM_MESSAGE actions */}
+        {commands
+          .filter((cmd) => cmd.action === "CUSTOM_MESSAGE" && cmd.enabled)
+          .map((cmd) => (
+            <div key={`msg-${cmd.id}`} className="ml-8 pl-4 border-l-2 border-gray-200">
+              <label className="block text-xs text-gray-500 mb-1">
+                {t("customMessageLabel")} ({cmd.label})
+              </label>
+              <textarea
+                value={cmd.customMessage || ""}
+                onChange={(e) => updateCommand(cmd.id, { customMessage: e.target.value })}
+                placeholder={isBrazil ? "Digite a mensagem que será enviada..." : "Enter the message to be sent..."}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                rows={2}
+              />
+            </div>
+          ))}
+      </div>
+
+      {/* Add Command Button */}
+      <button
+        onClick={addCommand}
+        className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium mb-6"
+      >
+        <PlusIcon />
+        {t("addCommand")}
+      </button>
+
+      {/* Preview */}
+      <div className="mb-6">
+        <h4 className="text-sm font-medium text-gray-700 mb-3">{t("previewTitle")}</h4>
+        <div className="bg-gray-900 rounded-lg p-4">
+          {/* Bot welcome message */}
+          <div className="flex justify-start mb-3">
+            <div className="bg-gray-700 text-white text-sm px-3 py-2 rounded-lg max-w-[85%]">
+              <p className="mb-2">{welcomeMessage || t("welcomeMessagePlaceholder")}</p>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {commands
+                  .filter((cmd) => cmd.enabled)
+                  .sort((a, b) => a.order - b.order)
+                  .map((cmd) => (
+                    <span
+                      key={cmd.id}
+                      className="bg-gray-600 px-2 py-1 rounded text-xs"
+                    >
+                      {cmd.label}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <Button onClick={onSave} disabled={saving} className="w-full">
+        {saving ? (
+          <span className="flex items-center justify-center gap-2">
+            <LoadingSpinner />
+            {t("savingSettings")}
+          </span>
+        ) : (
+          t("saveCommands")
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
 // HowItWorksCard Component - Explains how the bot works
 // ============================================================================
 
@@ -621,6 +911,10 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   const [requesting, setRequesting] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [savingFeatures, setSavingFeatures] = useState(false);
+  // Bot commands state
+  const [botCommands, setBotCommands] = useState<BotMenuCommand[]>(DEFAULT_COMMANDS);
+  const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [savingCommands, setSavingCommands] = useState(false);
 
   const { t, isBrazil } = useWhatsAppTranslations();
 
@@ -637,6 +931,13 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         // Load bot features from server
         if (data.botFeatures) {
           setFeatures(data.botFeatures);
+        }
+        // Load bot commands from server
+        if (data.botCommands && data.botCommands.length > 0) {
+          setBotCommands(data.botCommands);
+        }
+        if (data.botWelcomeMessage) {
+          setWelcomeMessage(data.botWelcomeMessage);
         }
       } else {
         setStatus({ connected: false, error: data.error || "Failed to check status" });
@@ -704,6 +1005,30 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
     }
   };
 
+  const handleSaveCommands = async () => {
+    setSavingCommands(true);
+    try {
+      const res = await fetch("/api/admin/whatsapp/credentials", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          botCommands,
+          botWelcomeMessage: welcomeMessage,
+        }),
+      });
+
+      if (res.ok) {
+        showToast(t("commandsSaved"));
+      }
+    } catch (error) {
+      console.error("Failed to save bot commands:", error);
+      showToast(t("connectionFailed"));
+    } finally {
+      setSavingCommands(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -754,6 +1079,20 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
             t={t}
           />
         </div>
+      )}
+
+      {/* Bot Commands Editor - only show when connected */}
+      {status?.connected && (
+        <BotCommandsEditor
+          commands={botCommands}
+          welcomeMessage={welcomeMessage}
+          onCommandsChange={setBotCommands}
+          onWelcomeMessageChange={setWelcomeMessage}
+          onSave={handleSaveCommands}
+          saving={savingCommands}
+          t={t}
+          isBrazil={isBrazil}
+        />
       )}
 
       {/* How It Works - always show */}
