@@ -3,7 +3,8 @@ import {
   validateOAuthState,
   exchangeGoogleCode,
   getGoogleUserInfo,
-  findOrCreateOAuthUser,
+  findOAuthUser,
+  createOAuthUser,
   generateOAuthResponse,
   linkSocialAccount,
 } from "@/lib/auth/social-oauth";
@@ -67,9 +68,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find existing user (does NOT create new accounts)
-    // Note: stateData.mode at this point can only be "login" or "signup" since "link" was handled above
-    const { user } = await findOrCreateOAuthUser(userInfo, stateData.mode as "login" | "signup");
+    // Handle login vs signup mode
+    console.log("[Google OAuth] Mode:", stateData.mode, "Email:", userInfo.email);
+    let user;
+    if (stateData.mode === "signup") {
+      // Create new account or return existing one
+      console.log("[Google OAuth] Creating new user via signup mode");
+      user = await createOAuthUser(userInfo);
+    } else {
+      // Login mode - only find existing users
+      console.log("[Google OAuth] Login mode - finding existing user");
+      user = await findOAuthUser(userInfo);
+    }
 
     // Generate auth response
     const authResponse = await generateOAuthResponse(user);

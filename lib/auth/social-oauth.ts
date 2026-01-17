@@ -170,6 +170,63 @@ export async function findOAuthUser(userInfo: OAuthUserInfo): Promise<User> {
   return user;
 }
 
+// Create new user via OAuth (for signup mode)
+export async function createOAuthUser(userInfo: OAuthUserInfo): Promise<User> {
+  const db = await getDatabase();
+  const usersCollection = db.collection<User>("users");
+
+  // Check if user already exists
+  const existingUser = await usersCollection.findOne({ email: userInfo.email.toLowerCase() });
+  if (existingUser) {
+    // User exists, just return them (they can login)
+    return existingUser;
+  }
+
+  // Calculate 30-day trial for admin users (default role for OAuth signup)
+  const trialDays = 30;
+  const trialStartDate = new Date();
+  const trialEndDate = new Date();
+  trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
+  const newUser: Omit<User, "_id"> = {
+    email: userInfo.email.toLowerCase(),
+    password: "", // OAuth users don't have a password
+    name: userInfo.name || userInfo.email.split("@")[0],
+    role: "admin", // OAuth signup defaults to admin/owner with trial
+    isActive: true,
+    avatar: userInfo.avatar,
+    linkedAccounts: [
+      {
+        provider: userInfo.provider,
+        providerId: userInfo.id,
+        email: userInfo.email,
+        name: userInfo.name,
+        avatar: userInfo.avatar,
+        linkedAt: new Date(),
+      },
+    ],
+    trialStartDate,
+    trialEndDate,
+    trialStatus: "active",
+    subscriptionStatus: "trialing",
+    trialNotifications: {
+      sevenDaysSent: false,
+      threeDaysSent: false,
+      oneDaySent: false,
+      expiredSent: false,
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const result = await usersCollection.insertOne(newUser as User);
+
+  return {
+    ...newUser,
+    _id: result.insertedId,
+  } as User;
+}
+
 // Generate tokens and update login timestamp
 export async function generateOAuthResponse(user: User): Promise<{
   user: {
@@ -302,11 +359,3 @@ export async function unlinkSocialAccount(
   return { success: true };
 }
 
-// Backwards compatibility alias - remove after updating consumers
-export const findOrCreateOAuthUser = async (
-  userInfo: OAuthUserInfo,
-  _mode: "login" | "signup"
-): Promise<{ user: User; isNew: boolean }> => {
-  const user = await findOAuthUser(userInfo);
-  return { user, isNew: false };
-};
