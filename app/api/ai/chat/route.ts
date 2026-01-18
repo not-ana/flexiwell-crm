@@ -3,7 +3,8 @@ import { aiSupportConfig } from "@/lib/config/ai-support";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import type { Client, Booking } from "@/lib/db/schemas";
-import OpenAI from "openai";
+import { callAI, getAIProviderInfo, type AIMessage, type AITool } from "@/lib/ai/providers";
+import { trackUsage, checkUsageLimit, checkFeatureAccess, createPlanErrorResponse } from "@/lib/plans/enforcement";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant" | "function";
@@ -734,6 +735,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get owner ID from session or header (for plan enforcement)
+    const ownerId = req.headers.get("x-owner-id");
+
+    if (ownerId) {
+      // Check if AI Support Assistant feature is available
+      const featureCheck = await checkFeatureAccess(ownerId, "aiSupportAssistant");
+      if (!featureCheck.allowed) {
+        return NextResponse.json(createPlanErrorResponse(featureCheck), { status: 403 });
+      }
+
+      // Check AI chat usage limit
+      const usageCheck = await checkUsageLimit(ownerId, "aiChats");
+      if (!usageCheck.allowed) {
+        return NextResponse.json(createPlanErrorResponse(usageCheck), { status: 403 });
+      }
+
+      // Track this AI chat usage
+      await trackUsage(ownerId, "aiChats");
+    }
+
     // Check for escalation keywords
     if (shouldEscalate(message)) {
       const result = await executeFunction("escalate_to_human", {
@@ -757,98 +778,83 @@ export async function POST(req: NextRequest) {
     // Build system prompt
     const systemPrompt = buildSystemPrompt(personality, context);
 
-    // Prepare messages for OpenAI
-    const messages: ChatMessage[] = [
+    // Prepare messages for AI
+    const messages: AIMessage[] = [
       { role: "system", content: systemPrompt },
-      ...history,
+      ...history.map(m => ({ role: m.role as "system" | "user" | "assistant", content: m.content })),
       { role: "user", content: message },
     ];
 
-    // Check if OpenAI is configured
-    if (!process.env.OPENAI_API_KEY) {
-      // Fallback to mock response if OpenAI is not configured
+    // Check if any AI provider is configured
+    const providerInfo = getAIProviderInfo();
+    if (!providerInfo.configured) {
+      // Fallback to mock response if no AI is configured
       const mockResponse = generateMockResponse(message, context);
-      messages.push({ role: "assistant", content: mockResponse });
-      saveConversation(sessionId, messages.slice(1));
+      saveConversation(sessionId, [...history, { role: "user", content: message }, { role: "assistant", content: mockResponse }]);
 
       return NextResponse.json({
         type: "message",
         content: mockResponse,
         sessionId,
-        note: "OpenAI not configured. Set OPENAI_API_KEY to enable AI features.",
+        note: "No AI configured. Set GEMINI_API_KEY (free), GROQ_API_KEY (free), or OPENAI_API_KEY",
       });
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // Convert available functions to AI tools format
+    const tools: AITool[] = availableFunctions.map(fn => ({
+      name: fn.name,
+      description: fn.description,
+      parameters: fn.parameters as AITool["parameters"],
+    }));
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-      tools: availableFunctions.map(fn => ({
-        type: "function" as const,
-        function: fn,
-      })),
-      tool_choice: "auto",
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-
-    const choice = response.choices[0];
+    // Call AI provider (auto-selects: Gemini > Groq > OpenAI)
+    const response = await callAI(messages, tools);
 
     // Check if AI wants to call a function (tool)
-    if (choice.finish_reason === "tool_calls" && choice.message.tool_calls) {
-      const toolCall = choice.message.tool_calls[0] as OpenAI.Chat.ChatCompletionMessageToolCall;
-      if (toolCall.type !== "function") {
-        throw new Error("Unsupported tool call type");
-      }
-      const functionName = toolCall.function.name;
-      const functionArgs = JSON.parse(toolCall.function.arguments);
+    if (response.toolCall) {
+      const { name: functionName, arguments: functionArgs } = response.toolCall;
 
       // Execute the function
-      const functionResult = await executeFunction(functionName, functionArgs);
+      const functionResult = await executeFunction(functionName, functionArgs as Record<string, unknown>);
 
-      // Add function call and result to history
-      messages.push(choice.message as any);
-      messages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(functionResult),
-      } as any);
+      // Add function result to context and get final response
+      const messagesWithResult: AIMessage[] = [
+        ...messages,
+        { role: "assistant", content: `[Calling function: ${functionName}]` },
+        { role: "user", content: `Function result: ${JSON.stringify(functionResult)}. Please respond to the user based on this result.` },
+      ];
 
-      // Get final response from AI
-      const finalResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
-        temperature: 0.7,
-        max_tokens: 500,
-      });
-
-      const finalMessage = finalResponse.choices[0].message.content;
+      const finalResponse = await callAI(messagesWithResult);
 
       // Save conversation
-      messages.push({ role: "assistant", content: finalMessage || "" });
-      saveConversation(sessionId, messages.slice(1)); // Remove system prompt
+      saveConversation(sessionId, [
+        ...history,
+        { role: "user", content: message },
+        { role: "assistant", content: finalResponse.content },
+      ]);
 
       return NextResponse.json({
         type: "message",
-        content: finalMessage,
+        content: finalResponse.content,
         functionCalled: functionName,
         functionResult: functionResult,
         sessionId,
+        provider: providerInfo.provider,
       });
     }
 
     // Regular text response (no function call)
-    const aiMessage = choice.message.content;
-    messages.push({ role: "assistant", content: aiMessage || "" });
-    saveConversation(sessionId, messages.slice(1));
+    saveConversation(sessionId, [
+      ...history,
+      { role: "user", content: message },
+      { role: "assistant", content: response.content },
+    ]);
 
     return NextResponse.json({
       type: "message",
-      content: aiMessage,
+      content: response.content,
       sessionId,
+      provider: providerInfo.provider,
     });
   } catch (error) {
     console.error("AI Chat Error:", error);
@@ -913,11 +919,16 @@ function generateMockResponse(
 
 // GET endpoint for testing
 export async function GET() {
+  const providerInfo = getAIProviderInfo();
   return NextResponse.json({
     status: "AI Support API is running",
-    version: "1.0.0",
+    version: "1.1.0",
+    ai: {
+      provider: providerInfo.provider,
+      configured: providerInfo.configured,
+      free_tier: providerInfo.free,
+    },
     features: {
-      openai_configured: !!process.env.OPENAI_API_KEY,
       available_functions: availableFunctions.map((f) => f.name),
       supported_channels: ["web", "whatsapp", "instagram"],
       personalities: Object.keys(aiSupportConfig.personality),

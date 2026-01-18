@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { notificationService } from "@/lib/services/notification.service";
+import { requireRole } from "@/lib/auth";
+import { checkResourceLimit, createPlanErrorResponse } from "@/lib/plans/enforcement";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import type { Staff } from "@/lib/db/schemas";
@@ -69,6 +71,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/staff - Create a new staff member
 export async function POST(request: NextRequest) {
+  // Require authentication - only admin can create staff
+  const { user, error } = requireRole(request, ["admin"]);
+  if (error) return error;
+
   try {
     const body = await request.json();
     const { name, email, phone, role, specialties, schedule } = body;
@@ -86,6 +92,12 @@ export async function POST(request: NextRequest) {
         { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
+    }
+
+    // Check plan limit for staff
+    const limitCheck = await checkResourceLimit(user!.userId, "maxStaff");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(createPlanErrorResponse(limitCheck), { status: 403 });
     }
 
     const db = await getDatabase();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { requireRole } from "@/lib/auth";
+import { checkFeatureAccess, createPlanErrorResponse } from "@/lib/plans/enforcement";
 
 // GET /api/admin/reports - Get detailed reports data
 export async function GET(request: NextRequest) {
@@ -14,6 +15,12 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get("period") || "month"; // week, month, quarter, year
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
+
+    // Check if advanced reports feature is available
+    const featureCheck = await checkFeatureAccess(user!.userId, "advancedReports");
+    if (!featureCheck.allowed) {
+      return NextResponse.json(createPlanErrorResponse(featureCheck), { status: 403 });
+    }
 
     const db = await getDatabase();
     const now = new Date();

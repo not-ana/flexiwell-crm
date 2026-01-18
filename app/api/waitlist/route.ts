@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import type { Client } from "@/lib/db/schemas";
 import { requireRole, getUserFromRequest } from "@/lib/auth/middleware";
 import { calculatePriority, type ClientSource } from "@/lib/config/waitlist";
+import { checkFeatureAccess, createPlanErrorResponse } from "@/lib/plans/enforcement";
 
 // Simplified waitlist entry for MVP
 interface WaitlistEntry {
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/waitlist - Join waitlist (simplified - 1 click)
 export async function POST(request: NextRequest) {
-  const { error } = requireRole(request, ["admin", "teacher", "client"]);
+  const { error, user: authUser } = requireRole(request, ["admin", "teacher", "client"]);
   if (error) return error;
 
   try {
@@ -116,6 +117,14 @@ export async function POST(request: NextRequest) {
         { error: "Class ID is required" },
         { status: 400 }
       );
+    }
+
+    // Check if smart waitlist feature is available (for admin users)
+    if (authUser && authUser.role === "admin") {
+      const featureCheck = await checkFeatureAccess(authUser.userId, "smartWaitlist");
+      if (!featureCheck.allowed) {
+        return NextResponse.json(createPlanErrorResponse(featureCheck), { status: 403 });
+      }
     }
 
     const db = await getDatabase();

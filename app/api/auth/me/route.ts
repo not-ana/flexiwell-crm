@@ -36,6 +36,11 @@ export async function GET(request: NextRequest) {
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
+      // Plan and subscription info
+      planTier: user.planTier || "starter",
+      subscriptionStatus: user.subscriptionStatus || "none",
+      trialStatus: user.trialStatus,
+      trialEndDate: user.trialEndDate?.toISOString(),
     };
 
     // If client, get client data

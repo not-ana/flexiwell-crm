@@ -5,7 +5,7 @@ import { Button } from "@/components/ui";
 import { getStoredTokens } from "@/lib/api/client";
 import { showToast } from "./shared";
 
-const ALLOWED_PLANS = ["business", "professional", "enterprise"];
+const ALLOWED_PLANS = ["business", "professional"];
 
 interface BrandingSettingsProps {
   onNavigate?: (tab: string) => void;
@@ -188,7 +188,13 @@ export function BrandingSettings({ onNavigate }: BrandingSettingsProps) {
                 Branding customization is available on Business and Professional plans. Upgrade to customize your logo, colors, and more.
               </p>
               <button
-                onClick={() => onNavigate?.("subscription")}
+                type="button"
+                onClick={() => {
+                  console.log("Upgrade clicked, onNavigate:", onNavigate);
+                  if (onNavigate) {
+                    onNavigate("subscription");
+                  }
+                }}
                 className="inline-flex items-center mt-3 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Upgrade Plan

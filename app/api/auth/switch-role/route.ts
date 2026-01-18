@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import { verifyToken, generateTokenPair, getRefreshTokenExpiry } from "@/lib/auth/jwt";
+import { verifyAccessToken, generateTokenPair, getRefreshTokenExpiry } from "@/lib/auth/jwt";
 import type { User, RefreshToken } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = verifyToken(token);
+    const payload = verifyAccessToken(token);
     if (!payload) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = verifyToken(token);
+    const payload = verifyAccessToken(token);
     if (!payload) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

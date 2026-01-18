@@ -21,6 +21,7 @@ import {
   WaitlistIcon,
   UserIcon,
   GoogleIcon,
+  ChatIcon,
 } from "@/components/icons";
 
 export type AccountType = "client" | "admin" | "teacher";
@@ -68,6 +69,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/dashboard/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
+      { name: "Support", href: "/dashboard/support", icon: ChatIcon, requiresFeature: "chatSupport" },
     ],
   },
   admin: {
@@ -81,6 +83,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
+      { name: "Support", href: "/admin/support", icon: ChatIcon, requiresFeature: "chatSupport" },
     ],
   },
   teacher: {
@@ -91,6 +94,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
+      { name: "Support", href: "/teacher/support", icon: ChatIcon, requiresFeature: "chatSupport" },
     ],
   },
 };
@@ -263,7 +267,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
             return (
               <li key={item.name}>
                 <Link
-                  href={item.href}
+                  href={item.href || "#"}
                   data-onboarding={item.onboardingId}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                     isActive

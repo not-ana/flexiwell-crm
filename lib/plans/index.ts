@@ -1,43 +1,45 @@
 // Plan types and feature flags for FlexiWell CRM
-// 4 plans: Starter, Growth, Business, Enterprise (professional removed)
+// 4 plans: Starter, Growth, Business, Professional
+// Updated based on pricing page - January 2026
 
-export type PlanType = "starter" | "growth" | "business" | "enterprise";
+export type PlanType = "starter" | "growth" | "business" | "professional";
 
 export interface PlanLimits {
   maxClients: number;
   maxStaff: number;
   maxLocations: number;
+  storageMB: number;
 }
 
 export interface PlanFeatures {
   // Core features
-  basicScheduling: boolean;
-  classManagement: boolean;
-  clientProfiles: boolean;
+  onlineScheduling: boolean;
+  clientPortal: boolean;
+  paymentProcessing: boolean;
 
   // Communication
   emailReminders: boolean;
-  whatsappReminders: boolean;
-  whatsappBot: boolean;
-  instagramBot: boolean;
-  smsReminders: boolean;
+  smsNotifications: boolean;
+  whatsappNotifications: boolean;
+  messagingBot: boolean; // WhatsApp/SMS Bot with AI
 
-  // Reporting
-  basicReports: boolean;
-  advancedReports: boolean;
-  revenueAnalytics: boolean;
-  instructorAnalytics: boolean;
-  exportReports: boolean;
+  // AI Features
+  aiSupportAssistant: boolean;
+
+  // Health Assessment
+  healthAssessment: boolean; // Client health assessment forms
+
+  // Waitlist
+  smartWaitlist: boolean;
+  aiWaitlist: boolean; // AI-powered smart waitlist
+  customWaitlistRules: boolean;
 
   // Advanced features
-  waitlist: boolean;
-  makeupClasses: boolean;
-  packages: boolean;
-  memberships: boolean;
+  customBranding: boolean;
+  advancedReports: boolean;
+  cancellationPredictions: boolean;
 
   // Integrations
-  calendarSync: boolean;
-  paymentIntegration: boolean;
   apiAccess: boolean;
   webhooks: boolean;
 
@@ -47,7 +49,6 @@ export interface PlanFeatures {
   // Support
   emailSupport: boolean;
   chatSupport: boolean;
-  phoneSupport: boolean;
   prioritySupport: boolean;
   dedicatedManager: boolean;
 }
@@ -58,58 +59,65 @@ export interface Plan {
   description: string;
   price: {
     monthly: number;
-    yearly: number; // per month when billed yearly
+    yearly: number; // per month when billed yearly (20% off)
   };
   limits: PlanLimits;
   features: PlanFeatures;
   popular?: boolean;
+  // Usage limits for metered features
+  usageLimits?: {
+    messagingBotMessages?: number; // per month, -1 = unlimited
+    aiChats?: number; // per month, -1 = unlimited
+    apiCalls?: number; // per month, -1 = unlimited
+  };
 }
 
-// Plan definitions
-// Updated January 2026 - 4 plans, unlimited team members
+// Plan definitions based on pricing page
+// https://flexiwell.net/pricing
 export const plans: Record<PlanType, Plan> = {
   starter: {
     id: "starter",
     name: "Starter",
-    description: "Perfect for solo instructors and small studios just getting started",
+    description: "For independent instructors",
     price: {
-      monthly: 49,
-      yearly: 39, // ~20% discount
+      monthly: 99,
+      yearly: 79, // ~20% discount
     },
     limits: {
       maxClients: 100,
-      maxStaff: -1, // unlimited
+      maxStaff: 1, // 1 team member
       maxLocations: 1,
+      storageMB: 5 * 1024, // 5GB
     },
     features: {
-      // Core - Basic
-      basicScheduling: true,
-      classManagement: true,
-      clientProfiles: true,
+      // Core - All included
+      onlineScheduling: true,
+      clientPortal: true,
+      paymentProcessing: true,
 
       // Communication - Email only
       emailReminders: true,
-      whatsappReminders: false,
-      whatsappBot: false,
-      instagramBot: false,
-      smsReminders: false,
+      smsNotifications: false,
+      whatsappNotifications: false,
+      messagingBot: false,
 
-      // Reporting - Basic only
-      basicReports: true,
+      // AI Features - None
+      aiSupportAssistant: false,
+
+      // Health Assessment - None
+      healthAssessment: false,
+
+      // Waitlist - Basic
+      smartWaitlist: false,
+      aiWaitlist: false,
+      customWaitlistRules: false,
+
+      // Advanced - None
+      customBranding: false,
       advancedReports: false,
-      revenueAnalytics: false,
-      instructorAnalytics: false,
-      exportReports: true,
+      cancellationPredictions: false,
 
-      // Advanced - Limited
-      waitlist: true,
-      makeupClasses: false,
-      packages: true,
-      memberships: false,
-
-      // Integrations - Basic
-      calendarSync: true,
-      paymentIntegration: true,
+      // Integrations - None
       apiAccess: false,
       webhooks: false,
 
@@ -119,54 +127,59 @@ export const plans: Record<PlanType, Plan> = {
       // Support - Email only
       emailSupport: true,
       chatSupport: false,
-      phoneSupport: false,
       prioritySupport: false,
       dedicatedManager: false,
+    },
+    usageLimits: {
+      messagingBotMessages: 0,
+      aiChats: 0,
+      apiCalls: 0,
     },
   },
 
   growth: {
     id: "growth",
     name: "Growth",
-    description: "For growing studios ready to scale with smart automation",
+    description: "For growing studios",
     price: {
-      monthly: 99,
-      yearly: 79, // ~20% discount
+      monthly: 179,
+      yearly: 143, // ~20% discount
     },
     limits: {
       maxClients: 500,
       maxStaff: -1, // unlimited
       maxLocations: 2,
+      storageMB: 25 * 1024, // 25GB
     },
     features: {
-      // Core - Full
-      basicScheduling: true,
-      classManagement: true,
-      clientProfiles: true,
+      // Core - All included
+      onlineScheduling: true,
+      clientPortal: true,
+      paymentProcessing: true,
 
-      // Communication - SMS + WhatsApp notifications (no bot)
+      // Communication - SMS + WhatsApp notifications
       emailReminders: true,
-      whatsappReminders: true,
-      whatsappBot: false,
-      instagramBot: false,
-      smsReminders: true,
+      smsNotifications: true,
+      whatsappNotifications: true,
+      messagingBot: false,
 
-      // Reporting - Full
-      basicReports: true,
+      // AI Features - None
+      aiSupportAssistant: false,
+
+      // Health Assessment - Yes
+      healthAssessment: true,
+
+      // Waitlist - Smart (basic)
+      smartWaitlist: true,
+      aiWaitlist: false,
+      customWaitlistRules: false,
+
+      // Advanced - Advanced reports
+      customBranding: false,
       advancedReports: true,
-      revenueAnalytics: true,
-      instructorAnalytics: true,
-      exportReports: true,
+      cancellationPredictions: false,
 
-      // Advanced - Full
-      waitlist: true,
-      makeupClasses: true,
-      packages: true,
-      memberships: true,
-
-      // Integrations - Basic + Wellhub
-      calendarSync: true,
-      paymentIntegration: true,
+      // Integrations - None
       apiAccess: false,
       webhooks: false,
 
@@ -176,124 +189,138 @@ export const plans: Record<PlanType, Plan> = {
       // Support - Email + Chat
       emailSupport: true,
       chatSupport: true,
-      phoneSupport: false,
       prioritySupport: false,
       dedicatedManager: false,
+    },
+    usageLimits: {
+      messagingBotMessages: 0,
+      aiChats: 0,
+      apiCalls: 0,
     },
   },
 
   business: {
     id: "business",
     name: "Business",
-    description: "For established studios with AI-powered automation",
+    description: "For established studios",
     price: {
-      monthly: 249,
-      yearly: 199, // ~20% discount
+      monthly: 299,
+      yearly: 239, // ~20% discount
     },
     limits: {
       maxClients: 2000,
       maxStaff: -1, // unlimited
       maxLocations: 5,
+      storageMB: 100 * 1024, // 100GB
     },
     features: {
-      // Core - Full
-      basicScheduling: true,
-      classManagement: true,
-      clientProfiles: true,
+      // Core - All included
+      onlineScheduling: true,
+      clientPortal: true,
+      paymentProcessing: true,
 
-      // Communication - Full including WhatsApp Bot
+      // Communication - Full including Bot
       emailReminders: true,
-      whatsappReminders: true,
-      whatsappBot: true,
-      instagramBot: true,
-      smsReminders: true,
+      smsNotifications: true,
+      whatsappNotifications: true,
+      messagingBot: true, // 5,000 msgs/month
 
-      // Reporting - Full
-      basicReports: true,
+      // AI Features - AI Support Assistant (2,000 chats/mo)
+      aiSupportAssistant: true,
+
+      // Health Assessment - Yes
+      healthAssessment: true,
+
+      // Waitlist - AI-powered smart waitlist
+      smartWaitlist: true,
+      aiWaitlist: true,
+      customWaitlistRules: false,
+
+      // Advanced - Custom branding + Cancellation predictions
+      customBranding: true,
       advancedReports: true,
-      revenueAnalytics: true,
-      instructorAnalytics: true,
-      exportReports: true,
+      cancellationPredictions: true,
 
-      // Advanced - Full
-      waitlist: true,
-      makeupClasses: true,
-      packages: true,
-      memberships: true,
-
-      // Integrations - Full except custom
-      calendarSync: true,
-      paymentIntegration: true,
-      apiAccess: true,
-      webhooks: true,
+      // Integrations - None
+      apiAccess: false,
+      webhooks: false,
 
       // Multi-location - Yes (5)
       multiLocation: true,
 
-      // Support - Full except dedicated manager
+      // Support - Priority (24h)
       emailSupport: true,
       chatSupport: true,
-      phoneSupport: false,
       prioritySupport: true,
       dedicatedManager: false,
     },
     popular: true,
+    usageLimits: {
+      messagingBotMessages: 5000,
+      aiChats: 2000,
+      apiCalls: 0,
+    },
   },
 
-  enterprise: {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "For studio networks and franchises requiring unlimited scale and customization",
+  professional: {
+    id: "professional",
+    name: "Professional",
+    description: "For large studios and networks",
     price: {
-      monthly: 0, // Custom pricing
-      yearly: 0,
+      monthly: 499,
+      yearly: 399, // ~20% discount
     },
     limits: {
       maxClients: -1, // unlimited
       maxStaff: -1, // unlimited
       maxLocations: -1, // unlimited
+      storageMB: 500 * 1024, // 500GB
     },
     features: {
-      // Core - Full
-      basicScheduling: true,
-      classManagement: true,
-      clientProfiles: true,
+      // Core - All included
+      onlineScheduling: true,
+      clientPortal: true,
+      paymentProcessing: true,
 
-      // Communication - Full
+      // Communication - Full including Bot (unlimited)
       emailReminders: true,
-      whatsappReminders: true,
-      whatsappBot: true,
-      instagramBot: true,
-      smsReminders: true,
+      smsNotifications: true,
+      whatsappNotifications: true,
+      messagingBot: true, // unlimited
 
-      // Reporting - Full
-      basicReports: true,
+      // AI Features - AI Support Assistant (unlimited)
+      aiSupportAssistant: true,
+
+      // Health Assessment - Yes
+      healthAssessment: true,
+
+      // Waitlist - Full with custom rules
+      smartWaitlist: true,
+      aiWaitlist: true,
+      customWaitlistRules: true,
+
+      // Advanced - All features
+      customBranding: true,
       advancedReports: true,
-      revenueAnalytics: true,
-      instructorAnalytics: true,
-      exportReports: true,
+      cancellationPredictions: true,
 
-      // Advanced - Full
-      waitlist: true,
-      makeupClasses: true,
-      packages: true,
-      memberships: true,
-
-      // Integrations - Full including custom
-      calendarSync: true,
-      paymentIntegration: true,
+      // Integrations - Full API access
       apiAccess: true,
       webhooks: true,
 
-      // Multi-location - Yes (unlimited)
+      // Multi-location - Unlimited
       multiLocation: true,
 
-      // Support - Full
+      // Support - Priority (12h) + Dedicated manager
       emailSupport: true,
       chatSupport: true,
-      phoneSupport: true,
       prioritySupport: true,
       dedicatedManager: true,
+    },
+    usageLimits: {
+      messagingBotMessages: -1, // unlimited
+      aiChats: -1, // unlimited
+      apiCalls: -1, // unlimited
     },
   },
 };
@@ -349,31 +376,26 @@ export function getUpgradeFeatures(currentPlan: PlanType, targetPlan: PlanType):
  * Feature display names for UI
  */
 export const featureDisplayNames: Record<keyof PlanFeatures, string> = {
-  basicScheduling: "Basic Scheduling",
-  classManagement: "Class Management",
-  clientProfiles: "Client Profiles",
+  onlineScheduling: "Online Scheduling",
+  clientPortal: "Client Portal",
+  paymentProcessing: "Payment Processing",
   emailReminders: "Email Reminders",
-  whatsappReminders: "WhatsApp Reminders",
-  whatsappBot: "WhatsApp Bot",
-  instagramBot: "Instagram Bot",
-  smsReminders: "SMS Reminders",
-  basicReports: "Basic Reports",
+  smsNotifications: "SMS Notifications",
+  whatsappNotifications: "WhatsApp Notifications",
+  messagingBot: "Messaging Bot",
+  aiSupportAssistant: "AI Support Assistant",
+  healthAssessment: "Health Assessment",
+  smartWaitlist: "Smart Waitlist",
+  aiWaitlist: "AI-powered Waitlist",
+  customWaitlistRules: "Custom Waitlist Rules",
+  customBranding: "Custom Branding",
   advancedReports: "Advanced Reports",
-  revenueAnalytics: "Revenue Analytics",
-  instructorAnalytics: "Instructor Analytics",
-  exportReports: "Export Reports",
-  waitlist: "Waitlist Management",
-  makeupClasses: "Makeup Classes",
-  packages: "Class Packages",
-  memberships: "Memberships",
-  calendarSync: "Calendar Sync",
-  paymentIntegration: "Payment Integration",
+  cancellationPredictions: "Cancellation Predictions",
   apiAccess: "API Access",
   webhooks: "Webhooks",
   multiLocation: "Multi-Location Support",
   emailSupport: "Email Support",
   chatSupport: "Chat Support",
-  phoneSupport: "Phone Support",
   prioritySupport: "Priority Support",
   dedicatedManager: "Dedicated Account Manager",
 };
@@ -382,11 +404,24 @@ export const featureDisplayNames: Record<keyof PlanFeatures, string> = {
  * Feature categories for organized display
  */
 export const featureCategories = {
-  core: ["basicScheduling", "classManagement", "clientProfiles"] as (keyof PlanFeatures)[],
-  communication: ["emailReminders", "whatsappReminders", "whatsappBot", "instagramBot", "smsReminders"] as (keyof PlanFeatures)[],
-  reporting: ["basicReports", "advancedReports", "revenueAnalytics", "instructorAnalytics", "exportReports"] as (keyof PlanFeatures)[],
-  advanced: ["waitlist", "makeupClasses", "packages", "memberships"] as (keyof PlanFeatures)[],
-  integrations: ["calendarSync", "paymentIntegration", "apiAccess", "webhooks"] as (keyof PlanFeatures)[],
+  core: ["onlineScheduling", "clientPortal", "paymentProcessing"] as (keyof PlanFeatures)[],
+  communication: ["emailReminders", "smsNotifications", "whatsappNotifications", "messagingBot"] as (keyof PlanFeatures)[],
+  ai: ["aiSupportAssistant"] as (keyof PlanFeatures)[],
+  clientManagement: ["healthAssessment"] as (keyof PlanFeatures)[],
+  waitlist: ["smartWaitlist", "aiWaitlist", "customWaitlistRules"] as (keyof PlanFeatures)[],
+  advanced: ["customBranding", "advancedReports", "cancellationPredictions"] as (keyof PlanFeatures)[],
+  integrations: ["apiAccess", "webhooks"] as (keyof PlanFeatures)[],
   infrastructure: ["multiLocation"] as (keyof PlanFeatures)[],
-  support: ["emailSupport", "chatSupport", "phoneSupport", "prioritySupport", "dedicatedManager"] as (keyof PlanFeatures)[],
+  support: ["emailSupport", "chatSupport", "prioritySupport", "dedicatedManager"] as (keyof PlanFeatures)[],
 };
+
+/**
+ * Get usage limit for a metered feature
+ */
+export function getUsageLimit(
+  planId: PlanType,
+  type: "messagingBotMessages" | "aiChats" | "apiCalls"
+): number | "unlimited" {
+  const limit = plans[planId].usageLimits?.[type] ?? 0;
+  return limit === -1 ? "unlimited" : limit;
+}

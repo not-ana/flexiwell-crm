@@ -72,6 +72,7 @@ const flexiwellPlans = [
       "Messaging Bot (5,000 msgs/month)",
       "AI Support Assistant (2,000 chats/mo)",
       "AI-powered smart waitlist",
+      "White-label branding",
       "Cancellation predictions",
       "Priority support (24h)",
     ],

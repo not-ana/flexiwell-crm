@@ -373,7 +373,7 @@ export interface User {
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  planTier?: "starter" | "growth" | "business" | "enterprise";
+  planTier?: "starter" | "growth" | "business" | "professional";
   // Trial notification tracking
   trialNotifications?: {
     sevenDaysSent?: boolean;

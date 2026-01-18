@@ -172,6 +172,11 @@ export interface AuthUser {
   avatar?: string;
   staffId?: string;
   clientId?: string;
+  // Subscription and plan info
+  planTier?: "starter" | "growth" | "business" | "professional";
+  subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
+  trialStatus?: "active" | "expired" | "converted";
+  trialEndDate?: string;
 }
 
 export interface AuthResponse {

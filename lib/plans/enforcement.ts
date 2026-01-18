@@ -1,0 +1,373 @@
+// Server-side plan enforcement utilities
+// Use these in API routes to check plan limits and features
+
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
+import { plans, type PlanType, type PlanFeatures, type PlanLimits } from "./index";
+
+export interface PlanCheckResult {
+  allowed: boolean;
+  reason?: string;
+  currentCount?: number;
+  limit?: number | "unlimited";
+  upgradeRequired?: PlanType;
+}
+
+export interface UsageStats {
+  clients: number;
+  staff: number;
+  establishments: number;
+  messagingBotMessages: number;
+  aiChats: number;
+  apiCalls: number;
+  storageUsedMB: number;
+}
+
+// Default plan for trial users - Business plan during trial
+const DEFAULT_TRIAL_PLAN: PlanType = "business";
+
+/**
+ * Get user's current plan from database
+ */
+export async function getUserPlan(userId: string): Promise<PlanType> {
+  const db = await getDatabase();
+  const user = await db.collection("users").findOne({
+    _id: new ObjectId(userId),
+  });
+
+  if (!user) {
+    return "starter"; // Default fallback
+  }
+
+  // During trial, give access to business plan features
+  if (user.trialStatus === "active" || user.subscriptionStatus === "trialing") {
+    return DEFAULT_TRIAL_PLAN;
+  }
+
+  return (user.planTier as PlanType) || "starter";
+}
+
+/**
+ * Get current usage stats for a user/admin
+ */
+export async function getUsageStats(userId: string): Promise<UsageStats> {
+  const db = await getDatabase();
+
+  const [clientCount, staffCount, establishmentCount, usageDoc] = await Promise.all([
+    // Count clients
+    db.collection("clients").countDocuments({ adminId: userId }),
+    // Count staff
+    db.collection("staff").countDocuments({
+      $or: [
+        { adminId: userId },
+        { establishmentId: { $in: await getEstablishmentIds(db, userId) } },
+      ],
+    }),
+    // Count establishments
+    db.collection("establishments").countDocuments({ ownerId: userId }),
+    // Get usage tracking document
+    db.collection("usage_tracking").findOne({ userId }),
+  ]);
+
+  const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
+
+  return {
+    clients: clientCount,
+    staff: staffCount,
+    establishments: establishmentCount,
+    messagingBotMessages: usageDoc?.monthly?.[currentMonth]?.messagingBotMessages || 0,
+    aiChats: usageDoc?.monthly?.[currentMonth]?.aiChats || 0,
+    apiCalls: usageDoc?.monthly?.[currentMonth]?.apiCalls || 0,
+    storageUsedMB: usageDoc?.storageUsedMB || 0,
+  };
+}
+
+/**
+ * Check if user can add more of a resource (clients, staff, locations)
+ */
+export async function checkResourceLimit(
+  userId: string,
+  resource: keyof PlanLimits
+): Promise<PlanCheckResult> {
+  const planId = await getUserPlan(userId);
+  const plan = plans[planId];
+  const limit = plan.limits[resource];
+
+  if (limit === -1) {
+    return { allowed: true, limit: "unlimited" };
+  }
+
+  const stats = await getUsageStats(userId);
+  let currentCount: number;
+
+  switch (resource) {
+    case "maxClients":
+      currentCount = stats.clients;
+      break;
+    case "maxStaff":
+      currentCount = stats.staff;
+      break;
+    case "maxLocations":
+      currentCount = stats.establishments;
+      break;
+    case "storageMB":
+      currentCount = stats.storageUsedMB;
+      break;
+    default:
+      currentCount = 0;
+  }
+
+  if (currentCount >= limit) {
+    // Find the next plan that would allow this
+    const upgradeRequired = findUpgradePlan(planId, resource, currentCount + 1);
+
+    return {
+      allowed: false,
+      reason: `You've reached your ${plan.name} plan limit of ${formatLimit(resource, limit)}. Upgrade to add more.`,
+      currentCount,
+      limit,
+      upgradeRequired,
+    };
+  }
+
+  return {
+    allowed: true,
+    currentCount,
+    limit,
+  };
+}
+
+/**
+ * Check if user has access to a feature
+ */
+export async function checkFeatureAccess(
+  userId: string,
+  feature: keyof PlanFeatures
+): Promise<PlanCheckResult> {
+  const planId = await getUserPlan(userId);
+  const plan = plans[planId];
+
+  if (plan.features[feature]) {
+    return { allowed: true };
+  }
+
+  // Find the minimum plan that has this feature
+  const upgradeRequired = findMinimumPlanForFeature(feature);
+
+  return {
+    allowed: false,
+    reason: `The ${formatFeatureName(feature)} feature is not available on your ${plan.name} plan. Upgrade to ${plans[upgradeRequired].name} to access this feature.`,
+    upgradeRequired,
+  };
+}
+
+/**
+ * Track usage for metered features (Messaging Bot, AI, API)
+ */
+export async function trackUsage(
+  userId: string,
+  type: "messagingBotMessages" | "aiChats" | "apiCalls",
+  count: number = 1
+): Promise<void> {
+  const db = await getDatabase();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  await db.collection("usage_tracking").updateOne(
+    { userId },
+    {
+      $inc: {
+        [`monthly.${currentMonth}.${type}`]: count,
+        [`total.${type}`]: count,
+      },
+      $set: { updatedAt: new Date() },
+      $setOnInsert: { createdAt: new Date() },
+    },
+    { upsert: true }
+  );
+}
+
+/**
+ * Check usage limits for metered features
+ */
+export async function checkUsageLimit(
+  userId: string,
+  type: "messagingBotMessages" | "aiChats" | "apiCalls"
+): Promise<PlanCheckResult> {
+  const planId = await getUserPlan(userId);
+  const plan = plans[planId];
+  const stats = await getUsageStats(userId);
+
+  // Get limit from plan definition
+  const limit = plan.usageLimits?.[type] ?? 0;
+
+  // Feature not available
+  if (limit === 0) {
+    return {
+      allowed: false,
+      reason: `This feature is not available on your ${plan.name} plan.`,
+      currentCount: 0,
+      limit: 0,
+      upgradeRequired: findMinimumPlanForUsage(type),
+    };
+  }
+
+  // Unlimited
+  if (limit === -1) {
+    return { allowed: true, limit: "unlimited" };
+  }
+
+  const currentCount = stats[type];
+
+  if (currentCount >= limit) {
+    return {
+      allowed: false,
+      reason: `You've reached your monthly limit of ${limit.toLocaleString()} ${formatUsageType(type)}. Upgrade for more.`,
+      currentCount,
+      limit,
+      upgradeRequired: findUpgradePlanForUsage(planId),
+    };
+  }
+
+  return {
+    allowed: true,
+    currentCount,
+    limit,
+  };
+}
+
+// Helper functions
+
+async function getEstablishmentIds(
+  db: Awaited<ReturnType<typeof getDatabase>>,
+  userId: string
+): Promise<string[]> {
+  const establishments = await db
+    .collection("establishments")
+    .find({ ownerId: userId })
+    .project({ _id: 1 })
+    .toArray();
+
+  return establishments.map((e) => e._id.toString());
+}
+
+function findUpgradePlan(
+  currentPlan: PlanType,
+  resource: keyof PlanLimits,
+  needed: number
+): PlanType {
+  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const currentIndex = planOrder.indexOf(currentPlan);
+
+  for (let i = currentIndex + 1; i < planOrder.length; i++) {
+    const plan = plans[planOrder[i]];
+    const limit = plan.limits[resource];
+    if (limit === -1 || limit >= needed) {
+      return planOrder[i];
+    }
+  }
+
+  return "professional";
+}
+
+function findMinimumPlanForFeature(feature: keyof PlanFeatures): PlanType {
+  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+
+  for (const planId of planOrder) {
+    if (plans[planId].features[feature]) {
+      return planId;
+    }
+  }
+
+  return "professional";
+}
+
+function findMinimumPlanForUsage(type: string): PlanType {
+  const featureMap: Record<string, keyof PlanFeatures> = {
+    messagingBotMessages: "messagingBot",
+    aiChats: "aiSupportAssistant",
+    apiCalls: "apiAccess",
+  };
+
+  const feature = featureMap[type];
+  if (feature) {
+    return findMinimumPlanForFeature(feature);
+  }
+
+  return "business";
+}
+
+function findUpgradePlanForUsage(currentPlan: PlanType): PlanType {
+  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const currentIndex = planOrder.indexOf(currentPlan);
+
+  // Next plan in order, or professional if at business
+  if (currentIndex < planOrder.length - 1) {
+    return planOrder[currentIndex + 1];
+  }
+
+  return "professional";
+}
+
+function formatLimit(resource: keyof PlanLimits, limit: number): string {
+  switch (resource) {
+    case "maxClients":
+      return `${limit} clients`;
+    case "maxStaff":
+      return `${limit} team members`;
+    case "maxLocations":
+      return `${limit} location${limit > 1 ? "s" : ""}`;
+    case "storageMB":
+      return limit >= 1024 ? `${Math.floor(limit / 1024)}GB` : `${limit}MB`;
+    default:
+      return `${limit}`;
+  }
+}
+
+function formatFeatureName(feature: keyof PlanFeatures): string {
+  const names: Partial<Record<keyof PlanFeatures, string>> = {
+    messagingBot: "Messaging Bot",
+    aiSupportAssistant: "AI Support Assistant",
+    smartWaitlist: "Smart Waitlist",
+    aiWaitlist: "AI-powered Waitlist",
+    customWaitlistRules: "Custom Waitlist Rules",
+    customBranding: "Custom Branding",
+    advancedReports: "Advanced Reports",
+    cancellationPredictions: "Cancellation Predictions",
+    apiAccess: "API Access",
+    multiLocation: "Multi-Location",
+  };
+
+  return names[feature] || feature;
+}
+
+function formatUsageType(type: string): string {
+  switch (type) {
+    case "messagingBotMessages":
+      return "bot messages";
+    case "aiChats":
+      return "AI chats";
+    case "apiCalls":
+      return "API calls";
+    default:
+      return type;
+  }
+}
+
+/**
+ * Middleware helper - returns error response if check fails
+ */
+export function createPlanErrorResponse(result: PlanCheckResult): {
+  error: string;
+  code: string;
+  upgradeRequired?: PlanType;
+  currentCount?: number;
+  limit?: number | "unlimited";
+} {
+  return {
+    error: result.reason || "Plan limit exceeded",
+    code: "PLAN_LIMIT_EXCEEDED",
+    upgradeRequired: result.upgradeRequired,
+    currentCount: result.currentCount,
+    limit: result.limit,
+  };
+}

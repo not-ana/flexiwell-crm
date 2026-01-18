@@ -114,7 +114,7 @@ const ADDONS: Addon[] = [
     active: false,
     includedInPlans: ["Included in Business & Professional plans"],
     includedInPlansBrl: ["Incluso nos planos Business e Professional"],
-    requiredPlans: ["starter", "growth", "business", "enterprise"], // Available on all plans
+    requiredPlans: ["starter", "growth", "business", "professional"], // Available on all plans
   },
   {
     id: "extra-storage",

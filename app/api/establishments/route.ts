@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Establishment } from "@/lib/db/schemas";
+import { requireRole } from "@/lib/auth";
+import { checkResourceLimit, checkFeatureAccess, createPlanErrorResponse } from "@/lib/plans/enforcement";
 
 // GET /api/establishments - List all establishments
 // Query params:
@@ -66,6 +68,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/establishments - Create a new establishment
 export async function POST(request: NextRequest) {
+  // Require authentication - only admin can create establishments
+  const { user, error } = requireRole(request, ["admin"]);
+  if (error) return error;
+
   try {
     const body = await request.json();
     const { name, location, address, phone, assignedTeachers } = body;
@@ -77,6 +83,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check plan limit for locations/establishments
+    const limitCheck = await checkResourceLimit(user!.userId, "maxLocations");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(createPlanErrorResponse(limitCheck), { status: 403 });
+    }
+
+    // Check if multi-location feature is available (for plans that only allow 1 location)
+    const featureCheck = await checkFeatureAccess(user!.userId, "multiLocation");
+    if (!featureCheck.allowed) {
+      // Check if this would be their second+ location
+      const db = await getDatabase();
+      const existingCount = await db.collection("establishments").countDocuments({ ownerId: user!.userId });
+      if (existingCount > 0) {
+        return NextResponse.json(createPlanErrorResponse(featureCheck), { status: 403 });
+      }
+    }
+
     const db = await getDatabase();
 
     const newEstablishment: Omit<Establishment, "_id"> = {
@@ -84,8 +107,8 @@ export async function POST(request: NextRequest) {
       location,
       address: address || "",
       phone: phone || "",
-      ownerId: "",
-      adminIds: [],
+      ownerId: user!.userId,
+      adminIds: [user!.userId],
       assignedTeachers: assignedTeachers || [],
       rooms: [],
       isActive: true,

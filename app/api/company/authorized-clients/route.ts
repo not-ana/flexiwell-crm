@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import { verifyToken } from "@/lib/auth/jwt";
+import { verifyAccessToken } from "@/lib/auth/jwt";
 import type { AuthorizedClient } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = verifyToken(token);
+    const payload = verifyAccessToken(token);
     if (!payload || payload.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = verifyToken(token);
+    const payload = verifyAccessToken(token);
     if (!payload || payload.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -192,7 +192,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = verifyToken(token);
+    const payload = verifyAccessToken(token);
     if (!payload || payload.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

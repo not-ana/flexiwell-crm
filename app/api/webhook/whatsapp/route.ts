@@ -7,6 +7,9 @@ import {
   getEstablishmentWhatsAppCredentials,
   getAllConnectedWhatsAppEstablishments,
 } from "@/lib/integrations/credentials";
+import { trackUsage, checkUsageLimit, checkFeatureAccess } from "@/lib/plans/enforcement";
+import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
 
 // WhatsApp Webhook Verification (GET)
 export async function GET(request: NextRequest) {
@@ -121,6 +124,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
   let establishmentId: string;
   let accessToken: string | undefined;
   let plan = "pro";
+  let ownerId: string | undefined;
 
   try {
     const establishment = await getEstablishmentByPhoneNumberId(phoneNumberId);
@@ -128,6 +132,20 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
       establishmentId = establishment.establishmentId;
       accessToken = establishment.accessToken;
       console.log(`[WhatsApp Webhook] Found establishment ${establishmentId} for phone ${phoneNumberId}`);
+
+      // Get owner ID for usage tracking
+      const db = await getDatabase();
+      // Try to find by ObjectId or string ID (legacy)
+      let estDoc = null;
+      if (ObjectId.isValid(establishmentId)) {
+        estDoc = await db.collection("establishments").findOne({ _id: new ObjectId(establishmentId) });
+      }
+      if (!estDoc) {
+        estDoc = await db.collection("establishments").findOne({ establishmentId: establishmentId });
+      }
+      if (estDoc?.ownerId) {
+        ownerId = estDoc.ownerId;
+      }
     } else {
       // Fallback to environment variables (legacy/global config)
       console.log(`[WhatsApp Webhook] No establishment found for phone ${phoneNumberId}, using defaults`);
@@ -138,6 +156,36 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
     console.error("[WhatsApp Webhook] Error looking up establishment:", error);
     establishmentId = process.env.DEFAULT_ESTABLISHMENT_ID || "default";
     accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  }
+
+  // Check WhatsApp feature and usage limits
+  if (ownerId) {
+    const featureCheck = await checkFeatureAccess(ownerId, "messagingBot");
+    if (!featureCheck.allowed) {
+      console.log(`[WhatsApp Webhook] Messaging Bot feature not available for owner ${ownerId}`);
+      await sendWhatsAppMessage(
+        senderId,
+        phoneNumberId,
+        { body: "Desculpe, este recurso não está disponível no momento. Por favor, entre em contato com o suporte." },
+        accessToken
+      );
+      return;
+    }
+
+    const usageCheck = await checkUsageLimit(ownerId, "messagingBotMessages");
+    if (!usageCheck.allowed) {
+      console.log(`[WhatsApp Webhook] WhatsApp usage limit reached for owner ${ownerId}`);
+      await sendWhatsAppMessage(
+        senderId,
+        phoneNumberId,
+        { body: "Desculpe, o limite de mensagens do WhatsApp foi atingido este mês. Por favor, entre em contato com o estúdio diretamente." },
+        accessToken
+      );
+      return;
+    }
+
+    // Track messaging bot usage
+    await trackUsage(ownerId, "messagingBotMessages");
   }
 
   // For unsupported message types, ask user to send text

@@ -4,6 +4,7 @@ import type { Client } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 import { requireRole } from "@/lib/auth";
 import { sanitizeSearchInput } from "@/lib/security";
+import { checkResourceLimit, createPlanErrorResponse } from "@/lib/plans/enforcement";
 
 // GET /api/clients - Get all clients with optional filters
 export async function GET(request: NextRequest) {
@@ -76,6 +77,12 @@ export async function POST(request: NextRequest) {
         { error: "Name and email are required" },
         { status: 400 }
       );
+    }
+
+    // Check plan limit for clients
+    const limitCheck = await checkResourceLimit(user!.userId, "maxClients");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(createPlanErrorResponse(limitCheck), { status: 403 });
     }
 
     const db = await getDatabase();
