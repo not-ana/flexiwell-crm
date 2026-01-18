@@ -161,28 +161,6 @@ const ADDONS: Addon[] = [
     ],
     comingSoon: true,
   },
-  {
-    id: "white-label",
-    name: "White Label",
-    description: "Remove FlexiWell branding and use your own logo and colors",
-    descriptionBrl: "Remova a marca FlexiWell e use seu próprio logo e cores",
-    pricing: { usd: "", brl: "", note: "", noteBrl: "" },
-    iconBg: "bg-indigo-500",
-    iconColor: "text-white",
-    features: [
-      "Custom branding",
-      "Your logo everywhere",
-      "Custom email domain",
-      "Branded client portal",
-    ],
-    featuresBrl: [
-      "Branding personalizado",
-      "Seu logo em todo lugar",
-      "Domínio de email customizado",
-      "Portal do cliente com sua marca",
-    ],
-    comingSoon: true,
-  },
 ];
 
 const TRANSLATIONS = {
@@ -232,13 +210,6 @@ const AddonIcon = ({ id, className }: { id: string; className?: string }) => {
     "advanced-reports": (
       <svg className={className} viewBox="0 0 24 24" fill="currentColor">
         <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
-      </svg>
-    ),
-    "white-label": (
-      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 22C6.49 22 2 17.51 2 12S6.49 2 12 2s10 4.04 10 9c0 3.31-2.69 6-6 6h-1.77c-.28 0-.5.22-.5.5 0 .12.05.23.13.33.41.47.64 1.06.64 1.67A2.5 2.5 0 0 1 12 22zm0-18c-4.41 0-8 3.59-8 8s3.59 8 8 8c.28 0 .5-.22.5-.5a.54.54 0 0 0-.14-.35c-.41-.46-.63-1.05-.63-1.65a2.5 2.5 0 0 1 2.5-2.5H16c2.21 0 4-1.79 4-4 0-3.86-3.59-7-8-7z"/>
-        <circle cx="6.5" cy="11.5" r="1.5"/><circle cx="9.5" cy="7.5" r="1.5"/>
-        <circle cx="14.5" cy="7.5" r="1.5"/><circle cx="17.5" cy="11.5" r="1.5"/>
       </svg>
     ),
   };

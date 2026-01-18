@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { getStoredTokens } from "@/lib/api/client";
-import { showToast, Toggle } from "./shared";
+import { showToast } from "./shared";
+
+const ALLOWED_PLANS = ["business", "professional", "enterprise"];
 
 export function BrandingSettings() {
   const [branding, setBranding] = useState({
@@ -15,10 +17,23 @@ export function BrandingSettings() {
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+
+  const hasAccess = userPlan && ALLOWED_PLANS.includes(userPlan);
 
   useEffect(() => {
-    async function loadBranding() {
+    async function loadData() {
       try {
+        // Load user plan
+        const subRes = await fetch("/api/stripe/subscription");
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          if (subData.plan?.id) {
+            setUserPlan(subData.plan.id);
+          }
+        }
+
+        // Load branding settings
         const res = await fetch("/api/settings?section=branding");
         if (res.ok) {
           const data = await res.json();
@@ -27,12 +42,12 @@ export function BrandingSettings() {
           }
         }
       } catch (error) {
-        console.error("Failed to load branding:", error);
+        console.error("Failed to load data:", error);
       } finally {
         setLoading(false);
       }
     }
-    loadBranding();
+    loadData();
   }, []);
 
   const updateBranding = (key: string, value: string) => {
@@ -40,6 +55,8 @@ export function BrandingSettings() {
   };
 
   const handleSaveBranding = async () => {
+    if (!hasAccess) return;
+
     setSaving(true);
     try {
       const res = await fetch("/api/settings", {
@@ -61,6 +78,8 @@ export function BrandingSettings() {
   };
 
   const handleLogoUpload = (type: "logo" | "favicon") => {
+    if (!hasAccess) return;
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -121,6 +140,8 @@ export function BrandingSettings() {
   };
 
   const handleRemoveImage = (type: "logo" | "favicon") => {
+    if (!hasAccess) return;
+
     if (type === "logo") {
       updateBranding("customLogo", "");
     } else {
@@ -148,8 +169,33 @@ export function BrandingSettings() {
         </p>
       </div>
 
+      {/* Upgrade Banner */}
+      {!hasAccess && (
+        <div className="bg-gradient-to-r from-primary-50 to-pink-50 border border-primary-200 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-gray-900">Upgrade to Business</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Branding customization is available on Business and Professional plans. Upgrade to customize your logo, colors, and more.
+              </p>
+              <a
+                href="/admin/settings?tab=subscription"
+                className="inline-flex items-center mt-3 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Upgrade Plan
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Logo & Assets */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className={`bg-white border border-gray-200 rounded-xl p-6 ${!hasAccess ? "opacity-50 pointer-events-none" : ""}`}>
         <h3 className="text-base font-semibold text-gray-900 mb-4">
           Logo & Assets
         </h3>
@@ -259,7 +305,7 @@ export function BrandingSettings() {
       </div>
 
       {/* Color Scheme */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className={`bg-white border border-gray-200 rounded-xl p-6 ${!hasAccess ? "opacity-50 pointer-events-none" : ""}`}>
         <h3 className="text-base font-semibold text-gray-900 mb-4">
           Color Scheme
         </h3>
@@ -273,13 +319,15 @@ export function BrandingSettings() {
                 type="color"
                 value={branding.primaryColor}
                 onChange={(e) => updateBranding("primaryColor", e.target.value)}
-                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                disabled={!hasAccess}
+                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer disabled:cursor-not-allowed"
               />
               <input
                 type="text"
                 value={branding.primaryColor}
                 onChange={(e) => updateBranding("primaryColor", e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                disabled={!hasAccess}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -295,13 +343,15 @@ export function BrandingSettings() {
                 type="color"
                 value={branding.accentColor}
                 onChange={(e) => updateBranding("accentColor", e.target.value)}
-                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                disabled={!hasAccess}
+                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer disabled:cursor-not-allowed"
               />
               <input
                 type="text"
                 value={branding.accentColor}
                 onChange={(e) => updateBranding("accentColor", e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                disabled={!hasAccess}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -340,12 +390,14 @@ export function BrandingSettings() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-3">
-        <Button variant="secondary">Cancel</Button>
-        <Button onClick={handleSaveBranding} disabled={saving}>
-          {saving ? "Saving..." : "Save Branding"}
-        </Button>
-      </div>
+      {hasAccess && (
+        <div className="flex items-center justify-end gap-3">
+          <Button variant="secondary">Cancel</Button>
+          <Button onClick={handleSaveBranding} disabled={saving}>
+            {saving ? "Saving..." : "Save Branding"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
