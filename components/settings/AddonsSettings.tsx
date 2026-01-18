@@ -451,12 +451,14 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
   const { t } = translations;
 
   // Load active add-ons and user plan from server on mount
+  // First try Stripe subscription, then fall back to database
   useEffect(() => {
     async function loadActiveAddons() {
       try {
-        const response = await fetch("/api/stripe/subscription");
-        if (response.ok) {
-          const data = await response.json();
+        // First try to get add-ons from Stripe subscription
+        const stripeResponse = await fetch("/api/stripe/subscription");
+        if (stripeResponse.ok) {
+          const data = await stripeResponse.json();
           // Set user's plan tier from subscription data
           if (data.plan?.id) {
             setUserPlan(data.plan.id);
@@ -469,6 +471,25 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
               if (uiAddonId) {
                 addonsMap[uiAddonId] = true;
               }
+            });
+            setActiveAddons(addonsMap);
+            return; // Successfully loaded from Stripe
+          }
+        }
+
+        // Fall back to database for users without Stripe subscription
+        const dbResponse = await fetch("/api/admin/addons");
+        if (dbResponse.ok) {
+          const data = await dbResponse.json();
+          if (data.planTier) {
+            setUserPlan(data.planTier);
+          }
+          if (data.activeAddOns && Array.isArray(data.activeAddOns)) {
+            const addonsMap: Record<string, boolean> = {};
+            data.activeAddOns.forEach((addOnId: string) => {
+              // Support both API format (extra_whatsapp_msgs) and UI format (whatsapp-bot)
+              const uiAddonId = API_TO_UI_ADDON_ID[addOnId] || addOnId;
+              addonsMap[uiAddonId] = true;
             });
             setActiveAddons(addonsMap);
           }
@@ -494,11 +515,37 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
 
     try {
       if (currentlyActive) {
-        // Remove add-on
-        await removeAddOnFromSubscription({ addOnId: apiAddonId });
+        // Remove add-on - try Stripe first, then fall back to database
+        try {
+          await removeAddOnFromSubscription({ addOnId: apiAddonId });
+        } catch {
+          // Fall back to database API
+          const response = await fetch("/api/admin/addons", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ addOnId: addonId }),
+          });
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Failed to deactivate add-on");
+          }
+        }
       } else {
-        // Add add-on
-        await addAddOnToSubscription({ addOnId: apiAddonId });
+        // Add add-on - try Stripe first, then fall back to database
+        try {
+          await addAddOnToSubscription({ addOnId: apiAddonId });
+        } catch {
+          // Fall back to database API
+          const response = await fetch("/api/admin/addons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ addOnId: addonId }),
+          });
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Failed to activate add-on");
+          }
+        }
       }
       setActiveAddons((prev) => ({ ...prev, [addonId]: !currentlyActive }));
     } catch (err) {
