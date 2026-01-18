@@ -175,13 +175,13 @@ export function IntegrationsSettings() {
                 }`}
               >
                 {integration.image ? (
-                  <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden bg-gray-50 flex items-center justify-center">
                     <Image
                       src={integration.image}
                       alt={integration.name}
                       width={40}
                       height={40}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 ) : (

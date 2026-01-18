@@ -672,3 +672,180 @@ export interface Review {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ============================================
+// Health Assessment (Anamnese) Types
+// ============================================
+
+export type HealthAssessmentStatus = "draft" | "submitted" | "reviewed" | "requires_update";
+
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+export interface MedicalHistory {
+  // Cardiovascular
+  hasHeartCondition: boolean;
+  hasHighBloodPressure: boolean;
+  hasLowBloodPressure: boolean;
+  // Respiratory
+  hasAsthma: boolean;
+  hasRespiratoryIssues: boolean;
+  // Musculoskeletal
+  hasArthritis: boolean;
+  hasOsteoporosis: boolean;
+  hasScoliosis: boolean;
+  hasHernias: boolean;
+  // Neurological
+  hasEpilepsy: boolean;
+  // Metabolic
+  hasDiabetes: boolean;
+  hasThyroidIssues: boolean;
+  // Other conditions
+  isPregnant: boolean;
+  pregnancyWeeks?: number;
+  hasSurgeryHistory: boolean;
+  surgeryDetails?: string;
+  hasOtherConditions: boolean;
+  otherConditionsDetails?: string;
+}
+
+export interface CurrentCondition {
+  id: string;
+  area: string;
+  description: string;
+  severity: "mild" | "moderate" | "severe";
+  isChronicPain: boolean;
+}
+
+export interface Medication {
+  id: string;
+  name: string;
+  dosage?: string;
+  reason?: string;
+}
+
+export interface HealthAssessmentConsent {
+  agreedToTerms: boolean;
+  agreedToLiabilityWaiver: boolean;
+  signedAt: Date;
+  signedIp: string;
+}
+
+export interface HealthAssessment {
+  _id?: ObjectId;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  establishmentId?: string;
+  version: number;
+
+  // Personal data
+  dateOfBirth?: Date;
+  gender?: "male" | "female" | "other" | "prefer_not_to_say";
+  height?: number; // in cm
+  weight?: number; // in kg
+  occupation?: string;
+
+  // Medical history
+  medicalHistory: MedicalHistory;
+
+  // Current conditions/injuries
+  currentConditions: CurrentCondition[];
+  hasCurrentPain: boolean;
+  painDescription?: string;
+
+  // Medications
+  medications: Medication[];
+  takingMedications: boolean;
+
+  // Allergies
+  allergies: string[];
+  hasAllergies: boolean;
+
+  // Fitness background
+  exerciseFrequency?: "none" | "1-2_week" | "3-4_week" | "5+_week";
+  previousExperience?: string;
+
+  // Goals
+  goals: string[];
+  additionalGoalNotes?: string;
+
+  // Physical restrictions
+  physicalRestrictions: string[];
+  restrictionDetails?: string;
+
+  // Emergency contact (required)
+  emergencyContact: EmergencyContact;
+
+  // Consent
+  consent: HealthAssessmentConsent;
+
+  // Custom fields (dynamic based on form config)
+  customFields?: Record<string, unknown>;
+
+  // Admin fields
+  status: HealthAssessmentStatus;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  updateRequestedAt?: Date;
+  updateRequestedBy?: string;
+  updateRequestMessage?: string;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  submittedAt?: Date;
+}
+
+// Public access token for unauthenticated form submissions
+export interface HealthAssessmentToken {
+  _id?: ObjectId;
+  token: string;
+  clientId?: string; // Optional - for existing clients
+  clientEmail?: string; // For new clients
+  clientName?: string; // For new clients
+  establishmentId: string;
+  createdBy: string; // Admin userId who generated the link
+  expiresAt: Date;
+  usedAt?: Date;
+  isUsed: boolean;
+  createdAt: Date;
+}
+
+// Form configuration for customizable sections
+export type FormFieldType = "text" | "textarea" | "number" | "select" | "checkbox" | "checkboxGroup" | "date" | "tags";
+
+export interface FormFieldConfig {
+  id: string;
+  type: FormFieldType;
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
+  conditionalOn?: { field: string; value: unknown };
+}
+
+export interface FormSectionConfig {
+  id: string;
+  title: string;
+  description?: string;
+  enabled: boolean;
+  required: boolean;
+  order: number;
+  isBuiltIn: boolean; // true for default sections, false for custom
+  fields: FormFieldConfig[];
+}
+
+export interface HealthAssessmentFormConfig {
+  _id?: ObjectId;
+  establishmentId: string;
+  sections: FormSectionConfig[];
+  liabilityWaiverText: string;
+  termsText: string;
+  updatedAt: Date;
+  updatedBy: string;
+}
