@@ -70,7 +70,6 @@ async function sendCrispMessage(
         method: "POST",
         headers: {
           "Authorization": `Basic ${auth}`,
-          "X-Crisp-Tier": "plugin",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -78,7 +77,6 @@ async function sendCrispMessage(
           from: "operator",
           origin: "chat",
           content: content,
-          automated: true,
         }),
       }
     );
