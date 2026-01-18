@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { SearchIcon, PlusIcon, ChevronIcon } from "@/components/icons";
+import { useRouter } from "next/navigation";
+import { SearchIcon, PlusIcon, ChevronIcon, ArrowLeftIcon, CloseIcon } from "@/components/icons";
 
 interface ClassItem {
   id: string;
@@ -18,6 +19,20 @@ interface ClassItem {
   currentEnrollment: number;
   status: "scheduled" | "completed" | "cancelled";
   location?: string;
+  establishmentId?: string;
+}
+
+interface EstablishmentOption {
+  _id: string;
+  name: string;
+  location?: string;
+  rooms?: string[];
+}
+
+interface CreateModalEstablishment {
+  id: string;
+  name: string;
+  rooms: string[];
 }
 
 const typeColors: Record<string, string> = {
@@ -56,13 +71,623 @@ function isTomorrow(dateStr: string) {
   return date.toDateString() === tomorrow.toDateString();
 }
 
+interface StaffMember {
+  id: string;
+  name: string;
+  establishmentIds?: string[];
+}
+
+// Create Class Modal
+function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "Pilates",
+    date: "",
+    time: "",
+    duration: "50",
+    establishmentId: "",
+    unit: "",
+    room: "",
+    capacity: "8",
+    instructorId: "",
+    instructorName: "",
+    recurrence: "none" as "none" | "daily" | "weekly" | "biweekly" | "monthly",
+    recurrenceEndDate: "",
+    recurrenceDays: [] as string[],
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdClass, setCreatedClass] = useState<typeof formData & { classesCreated?: number } | null>(null);
+  const [establishments, setEstablishments] = useState<CreateModalEstablishment[]>([]);
+  const [loadingEstablishments, setLoadingEstablishments] = useState(true);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchEstablishments = async () => {
+      setLoadingEstablishments(true);
+      try {
+        const response = await fetch("/api/establishments?active=true");
+        const data = await response.json();
+        const estabs = (data.establishments || []).map((e: { _id?: { toString(): string }; name: string; rooms?: string[] }) => ({
+          id: e._id?.toString() || "",
+          name: e.name,
+          rooms: e.rooms || ["Room 1", "Room 2", "Studio A"],
+        }));
+        setEstablishments(estabs);
+        if (estabs.length > 0 && !formData.establishmentId) {
+          setFormData(prev => ({
+            ...prev,
+            establishmentId: estabs[0].id,
+            unit: estabs[0].name,
+            room: estabs[0].rooms[0] || "Room 1",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching establishments:", error);
+      } finally {
+        setLoadingEstablishments(false);
+      }
+    };
+
+    const fetchStaff = async () => {
+      setLoadingStaff(true);
+      try {
+        const response = await fetch("/api/staff?role=teacher&status=active");
+        const data = await response.json();
+        const staffList = (data.staff || []).map((s: { _id?: { toString(): string }; name: string; establishmentIds?: string[] }) => ({
+          id: s._id?.toString() || "",
+          name: s.name,
+          establishmentIds: s.establishmentIds || [],
+        }));
+        setStaff(staffList);
+      } catch (error) {
+        console.error("Error fetching staff:", error);
+      } finally {
+        setLoadingStaff(false);
+      }
+    };
+
+    fetchEstablishments();
+    fetchStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const selectedEstablishment = establishments.find(e => e.id === formData.establishmentId);
+  const availableRooms = selectedEstablishment?.rooms || ["Room 1", "Room 2", "Studio A"];
+
+  // Filter staff by selected establishment
+  const filteredStaff = formData.establishmentId
+    ? staff.filter(s => !s.establishmentIds?.length || s.establishmentIds.includes(formData.establishmentId))
+    : staff;
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.date || !formData.time || !formData.instructorId) {
+      return;
+    }
+
+    if (formData.recurrence !== "none" && !formData.recurrenceEndDate) {
+      alert("Please select an end date for the recurring classes");
+      return;
+    }
+    if (formData.recurrence === "weekly" && formData.recurrenceDays.length === 0) {
+      alert("Please select at least one day for weekly recurrence");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const [hours, minutes] = formData.time.split(":").map(Number);
+      const durationMinutes = parseInt(formData.duration);
+      const endHours = Math.floor((hours * 60 + minutes + durationMinutes) / 60);
+      const endMinutes = (hours * 60 + minutes + durationMinutes) % 60;
+      const endTime = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
+
+      const dates: string[] = [];
+      const startDate = new Date(formData.date);
+
+      if (formData.recurrence === "none") {
+        dates.push(formData.date);
+      } else {
+        const endDate = new Date(formData.recurrenceEndDate);
+        const currentDate = new Date(startDate);
+
+        while (currentDate <= endDate) {
+          if (formData.recurrence === "daily") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+          } else if (formData.recurrence === "weekly") {
+            const dayOfWeek = currentDate.getDay().toString();
+            if (formData.recurrenceDays.includes(dayOfWeek)) {
+              dates.push(currentDate.toISOString().split("T")[0]);
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+          } else if (formData.recurrence === "biweekly") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setDate(currentDate.getDate() + 14);
+          } else if (formData.recurrence === "monthly") {
+            dates.push(currentDate.toISOString().split("T")[0]);
+            currentDate.setMonth(currentDate.getMonth() + 1);
+          }
+        }
+      }
+
+      let successCount = 0;
+      for (const date of dates) {
+        const response = await fetch("/api/classes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formData.name,
+            type: formData.type.toLowerCase(),
+            scheduledDate: date,
+            startTime: formData.time,
+            endTime: endTime,
+            duration: parseInt(formData.duration),
+            maxCapacity: parseInt(formData.capacity),
+            roomId: formData.room,
+            establishmentId: formData.establishmentId,
+            location: `${formData.unit} - ${formData.room}`,
+            instructorId: formData.instructorId,
+            instructorName: formData.instructorName,
+          }),
+        });
+
+        if (response.ok) {
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setCreatedClass({ ...formData, classesCreated: successCount });
+        setShowSuccess(true);
+      } else {
+        alert("Failed to create class");
+      }
+    } catch (error) {
+      console.error("Error creating class:", error);
+      alert("Failed to create class");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleClose = () => {
+    setShowSuccess(false);
+    setCreatedClass(null);
+    const defaultEstab = establishments[0];
+    const defaultStaff = staff[0];
+    setFormData({
+      name: "",
+      type: "Pilates",
+      date: "",
+      time: "",
+      duration: "50",
+      establishmentId: defaultEstab?.id || "",
+      unit: defaultEstab?.name || "",
+      room: defaultEstab?.rooms[0] || "Room 1",
+      capacity: "8",
+      instructorId: defaultStaff?.id || "",
+      instructorName: defaultStaff?.name || "",
+      recurrence: "none",
+      recurrenceEndDate: "",
+      recurrenceDays: [],
+    });
+    onClose();
+  };
+
+  const getRecurrenceLabel = (recurrence: string) => {
+    const labels: Record<string, string> = {
+      none: "One-time",
+      daily: "Daily",
+      weekly: "Weekly",
+      biweekly: "Every 2 weeks",
+      monthly: "Monthly",
+    };
+    return labels[recurrence] || recurrence;
+  };
+
+  if (showSuccess && createdClass) {
+    const classCount = createdClass.classesCreated || 1;
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {classCount > 1 ? `${classCount} Classes Created!` : "Class Created Successfully!"}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {classCount > 1 ? `Your recurring classes have been scheduled.` : "Your new class has been scheduled."}
+            </p>
+
+            <div className="bg-gray-50 rounded-xl p-4 text-left mb-6">
+              <h3 className="font-semibold text-gray-900 mb-3">{createdClass.name}</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>
+                    {createdClass.recurrence !== "none"
+                      ? `${createdClass.date} to ${createdClass.recurrenceEndDate}`
+                      : createdClass.date}
+                  </span>
+                </div>
+                {createdClass.recurrence !== "none" && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>{getRecurrenceLabel(createdClass.recurrence)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-gray-600">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{createdClass.time} ({createdClass.duration} min)</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{createdClass.unit} - {createdClass.room}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{createdClass.capacity} students capacity</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleClose}
+              className="w-full px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Create New Class</h2>
+              <p className="text-sm text-gray-600 mt-1">Schedule a new class for your students</p>
+            </div>
+            <button
+              onClick={handleClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <CloseIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Class Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Intermediate Pilates"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location <span className="text-red-500">*</span>
+              </label>
+              {loadingEstablishments ? (
+                <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Loading...
+                </div>
+              ) : establishments.length === 0 ? (
+                <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  No locations available
+                </div>
+              ) : (
+                <select
+                  value={formData.establishmentId}
+                  onChange={(e) => {
+                    const estab = establishments.find((est) => est.id === e.target.value);
+                    // Find first instructor for new establishment
+                    const newFilteredStaff = staff.filter(s => !s.establishmentIds?.length || s.establishmentIds.includes(e.target.value));
+                    const firstInstructor = newFilteredStaff[0];
+                    setFormData({
+                      ...formData,
+                      establishmentId: e.target.value,
+                      unit: estab?.name || "",
+                      room: estab?.rooms[0] || "Room 1",
+                      instructorId: firstInstructor?.id || "",
+                      instructorName: firstInstructor?.name || "",
+                    });
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                >
+                  {establishments.map((estab) => (
+                    <option key={estab.id} value={estab.id}>
+                      {estab.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Instructor <span className="text-red-500">*</span>
+              </label>
+              {loadingStaff ? (
+                <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Loading...
+                </div>
+              ) : filteredStaff.length === 0 ? (
+                <div className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  No instructors for this location
+                </div>
+              ) : (
+                <select
+                  value={formData.instructorId}
+                  onChange={(e) => {
+                    const selected = filteredStaff.find((s) => s.id === e.target.value);
+                    setFormData({
+                      ...formData,
+                      instructorId: e.target.value,
+                      instructorName: selected?.name || "",
+                    });
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                >
+                  {filteredStaff.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Class Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="Pilates">Pilates</option>
+              <option value="Yoga">Yoga</option>
+              <option value="Functional">Functional Training</option>
+              <option value="Stretching">Stretching</option>
+              <option value="Meditation">Meditation</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+            <select
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="30">30 minutes</option>
+              <option value="45">45 minutes</option>
+              <option value="50">50 minutes</option>
+              <option value="60">60 minutes</option>
+              <option value="75">75 minutes</option>
+              <option value="90">90 minutes</option>
+            </select>
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence</label>
+            <select
+              value={formData.recurrence}
+              onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as typeof formData.recurrence })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="none">Does not repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Every 2 weeks</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+
+          {formData.recurrence !== "none" && (
+            <>
+              {formData.recurrence === "weekly" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Repeat on</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "0", label: "Sun" },
+                      { value: "1", label: "Mon" },
+                      { value: "2", label: "Tue" },
+                      { value: "3", label: "Wed" },
+                      { value: "4", label: "Thu" },
+                      { value: "5", label: "Fri" },
+                      { value: "6", label: "Sat" },
+                    ].map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => {
+                          const days = formData.recurrenceDays.includes(day.value)
+                            ? formData.recurrenceDays.filter((d) => d !== day.value)
+                            : [...formData.recurrenceDays, day.value];
+                          setFormData({ ...formData, recurrenceDays: days });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          formData.recurrenceDays.includes(day.value)
+                            ? "bg-primary-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.recurrenceEndDate}
+                  onChange={(e) => setFormData({ ...formData, recurrenceEndDate: e.target.value })}
+                  min={formData.date}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+              <select
+                value={formData.room}
+                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                disabled={loadingEstablishments || establishments.length === 0}
+              >
+                {availableRooms.map((room) => (
+                  <option key={room} value={room}>
+                    {room}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={formData.capacity}
+                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={handleClose}
+            className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isCreating || !formData.name || !formData.date || !formData.time || !formData.instructorId}
+            className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isCreating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Creating...
+              </>
+            ) : (
+              "Create Class"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminClassesPage() {
+  const router = useRouter();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("upcoming");
+
+  // Establishment filter state
+  const [establishments, setEstablishments] = useState<EstablishmentOption[]>([]);
+  const [selectedEstablishmentId, setSelectedEstablishmentId] = useState<string>("all");
+  const [hasMultipleEstablishments, setHasMultipleEstablishments] = useState(false);
+
+  // Create class modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const fetchEstablishments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/establishments", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.establishments) {
+          setEstablishments(data.establishments);
+          setHasMultipleEstablishments(data.hasMultiple || data.establishments.length > 1);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch establishments:", error);
+    }
+  }, []);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -79,12 +704,18 @@ export default function AdminClassesPage() {
   }, []);
 
   useEffect(() => {
+    fetchEstablishments();
     fetchClasses();
-  }, [fetchClasses]);
+  }, [fetchEstablishments, fetchClasses]);
 
   // Filter classes
   const filteredClasses = useMemo(() => {
     return classes.filter((cls) => {
+      // Establishment filter
+      if (selectedEstablishmentId !== "all" && cls.establishmentId !== selectedEstablishmentId) {
+        return false;
+      }
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -121,7 +752,7 @@ export default function AdminClassesPage() {
 
       return true;
     });
-  }, [classes, searchQuery, typeFilter, statusFilter, dateFilter]);
+  }, [classes, searchQuery, typeFilter, statusFilter, dateFilter, selectedEstablishmentId]);
 
   // Group classes by date
   const groupedClasses = useMemo(() => {
@@ -167,20 +798,50 @@ export default function AdminClassesPage() {
   return (
     <div className="h-full overflow-auto bg-gray-50">
       <div className="p-4 sm:p-6 lg:p-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back
+        </button>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Class Schedule</h1>
             <p className="text-sm text-gray-500 mt-1">Manage and view all classes</p>
           </div>
-          <Link
-            href="/admin/classes/new"
+          <button
+            onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
             Add Class
-          </Link>
+          </button>
         </div>
+
+        {/* Establishment Selector */}
+        {hasMultipleEstablishments && establishments.length > 1 && (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Studio
+            </label>
+            <select
+              value={selectedEstablishmentId}
+              onChange={(e) => setSelectedEstablishmentId(e.target.value)}
+              className="w-full sm:w-auto px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            >
+              <option value="all">All Studios</option>
+              {establishments.map((est) => (
+                <option key={est._id} value={est._id}>
+                  {est.name} {est.location ? `- ${est.location}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -272,13 +933,13 @@ export default function AdminClassesPage() {
                 : "Try adjusting your filters to find classes."}
             </p>
             {classes.length === 0 && (
-              <Link
-                href="/admin/classes/new"
+              <button
+                onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700"
               >
                 <PlusIcon className="w-4 h-4" />
                 Create First Class
-              </Link>
+              </button>
             )}
           </div>
         ) : (
@@ -362,6 +1023,15 @@ export default function AdminClassesPage() {
           </div>
         )}
       </div>
+
+      {/* Create Class Modal */}
+      <CreateClassModal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          fetchClasses();
+        }}
+      />
     </div>
   );
 }

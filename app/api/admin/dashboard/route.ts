@@ -155,17 +155,16 @@ export async function GET(request: NextRequest) {
         .find({ status: "active", ...establishmentFilter })
         .limit(10)
         .toArray(),
-      // Today's classes
+      // Upcoming classes (from today onwards)
       db.collection("classes")
         .find({
           scheduledDate: {
             $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-            $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
           },
           ...establishmentFilter,
         })
-        .sort({ startTime: 1 })
-        .limit(10)
+        .sort({ scheduledDate: 1, startTime: 1 })
+        .limit(5)
         .toArray(),
       // Class type distribution
       db.collection("classes").aggregate([
