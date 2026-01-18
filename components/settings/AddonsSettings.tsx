@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, ReactElement } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import Image from "next/image";
 import { CheckCircleIcon } from "@/components/icons";
 import { useLocale } from "@/hooks/useLocale";
+import { addAddOnToSubscription, removeAddOnFromSubscription } from "@/lib/stripe/client";
 
 // ============================================================================
 // Types
@@ -36,6 +37,7 @@ interface Addon {
   includedInPlans?: string[];
   includedInPlansBrl?: string[];
   hasVariants?: boolean;
+  requiredPlans?: string[]; // Plans that can access this add-on
 }
 
 type AddonNavigationId = "whatsapp-bot" | "sms-bot";
@@ -47,6 +49,19 @@ type AddonNavigationId = "whatsapp-bot" | "sms-bot";
 const ADDON_NAVIGATION_MAP: Record<AddonNavigationId, "whatsapp" | "sms-bot"> = {
   "whatsapp-bot": "whatsapp",
   "sms-bot": "sms-bot",
+};
+
+// Map UI addon IDs to API addon IDs
+const UI_TO_API_ADDON_ID: Record<string, string> = {
+  "whatsapp-bot": "extra_whatsapp_msgs",
+  "sms-bot": "sms_bundle",
+  "extra-storage": "additional_storage",
+};
+
+const API_TO_UI_ADDON_ID: Record<string, string> = {
+  "extra_whatsapp_msgs": "whatsapp-bot",
+  "sms_bundle": "sms-bot",
+  "additional_storage": "extra-storage",
 };
 
 const ADDONS: Addon[] = [
@@ -73,6 +88,7 @@ const ADDONS: Addon[] = [
     active: false,
     includedInPlans: ["Included in Business & Professional plans"],
     includedInPlansBrl: ["Incluso nos planos Business e Professional"],
+    requiredPlans: ["business"], // Only available on business plan
   },
   {
     id: "sms-bot",
@@ -98,6 +114,7 @@ const ADDONS: Addon[] = [
     active: false,
     includedInPlans: ["Included in Business & Professional plans"],
     includedInPlansBrl: ["Incluso nos planos Business e Professional"],
+    requiredPlans: ["starter", "growth", "business", "enterprise"], // Available on all plans
   },
   {
     id: "extra-storage",
@@ -120,6 +137,7 @@ const ADDONS: Addon[] = [
       "Backups automáticos",
     ],
     active: false,
+    requiredPlans: ["starter", "growth", "business"], // Available on starter, growth, business
   },
   {
     id: "advanced-reports",
@@ -178,6 +196,8 @@ const TRANSLATIONS = {
   manage: { en: "Manage", pt: "Gerenciar" },
   addToPlan: { en: "Add to Plan", pt: "Adicionar ao Plano" },
   processing: { en: "Processing...", pt: "Processando..." },
+  upgradeRequired: { en: "Upgrade Required", pt: "Upgrade Necessário" },
+  requiresBusinessPlan: { en: "Requires Business plan", pt: "Requer plano Business" },
   customSolutionTitle: { en: "Need a custom solution?", pt: "Precisa de uma solução personalizada?" },
   customSolutionDesc: {
     en: "Contact our team to discuss enterprise features, custom integrations, or volume discounts.",
@@ -270,13 +290,17 @@ interface AddonCardProps {
   addon: Addon;
   isActive: boolean;
   isLoading: boolean;
+  userPlan: string | null;
   translations: ReturnType<typeof useAddonTranslations>;
   onToggle: (addonId: string, currentlyActive: boolean) => void;
   onNavigate?: AddonsSettingsProps["onNavigate"];
 }
 
-function AddonCard({ addon, isActive, isLoading, translations, onToggle, onNavigate }: AddonCardProps) {
+function AddonCard({ addon, isActive, isLoading, userPlan, translations, onToggle, onNavigate }: AddonCardProps) {
   const { t, getPrice, getPriceNote, getDescription, getFeatures, getIncludedInPlans } = translations;
+
+  // Check if user's plan requires upgrade to access this addon
+  const needsUpgrade = addon.requiredPlans && userPlan && !addon.requiredPlans.includes(userPlan);
 
   const handleAction = () => {
     const navigationId = addon.id as AddonNavigationId;
@@ -366,6 +390,16 @@ function AddonCard({ addon, isActive, isLoading, translations, onToggle, onNavig
           >
             {isLoading ? t("processing") : t("manage")}
           </button>
+        ) : needsUpgrade ? (
+          <div className="space-y-2">
+            <button
+              disabled
+              className="w-full py-2 px-4 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg cursor-not-allowed"
+            >
+              {t("upgradeRequired")}
+            </button>
+            <p className="text-xs text-center text-gray-500">{t("requiresBusinessPlan")}</p>
+          </div>
         ) : (
           <button
             onClick={handleAction}
@@ -411,17 +445,69 @@ function CustomSolutionCard({ translations }: { translations: ReturnType<typeof 
 export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
   const [activeAddons, setActiveAddons] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [userPlan, setUserPlan] = useState<string | null>(null);
   const translations = useAddonTranslations();
   const { t } = translations;
+
+  // Load active add-ons and user plan from server on mount
+  useEffect(() => {
+    async function loadActiveAddons() {
+      try {
+        const response = await fetch("/api/stripe/subscription");
+        if (response.ok) {
+          const data = await response.json();
+          // Set user's plan tier from subscription data
+          if (data.plan?.id) {
+            setUserPlan(data.plan.id);
+          }
+          // Check addOns array from subscription
+          if (data.addOns && Array.isArray(data.addOns)) {
+            const addonsMap: Record<string, boolean> = {};
+            data.addOns.forEach((addon: { id: string }) => {
+              const uiAddonId = API_TO_UI_ADDON_ID[addon.id];
+              if (uiAddonId) {
+                addonsMap[uiAddonId] = true;
+              }
+            });
+            setActiveAddons(addonsMap);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load active add-ons:", err);
+      }
+    }
+    loadActiveAddons();
+  }, []);
 
   const handleToggleAddon = async (addonId: string, currentlyActive: boolean) => {
     if (loading) return;
 
+    const apiAddonId = UI_TO_API_ADDON_ID[addonId];
+    if (!apiAddonId) {
+      console.error("Unknown addon ID:", addonId);
+      return;
+    }
+
     setLoading(addonId);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setActiveAddons((prev) => ({ ...prev, [addonId]: !currentlyActive }));
-    setLoading(null);
+    setError(null);
+
+    try {
+      if (currentlyActive) {
+        // Remove add-on
+        await removeAddOnFromSubscription({ addOnId: apiAddonId });
+      } else {
+        // Add add-on
+        await addAddOnToSubscription({ addOnId: apiAddonId });
+      }
+      setActiveAddons((prev) => ({ ...prev, [addonId]: !currentlyActive }));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update add-on";
+      setError(errorMessage);
+      console.error("Failed to toggle add-on:", err);
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -432,6 +518,13 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
         <p className="text-sm text-gray-600 mt-1">{t("subtitle")}</p>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
       {/* Addons Grid */}
       <div className="grid gap-4 sm:grid-cols-2">
         {ADDONS.map((addon) => (
@@ -440,6 +533,7 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
             addon={addon}
             isActive={activeAddons[addon.id] || addon.active || false}
             isLoading={loading === addon.id}
+            userPlan={userPlan}
             translations={translations}
             onToggle={handleToggleAddon}
             onNavigate={onNavigate}

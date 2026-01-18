@@ -14,6 +14,13 @@ interface WhatsAppSettingsProps {
   onBack?: () => void;
 }
 
+interface EstablishmentOption {
+  _id: string;
+  name: string;
+  location?: string;
+  isDefault?: boolean;
+}
+
 interface WhatsAppStatus {
   connected: boolean;
   provider?: string;
@@ -187,6 +194,9 @@ const TRANSLATIONS = {
   saveCommands: { "pt-BR": "Salvar Menu", "en-US": "Save Menu" },
   commandsSaved: { "pt-BR": "Menu salvo com sucesso!", "en-US": "Menu saved successfully!" },
   previewTitle: { "pt-BR": "Prévia do Menu", "en-US": "Menu Preview" },
+  // Establishment selector
+  selectEstablishment: { "pt-BR": "Selecionar Estabelecimento", "en-US": "Select Establishment" },
+  establishmentLabel: { "pt-BR": "Estabelecimento", "en-US": "Establishment" },
 } as const;
 
 type TranslationKey = keyof typeof TRANSLATIONS;
@@ -915,14 +925,42 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
   const [botCommands, setBotCommands] = useState<BotMenuCommand[]>(DEFAULT_COMMANDS);
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [savingCommands, setSavingCommands] = useState(false);
+  // Multi-establishment state
+  const [establishments, setEstablishments] = useState<EstablishmentOption[]>([]);
+  const [selectedEstablishmentId, setSelectedEstablishmentId] = useState<string | null>(null);
+  const [hasMultipleEstablishments, setHasMultipleEstablishments] = useState(false);
 
   const { t, isBrazil } = useWhatsAppTranslations();
 
-  // Check WhatsApp connection status on mount
-  const checkStatus = async () => {
+  // Fetch establishments for the current admin
+  const fetchEstablishments = async () => {
+    try {
+      const res = await fetch("/api/admin/establishments", {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.establishments) {
+        setEstablishments(data.establishments);
+        setHasMultipleEstablishments(data.hasMultiple);
+        // Select first establishment by default
+        if (data.establishments.length > 0 && !selectedEstablishmentId) {
+          setSelectedEstablishmentId(data.establishments[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch establishments:", error);
+    }
+  };
+
+  // Check WhatsApp connection status for selected establishment
+  const checkStatus = async (establishmentId?: string) => {
+    const targetId = establishmentId || selectedEstablishmentId;
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/whatsapp/credentials", {
+      const url = targetId
+        ? `/api/admin/whatsapp/credentials?establishmentId=${targetId}`
+        : "/api/admin/whatsapp/credentials";
+      const res = await fetch(url, {
         credentials: "include",
       });
       const data = await res.json();
@@ -935,9 +973,13 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         // Load bot commands from server
         if (data.botCommands && data.botCommands.length > 0) {
           setBotCommands(data.botCommands);
+        } else {
+          setBotCommands(DEFAULT_COMMANDS);
         }
         if (data.botWelcomeMessage) {
           setWelcomeMessage(data.botWelcomeMessage);
+        } else {
+          setWelcomeMessage("");
         }
       } else {
         setStatus({ connected: false, error: data.error || "Failed to check status" });
@@ -950,10 +992,23 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
     }
   };
 
+  // Handle establishment change
+  const handleEstablishmentChange = (newEstablishmentId: string) => {
+    setSelectedEstablishmentId(newEstablishmentId);
+    checkStatus(newEstablishmentId);
+  };
+
   useEffect(() => {
-    checkStatus();
+    fetchEstablishments();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (selectedEstablishmentId) {
+      checkStatus(selectedEstablishmentId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEstablishmentId]);
 
   const handleRequestActivation = async () => {
     setRequesting(true);
@@ -962,6 +1017,7 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ establishmentId: selectedEstablishmentId }),
       });
 
       if (res.ok) {
@@ -990,7 +1046,10 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ botFeatures: newFeatures }),
+        body: JSON.stringify({
+          establishmentId: selectedEstablishmentId,
+          botFeatures: newFeatures,
+        }),
       });
 
       if (res.ok) {
@@ -1013,6 +1072,7 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          establishmentId: selectedEstablishmentId,
           botCommands,
           botWelcomeMessage: welcomeMessage,
         }),
@@ -1046,11 +1106,31 @@ export function WhatsAppSettings({ onBack }: WhatsAppSettingsProps) {
         <p className="text-sm text-gray-600 mt-1">{t("description")}</p>
       </div>
 
+      {/* Establishment Selector - only show when admin has multiple establishments */}
+      {hasMultipleEstablishments && establishments.length > 1 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t("establishmentLabel")}
+          </label>
+          <select
+            value={selectedEstablishmentId || ""}
+            onChange={(e) => handleEstablishmentChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+          >
+            {establishments.map((est) => (
+              <option key={est._id} value={est._id}>
+                {est.name} {est.location ? `- ${est.location}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Status Card */}
       <StatusCard
         status={status}
         loading={loading}
-        onTestConnection={checkStatus}
+        onTestConnection={() => checkStatus(selectedEstablishmentId || undefined)}
         t={t}
       />
 

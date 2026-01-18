@@ -171,10 +171,10 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
           response = await handleCancelClass(session, bookingId);
           await clearSessionFlow(session);
         } else {
-          response = { text: "Número inválido. Por favor, tente novamente." };
+          response = { text: "Invalid number. Please try again." };
         }
       } else {
-        response = { text: "Não entendi. Digite 'menu' para ver as opções disponíveis." };
+        response = { text: "I didn't understand. Type 'menu' to see available options." };
       }
       break;
 
@@ -184,32 +184,32 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
 
     case "RESCHEDULE":
       response = {
-        text: "Para reagendar uma aula, você precisa cancelar a aula atual e agendar uma nova.\n\n" +
-          "Deseja ver suas aulas agendadas para cancelar?",
+        text: "To reschedule a class, you need to cancel the current one and book a new one.\n\n" +
+          "Would you like to see your scheduled classes to cancel?",
         buttons: [
-          { text: "Ver minhas aulas", payload: "MY_CLASSES" },
-          { text: "Voltar ao menu", payload: "MENU" },
+          { text: "View my classes", payload: "MY_CLASSES" },
+          { text: "Back to menu", payload: "MENU" },
         ],
       };
       break;
 
     case "INSTRUCTOR_SCHEDULE":
       // Extract instructor name
-      const nameMatch = messageContent.match(/(?:professor[a]?|prof\.?|instrutor[a]?)\s+(\w+)/i);
+      const nameMatch = messageContent.match(/(?:instructor|teacher|coach)\s+(\w+)/i);
       if (nameMatch) {
         response = await handleInstructorSchedule(session, nameMatch[1]);
       } else {
         response = {
-          text: "Por favor, informe o nome do instrutor.\n\nExemplo: 'horário da Ana' ou 'agenda do professor João'",
+          text: "Please provide the instructor's name.\n\nExample: 'instructor Ana' or 'teacher John schedule'",
         };
       }
       break;
 
     case "SUPPORT":
       response = {
-        text: "Você será direcionado para nosso suporte.\n\n" +
-          "Por favor, descreva sua dúvida ou problema que um de nossos atendentes irá responder em breve.",
-        buttons: [{ text: "Voltar ao menu", payload: "MENU" }],
+        text: "You will be connected to our support team.\n\n" +
+          "Please describe your question or issue and one of our agents will respond shortly.",
+        buttons: [{ text: "Back to menu", payload: "MENU" }],
       };
       // Flag for human handoff
       const supportDb = await getDatabase();
@@ -221,8 +221,8 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
 
     default:
       response = {
-        text: "Desculpe, não entendi sua mensagem. 😅\n\nDigite 'ajuda' para ver os comandos disponíveis ou 'menu' para voltar ao menu principal.",
-        quickReplies: ["Menu", "Ajuda"],
+        text: "Sorry, I didn't understand your message.\n\nType 'help' to see available commands or 'menu' to return to the main menu.",
+        quickReplies: ["Menu", "Help"],
       };
   }
 
@@ -240,8 +240,8 @@ export async function handleMessage(incoming: IncomingMessage): Promise<Outgoing
 async function startCancelFlow(session: BotSession): Promise<CommandResponse> {
   if (!session.clientId) {
     return {
-      text: "Você precisa estar cadastrado para cancelar aulas.",
-      buttons: [{ text: "Falar com Suporte", payload: "SUPPORT" }],
+      text: "You need to be registered to cancel classes.",
+      buttons: [{ text: "Contact Support", payload: "SUPPORT" }],
     };
   }
 
@@ -259,8 +259,8 @@ async function startCancelFlow(session: BotSession): Promise<CommandResponse> {
 
   if (bookings.length === 0) {
     return {
-      text: "Você não tem aulas agendadas para cancelar.",
-      quickReplies: ["Agendar aula", "Menu principal"],
+      text: "You don't have any scheduled classes to cancel.",
+      quickReplies: ["Book class", "Main menu"],
     };
   }
 
@@ -269,19 +269,19 @@ async function startCancelFlow(session: BotSession): Promise<CommandResponse> {
     bookings: bookings.map(b => b._id?.toString()),
   });
 
-  let message = "📅 *Suas aulas agendadas*\n\nQual aula deseja cancelar?\n\n";
+  let message = "📅 *Your Scheduled Classes*\n\nWhich class would you like to cancel?\n\n";
   bookings.forEach((booking, index) => {
-    const date = new Date(booking.scheduledDate).toLocaleDateString("pt-BR");
+    const date = new Date(booking.scheduledDate).toLocaleDateString("en-US");
     message += `${index + 1}. *${booking.className}*\n`;
-    message += `   📆 ${date} às ${booking.startTime}\n`;
-    message += `   👩‍🏫 Prof. ${booking.instructorName}\n\n`;
+    message += `   📆 ${date} at ${booking.startTime}\n`;
+    message += `   👩‍🏫 Instructor: ${booking.instructorName}\n\n`;
   });
 
-  message += "Digite o número da aula que deseja cancelar.";
+  message += "Type the number of the class you want to cancel.";
 
   return {
     text: message,
-    buttons: [{ text: "Voltar ao menu", payload: "MENU" }],
+    buttons: [{ text: "Back to menu", payload: "MENU" }],
   };
 }
 

@@ -488,6 +488,9 @@ export interface Establishment {
   assignedTeachers: string[];
   rooms?: string[];
   isActive: boolean;
+  // Owner/Admin relationship
+  ownerId: string; // userId of the admin who owns this establishment
+  adminIds?: string[]; // Additional admins with access
   createdAt: Date;
   updatedAt: Date;
 }

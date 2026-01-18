@@ -21,8 +21,8 @@ async function getClientByPlatformId(platformUserId: string, platform: "whatsapp
 export async function handleRemainingClasses(session: BotSession): Promise<CommandResponse> {
   if (!session.clientId) {
     return {
-      text: "Você precisa estar cadastrado para ver suas aulas. Por favor, entre em contato com nosso suporte para fazer seu cadastro.",
-      buttons: [{ text: "Falar com Suporte", payload: "SUPPORT" }],
+      text: "You need to be registered to view your classes. Please contact our support team to register.",
+      buttons: [{ text: "Contact Support", payload: "SUPPORT" }],
     };
   }
 
@@ -30,19 +30,19 @@ export async function handleRemainingClasses(session: BotSession): Promise<Comma
   const client = await db.collection<Client>("clients").findOne({ _id: new ObjectId(session.clientId) });
 
   if (!client) {
-    return { text: "Não encontramos seu cadastro. Por favor, entre em contato com o suporte." };
+    return { text: "We couldn't find your registration. Please contact support." };
   }
 
   const { remainingClasses, totalClasses, usedClasses } = client.plan;
-  const endDate = new Date(client.plan.endDate).toLocaleDateString("pt-BR");
+  const endDate = new Date(client.plan.endDate).toLocaleDateString("en-US");
 
   return {
-    text: `📊 *Suas aulas*\n\n` +
-      `✅ Aulas realizadas: ${usedClasses}\n` +
-      `📅 Aulas restantes: ${remainingClasses}\n` +
-      `📦 Total do plano: ${totalClasses}\n\n` +
-      `Seu plano é válido até: ${endDate}`,
-    quickReplies: ["Ver agenda", "Agendar aula", "Falar com suporte"],
+    text: `📊 *Your Classes*\n\n` +
+      `✅ Classes completed: ${usedClasses}\n` +
+      `📅 Classes remaining: ${remainingClasses}\n` +
+      `📦 Plan total: ${totalClasses}\n\n` +
+      `Your plan is valid until: ${endDate}`,
+    quickReplies: ["View schedule", "Book class", "Contact support"],
   };
 }
 
@@ -50,8 +50,8 @@ export async function handleRemainingClasses(session: BotSession): Promise<Comma
 export async function handleUpcomingClasses(session: BotSession): Promise<CommandResponse> {
   if (!session.clientId) {
     return {
-      text: "Você precisa estar cadastrado para ver suas aulas agendadas.",
-      buttons: [{ text: "Falar com Suporte", payload: "SUPPORT" }],
+      text: "You need to be registered to view your scheduled classes.",
+      buttons: [{ text: "Contact Support", payload: "SUPPORT" }],
     };
   }
 
@@ -70,34 +70,34 @@ export async function handleUpcomingClasses(session: BotSession): Promise<Comman
 
   if (bookings.length === 0) {
     return {
-      text: "Você não tem aulas agendadas no momento. Gostaria de agendar uma?",
+      text: "You don't have any classes scheduled. Would you like to book one?",
       buttons: [
-        { text: "Ver aulas disponíveis", payload: "AVAILABLE_CLASSES" },
-        { text: "Voltar ao menu", payload: "MENU" },
+        { text: "View available classes", payload: "AVAILABLE_CLASSES" },
+        { text: "Back to menu", payload: "MENU" },
       ],
     };
   }
 
-  let message = "📅 *Suas próximas aulas*\n\n";
+  let message = "📅 *Your Upcoming Classes*\n\n";
   bookings.forEach((booking, index) => {
-    const date = new Date(booking.scheduledDate).toLocaleDateString("pt-BR");
+    const date = new Date(booking.scheduledDate).toLocaleDateString("en-US");
     message += `${index + 1}. *${booking.className}*\n`;
-    message += `   📆 ${date} às ${booking.startTime}\n`;
-    message += `   👩‍🏫 Prof. ${booking.instructorName}\n\n`;
+    message += `   📆 ${date} at ${booking.startTime}\n`;
+    message += `   👩‍🏫 Instructor: ${booking.instructorName}\n\n`;
   });
 
   return {
     text: message,
     buttons: [
-      { text: "Cancelar aula", payload: "CANCEL_CLASS" },
-      { text: "Reagendar", payload: "RESCHEDULE_CLASS" },
-      { text: "Menu principal", payload: "MENU" },
+      { text: "Cancel class", payload: "CANCEL_CLASS" },
+      { text: "Reschedule", payload: "RESCHEDULE_CLASS" },
+      { text: "Main menu", payload: "MENU" },
     ],
   };
 }
 
 // Command: List available classes
-export async function handleAvailableClasses(session: BotSession): Promise<CommandResponse> {
+export async function handleAvailableClasses(_session: BotSession): Promise<CommandResponse> {
   const db = await getDatabase();
   const now = new Date();
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -114,26 +114,26 @@ export async function handleAvailableClasses(session: BotSession): Promise<Comma
 
   if (classes.length === 0) {
     return {
-      text: "Não há aulas disponíveis nos próximos 7 dias. Por favor, verifique novamente mais tarde.",
-      quickReplies: ["Menu principal", "Falar com suporte"],
+      text: "No classes available in the next 7 days. Please check again later.",
+      quickReplies: ["Main menu", "Contact support"],
     };
   }
 
-  let message = "🧘 *Aulas disponíveis*\n\n";
+  let message = "🧘 *Available Classes*\n\n";
   classes.forEach((cls, index) => {
-    const date = new Date(cls.scheduledDate).toLocaleDateString("pt-BR");
+    const date = new Date(cls.scheduledDate).toLocaleDateString("en-US");
     const spotsLeft = cls.maxCapacity - cls.currentEnrollment;
     message += `${index + 1}. *${cls.title}*\n`;
-    message += `   📆 ${date} às ${cls.startTime}\n`;
-    message += `   👩‍🏫 Prof. ${cls.instructorName}\n`;
-    message += `   🎟️ ${spotsLeft} vagas\n\n`;
+    message += `   📆 ${date} at ${cls.startTime}\n`;
+    message += `   👩‍🏫 Instructor: ${cls.instructorName}\n`;
+    message += `   🎟️ ${spotsLeft} spots left\n\n`;
   });
 
-  message += "Digite o número da aula que deseja agendar.";
+  message += "Type the number of the class you want to book.";
 
   return {
     text: message,
-    buttons: [{ text: "Voltar ao menu", payload: "MENU" }],
+    buttons: [{ text: "Back to menu", payload: "MENU" }],
   };
 }
 
@@ -141,8 +141,8 @@ export async function handleAvailableClasses(session: BotSession): Promise<Comma
 export async function handleBookClass(session: BotSession, classIndex: number): Promise<CommandResponse> {
   if (!session.clientId) {
     return {
-      text: "Você precisa estar cadastrado para agendar aulas.",
-      buttons: [{ text: "Falar com Suporte", payload: "SUPPORT" }],
+      text: "You need to be registered to book classes.",
+      buttons: [{ text: "Contact Support", payload: "SUPPORT" }],
     };
   }
 
@@ -161,21 +161,21 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
     .toArray();
 
   if (classIndex < 1 || classIndex > classes.length) {
-    return { text: "Número de aula inválido. Por favor, tente novamente." };
+    return { text: "Invalid class number. Please try again." };
   }
 
   const selectedClass = classes[classIndex - 1];
   const client = await db.collection<Client>("clients").findOne({ _id: new ObjectId(session.clientId) });
 
   if (!client) {
-    return { text: "Erro ao buscar seus dados. Tente novamente." };
+    return { text: "Error fetching your data. Please try again." };
   }
 
   // Check if client has remaining classes
   if (client.plan.remainingClasses <= 0) {
     return {
-      text: "Você não tem mais aulas disponíveis no seu plano atual. Entre em contato para renovar.",
-      buttons: [{ text: "Falar com Suporte", payload: "SUPPORT" }],
+      text: "You don't have any classes left in your current plan. Please contact us to renew.",
+      buttons: [{ text: "Contact Support", payload: "SUPPORT" }],
     };
   }
 
@@ -187,7 +187,7 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
   });
 
   if (existingBooking) {
-    return { text: "Você já está inscrito nesta aula." };
+    return { text: "You're already enrolled in this class." };
   }
 
   // Create booking
@@ -233,22 +233,22 @@ export async function handleBookClass(session: BotSession, classIndex: number): 
     }
   );
 
-  const date = new Date(selectedClass.scheduledDate).toLocaleDateString("pt-BR");
+  const date = new Date(selectedClass.scheduledDate).toLocaleDateString("en-US");
 
   return {
-    text: `✅ *Aula agendada com sucesso!*\n\n` +
+    text: `✅ *Class Booked Successfully!*\n\n` +
       `📌 ${selectedClass.title}\n` +
-      `📆 ${date} às ${selectedClass.startTime}\n` +
-      `👩‍🏫 Prof. ${selectedClass.instructorName}\n\n` +
-      `Você tem ${client.plan.remainingClasses - 1} aulas restantes.`,
-    quickReplies: ["Ver minhas aulas", "Menu principal"],
+      `📆 ${date} at ${selectedClass.startTime}\n` +
+      `👩‍🏫 Instructor: ${selectedClass.instructorName}\n\n` +
+      `You have ${client.plan.remainingClasses - 1} classes remaining.`,
+    quickReplies: ["View my classes", "Main menu"],
   };
 }
 
 // Command: Cancel a class
 export async function handleCancelClass(session: BotSession, bookingId: string): Promise<CommandResponse> {
   if (!session.clientId) {
-    return { text: "Você precisa estar cadastrado para cancelar aulas." };
+    return { text: "You need to be registered to cancel classes." };
   }
 
   const db = await getDatabase();
@@ -259,7 +259,7 @@ export async function handleCancelClass(session: BotSession, bookingId: string):
   });
 
   if (!booking) {
-    return { text: "Agendamento não encontrado ou já cancelado." };
+    return { text: "Booking not found or already cancelled." };
   }
 
   // Check cancellation policy (e.g., 24h before)
@@ -269,11 +269,11 @@ export async function handleCancelClass(session: BotSession, bookingId: string):
 
   if (hoursUntilClass < 24) {
     return {
-      text: "⚠️ Cancelamentos devem ser feitos com pelo menos 24 horas de antecedência.\n\n" +
-        "Deseja solicitar uma exceção? Um administrador irá analisar seu pedido.",
+      text: "⚠️ Cancellations must be made at least 24 hours in advance.\n\n" +
+        "Would you like to request an exception? An administrator will review your request.",
       buttons: [
-        { text: "Solicitar exceção", payload: `REQUEST_CANCEL_${bookingId}` },
-        { text: "Voltar", payload: "MY_CLASSES" },
+        { text: "Request exception", payload: `REQUEST_CANCEL_${bookingId}` },
+        { text: "Back", payload: "MY_CLASSES" },
       ],
     };
   }
@@ -302,14 +302,14 @@ export async function handleCancelClass(session: BotSession, bookingId: string):
   );
 
   return {
-    text: `✅ Aula cancelada com sucesso!\n\n` +
-      `Sua aula foi restaurada ao seu pacote.`,
-    quickReplies: ["Ver minhas aulas", "Agendar nova aula", "Menu principal"],
+    text: `✅ Class cancelled successfully!\n\n` +
+      `Your class credit has been restored to your plan.`,
+    quickReplies: ["View my classes", "Book new class", "Main menu"],
   };
 }
 
 // Command: View instructor schedule
-export async function handleInstructorSchedule(session: BotSession, instructorName: string): Promise<CommandResponse> {
+export async function handleInstructorSchedule(_session: BotSession, instructorName: string): Promise<CommandResponse> {
   const db = await getDatabase();
   const instructor = await db.collection("staff").findOne({
     name: { $regex: instructorName, $options: "i" },
@@ -318,24 +318,24 @@ export async function handleInstructorSchedule(session: BotSession, instructorNa
   });
 
   if (!instructor) {
-    return { text: "Instrutor não encontrado. Por favor, verifique o nome e tente novamente." };
+    return { text: "Instructor not found. Please check the name and try again." };
   }
 
   if (!instructor.schedule || instructor.schedule.length === 0) {
-    return { text: `${instructor.name} não tem horários disponíveis no momento.` };
+    return { text: `${instructor.name} has no available schedule at the moment.` };
   }
 
   const days: Record<string, string> = {
-    monday: "Segunda",
-    tuesday: "Terça",
-    wednesday: "Quarta",
-    thursday: "Quinta",
-    friday: "Sexta",
-    saturday: "Sábado",
-    sunday: "Domingo",
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
   };
 
-  let message = `👩‍🏫 *Horários de ${instructor.name}*\n\n`;
+  let message = `👩‍🏫 *${instructor.name}'s Schedule*\n\n`;
   instructor.schedule.forEach((day: { day: string; slots: { start: string; end: string }[] }) => {
     message += `*${days[day.day]}*\n`;
     day.slots.forEach((slot: { start: string; end: string }) => {
@@ -346,20 +346,20 @@ export async function handleInstructorSchedule(session: BotSession, instructorNa
 
   return {
     text: message,
-    quickReplies: ["Ver aulas disponíveis", "Menu principal"],
+    quickReplies: ["View available classes", "Main menu"],
   };
 }
 
 // Command: Main menu
 export function handleMainMenu(): CommandResponse {
   return {
-    text: `👋 *Bem-vindo ao FlexiWell!*\n\nComo posso ajudar você hoje?`,
+    text: `👋 *Welcome to FlexiWell!*\n\nHow can I help you today?`,
     buttons: [
-      { text: "📊 Minhas aulas restantes", payload: "REMAINING_CLASSES" },
-      { text: "📅 Minhas aulas agendadas", payload: "MY_CLASSES" },
-      { text: "🧘 Ver aulas disponíveis", payload: "AVAILABLE_CLASSES" },
-      { text: "❌ Cancelar aula", payload: "CANCEL_CLASS" },
-      { text: "💬 Falar com suporte", payload: "SUPPORT" },
+      { text: "📊 My remaining classes", payload: "REMAINING_CLASSES" },
+      { text: "📅 My scheduled classes", payload: "MY_CLASSES" },
+      { text: "🧘 View available classes", payload: "AVAILABLE_CLASSES" },
+      { text: "❌ Cancel class", payload: "CANCEL_CLASS" },
+      { text: "💬 Contact support", payload: "SUPPORT" },
     ],
   };
 }
@@ -367,15 +367,15 @@ export function handleMainMenu(): CommandResponse {
 // Command: Help
 export function handleHelp(): CommandResponse {
   return {
-    text: `ℹ️ *Comandos disponíveis*\n\n` +
-      `📊 *"minhas aulas"* ou *"quantas aulas"* - Ver aulas restantes\n` +
-      `📅 *"agenda"* ou *"próximas aulas"* - Ver suas aulas agendadas\n` +
-      `🧘 *"agendar"* ou *"disponíveis"* - Ver aulas disponíveis\n` +
-      `❌ *"cancelar"* - Cancelar uma aula\n` +
-      `👩‍🏫 *"horário [nome]"* - Ver horário de um instrutor\n` +
-      `💬 *"suporte"* ou *"ajuda"* - Falar com suporte\n` +
-      `🏠 *"menu"* - Voltar ao menu principal`,
-    quickReplies: ["Menu principal"],
+    text: `ℹ️ *Available Commands*\n\n` +
+      `📊 *"my classes"* or *"how many classes"* - View remaining classes\n` +
+      `📅 *"schedule"* or *"upcoming classes"* - View your scheduled classes\n` +
+      `🧘 *"book"* or *"available"* - View available classes\n` +
+      `❌ *"cancel"* - Cancel a class\n` +
+      `👩‍🏫 *"schedule [name]"* - View instructor schedule\n` +
+      `💬 *"support"* or *"help"* - Contact support\n` +
+      `🏠 *"menu"* - Return to main menu`,
+    quickReplies: ["Main menu"],
   };
 }
 
@@ -384,52 +384,52 @@ export function detectIntent(message: string): string {
   const lowerMessage = message.toLowerCase().trim();
 
   // Greetings
-  if (/^(oi|olá|ola|hey|eai|e aí|bom dia|boa tarde|boa noite|hello|hi)/.test(lowerMessage)) {
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/.test(lowerMessage)) {
     return "GREETING";
   }
 
   // Remaining classes
-  if (/quantas?\s*(aulas?)?|restante|sobrando|falta|saldo/.test(lowerMessage)) {
+  if (/how\s*many\s*(classes)?|remaining|left|balance|credits?/.test(lowerMessage)) {
     return "REMAINING_CLASSES";
   }
 
   // My classes / Schedule
-  if (/minha[s]?\s*aula|agenda|próxima|proxima|agendad[oa]|marcad[oa]/.test(lowerMessage)) {
+  if (/my\s*class|schedule|upcoming|booked|scheduled/.test(lowerMessage)) {
     return "MY_CLASSES";
   }
 
   // Available classes / Book
-  if (/disponíve[il]|disponive[il]|agendar|marcar|reservar|quero\s*aula/.test(lowerMessage)) {
+  if (/available|book|reserve|sign\s*up|want\s*(a\s*)?class/.test(lowerMessage)) {
     return "AVAILABLE_CLASSES";
   }
 
   // Cancel
-  if (/cancelar|desmarcar|desistir|não\s*posso|nao\s*posso/.test(lowerMessage)) {
+  if (/cancel|drop|can'?t\s*(make|attend)|unbook/.test(lowerMessage)) {
     return "CANCEL_CLASS";
   }
 
   // Reschedule
-  if (/remarcar|reagendar|trocar\s*(dia|hora|horário)/.test(lowerMessage)) {
+  if (/reschedule|change\s*(date|time)|move\s*(my\s*)?(class)?/.test(lowerMessage)) {
     return "RESCHEDULE";
   }
 
   // Instructor schedule
-  if (/horário|horario|agenda\s*d[aeo]|quando\s*[oa]\s*prof/.test(lowerMessage)) {
+  if (/instructor|teacher|coach|when\s*(does|is)\s*(the\s*)?(instructor|teacher)/.test(lowerMessage)) {
     return "INSTRUCTOR_SCHEDULE";
   }
 
   // Support
-  if (/suporte|ajuda|problema|reclamação|reclamacao|falar\s*com\s*alguém/.test(lowerMessage)) {
+  if (/support|help\s*me|problem|issue|complaint|speak\s*(to|with)\s*(someone|human)/.test(lowerMessage)) {
     return "SUPPORT";
   }
 
   // Menu
-  if (/menu|início|inicio|voltar/.test(lowerMessage)) {
+  if (/menu|home|start|back/.test(lowerMessage)) {
     return "MENU";
   }
 
   // Help
-  if (/^(ajuda|help|comandos|\?)$/.test(lowerMessage)) {
+  if (/^(help|commands|\?)$/.test(lowerMessage)) {
     return "HELP";
   }
 

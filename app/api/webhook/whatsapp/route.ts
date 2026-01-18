@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WhatsAppBotHandler } from "@/lib/whatsapp/bot-handler";
 import type { IncomingMessage, InteractiveContent, CloudApiCredentials } from "@/lib/whatsapp/types";
-import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
+import {
+  getWhatsAppCredentials,
+  getEstablishmentByPhoneNumberId,
+  getEstablishmentWhatsAppCredentials,
+  getAllConnectedWhatsAppEstablishments,
+} from "@/lib/integrations/credentials";
 
 // WhatsApp Webhook Verification (GET)
 export async function GET(request: NextRequest) {
@@ -11,32 +16,43 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  // Get verify token from database or environment variable
-  let verifyToken: string | undefined;
+  // Check against all connected establishments' verify tokens
+  let verifyTokens: string[] = [];
 
   try {
-    const credentials = await getWhatsAppCredentials();
-    if (credentials?.provider === "cloud-api") {
-      verifyToken = (credentials as CloudApiCredentials).verifyToken;
+    // Get all connected establishments and their verify tokens
+    const establishments = await getAllConnectedWhatsAppEstablishments();
+    verifyTokens = establishments
+      .filter(e => e.provider === "cloud-api" && e.verifyToken)
+      .map(e => e.verifyToken as string);
+
+    // Also check legacy/global credentials
+    const globalCredentials = await getWhatsAppCredentials();
+    if (globalCredentials?.provider === "cloud-api") {
+      const globalToken = (globalCredentials as CloudApiCredentials).verifyToken;
+      if (globalToken && !verifyTokens.includes(globalToken)) {
+        verifyTokens.push(globalToken);
+      }
     }
   } catch (error) {
     console.log("[WhatsApp Webhook] Error fetching credentials:", error);
   }
 
   // Fallback to environment variable
-  if (!verifyToken) {
-    verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+  const envToken = process.env.WHATSAPP_VERIFY_TOKEN;
+  if (envToken && !verifyTokens.includes(envToken)) {
+    verifyTokens.push(envToken);
   }
 
   console.log("[WhatsApp Webhook] Verification attempt:", {
     mode,
     tokenReceived: token?.slice(0, 10) + "...",
-    verifyTokenConfigured: verifyToken ? verifyToken.slice(0, 10) + "..." : "NOT_SET",
-    envVar: process.env.WHATSAPP_VERIFY_TOKEN ? "SET" : "NOT_SET"
+    configuredTokensCount: verifyTokens.length,
+    envVar: envToken ? "SET" : "NOT_SET"
   });
 
   // Check if this is a subscription verification
-  if (mode === "subscribe" && token === verifyToken) {
+  if (mode === "subscribe" && token && verifyTokens.includes(token)) {
     console.log("[WhatsApp Webhook] Verified successfully");
     return new NextResponse(challenge, { status: 200 });
   }
@@ -99,13 +115,38 @@ interface WhatsAppMetadata {
 
 async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsAppMetadata) {
   const senderId = message.from;
+  const phoneNumberId = metadata.phone_number_id;
+
+  // Look up establishment by phone number ID
+  let establishmentId: string;
+  let accessToken: string | undefined;
+  let plan = "pro";
+
+  try {
+    const establishment = await getEstablishmentByPhoneNumberId(phoneNumberId);
+    if (establishment) {
+      establishmentId = establishment.establishmentId;
+      accessToken = establishment.accessToken;
+      console.log(`[WhatsApp Webhook] Found establishment ${establishmentId} for phone ${phoneNumberId}`);
+    } else {
+      // Fallback to environment variables (legacy/global config)
+      console.log(`[WhatsApp Webhook] No establishment found for phone ${phoneNumberId}, using defaults`);
+      establishmentId = process.env.DEFAULT_ESTABLISHMENT_ID || "default";
+      accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    }
+  } catch (error) {
+    console.error("[WhatsApp Webhook] Error looking up establishment:", error);
+    establishmentId = process.env.DEFAULT_ESTABLISHMENT_ID || "default";
+    accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  }
 
   // For unsupported message types, ask user to send text
   if (!["text", "button", "interactive"].includes(message.type)) {
     await sendWhatsAppMessage(
       senderId,
-      metadata.phone_number_id,
-      { body: "Desculpe, eu só consigo processar mensagens de texto. Por favor, digite sua mensagem." }
+      phoneNumberId,
+      { body: "Desculpe, eu só consigo processar mensagens de texto. Por favor, digite sua mensagem." },
+      accessToken
     );
     return;
   }
@@ -121,33 +162,35 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
     button: message.button,
   };
 
-  // Initialize bot handler with default establishment and plan
-  // In production, you would look up the establishment based on the business phone number
-  const establishmentId = process.env.DEFAULT_ESTABLISHMENT_ID || "default";
-  const plan = process.env.WHATSAPP_BOT_PLAN || "pro";
+  // Initialize bot handler with the establishment
+  plan = process.env.WHATSAPP_BOT_PLAN || "pro";
   const botHandler = new WhatsAppBotHandler(establishmentId, plan);
 
   // Process message and get response
   const response = await botHandler.handleMessage(incoming);
 
   // Send response
-  await sendWhatsAppMessage(senderId, metadata.phone_number_id, response);
+  await sendWhatsAppMessage(senderId, phoneNumberId, response, accessToken);
 }
 
 async function sendWhatsAppMessage(
   recipientId: string,
   phoneNumberId: string,
-  response: InteractiveContent | { body: string }
+  response: InteractiveContent | { body: string },
+  accessToken?: string
 ) {
-  // Get credentials from database or environment
-  const credentials = await getWhatsAppCredentials();
-
-  let accessToken: string | undefined;
-
-  if (credentials?.provider === "cloud-api") {
-    accessToken = (credentials as CloudApiCredentials).accessToken;
-  } else {
-    accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  // Fallback to legacy credentials if no token provided
+  if (!accessToken) {
+    try {
+      const credentials = await getWhatsAppCredentials();
+      if (credentials?.provider === "cloud-api") {
+        accessToken = (credentials as CloudApiCredentials).accessToken;
+      } else {
+        accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      }
+    } catch {
+      accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    }
   }
 
   if (!accessToken) {

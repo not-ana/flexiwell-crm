@@ -142,8 +142,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Add add-on error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to add add-on";
     return NextResponse.json(
-      { error: "Failed to add add-on" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

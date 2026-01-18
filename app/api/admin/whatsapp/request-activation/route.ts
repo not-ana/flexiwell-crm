@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
       return error || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const establishmentId = user.userId;
+    // Get establishmentId from body or fall back to user.userId
+    const body = await request.json().catch(() => ({}));
+    const establishmentId = body.establishmentId || user.userId;
+
     const mongoClient = await clientPromise;
     if (!mongoClient) {
       return NextResponse.json({ error: "Database connection failed" }, { status: 500 });
@@ -96,7 +99,10 @@ export async function GET(request: NextRequest) {
       return error || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const establishmentId = user.userId;
+    // Get establishmentId from query or fall back to user.userId
+    const searchParams = request.nextUrl.searchParams;
+    const establishmentId = searchParams.get("establishmentId") || user.userId;
+
     const mongoClient = await clientPromise;
     if (!mongoClient) {
       return NextResponse.json({ error: "Database connection failed" }, { status: 500 });
