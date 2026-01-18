@@ -7,7 +7,11 @@ import { showToast } from "./shared";
 
 const ALLOWED_PLANS = ["business", "professional", "enterprise"];
 
-export function BrandingSettings() {
+interface BrandingSettingsProps {
+  onNavigate?: (tab: "subscription") => void;
+}
+
+export function BrandingSettings({ onNavigate }: BrandingSettingsProps) {
   const [branding, setBranding] = useState({
     customLogo: "",
     customFavicon: "",
@@ -183,12 +187,12 @@ export function BrandingSettings() {
               <p className="text-sm text-gray-600 mt-1">
                 Branding customization is available on Business and Professional plans. Upgrade to customize your logo, colors, and more.
               </p>
-              <a
-                href="/admin/settings?tab=subscription"
+              <button
+                onClick={() => onNavigate?.("subscription")}
                 className="inline-flex items-center mt-3 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Upgrade Plan
-              </a>
+              </button>
             </div>
           </div>
         </div>
