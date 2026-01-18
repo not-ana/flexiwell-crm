@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
+import { WellhubSettings } from "./WellhubSettings";
 import { api } from "@/lib/api/client";
 
 interface IntegrationStatus {
@@ -45,21 +46,11 @@ export function IntegrationsSettings() {
   const [integrationStatus, setIntegrationStatus] = useState<Record<string, IntegrationStatus>>({});
   const [loading, setLoading] = useState(true);
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>(null);
+  const [activeSettingsView, setActiveSettingsView] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const { data } = await api.get<Record<string, IntegrationStatus>>("/api/admin/integrations/status");
-        if (data) {
-          setIntegrationStatus(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch integration status:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const connectedCount = allIntegrations.filter(
@@ -68,6 +59,34 @@ export function IntegrationsSettings() {
 
   const toggleExpanded = (id: string) => {
     setExpandedIntegration(expandedIntegration === id ? null : id);
+  };
+
+  const handleConnectClick = (integrationId: string) => {
+    // For integrations with dedicated settings pages, navigate to them
+    if (integrationId === "wellhub" || integrationId === "whatsapp" || integrationId === "totalpass" || integrationId === "classpass") {
+      setActiveSettingsView(integrationId);
+      return;
+    }
+    // For other integrations, you could open a modal or redirect
+  };
+
+  const handleBackFromSettings = () => {
+    setActiveSettingsView(null);
+    // Refresh status after coming back from settings
+    fetchStatus();
+  };
+
+  const fetchStatus = async () => {
+    try {
+      const { data } = await api.get<Record<string, IntegrationStatus>>("/api/admin/integrations/status");
+      if (data) {
+        setIntegrationStatus(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch integration status:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderIntegrationSettings = (integrationId: string) => {
@@ -84,6 +103,15 @@ export function IntegrationsSettings() {
         return <GenericIntegrationSettings name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
     }
   };
+
+  // Render full-page settings views
+  if (activeSettingsView === "wellhub") {
+    return <WellhubSettings onBack={handleBackFromSettings} />;
+  }
+
+  if (activeSettingsView === "whatsapp") {
+    return <WhatsAppSettings onBack={handleBackFromSettings} />;
+  }
 
   if (loading) {
     return (
@@ -127,9 +155,21 @@ export function IntegrationsSettings() {
               }`}
             >
               <div
-                onClick={() => isConnected && integration.hasSettings && toggleExpanded(integration.id)}
+                onClick={() => {
+                  // For Wellhub and WhatsApp, always open full-page settings (connected or not)
+                  if (integration.id === "wellhub" || integration.id === "whatsapp") {
+                    setActiveSettingsView(integration.id);
+                    return;
+                  }
+                  // For other integrations, only expand if connected
+                  if (isConnected && integration.hasSettings) {
+                    toggleExpanded(integration.id);
+                  }
+                }}
                 className={`flex items-center gap-4 p-4 ${
-                  isConnected && integration.hasSettings ? "cursor-pointer hover:bg-gray-50" : ""
+                  (integration.id === "wellhub" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
+                    ? "cursor-pointer hover:bg-gray-50"
+                    : ""
                 }`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses[integration.color]}`}>
@@ -157,7 +197,13 @@ export function IntegrationsSettings() {
                     )}
                   </>
                 ) : (
-                  <button className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleConnectClick(integration.id);
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                  >
                     Connect
                   </button>
                 )}
