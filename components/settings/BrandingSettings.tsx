@@ -8,7 +8,7 @@ import { showToast } from "./shared";
 const ALLOWED_PLANS = ["business", "professional", "enterprise"];
 
 interface BrandingSettingsProps {
-  onNavigate?: (tab: "subscription") => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export function BrandingSettings({ onNavigate }: BrandingSettingsProps) {
