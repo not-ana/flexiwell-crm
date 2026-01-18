@@ -354,7 +354,8 @@ export interface User {
   email: string;
   password: string; // hashed
   name: string;
-  role: "admin" | "teacher" | "client";
+  role: "admin" | "teacher" | "client"; // Primary role
+  additionalRoles?: ("admin" | "teacher" | "client")[]; // Additional roles user can switch to
   avatar?: string;
   phone?: string;
   // Link to other entities based on role
@@ -368,6 +369,7 @@ export interface User {
   trialStartDate?: Date;
   trialEndDate?: Date;
   trialStatus?: "active" | "expired" | "converted";
+  trialConvertedAt?: Date;
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
@@ -379,6 +381,9 @@ export interface User {
     oneDaySent?: boolean;
     expiredSent?: boolean;
   };
+  // Data cleanup tracking
+  dataCleanedUp?: boolean;
+  dataCleanedUpAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

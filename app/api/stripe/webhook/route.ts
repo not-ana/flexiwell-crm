@@ -136,6 +136,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
+  // Check if user was trialing and is now active (trial conversion)
+  const user = await db.collection("users").findOne({ stripeCustomerId: customerId });
+  const wasTrialing = user?.trialStatus === "active" || user?.subscriptionStatus === "trialing";
+  const isNowActive = subscription.status === "active";
+  const trialConverted = wasTrialing && isNowActive && !subscription.trial_end;
+
   const updateData: Record<string, unknown> = {
     subscriptionStatus: subscription.status,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -143,6 +149,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     activeAddOns: addOns,
     updatedAt: new Date(),
   };
+
+  // Track trial conversion
+  if (trialConverted) {
+    updateData.trialStatus = "converted";
+    updateData.trialConvertedAt = new Date();
+    console.log("Trial converted to paid subscription for customer:", customerId);
+  }
 
   if (planTier) {
     updateData.planTier = planTier;
@@ -157,19 +170,33 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   );
 
   // Log the update
-  const user = await db.collection("users").findOne({ stripeCustomerId: customerId });
   if (user) {
     await db.collection("subscriptionEvents").insertOne({
       userId: user._id.toString(),
-      event: "subscription_updated",
+      event: trialConverted ? "trial_converted" : "subscription_updated",
       customerId,
       subscriptionId: subscription.id,
       status: subscription.status,
       planTier,
       billingPeriod,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      trialConverted,
       timestamp: new Date(),
     });
+
+    // Send conversion confirmation email
+    if (trialConverted && user.email) {
+      try {
+        await EmailService.sendTrialConvertedEmail(user.email, {
+          clientName: user.name || "Valued Customer",
+          planName: planTier || "Starter",
+          billingPeriod: billingPeriod || "monthly",
+        });
+        console.log("Trial converted email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send trial converted email:", emailError);
+      }
+    }
   }
 }
 

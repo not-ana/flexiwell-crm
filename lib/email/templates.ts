@@ -425,3 +425,43 @@ export function upcomingInvoiceTemplate(data: {
   `;
   return wrapTemplate(content, data.studioName);
 }
+
+// Trial converted to paid subscription email
+export function trialConvertedTemplate(data: {
+  clientName: string;
+  planName: string;
+  billingPeriod: string;
+  dashboardUrl?: string;
+  studioName?: string;
+}): string {
+  const billingLabel = data.billingPeriod === "annual" ? "yearly" : data.billingPeriod;
+  const content = `
+    <div class="content">
+      <h2>Welcome to ${data.planName}!</h2>
+      <p>Hi ${data.clientName},</p>
+      <p>Great news! Your free trial has been successfully converted to a paid subscription. Thank you for choosing FlexiWell!</p>
+
+      <div class="info-box" style="border-left: 4px solid #10b981;">
+        <p><strong>Plan:</strong> ${data.planName}</p>
+        <p><strong>Billing:</strong> ${billingLabel.charAt(0).toUpperCase() + billingLabel.slice(1)}</p>
+        <p><strong>Status:</strong> <span style="color: #10b981; font-weight: 600;">Active</span></p>
+      </div>
+
+      <p>You now have full access to all features included in your plan:</p>
+      <ul>
+        <li>Unlimited class scheduling</li>
+        <li>Client management</li>
+        <li>Booking automation</li>
+        <li>Reports and analytics</li>
+        <li>And much more!</li>
+      </ul>
+
+      ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" class="button">Go to Dashboard</a>` : ""}
+
+      <p>If you have any questions or need help getting started, our support team is always here to help.</p>
+
+      <p>Thank you for being part of the FlexiWell community!</p>
+    </div>
+  `;
+  return wrapTemplate(content, data.studioName);
+}

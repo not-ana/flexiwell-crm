@@ -16,6 +16,7 @@ import {
   trialEndingTemplate,
   paymentFailedTemplate,
   upcomingInvoiceTemplate,
+  trialConvertedTemplate,
 } from "./templates";
 
 // Convenience functions for common email types
@@ -248,6 +249,24 @@ export const EmailService = {
       to,
       subject: "Upcoming Payment Reminder",
       html: upcomingInvoiceTemplate(data),
+    });
+  },
+
+  // Send trial converted to paid subscription notification
+  async sendTrialConvertedEmail(
+    to: string,
+    data: {
+      clientName: string;
+      planName: string;
+      billingPeriod: string;
+      dashboardUrl?: string;
+      studioName?: string;
+    }
+  ) {
+    return sendEmail({
+      to,
+      subject: `Welcome to ${data.planName} - Your Subscription is Active!`,
+      html: trialConvertedTemplate(data),
     });
   },
 };

@@ -14,16 +14,23 @@ import {
 
 type SocialProvider = "google" | "facebook";
 
+interface ExtendedAuthUser extends AuthUser {
+  primaryRole?: AuthUser["role"];
+  availableRoles?: AuthUser["role"][];
+}
+
 interface AuthContextType {
-  user: AuthUser | null;
+  user: ExtendedAuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterRequest) => Promise<{ success: boolean; error?: string }>;
   socialLogin: (provider: SocialProvider, mode?: "login" | "signup") => void;
   logout: () => Promise<void>;
-  updateUser: (user: AuthUser) => void;
-  switchRole: (role: AuthUser["role"]) => void; // Dev mode only
+  updateUser: (user: ExtendedAuthUser) => void;
+  switchRole: (role: AuthUser["role"]) => Promise<{ success: boolean; error?: string }>;
+  canSwitchRoles: boolean;
+  availableRoles: AuthUser["role"][];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +46,7 @@ const roleRoutes: Record<string, string[]> = {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<ExtendedAuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -192,32 +199,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const updateUser = useCallback((updatedUser: AuthUser) => {
+  const updateUser = useCallback((updatedUser: ExtendedAuthUser) => {
     setUser(updatedUser);
   }, []);
 
-  // Dev mode only: Switch role for testing different dashboards
-  const switchRole = useCallback((role: AuthUser["role"]) => {
-    if (process.env.NODE_ENV !== "development") {
-      console.warn("switchRole is only available in development mode");
-      return;
+  // Switch role - works in both dev and production for users with multiple roles
+  const switchRole = useCallback(async (role: AuthUser["role"]): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: "Not authenticated" };
     }
 
-    if (!user) return;
+    const availableRoles = user.availableRoles || [user.role];
 
-    // Update user role in state
-    const updatedUser = { ...user, role };
-    setUser(updatedUser);
+    // Check if user has access to this role
+    if (!availableRoles.includes(role)) {
+      // In dev mode, allow switching for testing
+      if (process.env.NODE_ENV === "development") {
+        const updatedUser = { ...user, role };
+        setUser(updatedUser);
+        const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
+        router.push(redirectPath);
+        return { success: true };
+      }
+      return { success: false, error: "You do not have access to this role" };
+    }
 
-    // Navigate to the appropriate dashboard
-    const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
-    router.push(redirectPath);
+    try {
+      // Call API to switch role and get new tokens
+      const { accessToken } = getStoredTokens();
+      const response = await fetch("/api/auth/switch-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ role }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || "Failed to switch role" };
+      }
+
+      // Store new tokens
+      storeTokens(data.tokens.accessToken, data.tokens.refreshToken);
+
+      // Update user state with new role
+      setUser(data.user);
+
+      // Navigate to appropriate dashboard
+      const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
+      router.push(redirectPath);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to switch role",
+      };
+    }
   }, [user, router]);
 
   const socialLogin = useCallback((provider: SocialProvider, mode: "login" | "signup" = "login") => {
     // Redirect to OAuth authorization endpoint
     window.location.href = `/api/auth/social/${provider}/authorize?mode=${mode}`;
   }, []);
+
+  // Compute available roles
+  const availableRoles = user?.availableRoles || (user ? [user.role] : []);
+  const canSwitchRoles = availableRoles.length > 1;
 
   return (
     <AuthContext.Provider
@@ -231,6 +282,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateUser,
         switchRole,
+        canSwitchRoles,
+        availableRoles,
       }}
     >
       {children}
