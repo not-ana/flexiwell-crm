@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
 import { WellhubSettings } from "./WellhubSettings";
@@ -18,19 +19,20 @@ interface IntegrationInfo {
   color: string;
   description: string;
   hasSettings?: boolean;
+  image?: string;
 }
 
 const allIntegrations: IntegrationInfo[] = [
-  { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace", hasSettings: true },
-  { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace", hasSettings: true },
-  { id: "classpass", name: "ClassPass", icon: "CP", color: "purple", description: "Global fitness marketplace", hasSettings: true },
-  { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true },
+  { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace", hasSettings: true, image: "/wellhub.png" },
+  { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace", hasSettings: true, image: "/totalpass.jpg" },
+  { id: "classpass", name: "ClassPass", icon: "CP", color: "purple", description: "Global fitness marketplace", hasSettings: true, image: "/classpass.png" },
+  { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true, image: "/stripe.webp" },
   { id: "paypal", name: "PayPal", icon: "PP", color: "blue", description: "Accept PayPal payments", hasSettings: true },
   { id: "googleCalendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true },
   { id: "whatsapp", name: "WhatsApp", icon: "WA", color: "green", description: "Client messaging via Twilio", hasSettings: true },
   { id: "sms", name: "SMS", icon: "SMS", color: "blue", description: "SMS notifications via Twilio", hasSettings: true },
   { id: "mailchimp", name: "Mailchimp", icon: "MC", color: "yellow", description: "Email marketing & newsletters", hasSettings: true },
-  { id: "zapier", name: "Zapier", icon: "ZP", color: "orange", description: "Connect with 5000+ apps", hasSettings: false },
+  { id: "zapier", name: "Zapier", icon: "ZP", color: "orange", description: "Connect with 5000+ apps", hasSettings: false, image: "/zapier.png" },
 ];
 
 const colorClasses: Record<string, string> = {
@@ -105,8 +107,8 @@ export function IntegrationsSettings() {
   };
 
   // Render full-page settings views
-  if (activeSettingsView === "wellhub") {
-    return <WellhubSettings onBack={handleBackFromSettings} />;
+  if (activeSettingsView === "wellhub" || activeSettingsView === "totalpass" || activeSettingsView === "classpass") {
+    return <WellhubSettings onBack={handleBackFromSettings} provider={activeSettingsView} />;
   }
 
   if (activeSettingsView === "whatsapp") {
@@ -156,8 +158,8 @@ export function IntegrationsSettings() {
             >
               <div
                 onClick={() => {
-                  // For Wellhub and WhatsApp, always open full-page settings (connected or not)
-                  if (integration.id === "wellhub" || integration.id === "whatsapp") {
+                  // For marketplace integrations and WhatsApp, always open full-page settings (connected or not)
+                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "classpass" || integration.id === "whatsapp") {
                     setActiveSettingsView(integration.id);
                     return;
                   }
@@ -167,14 +169,26 @@ export function IntegrationsSettings() {
                   }
                 }}
                 className={`flex items-center gap-4 p-4 ${
-                  (integration.id === "wellhub" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
+                  (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "classpass" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
                     ? "cursor-pointer hover:bg-gray-50"
                     : ""
                 }`}
               >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses[integration.color]}`}>
-                  <span className="font-bold text-xs">{integration.icon}</span>
-                </div>
+                {integration.image ? (
+                  <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden">
+                    <Image
+                      src={integration.image}
+                      alt={integration.name}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses[integration.color]}`}>
+                    <span className="font-bold text-xs">{integration.icon}</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{integration.name}</p>
                   <p className="text-xs text-gray-500 truncate">
