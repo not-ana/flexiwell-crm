@@ -14,8 +14,9 @@ import { AddonsSettings } from "@/components/settings/AddonsSettings";
 import { WhatsAppSettings } from "@/components/settings/WhatsAppSettings";
 import { SMSSettings } from "@/components/settings/SMSSettings";
 import { SMSBotSettings } from "@/components/settings/SMSBotSettings";
+import { BrandingSettings } from "@/components/settings/BrandingSettings";
 
-type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons" | "whatsapp" | "sms" | "sms-bot";
+type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons" | "whatsapp" | "sms" | "sms-bot" | "branding";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
@@ -26,6 +27,7 @@ const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "rooms", label: "Rooms" },
   { id: "integrations", label: "Integrations" },
   { id: "addons", label: "Add-ons" },
+  { id: "branding", label: "Branding" },
   { id: "subscription", label: "Subscription" },
   { id: "notifications", label: "Notifications" },
 ];
@@ -61,6 +63,8 @@ export default function AdminSettingsPage() {
         return <SMSSettings onBack={() => setActiveTab("addons")} />;
       case "sms-bot":
         return <SMSBotSettings onBack={() => setActiveTab("addons")} />;
+      case "branding":
+        return <BrandingSettings />;
       default:
         return <GeneralSettings />;
     }
