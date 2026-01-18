@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
       case "sms-bot":
         return <SMSBotSettings onBack={() => setActiveTab("addons")} />;
       case "branding":
-        return <BrandingSettings onNavigate={setActiveTab} />;
+        return <BrandingSettings onNavigate={(tab) => setActiveTab(tab as AdminSettingsTab)} />;
       default:
         return <GeneralSettings />;
     }
