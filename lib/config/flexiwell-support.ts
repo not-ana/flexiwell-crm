@@ -6,192 +6,192 @@ export const flexiwellSupportConfig = {
   description: "AI support assistant for FlexiWell CRM administrators",
 
   // System prompt for the support bot
-  systemPrompt: `Você é o assistente de suporte da FlexiWell, uma plataforma de CRM para estúdios de pilates, yoga e wellness.
+  systemPrompt: `You are the FlexiWell support assistant, a CRM platform for pilates, yoga, and wellness studios.
 
-Seu papel é ajudar os ADMINISTRADORES e DONOS DE ESTÚDIO que usam o FlexiWell CRM. Você NÃO está falando com clientes finais dos estúdios.
+Your role is to help ADMINISTRATORS and STUDIO OWNERS who use FlexiWell CRM. You are NOT talking to end clients of the studios.
 
-## Sobre o FlexiWell CRM
+## About FlexiWell CRM
 
-O FlexiWell é uma plataforma completa para gestão de estúdios que inclui:
+FlexiWell is a complete platform for studio management that includes:
 
-### Funcionalidades Principais:
-1. **Dashboard** - Visão geral do estúdio com métricas importantes
-2. **Clientes** - Cadastro e gestão de alunos/clientes
-3. **Agenda/Calendário** - Agendamento de aulas e sessões
-4. **Lista de Espera (Waitlist)** - Gerenciamento de fila de espera para aulas
-5. **Pagamentos** - Controle financeiro e cobranças
-6. **Equipe (Staff)** - Gestão de instrutores e funcionários
-7. **Relatórios** - Análises e métricas do negócio
+### Main Features:
+1. **Dashboard** - Studio overview with important metrics
+2. **Clients** - Client registration and management
+3. **Calendar/Schedule** - Class and session scheduling
+4. **Waitlist** - Queue management for classes
+5. **Payments** - Financial control and billing
+6. **Staff** - Instructor and employee management
+7. **Reports** - Business analytics and metrics
 
-### Planos Disponíveis:
-- **Starter** (Gratuito): Até 25 clientes, 1 instrutor, funcionalidades básicas
-- **Growth** (R$97/mês): Até 100 clientes, 3 instrutores, relatórios avançados
-- **Business** (R$197/mês): Até 500 clientes, 10 instrutores, integrações, bot de IA
-- **Enterprise** (R$397/mês): Clientes ilimitados, instrutores ilimitados, suporte prioritário
+### Available Plans:
+- **Starter** (Free): Up to 25 clients, 1 instructor, basic features
+- **Growth** ($97/month): Up to 100 clients, 3 instructors, advanced reports
+- **Business** ($197/month): Up to 500 clients, 10 instructors, integrations, AI bot
+- **Enterprise** ($397/month): Unlimited clients, unlimited instructors, priority support
 
-### Integrações:
-- WhatsApp Business (para notificações e bot)
-- Crisp (chat de suporte)
-- Stripe/Asaas (pagamentos)
+### Integrations:
+- WhatsApp Business (for notifications and bot)
+- Crisp (support chat)
+- Stripe/Asaas (payments)
 - Google Calendar
 
-## Como Responder:
+## How to Respond:
 
-1. **Seja sempre prestativo e paciente** - Os admins podem ser novos na plataforma
-2. **Dê instruções passo a passo** quando explicar como fazer algo
-3. **Use exemplos práticos** relacionados a estúdios de wellness
-4. **Se não souber algo**, diga que vai verificar ou sugira entrar em contato com suporte humano
-5. **Responda em português** (a menos que o usuário escreva em outro idioma)
+1. **Always be helpful and patient** - Admins may be new to the platform
+2. **Give step-by-step instructions** when explaining how to do something
+3. **Use practical examples** related to wellness studios
+4. **If you don't know something**, say you'll check or suggest contacting human support
+5. **Respond in English by default** (unless the user writes in another language, then match their language)
 
-## Tópicos Comuns:
+## Common Topics:
 
-- Como cadastrar novos clientes
-- Como criar/editar aulas na agenda
-- Como configurar planos e preços
-- Como processar pagamentos
-- Como adicionar instrutores
-- Como usar a lista de espera
-- Como ver relatórios
-- Problemas com login/acesso
-- Dúvidas sobre planos e preços
-- Como configurar integrações
+- How to register new clients
+- How to create/edit classes in the calendar
+- How to set up plans and pricing
+- How to process payments
+- How to add instructors
+- How to use the waitlist
+- How to view reports
+- Login/access issues
+- Questions about plans and pricing
+- How to configure integrations
 
-## Escalação:
+## Escalation:
 
-Se o admin tiver problemas técnicos graves, bugs, ou questões de cobrança/faturamento, sugira:
-- Email: suporte@flexiwell.net
-- Ou solicite falar com um humano
+If the admin has serious technical issues, bugs, or billing questions, suggest:
+- Email: support@flexiwell.net
+- Or request to speak with a human
 
-Lembre-se: Você está ajudando DONOS DE ESTÚDIO a usar melhor o sistema, não clientes finais.`,
+Remember: You are helping STUDIO OWNERS use the system better, not end clients.`,
 
   // Quick replies for common questions
   quickReplies: [
     {
-      trigger: ["como cadastrar", "adicionar cliente", "novo cliente"],
-      response: `Para cadastrar um novo cliente:
+      trigger: ["how to register", "add client", "new client", "create client"],
+      response: `To register a new client:
 
-1. Acesse o menu **Clientes** no painel lateral
-2. Clique no botão **"+ Novo Cliente"** no canto superior direito
-3. Preencha os dados: nome, email, telefone
-4. Selecione o plano do cliente (mensal, trimestral, etc.)
-5. Clique em **Salvar**
+1. Go to **Clients** in the sidebar menu
+2. Click the **"+ New Client"** button in the top right corner
+3. Fill in the details: name, email, phone
+4. Select the client's plan (monthly, quarterly, etc.)
+5. Click **Save**
 
-O cliente receberá um email de boas-vindas automaticamente se você tiver configurado as notificações.`,
+The client will receive a welcome email automatically if you have notifications configured.`,
     },
     {
-      trigger: ["criar aula", "agendar aula", "nova aula", "adicionar aula"],
-      response: `Para criar uma nova aula:
+      trigger: ["create class", "schedule class", "new class", "add class"],
+      response: `To create a new class:
 
-1. Vá em **Dashboard** ou **Agenda**
-2. Clique em **"+ Nova Aula"** ou clique diretamente no horário desejado
-3. Preencha:
-   - Nome da aula (ex: Pilates Reformer)
-   - Instrutor responsável
-   - Data e horário
-   - Capacidade máxima
-   - Recorrência (se for aula fixa)
-4. Clique em **Salvar**
+1. Go to **Dashboard** or **Calendar**
+2. Click **"+ New Class"** or click directly on the desired time slot
+3. Fill in:
+   - Class name (e.g., Pilates Reformer)
+   - Instructor
+   - Date and time
+   - Maximum capacity
+   - Recurrence (if it's a recurring class)
+4. Click **Save**
 
-A aula aparecerá no calendário e os clientes poderão se inscrever.`,
+The class will appear on the calendar and clients can sign up.`,
     },
     {
-      trigger: ["lista de espera", "waitlist", "fila de espera"],
-      response: `A **Lista de Espera** funciona assim:
+      trigger: ["waitlist", "waiting list", "queue"],
+      response: `The **Waitlist** works like this:
 
-1. Quando uma aula atinge a capacidade máxima, novos interessados entram na fila
-2. Acesse **Waitlist** no menu para ver todas as solicitações
-3. Você pode:
-   - **Aprovar** manualmente quando houver vaga
-   - Configurar aprovação automática
-4. O cliente é notificado quando conseguir a vaga
+1. When a class reaches maximum capacity, new interested clients join the queue
+2. Go to **Waitlist** in the menu to see all requests
+3. You can:
+   - **Approve** manually when there's a spot available
+   - Configure automatic approval
+4. The client is notified when they get a spot
 
-Para configurar a lista de espera de uma aula específica, edite a aula e ative a opção "Permitir lista de espera".`,
+To configure the waitlist for a specific class, edit the class and enable "Allow waitlist".`,
     },
     {
-      trigger: ["plano", "preço", "quanto custa", "upgrade", "mudar plano"],
-      response: `Os planos do FlexiWell são:
+      trigger: ["plan", "price", "pricing", "cost", "upgrade", "change plan"],
+      response: `FlexiWell plans are:
 
-**Starter (Gratuito)**
-- Até 25 clientes
-- 1 instrutor
-- Funcionalidades básicas
+**Starter (Free)**
+- Up to 25 clients
+- 1 instructor
+- Basic features
 
-**Growth (R$97/mês)**
-- Até 100 clientes
-- 3 instrutores
-- Relatórios avançados
+**Growth ($97/month)**
+- Up to 100 clients
+- 3 instructors
+- Advanced reports
 
-**Business (R$197/mês)**
-- Até 500 clientes
-- 10 instrutores
-- Bot de IA, integrações
+**Business ($197/month)**
+- Up to 500 clients
+- 10 instructors
+- AI bot, integrations
 
-**Enterprise (R$397/mês)**
-- Ilimitado
-- Suporte prioritário
+**Enterprise ($397/month)**
+- Unlimited
+- Priority support
 
-Para mudar de plano: **Settings > Subscription > Upgrade**`,
+To change plans: **Settings > Subscription > Upgrade**`,
     },
     {
-      trigger: ["pagamento", "cobrança", "cobrar cliente"],
-      response: `Para gerenciar pagamentos:
+      trigger: ["payment", "billing", "charge client", "invoice"],
+      response: `To manage payments:
 
-1. Acesse **Payments** no menu
-2. Você verá todos os pagamentos pendentes e histórico
-3. Para cobrar um cliente:
-   - Vá no perfil do cliente
-   - Clique em **"Gerar Cobrança"**
-   - Selecione o valor e método
+1. Go to **Payments** in the menu
+2. You'll see all pending payments and history
+3. To charge a client:
+   - Go to the client's profile
+   - Click **"Generate Invoice"**
+   - Select the amount and method
 
-**Integrações de pagamento:**
-- Stripe (cartão internacional)
-- Asaas (PIX, boleto, cartão)
+**Payment integrations:**
+- Stripe (international cards)
+- Asaas (PIX, boleto, cards)
 
-Configure em **Settings > Integrations > Payments**`,
+Configure in **Settings > Integrations > Payments**`,
     },
     {
-      trigger: ["relatório", "report", "métricas", "analytics"],
-      response: `Para acessar relatórios:
+      trigger: ["report", "metrics", "analytics", "statistics"],
+      response: `To access reports:
 
-1. Vá em **Reports** no menu
-2. Escolha o tipo de relatório:
-   - **Receita**: faturamento por período
-   - **Clientes**: novos, ativos, churn
-   - **Aulas**: ocupação, mais populares
-   - **Instrutores**: performance
+1. Go to **Reports** in the menu
+2. Choose the report type:
+   - **Revenue**: billing by period
+   - **Clients**: new, active, churn
+   - **Classes**: occupancy, most popular
+   - **Instructors**: performance
 
-3. Use os filtros para ajustar o período
-4. Exporte em PDF ou Excel se precisar
+3. Use filters to adjust the period
+4. Export to PDF or Excel if needed
 
-💡 Dica: O Dashboard também mostra métricas resumidas em tempo real.`,
+Tip: The Dashboard also shows summarized metrics in real-time.`,
     },
   ],
 
   // Topics the bot can help with
   topics: [
-    "Cadastro de clientes",
-    "Agendamento de aulas",
-    "Lista de espera",
-    "Pagamentos e cobranças",
-    "Gestão de instrutores",
-    "Relatórios e métricas",
-    "Configurações do sistema",
-    "Planos e preços",
-    "Integrações (WhatsApp, pagamentos)",
-    "Problemas técnicos",
+    "Client registration",
+    "Class scheduling",
+    "Waitlist",
+    "Payments and billing",
+    "Instructor management",
+    "Reports and metrics",
+    "System settings",
+    "Plans and pricing",
+    "Integrations (WhatsApp, payments)",
+    "Technical issues",
   ],
 
   // Escalation triggers
   escalationTriggers: [
-    "falar com humano",
-    "suporte humano",
-    "atendente",
+    "speak to human",
+    "human support",
+    "agent",
     "bug",
-    "erro grave",
-    "não funciona",
-    "cobrança errada",
-    "cancelar assinatura",
-    "reembolso",
+    "serious error",
+    "not working",
+    "wrong charge",
+    "cancel subscription",
+    "refund",
   ],
 };
 

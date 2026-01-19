@@ -124,28 +124,28 @@ async function processWithSupportAI(
 
     // Check if should escalate
     if (shouldEscalateToHuman(message)) {
-      return `Entendo que você precisa de ajuda adicional. Vou transferir você para um atendente humano.
+      return `I understand you need additional help. I'll transfer you to a human agent.
 
-Enquanto isso, você também pode:
-- Enviar email para: suporte@flexiwell.net
-- Acessar nossa central de ajuda
+In the meantime, you can also:
+- Send an email to: support@flexiwell.net
+- Access our help center
 
-Um membro da nossa equipe entrará em contato em breve!`;
+A member of our team will get back to you soon!`;
     }
 
     // Check if AI is configured
     const providerInfo = getAIProviderInfo();
     if (!providerInfo.configured) {
-      return `Olá! Sou o assistente da FlexiWell. No momento estou com capacidade limitada.
+      return `Hello! I'm the FlexiWell assistant. I'm currently running with limited capacity.
 
-Posso ajudar com dúvidas sobre:
-- Como cadastrar clientes
-- Como criar aulas
-- Lista de espera
-- Pagamentos
-- Relatórios
+I can help with questions about:
+- How to register clients
+- How to create classes
+- Waitlist
+- Payments
+- Reports
 
-Digite sua dúvida ou entre em contato: suporte@flexiwell.net`;
+Type your question or contact us: support@flexiwell.net`;
     }
 
     // Get conversation history
@@ -171,12 +171,12 @@ Digite sua dúvida ou entre em contato: suporte@flexiwell.net`;
     return response.content;
   } catch (error) {
     console.error("Error processing support AI:", error);
-    return `Desculpe, tive um problema ao processar sua mensagem.
+    return `Sorry, I had a problem processing your message.
 
-Você pode tentar novamente ou entrar em contato:
-- Email: suporte@flexiwell.net
+You can try again or contact us:
+- Email: support@flexiwell.net
 
-Estamos aqui para ajudar!`;
+We're here to help!`;
   }
 }
 
