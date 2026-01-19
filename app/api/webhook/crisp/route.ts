@@ -228,13 +228,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ignored", reason: "not a text message" });
     }
 
-    // Only process messages from users (not operators/bot)
-    if (event.data.from !== "user") {
-      return NextResponse.json({ status: "ignored", reason: "message from operator" });
-    }
-
     const { website_id, session_id, content, user } = event.data;
-    const userName = user.nickname || "Usuário";
+    const userName = user.nickname || "User";
+
+    // Ignore messages sent by the bot itself (to avoid infinite loop)
+    // The bot sends messages as "operator", so we check the user_id or nickname
+    const botIdentifiers = ["flexiwell", "bot", "flexiwell bot", "flexiwell support"];
+    const senderName = userName.toLowerCase();
+
+    if (event.data.from === "operator" && botIdentifiers.some(id => senderName.includes(id))) {
+      return NextResponse.json({ status: "ignored", reason: "message from bot itself" });
+    }
 
     console.log(`FlexiWell Support: Message from ${userName}: "${content}"`);
 
