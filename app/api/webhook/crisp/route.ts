@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { getDatabase } from "@/lib/db/mongodb";
-import { ObjectId } from "mongodb";
+import { flexiwellSupportConfig, findQuickReply, shouldEscalateToHuman } from "@/lib/config/flexiwell-support";
+import { callAI, getAIProviderInfo, type AIMessage } from "@/lib/ai/providers";
 
 // Crisp webhook event types
 interface CrispMessageEvent {
@@ -26,6 +27,9 @@ interface CrispMessageEvent {
   };
   timestamp: number;
 }
+
+// In-memory conversation storage for context
+const conversations = new Map<string, AIMessage[]>();
 
 // Verify Crisp webhook signature
 function verifySignature(
@@ -94,92 +98,85 @@ async function sendCrispMessage(
   }
 }
 
-// Get client by email from Crisp session
-async function findClientByEmail(email: string): Promise<string | null> {
-  if (!email) return null;
-
-  try {
-    const db = await getDatabase();
-    const client = await db.collection("clients").findOne({ email: email.toLowerCase() });
-    return client?._id?.toString() || null;
-  } catch (error) {
-    console.error("Error finding client by email:", error);
-    return null;
-  }
+// Get conversation history for a session
+function getConversationHistory(sessionId: string): AIMessage[] {
+  return conversations.get(sessionId) || [];
 }
 
-// Get Crisp session data to find user email
-async function getCrispSessionData(
-  websiteId: string,
-  sessionId: string
-): Promise<{ email?: string; nickname?: string } | null> {
-  const identifier = process.env.CRISP_API_IDENTIFIER;
-  const key = process.env.CRISP_API_KEY;
-
-  if (!identifier || !key) return null;
-
-  const auth = Buffer.from(`${identifier}:${key}`).toString("base64");
-
-  try {
-    const response = await fetch(
-      `https://api.crisp.chat/v1/website/${websiteId}/conversation/${sessionId}`,
-      {
-        method: "GET",
-        headers: {
-          "Authorization": `Basic ${auth}`,
-          "X-Crisp-Tier": "plugin",
-        },
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    return {
-      email: data.data?.meta?.email,
-      nickname: data.data?.meta?.nickname,
-    };
-  } catch (error) {
-    console.error("Error fetching Crisp session:", error);
-    return null;
-  }
+// Save conversation history
+function saveConversation(sessionId: string, messages: AIMessage[]): void {
+  // Keep only last 20 messages
+  conversations.set(sessionId, messages.slice(-20));
 }
 
-// Process message with AI
-async function processWithAI(
+// Process message with FlexiWell Support AI
+async function processWithSupportAI(
   message: string,
   sessionId: string,
-  clientId: string | null
+  userName: string
 ): Promise<string> {
   try {
-    // Call internal AI chat endpoint
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || "http://localhost:3000";
-
-    const response = await fetch(`${baseUrl}/api/ai/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message,
-        sessionId: `crisp_${sessionId}`,
-        clientId,
-        channel: "web",
-        personality: "friendly",
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("AI chat error:", error);
-      return "Desculpe, estou com dificuldades técnicas no momento. Um atendente humano irá ajudá-lo em breve.";
+    // Check for quick reply first
+    const quickReply = findQuickReply(message);
+    if (quickReply) {
+      return quickReply;
     }
 
-    const data = await response.json();
-    return data.content || data.message || "Como posso ajudá-lo?";
+    // Check if should escalate
+    if (shouldEscalateToHuman(message)) {
+      return `Entendo que você precisa de ajuda adicional. Vou transferir você para um atendente humano.
+
+Enquanto isso, você também pode:
+- Enviar email para: suporte@flexiwell.net
+- Acessar nossa central de ajuda
+
+Um membro da nossa equipe entrará em contato em breve!`;
+    }
+
+    // Check if AI is configured
+    const providerInfo = getAIProviderInfo();
+    if (!providerInfo.configured) {
+      return `Olá! Sou o assistente da FlexiWell. No momento estou com capacidade limitada.
+
+Posso ajudar com dúvidas sobre:
+- Como cadastrar clientes
+- Como criar aulas
+- Lista de espera
+- Pagamentos
+- Relatórios
+
+Digite sua dúvida ou entre em contato: suporte@flexiwell.net`;
+    }
+
+    // Get conversation history
+    const history = getConversationHistory(sessionId);
+
+    // Build messages for AI
+    const messages: AIMessage[] = [
+      { role: "system", content: flexiwellSupportConfig.systemPrompt },
+      ...history,
+      { role: "user", content: `[${userName}]: ${message}` },
+    ];
+
+    // Call AI
+    const response = await callAI(messages);
+
+    // Save conversation
+    saveConversation(sessionId, [
+      ...history,
+      { role: "user", content: message },
+      { role: "assistant", content: response.content },
+    ]);
+
+    return response.content;
   } catch (error) {
-    console.error("Error processing AI:", error);
-    return "Desculpe, ocorreu um erro. Um atendente humano irá ajudá-lo em breve.";
+    console.error("Error processing support AI:", error);
+    return `Desculpe, tive um problema ao processar sua mensagem.
+
+Você pode tentar novamente ou entrar em contato:
+- Email: suporte@flexiwell.net
+
+Estamos aqui para ajudar!`;
   }
 }
 
@@ -219,7 +216,9 @@ export async function POST(req: NextRequest) {
 
     const event: CrispMessageEvent = JSON.parse(bodyText);
 
-    // Only process message:send events (messages from visitors)
+    console.log(`Crisp webhook event: ${event.event}`, JSON.stringify(event.data, null, 2));
+
+    // Only process message:send events (messages from visitors/admins)
     if (event.event !== "message:send") {
       return NextResponse.json({ status: "ignored", reason: "not a message:send event" });
     }
@@ -229,48 +228,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ignored", reason: "not a text message" });
     }
 
-    // Only process messages from users (not operators)
+    // Only process messages from users (not operators/bot)
     if (event.data.from !== "user") {
       return NextResponse.json({ status: "ignored", reason: "message from operator" });
     }
 
     const { website_id, session_id, content, user } = event.data;
+    const userName = user.nickname || "Usuário";
 
-    console.log(`Crisp message received: "${content}" from ${user.nickname}`);
+    console.log(`FlexiWell Support: Message from ${userName}: "${content}"`);
 
-    // Try to find the client in our database
-    let clientId: string | null = null;
+    // Process message with FlexiWell Support AI
+    const aiResponse = await processWithSupportAI(content, session_id, userName);
 
-    // First, try email from the event
-    if (user.email) {
-      clientId = await findClientByEmail(user.email);
-    }
-
-    // If no email in event, fetch session data
-    if (!clientId) {
-      const sessionData = await getCrispSessionData(website_id, session_id);
-      if (sessionData?.email) {
-        clientId = await findClientByEmail(sessionData.email);
-      }
-    }
-
-    // Process message with AI
-    const aiResponse = await processWithAI(content, session_id, clientId);
+    console.log(`FlexiWell Support: AI Response: "${aiResponse.substring(0, 100)}..."`);
 
     // Send response back to Crisp
     const sent = await sendCrispMessage(website_id, session_id, aiResponse);
 
     if (!sent) {
       console.error("Failed to send response to Crisp");
+    } else {
+      console.log("FlexiWell Support: Response sent successfully");
     }
 
     // Log conversation for analytics
-    await logConversation(session_id, content, aiResponse, clientId);
+    await logConversation(session_id, content, aiResponse, null);
 
     return NextResponse.json({
       status: "processed",
-      clientFound: !!clientId,
       responseSent: sent,
+      messageFrom: userName,
     });
   } catch (error) {
     console.error("Crisp webhook error:", error);
