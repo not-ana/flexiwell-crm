@@ -34,8 +34,7 @@
     "recharts": "^3.6.0",
     "resend": "^6.6.0",
     "simple-icons": "^16.5.0",
-    "stripe": "^20.1.0",
-    "zod": "^4.3.5"
+    "stripe": "^20.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
