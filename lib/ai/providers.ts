@@ -1,7 +1,7 @@
 /**
  * AI Provider abstraction layer
  * Supports: Gemini (free), OpenAI, Groq (free)
- * Priority: GEMINI_API_KEY > GROQ_API_KEY > OPENAI_API_KEY
+ * Priority: GROQ_API_KEY > GEMINI_API_KEY > OPENAI_API_KEY
  */
 
 export interface AIMessage {
@@ -30,8 +30,8 @@ export interface AIResponse {
 type AIProvider = "gemini" | "openai" | "groq";
 
 function getActiveProvider(): AIProvider | null {
-  if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.GROQ_API_KEY) return "groq";
+  if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.OPENAI_API_KEY) return "openai";
   return null;
 }
@@ -256,7 +256,7 @@ async function callOpenAI(
 /**
  * Main function to call AI
  * Automatically selects provider based on available API keys
- * Priority: Gemini (free) > Groq (free) > OpenAI (paid)
+ * Priority: Groq (free) > Gemini (free) > OpenAI (paid)
  */
 export async function callAI(
   messages: AIMessage[],
