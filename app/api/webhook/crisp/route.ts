@@ -207,8 +207,10 @@ async function logConversation(
 }
 
 export async function POST(req: NextRequest) {
+  console.log("=== CRISP WEBHOOK RECEIVED ===");
   try {
     const bodyText = await req.text();
+    console.log("Body:", bodyText.substring(0, 500));
     const timestamp = req.headers.get("X-Crisp-Request-Timestamp") || "";
     const signature = req.headers.get("X-Crisp-Signature") || "";
     const webhookSecret = process.env.CRISP_WEBHOOK_SECRET || "";
