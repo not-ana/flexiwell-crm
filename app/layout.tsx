@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PostHogProvider } from "@/lib/posthog/provider";
+import { CrispWidget } from "@/components/CrispWidget";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
         <PostHogProvider>
           <AuthProvider>{children}</AuthProvider>
         </PostHogProvider>
+        <CrispWidget />
       </body>
     </html>
   );
