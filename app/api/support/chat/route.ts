@@ -22,7 +22,7 @@ interface SupportConversation {
 
 // POST - Send message and get AI response
 export async function POST(req: NextRequest) {
-  const { user, error } = requireRole(req, ["admin", "client"]);
+  const { user, error } = requireRole(req, ["admin", "client", "teacher"]);
   if (error) return error;
 
   try {
@@ -146,7 +146,7 @@ Type your question or contact us: support@flexiwell.net`;
 
 // GET - Get conversation history
 export async function GET(req: NextRequest) {
-  const { user, error } = requireRole(req, ["admin", "client"]);
+  const { user, error } = requireRole(req, ["admin", "client", "teacher"]);
   if (error) return error;
 
   try {
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
 
 // DELETE - Clear conversation history
 export async function DELETE(req: NextRequest) {
-  const { user, error } = requireRole(req, ["admin", "client"]);
+  const { user, error } = requireRole(req, ["admin", "client", "teacher"]);
   if (error) return error;
 
   try {
