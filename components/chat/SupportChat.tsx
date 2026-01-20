@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Trash2, Bot, User } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { getStoredTokens } from "@/lib/api/client";
 
 interface ChatMessage {
   id: string;
@@ -30,7 +31,10 @@ export function SupportChat() {
 
   async function loadHistory() {
     try {
-      const response = await fetch("/api/support/chat");
+      const { accessToken } = getStoredTokens();
+      const response = await fetch("/api/support/chat", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       if (response.ok) {
         const data = await response.json();
         setMessages(
@@ -65,9 +69,13 @@ export function SupportChat() {
     setMessages((prev) => [...prev, tempUserMessage]);
 
     try {
+      const { accessToken } = getStoredTokens();
       const response = await fetch("/api/support/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ message: userMessage }),
       });
 
@@ -112,7 +120,11 @@ export function SupportChat() {
     }
 
     try {
-      const response = await fetch("/api/support/chat", { method: "DELETE" });
+      const { accessToken } = getStoredTokens();
+      const response = await fetch("/api/support/chat", {
+        method: "DELETE",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       if (response.ok) {
         setMessages([]);
       }
