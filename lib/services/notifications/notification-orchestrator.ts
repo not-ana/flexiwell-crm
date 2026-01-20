@@ -4,7 +4,7 @@ import type { Client, Booking, Class } from "@/lib/db/schemas";
 import type { INotificationChannel, NotificationData, NotificationResult } from "../interfaces";
 import { formatDateBR } from "@/lib/utils/date";
 
-export type NotificationChannel = "email" | "whatsapp" | "both";
+export type NotificationChannel = "email" | "whatsapp" | "sms" | "both" | "all";
 
 interface NotificationPayload {
   type: string;
@@ -29,17 +29,20 @@ interface NotificationLog {
 export class NotificationOrchestrator {
   private emailChannel: INotificationChannel | null = null;
   private whatsappChannel: INotificationChannel | null = null;
+  private smsChannel: INotificationChannel | null = null;
   private studioName: string;
   private baseUrl: string;
 
   constructor(
     emailChannel?: INotificationChannel,
     whatsappChannel?: INotificationChannel,
+    smsChannel?: INotificationChannel,
     studioName = "FlexiWell Studio",
     baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ) {
     this.emailChannel = emailChannel || null;
     this.whatsappChannel = whatsappChannel || null;
+    this.smsChannel = smsChannel || null;
     this.studioName = studioName;
     this.baseUrl = baseUrl;
   }
@@ -53,6 +56,10 @@ export class NotificationOrchestrator {
     this.whatsappChannel = channel;
   }
 
+  setSMSChannel(channel: INotificationChannel): void {
+    this.smsChannel = channel;
+  }
+
   async send(payload: NotificationPayload): Promise<NotificationResult> {
     const { type, clientId, data, channels = "both" } = payload;
 
@@ -64,7 +71,11 @@ export class NotificationOrchestrator {
     const enrichedData = this.enrichData(data, client);
     const results: NotificationResult = { success: false };
 
-    if ((channels === "email" || channels === "both") && client.email) {
+    const shouldSendEmail = channels === "email" || channels === "both" || channels === "all";
+    const shouldSendWhatsApp = channels === "whatsapp" || channels === "both" || channels === "all";
+    const shouldSendSMS = channels === "sms" || channels === "all";
+
+    if (shouldSendEmail && client.email) {
       const emailResult = await this.sendViaChannel(
         this.emailChannel,
         type,
@@ -77,7 +88,7 @@ export class NotificationOrchestrator {
       if (emailResult.success) results.success = true;
     }
 
-    if ((channels === "whatsapp" || channels === "both") && client.phone) {
+    if (shouldSendWhatsApp && client.phone) {
       const whatsappResult = await this.sendViaChannel(
         this.whatsappChannel,
         type,
@@ -88,6 +99,19 @@ export class NotificationOrchestrator {
         client.name
       );
       if (whatsappResult.success) results.success = true;
+    }
+
+    if (shouldSendSMS && client.phone) {
+      const smsResult = await this.sendViaChannel(
+        this.smsChannel,
+        type,
+        client.phone,
+        enrichedData,
+        "sms",
+        clientId,
+        client.name
+      );
+      if (smsResult.success) results.success = true;
     }
 
     return results;
