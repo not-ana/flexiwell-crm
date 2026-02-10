@@ -11,9 +11,11 @@ interface Integration {
   description: string;
   logo: string;
   icon?: string;
-  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics" | "messaging" | "automation" | "payments" | "migration";
+  category: "marketplace" | "payment" | "marketing" | "scheduling" | "analytics" | "messaging" | "automation" | "payments" | "migration" | "data_import";
   status: "connected" | "available" | "coming_soon" | "not_connected";
   features: string[];
+  importType?: "api" | "spreadsheet"; // Type of integration
+  docsUrl?: string; // URL to import documentation
   connectedAt?: string | null;
   stats?: {
     label: string;
@@ -56,34 +58,41 @@ const integrationDetails: Record<string, Partial<Integration>> = {
     logo: "PP",
     features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"],
   },
-  // wellhub: Hidden for US market - re-enable for Brazil/LATAM
-  // wellhub: {
-  //   logo: "W",
-  //   description: "Connect with Wellhub (formerly Gympass) to reach thousands of corporate wellness clients.",
-  //   features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
-  //   status: "available",
-  // },
+  // API-based integrations (direct connection)
+  wellhub: {
+    logo: "W",
+    description: "Connect with Wellhub (formerly Gympass) via API to reach corporate wellness clients.",
+    features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
+    status: "available",
+  },
+  totalpass: {
+    logo: "TP",
+    description: "Connect with TotalPass via API to reach Brazilian fitness marketplace.",
+    features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"],
+    status: "available",
+  },
+  // Spreadsheet-based import integrations (no API connection)
   classpass: {
     logo: "CP",
-    description: "List your classes on ClassPass to attract new clients.",
-    features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"],
+    description: "Import your data from ClassPass using a spreadsheet template.",
+    features: ["Client import", "Class schedules", "Booking history", "Easy CSV upload"],
     status: "available",
   },
   mindbody: {
     logo: "MB",
-    description: "Import clients and schedules from Mindbody.",
+    description: "Import clients and schedules from Mindbody using a spreadsheet template.",
     features: ["Client import", "Schedule sync", "Membership data", "Payment history"],
     status: "available",
   },
   glofox: {
     logo: "GF",
-    description: "Migrate your data from Glofox seamlessly.",
+    description: "Migrate your data from Glofox using a spreadsheet template.",
     features: ["Client import", "Class schedules", "Membership plans", "Booking history"],
     status: "available",
   },
   tecnofit: {
     logo: "TF",
-    description: "Import your data from Tecnofit to FlexiWell.",
+    description: "Import your data from Tecnofit using a spreadsheet template.",
     features: ["Import clients", "Plans & memberships", "Training history", "Schedules"],
     status: "available",
   },
@@ -99,10 +108,12 @@ const categoryLabels: Record<string, { label: string; color: string }> = {
   messaging: { label: "Messaging", color: "bg-teal-100 text-teal-700" },
   automation: { label: "Automation", color: "bg-purple-100 text-purple-700" },
   migration: { label: "Migration", color: "bg-cyan-100 text-cyan-700" },
+  data_import: { label: "Data Import", color: "bg-indigo-100 text-indigo-700" },
 };
 
 const logoColors: Record<string, string> = {
   wellhub: "bg-orange-500",
+  totalpass: "bg-green-600",
   classpass: "bg-primary-600",
   stripe: "bg-indigo-600",
   paypal: "bg-blue-600",
@@ -203,12 +214,28 @@ function IntegrationCard({
                 </button>
               </>
             ) : integration.status === "available" ? (
-              <button
-                onClick={onConnect}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Connect
-              </button>
+              integration.importType === "spreadsheet" && integration.docsUrl ? (
+                <a
+                  href={integration.docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors inline-flex items-center gap-2"
+                >
+                  View Import Guide
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              ) : (
+                <button
+                  onClick={onConnect}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Connect
+                </button>
+              )
             ) : (
               <button
                 disabled
@@ -376,11 +403,7 @@ interface CredentialField {
 }
 
 const credentialFields: Record<string, CredentialField[]> = {
-  // wellhub: Hidden for US market - re-enable for Brazil/LATAM
-  // wellhub: [
-  //   { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Wellhub API key", required: true },
-  //   { key: "gymId", label: "Gym ID", type: "text", placeholder: "Your Wellhub Gym ID", required: true },
-  // ],
+  // API-based integrations with credentials
   stripe: [
     { key: "secretKey", label: "Secret Key", type: "password", placeholder: "sk_live_...", required: true },
     { key: "publishableKey", label: "Publishable Key", type: "text", placeholder: "pk_live_...", required: true },
@@ -406,12 +429,6 @@ const credentialFields: Record<string, CredentialField[]> = {
     { key: "authToken", label: "Auth Token", type: "password", placeholder: "Your Twilio auth token", required: true },
     { key: "phoneNumber", label: "SMS Phone Number", type: "text", placeholder: "+15551234567", required: true },
   ],
-  // instagram: Hidden - incomplete implementation, re-enable post-MVP
-  // instagram: [
-  //   { key: "accessToken", label: "Access Token", type: "password", placeholder: "Your Instagram access token", required: true },
-  //   { key: "pageId", label: "Instagram Page ID", type: "text", placeholder: "123456789", required: true },
-  //   { key: "appId", label: "Meta App ID", type: "text", placeholder: "Optional", required: false },
-  // ],
   google_calendar: [
     { key: "clientId", label: "Client ID", type: "text", placeholder: "xxxxx.apps.googleusercontent.com", required: true },
     { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "Your client secret", required: true },
@@ -428,20 +445,19 @@ const credentialFields: Record<string, CredentialField[]> = {
     { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "Your PayPal Client Secret", required: true },
     { key: "sandbox", label: "Sandbox Mode", type: "checkbox", placeholder: "Use sandbox for testing", required: false },
   ],
-  mindbody: [
-    { key: "siteId", label: "Site ID", type: "text", placeholder: "Your Mindbody Site ID (e.g., -99)", required: true },
-    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Mindbody API key", required: true },
-    { key: "username", label: "Staff Username", type: "text", placeholder: "Staff username for API access", required: true },
-    { key: "password", label: "Staff Password", type: "password", placeholder: "Staff password", required: true },
+  // Marketplace integrations (API-based)
+  wellhub: [
+    { key: "bearerToken", label: "Bearer Token", type: "password", placeholder: "Your Wellhub bearer token", required: true },
+    { key: "gymId", label: "Gym ID", type: "text", placeholder: "Your Wellhub gym ID", required: true },
+    { key: "webhookSecret", label: "Webhook Secret", type: "password", placeholder: "Secret for webhook verification", required: false },
   ],
-  glofox: [
-    { key: "branchId", label: "Branch ID", type: "text", placeholder: "Your Glofox Branch ID", required: true },
-    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your Glofox API key", required: true },
+  totalpass: [
+    { key: "apiKey", label: "API Key", type: "password", placeholder: "Your TotalPass API key", required: true },
+    { key: "partnerId", label: "Partner ID", type: "text", placeholder: "Your TotalPass partner ID", required: true },
+    { key: "webhookSecret", label: "Webhook Secret", type: "password", placeholder: "Secret for webhook verification", required: false },
   ],
-  tecnofit: [
-    { key: "empresaId", label: "Company ID", type: "text", placeholder: "Your Tecnofit company ID", required: true },
-    { key: "apiToken", label: "API Token", type: "password", placeholder: "Your access token", required: true },
-  ],
+  // Note: ClassPass, Mindbody, Glofox, and Tecnofit are now spreadsheet-based imports
+  // and don't require API credentials - users will follow documentation guides instead
 };
 
 function ConnectModal({
@@ -680,20 +696,27 @@ export default function IntegrationsPage() {
   const [connectModal, setConnectModal] = useState<Integration | null>(null);
 
   // Default integrations list (fallback when API fails)
-  // Hidden: wellhub (US market), instagram (incomplete), tecnofit (Brazil)
   const defaultIntegrations: Integration[] = [
-    { id: "stripe", name: "Stripe", description: "Process payments and manage subscriptions", logo: "S", category: "payments", status: "available", features: ["Card payments", "Subscriptions", "Invoicing", "Fraud protection"] },
-    { id: "paypal", name: "PayPal", description: "Accept PayPal payments and subscriptions", logo: "PP", category: "payments", status: "available", features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"] },
-    { id: "google_calendar", name: "Google Calendar", description: "Sync classes with Google Calendar", logo: "GC", category: "scheduling", status: "available", features: ["Two-way sync", "Reminders", "Availability", "Room booking"] },
-    { id: "sms", name: "SMS (Twilio)", description: "Send SMS notifications and automated replies to US clients", logo: "SMS", category: "messaging", status: "available", features: ["SMS notifications", "Automated replies", "Class reminders", "AI Bot support"] },
-    { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients (Cloud API or Twilio)", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Automated bot", "Class booking", "Notifications"] },
-    { id: "mailchimp", name: "Mailchimp", description: "Email marketing and newsletters", logo: "MC", category: "marketing", status: "available", features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"] },
-    { id: "zapier", name: "Zapier", description: "Connect with 5000+ apps", logo: "ZP", category: "automation", status: "available", features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"] },
-    { id: "classpass", name: "ClassPass", description: "List your classes on ClassPass marketplace", logo: "CP", category: "marketplace", status: "coming_soon", features: ["Class listings", "Booking management", "Dynamic pricing", "Analytics"] },
-    { id: "mindbody", name: "Mindbody", description: "Import clients and schedules from Mindbody", logo: "MB", category: "migration", status: "available", features: ["Client import", "Schedule sync", "Membership data", "Payment history"] },
-    { id: "glofox", name: "Glofox", description: "Migrate your data from Glofox seamlessly", logo: "GF", category: "migration", status: "available", features: ["Client import", "Class schedules", "Membership plans", "Booking history"] },
-    // tecnofit: Hidden for US market - re-enable for Brazil/LATAM
-    // { id: "tecnofit", name: "Tecnofit", description: "Import your data from Tecnofit to FlexiWell", logo: "TF", category: "migration", status: "available", features: ["Import clients", "Plans & memberships", "Training history", "Schedules"] },
+    // Payments
+    { id: "stripe", name: "Stripe", description: "Process payments and manage subscriptions", logo: "S", category: "payments", status: "available", features: ["Card payments", "Subscriptions", "Invoicing", "Fraud protection"], importType: "api" },
+    { id: "paypal", name: "PayPal", description: "Accept PayPal payments and subscriptions", logo: "PP", category: "payments", status: "available", features: ["PayPal payments", "Subscriptions", "Invoicing", "Buyer protection"], importType: "api" },
+    // Scheduling
+    { id: "google_calendar", name: "Google Calendar", description: "Sync classes with Google Calendar", logo: "GC", category: "scheduling", status: "available", features: ["Two-way sync", "Reminders", "Availability", "Room booking"], importType: "api" },
+    // Messaging
+    { id: "sms", name: "SMS (Twilio)", description: "Send SMS notifications and automated replies to US clients", logo: "SMS", category: "messaging", status: "available", features: ["SMS notifications", "Automated replies", "Class reminders", "AI Bot support"], importType: "api" },
+    { id: "whatsapp", name: "WhatsApp Business", description: "Send notifications and chat with clients (Cloud API or Twilio)", logo: "WA", category: "messaging", status: "available", features: ["Client messaging", "Automated bot", "Class booking", "Notifications"], importType: "api" },
+    // Marketing
+    { id: "mailchimp", name: "Mailchimp", description: "Email marketing and newsletters", logo: "MC", category: "marketing", status: "available", features: ["Contact sync", "Automated campaigns", "Segmentation", "Analytics"], importType: "api" },
+    // Automation
+    { id: "zapier", name: "Zapier", description: "Connect with 5000+ apps", logo: "ZP", category: "automation", status: "available", features: ["5000+ app connections", "Workflow automation", "Triggers", "Actions"], importType: "api" },
+    // Marketplace (API-based)
+    { id: "wellhub", name: "Wellhub", description: "Connect with Wellhub (formerly Gympass) via API", logo: "W", category: "marketplace", status: "available", features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"], importType: "api" },
+    { id: "totalpass", name: "TotalPass", description: "Connect with TotalPass via API", logo: "TP", category: "marketplace", status: "available", features: ["Class sync", "Check-in management", "Revenue reports", "Client profiles"], importType: "api" },
+    // Data Import (Spreadsheet-based)
+    { id: "classpass", name: "ClassPass", description: "Import your data from ClassPass using a spreadsheet", logo: "CP", category: "data_import", status: "available", features: ["Client import", "Class schedules", "Booking history", "Easy CSV upload"], importType: "spreadsheet", docsUrl: "/docs/import/classpass" },
+    { id: "mindbody", name: "Mindbody", description: "Import clients and schedules from Mindbody using a spreadsheet", logo: "MB", category: "data_import", status: "available", features: ["Client import", "Schedule sync", "Membership data", "Payment history"], importType: "spreadsheet", docsUrl: "/docs/import/mindbody" },
+    { id: "glofox", name: "Glofox", description: "Migrate your data from Glofox using a spreadsheet", logo: "GF", category: "data_import", status: "available", features: ["Client import", "Class schedules", "Membership plans", "Booking history"], importType: "spreadsheet", docsUrl: "/docs/import/glofox" },
+    { id: "tecnofit", name: "Tecnofit", description: "Import your data from Tecnofit using a spreadsheet", logo: "TF", category: "data_import", status: "available", features: ["Import clients", "Plans & memberships", "Training history", "Schedules"], importType: "spreadsheet", docsUrl: "/docs/import/tecnofit" },
   ];
 
   // Fetch integrations from API
@@ -730,7 +753,7 @@ export default function IntegrationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [defaultIntegrations]);
 
   useEffect(() => {
     fetchIntegrations();
@@ -827,7 +850,7 @@ export default function IntegrationsPage() {
         >
           <option value="all">All categories</option>
           <option value="marketplace">Marketplace</option>
-          <option value="migration">Migration</option>
+          <option value="data_import">Data Import</option>
           <option value="payment">Payment</option>
           <option value="marketing">Marketing</option>
           <option value="scheduling">Scheduling</option>

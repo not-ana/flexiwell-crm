@@ -20,19 +20,29 @@ interface IntegrationInfo {
   description: string;
   hasSettings?: boolean;
   image?: string;
+  importType?: "api" | "spreadsheet";
+  docsUrl?: string;
 }
 
 const allIntegrations: IntegrationInfo[] = [
-  { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace", hasSettings: true, image: "/wellhub.png" },
-  { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace", hasSettings: true, image: "/totalpass.jpg" },
-  { id: "classpass", name: "ClassPass", icon: "CP", color: "purple", description: "Global fitness marketplace", hasSettings: true, image: "/classpass.png" },
-  { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true, image: "/stripe.webp" },
-  { id: "paypal", name: "PayPal", icon: "PP", color: "blue", description: "Accept PayPal payments", hasSettings: true },
-  { id: "googleCalendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true },
-  { id: "whatsapp", name: "WhatsApp", icon: "WA", color: "green", description: "Client messaging via Twilio", hasSettings: true },
-  { id: "sms", name: "SMS", icon: "SMS", color: "blue", description: "SMS notifications via Twilio", hasSettings: true },
-  { id: "mailchimp", name: "Mailchimp", icon: "MC", color: "yellow", description: "Email marketing & newsletters", hasSettings: true },
-  { id: "zapier", name: "Zapier", icon: "ZP", color: "orange", description: "Connect with 5000+ apps", hasSettings: false, image: "/zapier.png" },
+  // API-based marketplace integrations
+  { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace via API", hasSettings: true, image: "/wellhub.png", importType: "api" },
+  { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace via API", hasSettings: true, image: "/totalpass.jpg", importType: "api" },
+
+  // Spreadsheet-based data import
+  { id: "classpass", name: "ClassPass", icon: "CP", color: "purple", description: "Import data using spreadsheet template", hasSettings: false, image: "/classpass.png", importType: "spreadsheet", docsUrl: "/docs/import/classpass" },
+  { id: "mindbody", name: "Mindbody", icon: "MB", color: "blue", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/mindbody" },
+  { id: "glofox", name: "Glofox", icon: "GF", color: "purple", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/glofox" },
+  { id: "tecnofit", name: "Tecnofit", icon: "TF", color: "green", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/tecnofit" },
+
+  // Other integrations
+  { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true, image: "/stripe.webp", importType: "api" },
+  { id: "paypal", name: "PayPal", icon: "PP", color: "blue", description: "Accept PayPal payments", hasSettings: true, importType: "api" },
+  { id: "googleCalendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true, importType: "api" },
+  { id: "whatsapp", name: "WhatsApp", icon: "WA", color: "green", description: "Client messaging via Twilio", hasSettings: true, importType: "api" },
+  { id: "sms", name: "SMS", icon: "SMS", color: "blue", description: "SMS notifications via Twilio", hasSettings: true, importType: "api" },
+  { id: "mailchimp", name: "Mailchimp", icon: "MC", color: "yellow", description: "Email marketing & newsletters", hasSettings: true, importType: "api" },
+  { id: "zapier", name: "Zapier", icon: "ZP", color: "orange", description: "Connect with 5000+ apps", hasSettings: false, image: "/zapier.png", importType: "api" },
 ];
 
 const colorClasses: Record<string, string> = {
@@ -52,7 +62,7 @@ export function IntegrationsSettings() {
 
   useEffect(() => {
     fetchStatus();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const connectedCount = allIntegrations.filter(
@@ -63,10 +73,16 @@ export function IntegrationsSettings() {
     setExpandedIntegration(expandedIntegration === id ? null : id);
   };
 
-  const handleConnectClick = (integrationId: string) => {
-    // For integrations with dedicated settings pages, navigate to them
-    if (integrationId === "wellhub" || integrationId === "whatsapp" || integrationId === "totalpass" || integrationId === "classpass") {
-      setActiveSettingsView(integrationId);
+  const handleConnectClick = (integration: IntegrationInfo) => {
+    // For spreadsheet imports, open documentation
+    if (integration.importType === "spreadsheet" && integration.docsUrl) {
+      window.open(integration.docsUrl, "_blank");
+      return;
+    }
+
+    // For API integrations with dedicated settings pages, navigate to them
+    if (integration.id === "wellhub" || integration.id === "whatsapp" || integration.id === "totalpass") {
+      setActiveSettingsView(integration.id);
       return;
     }
     // For other integrations, you could open a modal or redirect
@@ -99,7 +115,6 @@ export function IntegrationsSettings() {
         return <StripeSettingsInline />;
       case "wellhub":
       case "totalpass":
-      case "classpass":
         return <MarketplaceSettingsInline name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
       default:
         return <GenericIntegrationSettings name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
@@ -107,7 +122,7 @@ export function IntegrationsSettings() {
   };
 
   // Render full-page settings views
-  if (activeSettingsView === "wellhub" || activeSettingsView === "totalpass" || activeSettingsView === "classpass") {
+  if (activeSettingsView === "wellhub" || activeSettingsView === "totalpass") {
     return <WellhubSettings onBack={handleBackFromSettings} provider={activeSettingsView} />;
   }
 
@@ -144,7 +159,9 @@ export function IntegrationsSettings() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {allIntegrations.map((integration) => {
+        {allIntegrations
+          .filter((integration) => integration.importType !== "spreadsheet")
+          .map((integration) => {
           const isConnected = integrationStatus[integration.id]?.connected;
           const status = integrationStatus[integration.id];
           const isExpanded = expandedIntegration === integration.id;
@@ -158,8 +175,13 @@ export function IntegrationsSettings() {
             >
               <div
                 onClick={() => {
-                  // For marketplace integrations and WhatsApp, always open full-page settings (connected or not)
-                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "classpass" || integration.id === "whatsapp") {
+                  // For spreadsheet imports, open docs
+                  if (integration.importType === "spreadsheet" && integration.docsUrl && !isConnected) {
+                    window.open(integration.docsUrl, "_blank");
+                    return;
+                  }
+                  // For API marketplace integrations and WhatsApp, always open full-page settings
+                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp") {
                     setActiveSettingsView(integration.id);
                     return;
                   }
@@ -169,7 +191,7 @@ export function IntegrationsSettings() {
                   }
                 }}
                 className={`flex items-center gap-4 p-4 ${
-                  (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "classpass" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
+                  (integration.importType === "spreadsheet" || integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
                     ? "cursor-pointer hover:bg-gray-50"
                     : ""
                 }`}
@@ -214,11 +236,11 @@ export function IntegrationsSettings() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleConnectClick(integration.id);
+                      handleConnectClick(integration);
                     }}
                     className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                   >
-                    Connect
+                    {integration.importType === "spreadsheet" ? "View Guide" : "Connect"}
                   </button>
                 )}
               </div>
