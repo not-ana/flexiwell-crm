@@ -6,6 +6,8 @@ import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
 import { WellhubSettings } from "./WellhubSettings";
 import { api } from "@/lib/api/client";
+import { DataImportUploader } from "@/components/import/DataImportUploader";
+import { platformConfigs } from "@/lib/config/import-platforms";
 
 interface IntegrationStatus {
   connected: boolean;
@@ -28,12 +30,6 @@ const allIntegrations: IntegrationInfo[] = [
   // API-based marketplace integrations
   { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace via API", hasSettings: true, image: "/wellhub.png", importType: "api" },
   { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace via API", hasSettings: true, image: "/totalpass.jpg", importType: "api" },
-
-  // Spreadsheet-based data import
-  { id: "classpass", name: "ClassPass", icon: "CP", color: "purple", description: "Import data using spreadsheet template", hasSettings: false, image: "/classpass.png", importType: "spreadsheet", docsUrl: "/docs/import/classpass" },
-  { id: "mindbody", name: "Mindbody", icon: "MB", color: "blue", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/mindbody" },
-  { id: "glofox", name: "Glofox", icon: "GF", color: "purple", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/glofox" },
-  { id: "tecnofit", name: "Tecnofit", icon: "TF", color: "green", description: "Import data using spreadsheet template", hasSettings: false, importType: "spreadsheet", docsUrl: "/docs/import/tecnofit" },
 
   // Other integrations
   { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true, image: "/stripe.webp", importType: "api" },
@@ -59,6 +55,7 @@ export function IntegrationsSettings() {
   const [loading, setLoading] = useState(true);
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>(null);
   const [activeSettingsView, setActiveSettingsView] = useState<string | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<keyof typeof platformConfigs>("classpass");
 
   useEffect(() => {
     fetchStatus();
@@ -74,9 +71,9 @@ export function IntegrationsSettings() {
   };
 
   const handleConnectClick = (integration: IntegrationInfo) => {
-    // For spreadsheet imports, open documentation
+    // For spreadsheet imports, navigate to import page
     if (integration.importType === "spreadsheet" && integration.docsUrl) {
-      window.open(integration.docsUrl, "_blank");
+      window.location.href = integration.docsUrl;
       return;
     }
 
@@ -105,6 +102,11 @@ export function IntegrationsSettings() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImport = async (data: Record<string, string>[]) => {
+    console.log(`Importing ${selectedPlatform} data:`, data);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   };
 
   const renderIntegrationSettings = (integrationId: string) => {
@@ -148,20 +150,59 @@ export function IntegrationsSettings() {
     );
   }
 
+  const config = platformConfigs[selectedPlatform];
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Connect apps and services to extend FlexiWell.
+          Import data from other platforms and connect apps to extend FlexiWell.
           {connectedCount > 0 && ` ${connectedCount} connected.`}
         </p>
       </div>
 
+      {/* Data Import Section */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900">Import Data</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Import your data from other platforms using CSV files.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
+            Select Platform
+          </label>
+          <select
+            id="platform-select"
+            value={selectedPlatform}
+            onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
+            className="block w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-6"
+          >
+            <option value="classpass">ClassPass</option>
+            <option value="mindbody">Mindbody</option>
+            <option value="glofox">Glofox</option>
+            <option value="tecnofit">Tecnofit</option>
+          </select>
+
+          <DataImportUploader
+            platform={config.name}
+            platformLogo={config.logo}
+            platformColor={config.color}
+            description={config.description}
+            docsUrl={config.docsUrl}
+            templateUrl={config.templateUrl}
+            fields={config.fields}
+            onImport={handleImport}
+          />
+        </div>
+      </div>
+
+      {/* API Integrations Section */}
       <div className="grid gap-4 sm:grid-cols-2">
-        {allIntegrations
-          .filter((integration) => integration.importType !== "spreadsheet")
-          .map((integration) => {
+          {allIntegrations.filter((integration) => integration.importType === "api").map((integration) => {
           const isConnected = integrationStatus[integration.id]?.connected;
           const status = integrationStatus[integration.id];
           const isExpanded = expandedIntegration === integration.id;
@@ -175,9 +216,9 @@ export function IntegrationsSettings() {
             >
               <div
                 onClick={() => {
-                  // For spreadsheet imports, open docs
+                  // For spreadsheet imports, navigate to import page
                   if (integration.importType === "spreadsheet" && integration.docsUrl && !isConnected) {
-                    window.open(integration.docsUrl, "_blank");
+                    window.location.href = integration.docsUrl;
                     return;
                   }
                   // For API marketplace integrations and WhatsApp, always open full-page settings

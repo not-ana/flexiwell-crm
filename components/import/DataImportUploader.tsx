@@ -184,9 +184,9 @@ export function DataImportUploader({
   // Upload Step
   if (step === "upload") {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="w-full">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
             {platformLogo && (
               <div className={`w-16 h-16 ${platformColor} rounded-xl flex items-center justify-center`}>
@@ -224,7 +224,7 @@ export function DataImportUploader({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <a
             href={docsUrl}
             target="_blank"
