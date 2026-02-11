@@ -151,34 +151,34 @@ export function IntegrationsSettings() {
 
       {/* Data Import Section */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-
-        <div>
-          <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
-            Select Platform
-          </label>
-          <select
-            id="platform-select"
-            value={selectedPlatform}
-            onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
-            className="block w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-6"
-          >
-            <option value="classpass">ClassPass</option>
-            <option value="mindbody">Mindbody</option>
-            <option value="glofox">Glofox</option>
-            <option value="tecnofit">Tecnofit</option>
-          </select>
-
-          <DataImportUploader
-            platform={config.name}
-            platformLogo={config.logo}
-            platformColor={config.color}
-            description={config.description}
-            docsUrl={config.docsUrl}
-            templateUrl={config.templateUrl}
-            fields={config.fields}
-            onImport={handleImport}
-          />
-        </div>
+        <DataImportUploader
+          platform={config.name}
+          platformLogo={config.logo}
+          platformColor={config.color}
+          description={config.description}
+          docsUrl={config.docsUrl}
+          templateUrl={config.templateUrl}
+          fields={config.fields}
+          onImport={handleImport}
+          platformSelector={
+            <div>
+              <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
+                Select Platform
+              </label>
+              <select
+                id="platform-select"
+                value={selectedPlatform}
+                onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
+                className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="classpass">ClassPass</option>
+                <option value="mindbody">Mindbody</option>
+                <option value="glofox">Glofox</option>
+                <option value="tecnofit">Tecnofit</option>
+              </select>
+            </div>
+          }
+        />
       </div>
 
       {/* API Integrations Section */}

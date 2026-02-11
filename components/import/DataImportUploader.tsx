@@ -33,6 +33,7 @@ interface DataImportUploaderProps {
   templateUrl: string;
   fields: ImportField[];
   onImport: (data: Record<string, string>[]) => Promise<void>;
+  platformSelector?: React.ReactNode;
 }
 
 export function DataImportUploader({
@@ -44,6 +45,7 @@ export function DataImportUploader({
   templateUrl,
   fields,
   onImport,
+  platformSelector,
 }: DataImportUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
@@ -185,6 +187,9 @@ export function DataImportUploader({
   if (step === "upload") {
     return (
       <div className="w-full">
+        {/* Platform Selector (if provided) */}
+        {platformSelector && <div className="mb-6">{platformSelector}</div>}
+
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
@@ -200,10 +205,29 @@ export function DataImportUploader({
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h2 className="text-lg font-semibold text-blue-900">Before You Start</h2>
+        {/* Instructions and Upload - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Instructions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-blue-900 mb-4">Before You Start</h2>
+            <ol className="space-y-2 text-sm text-blue-800 mb-4">
+              <li className="flex items-start gap-2">
+                <span className="font-semibold min-w-[20px]">1.</span>
+                <span>Download our template and review the required format</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold min-w-[20px]">2.</span>
+                <span>Export your data from {platform}</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold min-w-[20px]">3.</span>
+                <span>Map your data to our template format</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold min-w-[20px]">4.</span>
+                <span>Upload the completed CSV file</span>
+              </li>
+            </ol>
             <div className="flex items-center gap-2">
               <a
                 href={docsUrl}
@@ -228,68 +252,50 @@ export function DataImportUploader({
               </a>
             </div>
           </div>
-          <ol className="space-y-2 text-sm text-blue-800">
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-[20px]">1.</span>
-              <span>Download our template and review the required format</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-[20px]">2.</span>
-              <span>Export your data from {platform}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-[20px]">3.</span>
-              <span>Map your data to our template format</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-[20px]">4.</span>
-              <span>Upload the completed CSV file below</span>
-            </li>
-          </ol>
-        </div>
 
-        {/* Upload Area */}
-        <div
-          className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-            dragActive
-              ? "border-primary-500 bg-primary-50"
-              : "border-gray-300 bg-gray-50 hover:border-gray-400"
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <div className="pointer-events-none">
-            <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Drop your CSV file here
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">or click to browse</p>
-            <p className="text-xs text-gray-400">Only .csv files are supported</p>
+          {/* Upload Area */}
+          <div
+            className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+              dragActive
+                ? "border-primary-500 bg-primary-50"
+                : "border-gray-300 bg-gray-50 hover:border-gray-400"
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="pointer-events-none">
+              <svg
+                className="w-16 h-16 mx-auto mb-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Drop your CSV file here
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">or click to browse</p>
+              <p className="text-xs text-gray-400">Only .csv files are supported</p>
+            </div>
           </div>
         </div>
 
-        {/* Format Reference */}
-        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+        {/* Expected Format - Full Width */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Expected Format</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
