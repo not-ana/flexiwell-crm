@@ -465,20 +465,26 @@ function EstablishmentCard({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <Button
-              variant={editingSection === "teachers" ? "primary" : "secondary"}
-              size="sm"
+            <button
               onClick={() => onToggleSection(editingSection === "teachers" ? null : "teachers")}
+              className={`inline-flex items-center justify-center px-3.5 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                editingSection === "teachers"
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
             >
               {editingSection === "teachers" ? t("done") : t("manageTeachers")}
-            </Button>
-            <Button
-              variant={editingSection === "rooms" ? "primary" : "secondary"}
-              size="sm"
+            </button>
+            <button
               onClick={() => onToggleSection(editingSection === "rooms" ? null : "rooms")}
+              className={`inline-flex items-center justify-center px-3.5 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                editingSection === "rooms"
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
             >
               {editingSection === "rooms" ? t("done") : t("manageRooms")}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
