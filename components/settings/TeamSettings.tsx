@@ -45,8 +45,8 @@ const ROLE_OPTIONS = [
 // ============================================================================
 
 const TRANSLATIONS = {
-  title: { "pt-BR": "Equipe", "en-US": "Team" },
-  description: { "pt-BR": "Gerencie o acesso e permissões da equipe.", "en-US": "Manage team access and permissions." },
+  title: { "pt-BR": "Equipe", "en-US": "Staff" },
+  description: { "pt-BR": "Gerencie o acesso e permissões da equipe.", "en-US": "Manage staff access and permissions." },
   inviteMember: { "pt-BR": "Convidar Membro", "en-US": "Invite Member" },
   fullName: { "pt-BR": "Nome Completo", "en-US": "Full Name" },
   email: { "pt-BR": "E-mail", "en-US": "Email" },
@@ -55,7 +55,7 @@ const TRANSLATIONS = {
   invitationEmailTitle: { "pt-BR": "E-mail de Convite", "en-US": "Invitation Email" },
   invitationEmailDesc: {
     "pt-BR": "O membro da equipe receberá um e-mail para configurar sua conta e senha.",
-    "en-US": "The team member will receive an email to set up their account and password.",
+    "en-US": "The staff member will receive an email to set up their account and password.",
   },
   cancel: { "pt-BR": "Cancelar", "en-US": "Cancel" },
   addMember: { "pt-BR": "Adicionar Membro", "en-US": "Add Member" },
@@ -63,11 +63,11 @@ const TRANSLATIONS = {
   editMember: { "pt-BR": "Editar Membro", "en-US": "Edit Member" },
   resendInvite: { "pt-BR": "Reenviar Convite", "en-US": "Resend Invite" },
   removeMember: { "pt-BR": "Remover Membro", "en-US": "Remove Member" },
-  removeTeamMember: { "pt-BR": "Remover Membro da Equipe", "en-US": "Remove Team Member" },
+  removeTeamMember: { "pt-BR": "Remover Membro da Equipe", "en-US": "Remove Staff Member" },
   cannotBeUndone: { "pt-BR": "Esta ação não pode ser desfeita", "en-US": "This action cannot be undone" },
   confirmRemove: {
     "pt-BR": (name: string) => `Tem certeza que deseja remover ${name} da equipe? Ele perderá o acesso ao sistema imediatamente.`,
-    "en-US": (name: string) => `Are you sure you want to remove ${name} from the team? They will lose access to the system immediately.`,
+    "en-US": (name: string) => `Are you sure you want to remove ${name} from the staff? They will lose access to the system immediately.`,
   },
   fillNameEmail: { "pt-BR": "Preencha nome e e-mail", "en-US": "Please fill in name and email" },
   invalidEmail: { "pt-BR": "Por favor, insira um e-mail válido", "en-US": "Please enter a valid email address" },
@@ -75,7 +75,7 @@ const TRANSLATIONS = {
     "pt-BR": (name: string) => `Membro ${name} adicionado com sucesso`,
     "en-US": (name: string) => `Team member ${name} added successfully`,
   },
-  failedToAdd: { "pt-BR": "Falha ao adicionar membro", "en-US": "Failed to add team member" },
+  failedToAdd: { "pt-BR": "Falha ao adicionar membro", "en-US": "Failed to add staff member" },
   editComingSoon: {
     "pt-BR": (name: string) => `Editar ${name} - em breve`,
     "en-US": (name: string) => `Edit functionality for ${name} - coming soon`,
@@ -86,9 +86,9 @@ const TRANSLATIONS = {
   },
   memberRemoved: {
     "pt-BR": (name: string) => `${name} foi removido da equipe`,
-    "en-US": (name: string) => `${name} has been removed from the team`,
+    "en-US": (name: string) => `${name} has been removed from the staff`,
   },
-  failedToRemove: { "pt-BR": "Falha ao remover membro", "en-US": "Failed to remove team member" },
+  failedToRemove: { "pt-BR": "Falha ao remover membro", "en-US": "Failed to remove staff member" },
 } as const;
 
 type TranslationKey = keyof typeof TRANSLATIONS;
@@ -472,7 +472,7 @@ export function TeamSettings() {
 
   const { t, getMessage } = useTeamTranslations();
 
-  // Load team members from API
+  // Load staff members from API
   const loadTeamMembers = useCallback(async () => {
     try {
       const res = await fetch("/api/staff");
@@ -497,7 +497,7 @@ export function TeamSettings() {
         );
       }
     } catch (error) {
-      console.error("Failed to load team members:", error);
+      console.error("Failed to load staff members:", error);
     } finally {
       setLoading(false);
     }
@@ -551,7 +551,7 @@ export function TeamSettings() {
         <Button onClick={() => setShowInviteModal(true)}>{t("inviteMember")}</Button>
       </div>
 
-      {/* Team Members List */}
+      {/* Staff Members List */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="space-y-4">
           {teamMembers.map((member) => (
