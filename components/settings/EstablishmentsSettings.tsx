@@ -466,14 +466,14 @@ function EstablishmentCard({
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
+              variant={editingSection === "teachers" ? "primary" : "secondary"}
               size="sm"
               onClick={() => onToggleSection(editingSection === "teachers" ? null : "teachers")}
             >
               {editingSection === "teachers" ? t("done") : t("manageTeachers")}
             </Button>
             <Button
-              variant="secondary"
+              variant={editingSection === "rooms" ? "primary" : "secondary"}
               size="sm"
               onClick={() => onToggleSection(editingSection === "rooms" ? null : "rooms")}
             >
