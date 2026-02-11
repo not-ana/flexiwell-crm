@@ -93,8 +93,21 @@ export function IntegrationsSettings() {
   };
 
   const handleImport = async (data: Record<string, string>[]) => {
-    console.log(`Importing ${selectedPlatform} data:`, data);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await api.post("/api/clients/import", {
+        clientsData: data,
+      });
+
+      if (response.data.success) {
+        console.log(`Successfully imported ${response.data.results.success} clients from ${selectedPlatform}`);
+        if (response.data.results.failed > 0) {
+          console.warn(`${response.data.results.failed} records failed to import:`, response.data.results.errors);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to import ${selectedPlatform} data:`, error);
+      throw error;
+    }
   };
 
   const renderIntegrationSettings = (integrationId: string) => {
