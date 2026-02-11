@@ -26,20 +26,8 @@ interface IntegrationInfo {
   docsUrl?: string;
 }
 
-const allIntegrations: IntegrationInfo[] = [
-  // API-based marketplace integrations
-  { id: "wellhub", name: "Wellhub", icon: "W", color: "orange", description: "Corporate wellness marketplace via API", hasSettings: true, image: "/wellhub.png", importType: "api" },
-  { id: "totalpass", name: "TotalPass", icon: "TP", color: "green", description: "Brazil fitness marketplace via API", hasSettings: true, image: "/totalpass.jpg", importType: "api" },
-
-  // Other integrations
-  { id: "stripe", name: "Stripe", icon: "ST", color: "purple", description: "Payment processing", hasSettings: true, image: "/stripe.webp", importType: "api" },
-  { id: "paypal", name: "PayPal", icon: "PP", color: "blue", description: "Accept PayPal payments", hasSettings: true, importType: "api" },
-  { id: "googleCalendar", name: "Google Calendar", icon: "GC", color: "blue", description: "Calendar sync & notifications", hasSettings: true, importType: "api" },
-  { id: "whatsapp", name: "WhatsApp", icon: "WA", color: "green", description: "Client messaging via Twilio", hasSettings: true, importType: "api" },
-  { id: "sms", name: "SMS", icon: "SMS", color: "blue", description: "SMS notifications via Twilio", hasSettings: true, importType: "api" },
-  { id: "mailchimp", name: "Mailchimp", icon: "MC", color: "yellow", description: "Email marketing & newsletters", hasSettings: true, importType: "api" },
-  { id: "zapier", name: "Zapier", icon: "ZP", color: "orange", description: "Connect with 5000+ apps", hasSettings: false, image: "/zapier.png", importType: "api" },
-];
+// No API integrations here - they've been moved to Add-ons
+const allIntegrations: IntegrationInfo[] = [];
 
 const colorClasses: Record<string, string> = {
   green: "bg-green-100 text-green-600",
@@ -155,21 +143,14 @@ export function IntegrationsSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Data Import</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Import data from other platforms and connect apps to extend FlexiWell.
-          {connectedCount > 0 && ` ${connectedCount} connected.`}
+          Import your data from other platforms using CSV files.
         </p>
       </div>
 
       {/* Data Import Section */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900">Import Data</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Import your data from other platforms using CSV files.
-          </p>
-        </div>
 
         <div>
           <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
