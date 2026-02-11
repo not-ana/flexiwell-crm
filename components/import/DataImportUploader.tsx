@@ -202,7 +202,32 @@ export function DataImportUploader({
 
         {/* Instructions */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-          <h2 className="text-lg font-semibold text-blue-900 mb-3">Before You Start</h2>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h2 className="text-lg font-semibold text-blue-900">Before You Start</h2>
+            <div className="flex items-center gap-2">
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View Documentation
+              </a>
+              <a
+                href={templateUrl}
+                download
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download Template
+              </a>
+            </div>
+          </div>
           <ol className="space-y-2 text-sm text-blue-800">
             <li className="flex items-start gap-2">
               <span className="font-semibold min-w-[20px]">1.</span>
@@ -221,31 +246,6 @@ export function DataImportUploader({
               <span>Upload the completed CSV file below</span>
             </li>
           </ol>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <a
-            href={docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            View Documentation
-          </a>
-          <a
-            href={templateUrl}
-            download
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Download Template
-          </a>
         </div>
 
         {/* Upload Area */}
