@@ -24,7 +24,6 @@ const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "waitlist", label: "Waitlist" },
   { id: "team", label: "Team" },
   { id: "establishments", label: "Establishments" },
-  { id: "rooms", label: "Rooms" },
   { id: "integrations", label: "Integrations" },
   { id: "addons", label: "Add-ons" },
   // { id: "branding", label: "Branding" },
