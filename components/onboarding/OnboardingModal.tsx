@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 type UserRole = "admin" | "teacher" | "client";
@@ -240,11 +240,13 @@ interface OnboardingModalProps {
 export function OnboardingModal({ isOpen, onClose, role, onComplete }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(-1); // -1 is welcome screen
   const config = onboardingConfigs[role];
+  const prevIsOpenRef = useRef(isOpen);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       setCurrentStep(-1);
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen]);
 
   const handleNext = () => {

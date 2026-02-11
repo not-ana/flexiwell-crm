@@ -154,7 +154,6 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<DisplayPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiStats, setApiStats] = useState<ApiStats | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentFilter>("all");
@@ -243,7 +242,6 @@ export default function PaymentsPage() {
       // Transform payments to display format
       const transformedPayments = data.payments.map(transformPayment);
       setPayments(transformedPayments);
-      setApiStats(data.stats);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payments");
     } finally {
@@ -496,12 +494,6 @@ export default function PaymentsPage() {
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const handleViewHistory = (payment: DisplayPayment) => {
-    setHistoryTarget(payment);
-    setShowHistoryModal(true);
-    setOpenDropdownId(null);
   };
 
   const handleOpenDeletedHistory = async () => {

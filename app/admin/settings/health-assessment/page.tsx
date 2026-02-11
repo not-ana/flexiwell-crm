@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useHealthAssessmentConfig } from "@/hooks/useHealthAssessment";
 import type { FormSectionConfig, FormFieldConfig } from "@/lib/db/schemas";
@@ -9,11 +9,9 @@ import { LoadingSpinner } from "@/components/ui";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import {
   ArrowLeftIcon,
-  GripVerticalIcon,
   EditIcon,
   Trash2Icon,
   PlusIcon,
-  EyeIcon,
   SaveIcon,
   CheckCircleIcon,
   AlertCircleIcon,
@@ -26,12 +24,11 @@ import {
 const MOCK_ESTABLISHMENT_ID = "establishment-1";
 
 export default function HealthAssessmentConfigPage() {
-  const { formConfig, isLoading, error, saveConfig } = useHealthAssessmentConfig(MOCK_ESTABLISHMENT_ID);
+  const { formConfig, isLoading, saveConfig } = useHealthAssessmentConfig(MOCK_ESTABLISHMENT_ID);
 
-  const [sections, setSections] = useState<FormSectionConfig[]>([]);
+  const [sections, setSections] = useState<FormSectionConfig[]>(defaultSections);
   const [liabilityWaiverText, setLiabilityWaiverText] = useState(defaultLiabilityWaiverText);
   const [termsText, setTermsText] = useState(defaultTermsText);
-  const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -40,30 +37,28 @@ export default function HealthAssessmentConfigPage() {
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionData, setEditingSectionData] = useState<FormSectionConfig | null>(null);
 
-  // Initialize form with config or defaults
-  useEffect(() => {
-    if (formConfig) {
+  // Track if we've initialized from formConfig
+  const initializedRef = useRef(false);
+
+  // Initialize form with config when it loads (useLayoutEffect to avoid setState in render warning)
+  useLayoutEffect(() => {
+    if (formConfig && !initializedRef.current) {
       setSections(formConfig.sections);
       setLiabilityWaiverText(formConfig.liabilityWaiverText);
       setTermsText(formConfig.termsText);
-    } else if (!isLoading) {
-      // Use defaults if no config exists
-      setSections(defaultSections);
-      setLiabilityWaiverText(defaultLiabilityWaiverText);
-      setTermsText(defaultTermsText);
+      initializedRef.current = true;
     }
-  }, [formConfig, isLoading]);
+  }, [formConfig]);
 
-  // Track changes
-  useEffect(() => {
-    if (formConfig) {
-      const sectionsChanged = JSON.stringify(sections) !== JSON.stringify(formConfig.sections);
-      const waiverChanged = liabilityWaiverText !== formConfig.liabilityWaiverText;
-      const termsChanged = termsText !== formConfig.termsText;
-      setHasChanges(sectionsChanged || waiverChanged || termsChanged);
-    } else {
-      setHasChanges(true); // Always has changes if no config exists yet
+  // Compute whether there are changes (derived state)
+  const hasChanges = useMemo(() => {
+    if (!formConfig) {
+      return true; // Always has changes if no config exists yet
     }
+    const sectionsChanged = JSON.stringify(sections) !== JSON.stringify(formConfig.sections);
+    const waiverChanged = liabilityWaiverText !== formConfig.liabilityWaiverText;
+    const termsChanged = termsText !== formConfig.termsText;
+    return sectionsChanged || waiverChanged || termsChanged;
   }, [sections, liabilityWaiverText, termsText, formConfig]);
 
   // Toggle section enabled
@@ -196,7 +191,7 @@ export default function HealthAssessmentConfigPage() {
 
     if (result.success) {
       setSaveSuccess(true);
-      setHasChanges(false);
+      // hasChanges will automatically update since it's derived from formConfig
       setTimeout(() => setSaveSuccess(false), 3000);
     } else {
       setSaveError(result.error || "Failed to save configuration");

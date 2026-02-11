@@ -27,12 +27,12 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
 
     // Try to find existing client by phone
-    let client = await db.collection<Client>("clients").findOne({
+    const client = await db.collection<Client>("clients").findOne({
       phone: { $regex: phoneNumber.replace("+", ""), $options: "i" },
     });
 
     // Try to find existing conversation
-    let conversation = await db.collection<Conversation>("conversations").findOne({
+    const conversation = await db.collection<Conversation>("conversations").findOne({
       platform: "whatsapp",
       platformUserId: phoneNumber,
       status: "active",
@@ -221,7 +221,7 @@ async function sendWhatsAppMessage(to: string, message: string) {
       const normalizedTo = to.replace(/\D/g, "");
 
       const response = await fetch(
-        `https://graph.facebook.com/v18.0/${creds.phoneNumberId}/messages`,
+        `https://graph.facebook.com/v22.0/${creds.phoneNumberId}/messages`,
         {
           method: "POST",
           headers: {

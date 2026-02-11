@@ -13,7 +13,6 @@ import {
 } from "@/lib/config/flexilaunch-integration";
 
 export default function BundlePage() {
-  const [selectedPackage, setSelectedPackage] = useState("growth_bundle");
   const spotsRemaining = earlyAdopterOffer.limited - earlyAdopterOffer.claimed;
 
   return (
@@ -182,7 +181,6 @@ export default function BundlePage() {
                   </div>
 
                   <button
-                    onClick={() => setSelectedPackage(pkg.id)}
                     className={`w-full mt-6 px-6 py-3 text-sm font-medium rounded-xl transition-colors ${
                       pkg.highlighted
                         ? "bg-primary-600 text-white hover:bg-primary-700"
@@ -348,7 +346,7 @@ export default function BundlePage() {
                   </div>
                 </div>
 
-                <p className="text-gray-700 italic mb-6">"{testimonial.quote}"</p>
+                <p className="text-gray-700 italic mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
 
                 <div className="space-y-2">
                   {testimonial.results.map((result) => (

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
 
     // Get or create client record
-    let client = await db.collection<Client>("clients").findOne({
+    const client = await db.collection<Client>("clients").findOne({
       $or: [
         { _id: new ObjectId(user.userId) },
         { email: user.email },

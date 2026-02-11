@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronIcon } from "@/components/icons";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
+import { XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useCurrency } from "@/hooks/useCurrency";
 import { api } from "@/lib/api/client";
@@ -457,7 +457,7 @@ export default function AdminDashboard() {
                 <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg lg:text-xl font-bold text-gray-900">Staff Performance</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team's metrics this month</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team&apos;s metrics this month</p>
                   </div>
                   <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
                     View all

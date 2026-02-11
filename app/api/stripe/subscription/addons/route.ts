@@ -206,7 +206,7 @@ export async function DELETE(request: NextRequest) {
     await removeSubscriptionItem(itemToRemove.id);
 
     // Update user's active add-ons
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await db.collection("users").updateOne(
       { email: user.email },
       {

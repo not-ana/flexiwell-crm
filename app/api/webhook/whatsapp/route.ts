@@ -341,7 +341,7 @@ async function sendWhatsAppMessage(
 
   try {
     const apiResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
       {
         method: "POST",
         headers: {

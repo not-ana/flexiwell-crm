@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     // Update class enrollment
     await db.collection("classes").updateOne(
       { _id: new ObjectId(classId) },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       {
         $inc: { currentEnrollment: 1 },
         $push: {
@@ -237,7 +237,7 @@ export async function DELETE(request: NextRequest) {
     // Update class enrollment
     await db.collection("classes").updateOne(
       { _id: new ObjectId(booking.classId) },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       {
         $inc: { currentEnrollment: -1 },
         $pull: { enrolledClients: { clientId } },

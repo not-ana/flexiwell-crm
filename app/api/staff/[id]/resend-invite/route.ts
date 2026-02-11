@@ -49,7 +49,7 @@ export async function POST(
     }
 
     // Find or create user account
-    let user = await db.collection("users").findOne({
+    const user = await db.collection("users").findOne({
       email: staff.email,
     });
 

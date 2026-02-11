@@ -178,7 +178,7 @@ export async function POST(
     const now = new Date();
 
     // Check if client already exists
-    let client = await db.collection<Client>("clients").findOne({
+    const client = await db.collection<Client>("clients").findOne({
       email: finalClientEmail.toLowerCase(),
     });
 

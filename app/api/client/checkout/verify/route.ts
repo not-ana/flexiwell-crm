@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     // Get client by userId or email
     const customerEmail = session.customer_details?.email || "";
-    let client = await db.collection<Client>("clients").findOne({
+    const client = await db.collection<Client>("clients").findOne({
       $or: [
         { _id: new ObjectId(userId) },
         ...(customerEmail ? [{ email: customerEmail }] : []),

@@ -175,7 +175,7 @@ export default function TeacherNotificationsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-        <p className="text-gray-600 mt-1">Select when and how you'll be notified.</p>
+        <p className="text-gray-600 mt-1">Select when and how you&apos;ll be notified.</p>
       </div>
 
       {/* Notification Sections */}

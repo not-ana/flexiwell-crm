@@ -163,6 +163,145 @@ const ADDONS: Addon[] = [
   },
 ];
 
+const FREE_ADDONS: Addon[] = [
+  {
+    id: "stripe",
+    name: "Stripe",
+    description: "Accept credit card payments and manage subscriptions",
+    descriptionBrl: "Aceite pagamentos com cartão de crédito e gerencie assinaturas",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-purple-500",
+    iconColor: "text-white",
+    iconImage: "/stripe.webp",
+    features: [
+      "Credit card processing",
+      "Subscription management",
+      "Invoicing",
+      "Fraud protection",
+    ],
+    featuresBrl: [
+      "Processamento de cartão",
+      "Gerenciamento de assinaturas",
+      "Faturamento",
+      "Proteção contra fraude",
+    ],
+    active: false,
+  },
+  {
+    id: "google-calendar",
+    name: "Google Calendar",
+    description: "Sync your classes and appointments with Google Calendar",
+    descriptionBrl: "Sincronize suas aulas e agendamentos com Google Calendar",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-blue-500",
+    iconColor: "text-white",
+    features: [
+      "Two-way sync",
+      "Reminders",
+      "Availability",
+      "Room booking",
+    ],
+    featuresBrl: [
+      "Sincronização bidirecional",
+      "Lembretes",
+      "Disponibilidade",
+      "Reserva de salas",
+    ],
+    active: false,
+  },
+  {
+    id: "mailchimp",
+    name: "Mailchimp",
+    description: "Email marketing and newsletters for your clients",
+    descriptionBrl: "E-mail marketing e newsletters para seus clientes",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-yellow-500",
+    iconColor: "text-white",
+    features: [
+      "Contact sync",
+      "Automated campaigns",
+      "Segmentation",
+      "Analytics",
+    ],
+    featuresBrl: [
+      "Sincronização de contatos",
+      "Campanhas automáticas",
+      "Segmentação",
+      "Analytics",
+    ],
+    active: false,
+  },
+  {
+    id: "wellhub",
+    name: "Wellhub",
+    description: "Corporate wellness marketplace integration",
+    descriptionBrl: "Integração com marketplace de bem-estar corporativo",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-orange-500",
+    iconColor: "text-white",
+    iconImage: "/wellhub.png",
+    features: [
+      "Class sync",
+      "Check-in management",
+      "Revenue reports",
+      "Client profiles",
+    ],
+    featuresBrl: [
+      "Sincronização de aulas",
+      "Gerenciamento de check-in",
+      "Relatórios de receita",
+      "Perfis de clientes",
+    ],
+    active: false,
+  },
+  {
+    id: "totalpass",
+    name: "TotalPass",
+    description: "Brazil fitness marketplace integration",
+    descriptionBrl: "Integração com marketplace fitness do Brasil",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-green-600",
+    iconColor: "text-white",
+    iconImage: "/totalpass.jpg",
+    features: [
+      "Class sync",
+      "Check-in management",
+      "Revenue reports",
+      "Client profiles",
+    ],
+    featuresBrl: [
+      "Sincronização de aulas",
+      "Gerenciamento de check-in",
+      "Relatórios de receita",
+      "Perfis de clientes",
+    ],
+    active: false,
+  },
+  {
+    id: "zapier",
+    name: "Zapier",
+    description: "Connect with 5000+ apps and automate workflows",
+    descriptionBrl: "Conecte com 5000+ apps e automatize fluxos de trabalho",
+    pricing: { usd: "Free", brl: "Grátis", note: "", noteBrl: "" },
+    iconBg: "bg-orange-600",
+    iconColor: "text-white",
+    iconImage: "/zapier.png",
+    features: [
+      "5000+ app connections",
+      "Workflow automation",
+      "Triggers",
+      "Actions",
+    ],
+    featuresBrl: [
+      "5000+ conexões de apps",
+      "Automação de fluxo de trabalho",
+      "Gatilhos",
+      "Ações",
+    ],
+    active: false,
+  },
+];
+
 const TRANSLATIONS = {
   title: { en: "Add-ons", pt: "Add-ons" },
   subtitle: {
@@ -428,6 +567,10 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
       try {
         // First try to get add-ons from Stripe subscription
         const stripeResponse = await fetch("/api/stripe/subscription");
+        if (stripeResponse.status === 401) {
+          setError("Authentication required");
+          return;
+        }
         if (stripeResponse.ok) {
           const data = await stripeResponse.json();
           // Set user's plan tier from subscription data
@@ -450,6 +593,10 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
 
         // Fall back to database for users without Stripe subscription
         const dbResponse = await fetch("/api/admin/addons");
+        if (dbResponse.status === 401) {
+          setError("Authentication required");
+          return;
+        }
         if (dbResponse.ok) {
           const data = await dbResponse.json();
           if (data.planTier) {
@@ -467,6 +614,7 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
         }
       } catch (err) {
         console.error("Failed to load active add-ons:", err);
+        setError("Failed to load add-ons");
       }
     }
     loadActiveAddons();
@@ -543,20 +691,42 @@ export function AddonsSettings({ onNavigate }: AddonsSettingsProps) {
         </div>
       )}
 
-      {/* Addons Grid */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {ADDONS.map((addon) => (
-          <AddonCard
-            key={addon.id}
-            addon={addon}
-            isActive={activeAddons[addon.id] || addon.active || false}
-            isLoading={loading === addon.id}
-            userPlan={userPlan}
-            translations={translations}
-            onToggle={handleToggleAddon}
-            onNavigate={onNavigate}
-          />
-        ))}
+      {/* Paid Addons Section */}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Paid Add-ons</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {ADDONS.map((addon) => (
+            <AddonCard
+              key={addon.id}
+              addon={addon}
+              isActive={activeAddons[addon.id] || addon.active || false}
+              isLoading={loading === addon.id}
+              userPlan={userPlan}
+              translations={translations}
+              onToggle={handleToggleAddon}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Free Integrations Section */}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Free Integrations</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {FREE_ADDONS.map((addon) => (
+            <AddonCard
+              key={addon.id}
+              addon={addon}
+              isActive={activeAddons[addon.id] || addon.active || false}
+              isLoading={loading === addon.id}
+              userPlan={userPlan}
+              translations={translations}
+              onToggle={handleToggleAddon}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Custom Solution */}

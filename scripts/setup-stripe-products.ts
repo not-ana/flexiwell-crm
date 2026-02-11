@@ -16,42 +16,39 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-12-15.clover",
 });
 
-// Definição dos planos
+// Definição dos planos (preços em centavos)
+// Starter: $99/mês ou $79/mês (anual = $948/ano)
+// Growth: $179/mês ou $143/mês (anual = $1,716/ano)
+// Business: $299/mês ou $239/mês (anual = $2,868/ano)
+// Professional: $499/mês ou $399/mês (anual = $4,788/ano)
 const plans = [
   {
     id: "starter",
     name: "FlexiWell Starter",
-    description: "For solo instructors getting started. Up to 100 clients.",
-    monthlyPrice: 4900, // em centavos
-    annualPrice: 46800,
+    description: "For independent instructors. Up to 100 clients, 1 location.",
+    monthlyPrice: 9900, // $99/mês
+    annualPrice: 94800, // $948/ano ($79/mês)
   },
   {
     id: "growth",
     name: "FlexiWell Growth",
-    description: "For growing studios with multiple staff. Up to 500 clients.",
-    monthlyPrice: 9900,
-    annualPrice: 94800,
+    description: "For growing studios. Up to 500 clients, 2 locations.",
+    monthlyPrice: 17900, // $179/mês
+    annualPrice: 171600, // $1,716/ano ($143/mês)
   },
   {
     id: "business",
     name: "FlexiWell Business",
-    description: "For established studios with AI features. Up to 500 clients.",
-    monthlyPrice: 17900,
-    annualPrice: 178800,
+    description: "For established studios with AI features. Up to 2,000 clients, 5 locations.",
+    monthlyPrice: 29900, // $299/mês
+    annualPrice: 286800, // $2,868/ano ($239/mês)
   },
   {
-    id: "professional",
+    id: "enterprise", // ID interno, exibido como "Professional" no site
     name: "FlexiWell Professional",
-    description: "For multi-location studios. Up to 2,000 clients.",
-    monthlyPrice: 19900,
-    annualPrice: 190800,
-  },
-  {
-    id: "enterprise",
-    name: "FlexiWell Enterprise",
-    description: "For studio networks. Unlimited clients.",
-    monthlyPrice: 39900,
-    annualPrice: 382800,
+    description: "For multiple locations. Unlimited clients and locations.",
+    monthlyPrice: 49900, // $499/mês
+    annualPrice: 478800, // $4,788/ano ($399/mês)
   },
 ];
 

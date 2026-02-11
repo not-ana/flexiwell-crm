@@ -846,7 +846,7 @@ export default function AdminClassesPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <p className="text-sm text-gray-600">Today's Classes</p>
+            <p className="text-sm text-gray-600">Today&apos;s Classes</p>
             <p className="text-2xl font-bold text-primary-600 mt-1">{todayClasses}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-4">

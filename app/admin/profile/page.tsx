@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  MapPinIcon,
   ExternalLinkIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui";

@@ -37,7 +37,7 @@ export class WhatsAppChannel implements INotificationChannel {
         const normalizedPhone = formattedPhone.replace(/\D/g, "");
 
         response = await fetch(
-          `https://graph.facebook.com/v18.0/${creds.phoneNumberId}/messages`,
+          `https://graph.facebook.com/v22.0/${creds.phoneNumberId}/messages`,
           {
             method: "POST",
             headers: {

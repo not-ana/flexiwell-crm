@@ -23,7 +23,7 @@ export async function GET() {
     // Use display_phone_number field which works for both test and verified numbers
     try {
       const response = await fetch(
-        `https://graph.facebook.com/v18.0/${phoneNumberId}?fields=display_phone_number,id`,
+        `https://graph.facebook.com/v22.0/${phoneNumberId}?fields=display_phone_number,id`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

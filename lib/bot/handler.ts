@@ -40,7 +40,7 @@ async function getOrCreateSession(platformUserId: string, platform: "whatsapp" |
   const sessionsCollection = db.collection<BotSession>("bot_sessions");
 
   // Try to find existing active session
-  let session = await sessionsCollection.findOne({
+  const session = await sessionsCollection.findOne({
     platformUserId,
     platform,
     expiresAt: { $gt: new Date() },

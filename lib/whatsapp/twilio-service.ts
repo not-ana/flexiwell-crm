@@ -1,6 +1,7 @@
 // Twilio WhatsApp Service
 // This service handles sending and receiving WhatsApp messages via Twilio
 
+import crypto from "crypto";
 import { InteractiveContent } from "./types";
 
 interface TwilioConfig {
@@ -62,8 +63,6 @@ export class TwilioWhatsAppService {
     to: string,
     content: InteractiveContent
   ): Promise<TwilioMessageResponse> {
-    const formattedTo = this.formatPhoneNumber(to);
-
     // For Twilio, we need to use Content API or format as regular message with options
     // Simple implementation: format as text with numbered options
     let messageBody = "";
@@ -168,8 +167,6 @@ export class TwilioWhatsAppService {
     // In production, implement proper signature validation
     // using Twilio's validation helper
     // https://www.twilio.com/docs/usage/security#validating-requests
-
-    const crypto = require("crypto");
 
     // Sort params and create string
     const sortedKeys = Object.keys(params).sort();

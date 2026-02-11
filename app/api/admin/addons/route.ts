@@ -101,7 +101,7 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase();
 
     // Remove add-on from user's activeAddOns array
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await db.collection("users").updateOne(
       { email: user.email },
       {

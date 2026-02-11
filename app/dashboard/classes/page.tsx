@@ -358,7 +358,7 @@ function RequestModal({ type, event, onClose, onSubmit }: { type: RequestType; e
           {(joinWaitlist || type === "extra-class") && (
             <div className="mt-4 p-3 bg-primary-50 rounded-lg text-sm text-primary-700">
               <p className="font-medium">Estimated position in queue: #3</p>
-              <p className="text-xs mt-1">You'll receive a WhatsApp notification</p>
+              <p className="text-xs mt-1">You&apos;ll receive a WhatsApp notification</p>
             </div>
           )}
         </div>

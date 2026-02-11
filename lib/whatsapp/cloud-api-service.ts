@@ -1,6 +1,7 @@
 // WhatsApp Cloud API Service
 // Official Meta WhatsApp Business Cloud API integration
 
+import crypto from "crypto";
 import type { InteractiveContent, TemplateContent } from "./types";
 
 export interface CloudApiConfig {
@@ -210,8 +211,6 @@ export class WhatsAppCloudApiService {
     signature: string,
     payload: string
   ): boolean {
-    const crypto = require("crypto");
-
     // Signature format: sha256=<hash>
     const expectedSignature = crypto
       .createHmac("sha256", appSecret)

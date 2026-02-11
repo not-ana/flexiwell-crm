@@ -137,7 +137,7 @@ export const pricingPlans: PricingPlan[] = [
     },
     limits: {
       clients: 100,
-      teamMembers: "unlimited",
+      teamMembers: 1,
       locations: 1,
       storage: "5GB",
     },
@@ -148,8 +148,8 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Payment processing", included: true, tooltip: "2.9% + $0.30 per transaction" },
       { name: "Email reminders", included: true },
       { name: "Calendar sync", included: true },
-      // Messaging - Region dependent (WhatsApp BR / SMS+WhatsApp US)
-      { name: "SMS notifications", included: false },
+      // Messaging - SMS for all plans
+      { name: "SMS notifications", included: true },
       { name: "WhatsApp notifications", included: false },
       { name: "Messaging Bot", included: false, tooltip: "WhatsApp Bot (BR) or SMS/WhatsApp Bot (US)" },
       // AI & Waitlist - Core differentiator
@@ -402,7 +402,7 @@ export const transactionFees: Record<PlanTier, { percentage: number; fixed: numb
 export const featureMatrix: Record<string, Record<PlanTier, boolean | string | number>> = {
   // Limits - team_members is unlimited for all plans
   active_clients: { starter: 100, growth: 500, business: 2000, enterprise: "unlimited" },
-  team_members: { starter: "unlimited", growth: "unlimited", business: "unlimited", enterprise: "unlimited" },
+  team_members: { starter: 1, growth: "unlimited", business: "unlimited", enterprise: "unlimited" },
   locations: { starter: 1, growth: 2, business: 5, enterprise: "unlimited" },
   storage: { starter: "5GB", growth: "25GB", business: "100GB", enterprise: "500GB" },
 
@@ -414,7 +414,7 @@ export const featureMatrix: Record<string, Record<PlanTier, boolean | string | n
   calendar_sync: { starter: true, growth: true, business: true, enterprise: true },
 
   // Messaging - Region dependent (WhatsApp BR / SMS+WhatsApp US)
-  sms_notifications: { starter: false, growth: true, business: true, enterprise: true },
+  sms_notifications: { starter: true, growth: true, business: true, enterprise: true },
   whatsapp_notifications: { starter: false, growth: true, business: true, enterprise: true },
   messaging_bot: { starter: false, growth: false, business: "5,000 msgs/mo", enterprise: "unlimited" },
 

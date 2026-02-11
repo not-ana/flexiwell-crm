@@ -18,7 +18,6 @@ import {
 import { pricingPlans, addOns, type PlanTier, type BillingPeriod } from "@/lib/config/pricing";
 import {
   CreditCard,
-  Receipt,
   Settings,
   ArrowUpRight,
   ArrowDownRight,
@@ -635,7 +634,7 @@ function BillingContent() {
             </div>
             <div className="p-6">
               <p className="text-gray-600 mb-6">
-                We're sorry to see you go. Choose how you'd like to cancel:
+                We&apos;re sorry to see you go. Choose how you&apos;d like to cancel:
               </p>
               <div className="space-y-3">
                 <button

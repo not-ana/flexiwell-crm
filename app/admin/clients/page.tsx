@@ -787,7 +787,7 @@ export default function AdminClientsPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   // Fetch clients from API
-  const { clients, total, isLoading, error, refetch, createClient, updateClient, deleteClient } = useClients({
+  const { clients, isLoading, error, refetch, createClient, updateClient, deleteClient } = useClients({
     search: searchQuery || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
@@ -1116,9 +1116,11 @@ function EditClientModal({
     status: "active" as ClientStatus,
   });
 
-  // Update form when client changes
+  const prevIsOpenRef = useRef(isOpen);
+
+  // Update form when modal opens
   useEffect(() => {
-    if (client) {
+    if (isOpen && !prevIsOpenRef.current && client) {
       setFormData({
         name: client.name || "",
         email: client.email || "",
@@ -1127,7 +1129,8 @@ function EditClientModal({
         status: (client.status as ClientStatus) || "active",
       });
     }
-  }, [client]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, client]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) {

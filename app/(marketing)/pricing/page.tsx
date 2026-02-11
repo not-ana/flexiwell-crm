@@ -468,7 +468,7 @@ function PricingContent() {
           {canceled && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-md mx-auto">
               <p className="text-yellow-800 text-sm">
-                Checkout was canceled. Feel free to try again when you're ready.
+                Checkout was canceled. Feel free to try again when you&apos;re ready.
               </p>
             </div>
           )}

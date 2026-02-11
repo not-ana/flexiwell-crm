@@ -2,6 +2,8 @@
 // This service handles sending and receiving SMS messages via Twilio
 // Uses the same Twilio account as WhatsApp but with standard SMS channel
 
+import crypto from "crypto";
+
 interface TwilioSMSConfig {
   accountSid: string;
   authToken: string;
@@ -130,8 +132,6 @@ export class TwilioSMSService {
     url: string,
     params: Record<string, string>
   ): boolean {
-    const crypto = require("crypto");
-
     // Sort params and create string
     const sortedKeys = Object.keys(params).sort();
     let data = url;

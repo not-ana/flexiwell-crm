@@ -413,7 +413,7 @@ export default function ReportsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Track your studio's performance</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Track your studio&apos;s performance</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <select
