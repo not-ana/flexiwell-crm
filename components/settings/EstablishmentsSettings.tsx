@@ -5,7 +5,6 @@ import { Button } from "@/components/ui";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "@/components/ui/Modal";
 import { FormField } from "@/components/ui/FormField";
 import { useLocale } from "@/hooks/useLocale";
-import { RoomsSettings } from "./RoomsSettings";
 
 // ============================================================================
 // Types
@@ -408,11 +407,6 @@ export function EstablishmentsSettings() {
         onAdd={handleAddEstablishment}
         t={t}
       />
-
-      {/* Rooms Section */}
-      <div className="pt-6 border-t border-gray-200">
-        <RoomsSettings />
-      </div>
     </div>
   );
 }
