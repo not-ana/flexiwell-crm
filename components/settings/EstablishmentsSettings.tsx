@@ -364,14 +364,15 @@ function RoomManagementPanel({
 
   return (
     <div className="p-6 bg-gray-50">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-gray-700">{t("rooms")}</p>
-        <button
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-medium text-gray-900">{t("rooms")}</h4>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onAddRoom}
-          className="text-xs font-medium text-primary-600 hover:text-primary-700"
         >
           + {t("addRoom")}
-        </button>
+        </Button>
       </div>
       {establishmentRooms.length > 0 ? (
         <div className="space-y-2">
@@ -387,15 +388,20 @@ function RoomManagementPanel({
           ))}
         </div>
       ) : (
-        <div className="text-center py-6 bg-white border border-gray-200 rounded-lg">
-          <RoomIcon />
-          <p className="text-sm text-gray-500 mt-2">{t("noRooms")}</p>
-          <button
+        <div className="text-center py-8 bg-white border-2 border-dashed border-gray-200 rounded-lg">
+          <div className="flex justify-center mb-3">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+              <RoomIcon />
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-3">{t("noRooms")}</p>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={onAddRoom}
-            className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700"
           >
             {t("addRoom")}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -434,69 +440,74 @@ function EstablishmentCard({
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-start justify-between">
-          <div>
+      <div className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
             <h3 className="text-base font-semibold text-gray-900">{establishment.name}</h3>
-            <p className="text-sm text-gray-500">{establishment.location}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{establishment.location}</p>
+
+            {/* Info Row */}
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>{establishment.assignedTeachers.length} {establishment.assignedTeachers.length === 1 ? 'teacher' : 'teachers'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+                <span>{establishmentRooms.length} {establishmentRooms.length === 1 ? 'room' : 'rooms'}</span>
+              </div>
+            </div>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onToggleSection(editingSection === "teachers" ? null : "teachers")}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
               {editingSection === "teachers" ? t("done") : t("manageTeachers")}
-            </button>
-            <span className="text-gray-300">|</span>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onToggleSection(editingSection === "rooms" ? null : "rooms")}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
               {editingSection === "rooms" ? t("done") : t("manageRooms")}
-            </button>
+            </Button>
           </div>
-        </div>
-
-        {/* Teachers Preview */}
-        <div className="mt-4 flex items-center gap-2">
-          <span className="text-xs text-gray-500">{t("teachers")}</span>
-          <TeacherPreview
-            teacherIds={establishment.assignedTeachers}
-            allTeachers={allTeachers}
-            t={t}
-          />
-        </div>
-
-        {/* Rooms Preview */}
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs text-gray-500">{t("rooms")}</span>
-          <span className="text-xs text-gray-600">
-            {establishmentRooms.length > 0 ? `${establishmentRooms.length} room${establishmentRooms.length !== 1 ? 's' : ''}` : t("noRooms")}
-          </span>
         </div>
       </div>
 
       {/* Teacher Assignment Panel */}
       {editingSection === "teachers" && (
-        <TeacherAssignmentPanel
-          establishment={establishment}
-          allTeachers={allTeachers}
-          onToggleTeacher={onToggleTeacher}
-          t={t}
-        />
+        <div className="border-t border-gray-100">
+          <TeacherAssignmentPanel
+            establishment={establishment}
+            allTeachers={allTeachers}
+            onToggleTeacher={onToggleTeacher}
+            t={t}
+          />
+        </div>
       )}
 
       {/* Room Management Panel */}
       {editingSection === "rooms" && (
-        <RoomManagementPanel
-          establishmentId={establishment.id}
-          rooms={rooms}
-          onAddRoom={onAddRoom}
-          onEditRoom={onEditRoom}
-          onToggleRoom={onToggleRoom}
-          onDeleteRoom={onDeleteRoom}
-          t={t}
-        />
+        <div className="border-t border-gray-100">
+          <RoomManagementPanel
+            establishmentId={establishment.id}
+            rooms={rooms}
+            onAddRoom={onAddRoom}
+            onEditRoom={onEditRoom}
+            onToggleRoom={onToggleRoom}
+            onDeleteRoom={onDeleteRoom}
+            t={t}
+          />
+        </div>
       )}
     </div>
   );
