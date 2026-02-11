@@ -228,16 +228,10 @@ export default function DashboardPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
             {greeting()}, {userData.name}
           </h1>
-          <Link
-            href="/dashboard/settings"
-            className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Settings
-          </Link>
         </div>
 
         {/* Stats Cards Row */}

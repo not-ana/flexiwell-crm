@@ -20,7 +20,7 @@ type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "r
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
-  // { id: "plans", label: "Plans" },
+  { id: "plans", label: "Plans" },
   { id: "waitlist", label: "Waitlist" },
   { id: "team", label: "Team" },
   { id: "establishments", label: "Establishments" },
