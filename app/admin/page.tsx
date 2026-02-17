@@ -2,26 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronIcon } from "@/components/icons";
-import { XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, LineChart, Line, AreaChart, Area, PieChart, Pie } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useCurrency } from "@/hooks/useCurrency";
 import { api } from "@/lib/api/client";
-
-interface StaffPerformance {
-  id: string;
-  name: string;
-  role: "admin" | "teacher";
-  initials: string;
-  avatar?: string;
-  stats: {
-    classesThisMonth: number;
-    clientsServed: number;
-    attendance: number;
-    revenue?: number;
-  };
-  trend: "up" | "down" | "stable";
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardStats {
   revenue: number;
@@ -31,7 +15,10 @@ interface DashboardStats {
   classes: number;
   classesChange: string;
   attendance: string;
-  attendanceChange: string;
+  noShowRate: string;
+  noShows: number;
+  waitlistFills: number;
+  revenueRecovered: number;
 }
 
 interface DashboardData {
@@ -43,7 +30,6 @@ interface DashboardData {
     time: string;
     type: string;
   }>;
-  staffPerformance: StaffPerformance[];
   todayClasses: Array<{
     id: string;
     name: string;
@@ -52,118 +38,55 @@ interface DashboardData {
     enrolled: number;
     capacity: number;
   }>;
-  classTypeDistribution: Array<{
-    name: string;
-    value: number;
-    color: string;
-  }>;
-  monthlyHighlights: {
-    newClients: number;
-    retentionRate: number;
-    revenueGrowth: string;
-  };
-  revenueData: Array<{
-    month: string;
-    revenue: number;
-    lastYear: number;
-  }>;
-  attendanceData: Array<{
-    week: string;
-    rate: number;
-  }>;
 }
-
-// Default chart data (used when API data is empty)
-const defaultRevenueData = [
-  { month: "Jan", revenue: 0, lastYear: 0 },
-  { month: "Feb", revenue: 0, lastYear: 0 },
-  { month: "Mar", revenue: 0, lastYear: 0 },
-  { month: "Apr", revenue: 0, lastYear: 0 },
-  { month: "May", revenue: 0, lastYear: 0 },
-  { month: "Jun", revenue: 0, lastYear: 0 },
-  { month: "Jul", revenue: 0, lastYear: 0 },
-  { month: "Aug", revenue: 0, lastYear: 0 },
-  { month: "Sep", revenue: 0, lastYear: 0 },
-  { month: "Oct", revenue: 0, lastYear: 0 },
-  { month: "Nov", revenue: 0, lastYear: 0 },
-  { month: "Dec", revenue: 0, lastYear: 0 },
-];
-
-const defaultAttendanceData = [
-  { week: "W1", rate: 0 },
-  { week: "W2", rate: 0 },
-  { week: "W3", rate: 0 },
-  { week: "W4", rate: 0 },
-  { week: "W5", rate: 0 },
-  { week: "W6", rate: 0 },
-  { week: "W7", rate: 0 },
-  { week: "W8", rate: 0 },
-];
-
-function StaffAvatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
-  const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
-  const colorIndex = name.charCodeAt(0) % colors.length;
-
-  return avatar ? (
-    <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover" />
-  ) : (
-    <div className={`w-10 h-10 ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-medium text-sm`}>
-      {initials}
-    </div>
-  );
-}
-
 
 type TimePeriod = "week" | "month" | "year";
 
-interface Establishment {
-  _id: string;
-  name: string;
-  location: string;
-}
-
 export default function AdminDashboard() {
-  const currentYear = new Date().getFullYear();
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("month");
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const [establishments, setEstablishments] = useState<Establishment[]>([]);
-  const [selectedEstablishment, setSelectedEstablishment] = useState<Establishment | null>(null);
-  const [showEstablishmentDropdown, setShowEstablishmentDropdown] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Onboarding
-  const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("admin");
+  // Onboarding - only show tour when dashboard has data
+  const { shouldShow: showOnboardingRaw, markComplete } = useInteractiveOnboarding("admin");
+  const hasData = !loading && !!dashboardData && (dashboardData.stats.clients > 0 || dashboardData.stats.classes > 0);
+  const showOnboarding = showOnboardingRaw && hasData;
+
+  // Setup checklist progress
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const saved = localStorage.getItem("admin_setup_completed_steps");
+    if (saved) {
+      setCompletedSteps(new Set(JSON.parse(saved)));
+    }
+  }, []);
+
+  const toggleStepComplete = (index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCompletedSteps(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      localStorage.setItem("admin_setup_completed_steps", JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Currency
-  const { formatCurrency, symbol: currencySymbol } = useCurrency();
-
-  const availableYears = [currentYear, currentYear - 1];
-
-  // Fetch establishments
-  useEffect(() => {
-    async function fetchEstablishments() {
-      try {
-        const response = await api.get<{ establishments: Establishment[] }>("/api/establishments?active=true");
-        if (response.data?.establishments && response.data.establishments.length > 0) {
-          setEstablishments(response.data.establishments);
-          setSelectedEstablishment(response.data.establishments[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching establishments:", error);
-      }
-    }
-    fetchEstablishments();
-  }, []);
+  const { formatCurrency } = useCurrency();
 
   // Fetch dashboard data
   useEffect(() => {
     async function fetchDashboardData() {
       setLoading(true);
       try {
-        const establishmentParam = selectedEstablishment ? `&establishmentId=${selectedEstablishment._id}` : "";
-        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}&year=${selectedYear}${establishmentParam}`);
+        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}`);
         if (response.data) {
           setDashboardData(response.data);
         }
@@ -175,9 +98,7 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData();
-  }, [selectedPeriod, selectedYear, selectedEstablishment]);
-
-  // formatCurrency is now provided by useCurrency hook
+  }, [selectedPeriod]);
 
   const stats = dashboardData?.stats || {
     revenue: 0,
@@ -187,28 +108,25 @@ export default function AdminDashboard() {
     classes: 0,
     classesChange: "+0%",
     attendance: "0%",
-    attendanceChange: "+0%",
+    noShowRate: "0%",
+    noShows: 0,
+    waitlistFills: 0,
+    revenueRecovered: 0,
   };
-
-  const classTypesData = dashboardData?.classTypeDistribution || [
-    { name: "Pilates", value: 45, color: "#6938EF" },
-    { name: "Yoga", value: 25, color: "#8870E9" },
-    { name: "Reformer", value: 20, color: "#5925DC" },
-    { name: "Stretch", value: 10, color: "#BDB4FE" },
-  ];
 
   const recentActivity = dashboardData?.recentActivity || [];
-  const staffPerformance = dashboardData?.staffPerformance || [];
   const todayClasses = dashboardData?.todayClasses || [];
-  const monthlyHighlights = dashboardData?.monthlyHighlights || {
-    newClients: 0,
-    retentionRate: 0,
-    revenueGrowth: "0",
-  };
 
-  // Use real data from API or defaults
-  const revenueData = dashboardData?.revenueData?.length ? dashboardData.revenueData : defaultRevenueData;
-  const attendanceData = dashboardData?.attendanceData?.length ? dashboardData.attendanceData : defaultAttendanceData;
+  // Calculate ROI multiplier
+  const subscriptionCost = 179;
+  const roiMultiplier = stats.revenueRecovered > 0
+    ? (stats.revenueRecovered / subscriptionCost).toFixed(0)
+    : "0";
+
+  // Get greeting based on time of day
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const firstName = user?.name?.split(" ")[0] || "there";
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
@@ -221,101 +139,28 @@ export default function AdminDashboard() {
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
               <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">
-                Good morning, Alex
+                {greeting}, {firstName}
               </h1>
-              {/* Establishment Selector */}
-              {establishments.length > 0 && selectedEstablishment && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowEstablishmentDropdown(!showEstablishmentDropdown)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
-                  >
-                    <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    <span className="truncate">{selectedEstablishment.name}</span>
-                    <ChevronIcon className="w-4 h-4 text-gray-400 shrink-0" direction={showEstablishmentDropdown ? "up" : "down"} />
-                  </button>
-                  {showEstablishmentDropdown && (
-                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px]">
-                      {establishments.map((establishment) => (
-                        <button
-                          key={establishment._id}
-                          onClick={() => {
-                            setSelectedEstablishment(establishment);
-                            setShowEstablishmentDropdown(false);
-                          }}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                            selectedEstablishment._id === establishment._id ? "bg-primary-50" : ""
-                          }`}
-                        >
-                          <p className={`text-sm font-medium ${selectedEstablishment._id === establishment._id ? "text-primary-600" : "text-gray-900"}`}>
-                            {establishment.name}
-                          </p>
-                          <p className="text-xs text-gray-500">{establishment.location}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              <p className="text-sm text-gray-500 mt-1">Here&apos;s how your studio is performing.</p>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              {/* Year Selector */}
-              <div className="relative">
+            {/* Period Selector */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
+              {(["week", "month", "year"] as TimePeriod[]).map((period) => (
                 <button
-                  onClick={() => setShowYearDropdown(!showYearDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    selectedPeriod === period
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
                 >
-                  {selectedYear}
-                  <ChevronIcon className="w-4 h-4 text-gray-400" direction={showYearDropdown ? "up" : "down"} />
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
                 </button>
-                {showYearDropdown && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[100px]">
-                    {availableYears.map((year) => (
-                      <button
-                        key={year}
-                        onClick={() => {
-                          setSelectedYear(year);
-                          setShowYearDropdown(false);
-                        }}
-                        className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                          selectedYear === year ? "font-medium text-primary-600 bg-primary-50" : "text-gray-700"
-                        }`}
-                      >
-                        {year}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Period Selector */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                {(["week", "month", "year"] as TimePeriod[]).map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-                      selectedPeriod === period
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    {period.charAt(0).toUpperCase() + period.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              <Link
-                href="/admin/settings"
-                className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Settings
-              </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -329,404 +174,345 @@ export default function AdminDashboard() {
 
         {!loading && (
           <>
-            {/* Charts Row */}
-            <div data-onboarding="admin-charts" className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-              {/* Revenue Chart with Stats */}
-              <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
-                {/* Stats Row inside Revenue Card */}
-                <div data-onboarding="admin-metrics" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 pb-6 border-b border-gray-100">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">{formatCurrency(stats.revenue)}</p>
-                    <p className={`text-xs sm:text-sm ${stats.revenueChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
-                      {stats.revenueChange}
-                    </p>
+            {/* Setup Checklist - shows when studio is empty */}
+            {stats.clients === 0 && stats.classes === 0 && (
+              <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-5 sm:px-6 py-5 text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold">Get your studio running</h2>
+                    <span className="text-sm text-white/80">{completedSteps.size}/4 complete</span>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Active Clients</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">{stats.clients}</p>
-                    <p className={`text-xs sm:text-sm ${stats.clientsChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
-                      {stats.clientsChange} new
-                    </p>
+                  <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white rounded-full transition-all duration-300"
+                      style={{ width: `${(completedSteps.size / 4) * 100}%` }}
+                    />
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Classes This {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">{stats.classes}</p>
-                    <p className={`text-xs sm:text-sm ${stats.classesChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
-                      {stats.classesChange}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Avg. Attendance</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900">{stats.attendance}</p>
-                    <p className={`text-xs sm:text-sm ${stats.attendanceChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
-                      {stats.attendanceChange}
-                    </p>
-                  </div>
+                  <p className="text-sm text-white/80 mt-2">
+                    Studios recover $2,300+/mo in lost revenue with FlexiWell. Complete these steps to start.
+                  </p>
                 </div>
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h2 className="text-base lg:text-lg font-semibold text-gray-900">Revenue Trend</h2>
-                    <p className="text-xs sm:text-sm text-gray-500">Monthly comparison</p>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary-500" />
-                      <span className="text-gray-600">This Year</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gray-300" />
-                      <span className="text-gray-600">Last Year</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                      <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6938EF" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#6938EF" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} tickFormatter={(value) => `${currencySymbol}${value / 1000}k`} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          border: "1px solid #E5E7EB",
-                          borderRadius: "12px",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                        }}
-                        formatter={(value) => [formatCurrency(value as number), ""]}
-                      />
-                      <Area type="monotone" dataKey="lastYear" stroke="#D1D5DB" strokeWidth={2} fill="transparent" />
-                      <Area type="monotone" dataKey="revenue" stroke="#6938EF" strokeWidth={3} fill="url(#colorRevenue)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Class Distribution */}
-              <div className="lg:col-span-4 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Class Distribution</h2>
-                <p className="text-xs sm:text-sm text-gray-500 mb-6">Classes by type this month</p>
-                <div className="h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={classTypesData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                        dataKey="value"
+                <div className="divide-y divide-gray-100">
+                  {[
+                    {
+                      icon: (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      ),
+                      title: "Import your client list",
+                      description: "Upload a CSV or add clients manually to get started.",
+                      href: "/admin/settings",
+                      linkText: "Import clients",
+                    },
+                    {
+                      icon: (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      ),
+                      title: "Create your first class",
+                      description: "Set up a class with schedule, capacity, and instructor.",
+                      href: "/admin/classes",
+                      linkText: "Create class",
+                    },
+                    {
+                      icon: (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      ),
+                      title: "Connect Stripe",
+                      description: "Accept payments and automate billing for your plans.",
+                      href: "/admin/billing",
+                      linkText: "Set up billing",
+                    },
+                    {
+                      icon: (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      ),
+                      title: "Enable smart waitlist",
+                      description: "Auto-fill cancelled spots and recover lost revenue.",
+                      href: "/admin/waitlist",
+                      linkText: "Configure waitlist",
+                    },
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50 transition-colors group">
+                      <button
+                        onClick={(e) => toggleStepComplete(i, e)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          completedSteps.has(i)
+                            ? "bg-green-100 text-green-600"
+                            : "bg-primary-50 text-primary-600 group-hover:bg-primary-100"
+                        }`}
                       >
-                        {classTypesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          border: "1px solid #E5E7EB",
-                          borderRadius: "8px",
-                        }}
-                        formatter={(value) => [`${value}%`, ""]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  {classTypesData.map((type) => (
-                    <div key={type.name} className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: type.color }} />
-                      <span className="text-sm text-gray-600">{type.name}</span>
-                      <span className="text-sm font-medium text-gray-900 ml-auto">{type.value}%</span>
+                        {completedSteps.has(i) ? (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          step.icon
+                        )}
+                      </button>
+                      <Link href={step.href} className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${completedSteps.has(i) ? "text-gray-400 line-through" : "text-gray-900"}`}>{step.title}</p>
+                        <p className={`text-sm ${completedSteps.has(i) ? "text-gray-400" : "text-gray-500"}`}>{step.description}</p>
+                      </Link>
+                      {!completedSteps.has(i) && (
+                        <Link href={step.href} className="flex items-center gap-1 text-sm font-medium text-primary-600 shrink-0">
+                          <span className="hidden sm:inline">{step.linkText}</span>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Staff Performance and Attendance Trend - Same Height Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6 items-stretch">
-              {/* Staff Performance Table */}
-              <div data-onboarding="admin-staff" className="bg-white border border-gray-200 rounded-2xl xl:col-span-2 flex flex-col">
-                <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">Staff Performance</h2>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Track your team&apos;s metrics this month</p>
+            {/* Value Banner - Hormozi ROI reinforcement */}
+            {stats.revenueRecovered > 0 && (
+              <div data-onboarding="admin-metrics" className="mb-6 bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl p-4 sm:p-5 text-white">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm sm:text-base">
+                        FlexiWell recovered {formatCurrency(stats.revenueRecovered)} this {selectedPeriod}
+                      </p>
+                      <p className="text-xs sm:text-sm text-white/80">
+                        That&apos;s {roiMultiplier}x your subscription — from {stats.waitlistFills} waitlist fills alone.
+                      </p>
+                    </div>
                   </div>
-                  <Link href="/admin/staff" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-                    View all
-                    <ChevronIcon className="w-4 h-4" direction="right" />
+                  <Link
+                    href="/admin/waitlist"
+                    className="text-sm font-medium bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors shrink-0 text-center"
+                  >
+                    View Waitlist
                   </Link>
                 </div>
-                <div className="overflow-x-auto flex-1">
-                    {staffPerformance.length === 0 ? (
-                      <div className="py-12 px-4 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No staff members yet</h3>
-                        <p className="text-sm text-gray-500 mb-4">Add your first instructor or staff member to see their performance here.</p>
-                        <Link href="/admin/staff" className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add Staff
-                        </Link>
-                      </div>
-                    ) : (
-                    <table className="w-full min-w-[600px]">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Staff Member
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Classes
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Clients
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Attendance
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Trend
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {staffPerformance.map((staff) => (
-                          <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <StaffAvatar name={staff.name} initials={staff.initials} avatar={staff.avatar} />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-gray-900 truncate">{staff.name}</p>
-                                  <p className="text-xs text-gray-500 capitalize">{staff.role}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3">
-                              <span className="text-sm font-medium text-gray-900">{staff.stats.classesThisMonth}</span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <span className="text-sm font-medium text-gray-900">{staff.stats.clientsServed}</span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full ${
-                                      staff.stats.attendance >= 95 ? "bg-green-500" :
-                                      staff.stats.attendance >= 85 ? "bg-yellow-500" : "bg-red-500"
-                                    }`}
-                                    style={{ width: `${staff.stats.attendance}%` }}
-                                  />
-                                </div>
-                                <span className="text-sm font-medium text-gray-700">{staff.stats.attendance}%</span>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
-                                  staff.trend === "up"
-                                    ? "text-green-700 bg-green-50"
-                                    : staff.trend === "down"
-                                    ? "text-red-700 bg-red-50"
-                                    : "text-gray-700 bg-gray-100"
-                                }`}
-                              >
-                                {staff.trend === "up" && "↑ Up"}
-                                {staff.trend === "down" && "↓ Down"}
-                                {staff.trend === "stable" && "→ Stable"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    )}
+              </div>
+            )}
+
+            {/* 3 Hero Metrics */}
+            <div data-onboarding="admin-charts" className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+              {/* Revenue Recovered */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    Revenue Recovered
+                  </span>
                 </div>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(stats.revenueRecovered)}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  From {stats.waitlistFills} filled spots this {selectedPeriod}
+                </p>
+              </div>
 
-              {/* Attendance & Activity Combined */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 flex flex-col">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Highlights</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-4">Attendance trend & recent activity</p>
-
-                  {/* Attendance Chart */}
-                  <div className="h-[100px] mb-3">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={attendanceData}>
-                        <Line type="monotone" dataKey="rate" stroke="#10B981" strokeWidth={3} dot={false} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#fff",
-                            border: "1px solid #E5E7EB",
-                            borderRadius: "8px",
-                          }}
-                          formatter={(value) => [`${value}%`, "Attendance"]}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+              {/* No-Show Rate */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
                   </div>
+                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                    No-Show Rate
+                  </span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.noShowRate}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {stats.noShows} no-show{stats.noShows !== 1 ? "s" : ""} this {selectedPeriod}
+                </p>
+              </div>
 
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-3 gap-2 py-3 border-t border-b border-gray-100">
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-green-600">{stats.attendance}</p>
-                      <p className="text-xs text-gray-500">Avg attendance</p>
-                    </div>
-                    <div className="text-center border-l border-r border-gray-100">
-                      <p className="text-lg font-bold text-blue-600">+{monthlyHighlights.newClients}</p>
-                      <p className="text-xs text-gray-500">New clients</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-primary-600">{monthlyHighlights.retentionRate}%</p>
-                      <p className="text-xs text-gray-500">Retention</p>
-                    </div>
+              {/* Waitlist Fills */}
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-
-                  {/* Recent Activity Mini List */}
-                  <div className="mt-3 space-y-2 flex-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Latest Activity</p>
-                    {recentActivity.length === 0 ? (
-                      <p className="text-xs text-gray-400 py-2">No activity yet</p>
-                    ) : (
-                      recentActivity.slice(0, 3).map((activity) => (
-                        <div key={activity.id} className="flex items-center gap-2 py-1.5">
-                          <div
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              activity.type === "client"
-                                ? "bg-blue-100 text-blue-600"
-                                : activity.type === "class"
-                                ? "bg-green-100 text-green-600"
-                                : activity.type === "payment"
-                                ? "bg-primary-100 text-primary-600"
-                                : activity.type === "booking"
-                                ? "bg-orange-100 text-orange-600"
-                                : "bg-red-100 text-red-600"
-                            }`}
-                          >
-                            {activity.type === "client" && (
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                            )}
-                            {activity.type === "class" && (
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            )}
-                            {activity.type === "payment" && (
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                              </svg>
-                            )}
-                            {activity.type === "booking" && (
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            )}
-                            {activity.type === "cancel" && (
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-900 truncate">{activity.action}</p>
-                            <p className="text-xs text-gray-500 truncate">{activity.name}</p>
-                          </div>
-                          <span className="text-xs text-gray-400">{activity.time}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+                    Waitlist Fills
+                  </span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.waitlistFills}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Spots auto-filled this {selectedPeriod}
+                </p>
               </div>
             </div>
 
-            {/* Upcoming Classes */}
-            <div className="bg-white border border-gray-200 rounded-2xl">
-              <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg lg:text-xl font-bold text-gray-900">Upcoming Classes</h2>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Next scheduled classes</p>
-                </div>
-                <div className="flex items-center gap-3">
+            {/* Secondary Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.revenue)}</p>
+                <p className={`text-xs ${stats.revenueChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
+                  {stats.revenueChange}
+                </p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">Active Clients</p>
+                <p className="text-lg font-bold text-gray-900">{stats.clients}</p>
+                <p className={`text-xs ${stats.clientsChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
+                  {stats.clientsChange} new
+                </p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">Classes</p>
+                <p className="text-lg font-bold text-gray-900">{stats.classes}</p>
+                <p className={`text-xs ${stats.classesChange.startsWith("+") ? "text-green-600" : "text-red-600"}`}>
+                  {stats.classesChange}
+                </p>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 mb-1">Attendance</p>
+                <p className="text-lg font-bold text-gray-900">{stats.attendance}</p>
+                <p className="text-xs text-gray-500">avg rate</p>
+              </div>
+            </div>
+
+            {/* Upcoming Classes + Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Upcoming Classes */}
+              <div data-onboarding="admin-upcoming" className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl">
+                <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Next scheduled classes</p>
+                  </div>
                   <Link
                     href="/admin/classes"
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    View schedule
-                    <ChevronIcon className="w-4 h-4" direction="right" />
-                  </Link>
-                  <Link
-                    href="/admin/classes?action=add"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Class
+                    View all →
                   </Link>
                 </div>
+                <div className="divide-y divide-gray-100">
+                  {todayClasses.length === 0 ? (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">No upcoming classes</h3>
+                      <p className="text-sm text-gray-500">Create your first class to see it here.</p>
+                    </div>
+                  ) : todayClasses.map((cls) => (
+                    <div key={cls.id} className="px-4 sm:px-6 py-3.5 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                      <div className="w-11 h-11 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{cls.name}</p>
+                          {cls.enrolled === cls.capacity && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full shrink-0">Full</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">{cls.instructor}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              cls.enrolled === cls.capacity ? "bg-red-500" :
+                              cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
+                            }`}
+                            style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 w-10 text-right">
+                          {cls.enrolled}/{cls.capacity}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="divide-y divide-gray-200">
-                {todayClasses.length === 0 ? (
-                  <div className="py-12 px-4 text-center">
-                    <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+
+              {/* Recent Activity */}
+              <div data-onboarding="admin-activity" className="bg-white border border-gray-200 rounded-2xl">
+                <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">What&apos;s happening in your studio</p>
+                </div>
+                <div className="p-4 space-y-1">
+                  {recentActivity.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-sm text-gray-400">No activity yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Activity will appear here as clients book classes.</p>
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900 mb-1">No upcoming classes</h3>
-                    <p className="text-sm text-gray-500 mb-4">Create your first class to see it here.</p>
-                    <Link href="/admin/classes" className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add Class
-                    </Link>
-                  </div>
-                ) : todayClasses.map((cls) => (
-                  <div key={cls.id} className="px-4 sm:px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary-600">{cls.time.split(' ')[0]}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{cls.name}</p>
-                        {cls.enrolled === cls.capacity && (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full shrink-0">Full</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500">{cls.instructor}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  ) : (
+                    recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-gray-50 transition-colors">
                         <div
-                          className={`h-full rounded-full ${
-                            cls.enrolled === cls.capacity ? "bg-red-500" :
-                            cls.enrolled >= cls.capacity * 0.8 ? "bg-yellow-500" : "bg-green-500"
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            activity.type === "client"
+                              ? "bg-blue-100 text-blue-600"
+                              : activity.type === "class"
+                              ? "bg-green-100 text-green-600"
+                              : activity.type === "payment"
+                              ? "bg-primary-100 text-primary-600"
+                              : activity.type === "booking"
+                              ? "bg-orange-100 text-orange-600"
+                              : "bg-red-100 text-red-600"
                           }`}
-                          style={{ width: `${(cls.enrolled / cls.capacity) * 100}%` }}
-                        />
+                        >
+                          {activity.type === "client" && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          )}
+                          {activity.type === "class" && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                          {activity.type === "payment" && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
+                          )}
+                          {activity.type === "booking" && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                          {activity.type === "cancel" && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{activity.action}</p>
+                          <p className="text-xs text-gray-500 truncate">{activity.name}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 shrink-0">{activity.time}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-700 w-10 text-right">
-                        {cls.enrolled}/{cls.capacity}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </>

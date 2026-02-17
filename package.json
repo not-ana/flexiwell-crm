@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "ts-node --esm scripts/seed.ts",
+    "seed:onboarding": "ts-node --esm scripts/seed.ts --profile=onboarding",
+    "seed:admin-ready": "ts-node --esm scripts/seed.ts --profile=admin-ready",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

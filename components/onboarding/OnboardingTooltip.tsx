@@ -39,10 +39,10 @@ const adminSteps: OnboardingStep[] = [
     spotlightPadding: 16,
   },
   {
-    id: "admin-staff",
-    title: "Staff Performance",
-    description: "Track your team's metrics including classes taught, clients served, and attendance. Identify top performers and those who may need support.",
-    targetSelector: '[data-onboarding="admin-staff"]',
+    id: "admin-upcoming",
+    title: "Upcoming Classes",
+    description: "See your next scheduled classes at a glance. Monitor enrollment and capacity for each class to manage your studio effectively.",
+    targetSelector: '[data-onboarding="admin-upcoming"]',
     position: "top",
     spotlightPadding: 12,
   },
@@ -459,6 +459,24 @@ export function InteractiveOnboarding({
     onComplete();
   };
 
+  // Keyboard navigation: Escape to close, arrow keys to navigate
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleSkip();
+      } else if (e.key === "ArrowRight" || e.key === "Enter") {
+        if (!showWelcome) handleNext();
+      } else if (e.key === "ArrowLeft") {
+        if (!showWelcome) handlePrev();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, showWelcome, currentStep]);
+
   if (!isOpen || !mounted) return null;
 
   // Use portal to render at document root
@@ -483,10 +501,10 @@ export function InteractiveOnboarding({
               targetRect={targetRect}
             />
           )}
-          {/* Click blocker except for highlighted area */}
+          {/* Click blocker - clicking overlay skips to next or closes */}
           <div
-            className="fixed inset-0 z-[9997]"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9997] cursor-pointer"
+            onClick={handleNext}
           />
         </>
       )}

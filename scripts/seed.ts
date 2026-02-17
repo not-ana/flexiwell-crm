@@ -1445,11 +1445,39 @@ function generateActivities(bookings: ReturnType<typeof generateBookings>) {
 }
 
 // ============================================
+// SEED PROFILES
+// ============================================
+
+type SeedProfile = "full" | "onboarding" | "admin-ready";
+
+const profileDescriptions: Record<SeedProfile, string> = {
+  full: "Full data — all users, clients, classes, bookings, payments (default)",
+  onboarding: "Onboarding test — only users + staff + studio settings, empty dashboards",
+  "admin-ready": "Admin populated — admin sees full data, teacher/client dashboards empty",
+};
+
+function getProfile(): SeedProfile {
+  const profileArg = process.argv.find(arg => arg.startsWith("--profile="));
+  if (profileArg) {
+    const value = profileArg.split("=")[1] as SeedProfile;
+    if (!["full", "onboarding", "admin-ready"].includes(value)) {
+      console.error(`❌ Invalid profile: ${value}`);
+      console.error("   Valid profiles: full, onboarding, admin-ready");
+      process.exit(1);
+    }
+    return value;
+  }
+  return "full";
+}
+
+// ============================================
 // MAIN SEED FUNCTION
 // ============================================
 
-async function seed() {
+async function seed(profile: SeedProfile = "full") {
   console.log("🌱 Starting comprehensive database seed...\n");
+  console.log(`📋 Profile: ${profile}`);
+  console.log(`   ${profileDescriptions[profile]}\n`);
 
   const client = new MongoClient(MONGODB_URI);
 
@@ -1472,15 +1500,26 @@ async function seed() {
     }
     console.log("✅ Existing data cleared\n");
 
-    // Generate dynamic data
-    console.log("📊 Generating dynamic data...");
-    const classes = generateClasses();
-    const bookings = generateBookings(classes);
-    const payments = generatePayments();
-    const reviews = generateReviews();
-    const waitlistEntries = generateWaitlistEntries();
-    const activities = generateActivities(bookings);
-    console.log("✅ Dynamic data generated\n");
+    // Generate dynamic data (only for profiles that need it)
+    let classes: ReturnType<typeof generateClasses> = [];
+    let bookings: ReturnType<typeof generateBookings> = [];
+    let payments: ReturnType<typeof generatePayments> = [];
+    let reviews: ReturnType<typeof generateReviews> = [];
+    let waitlistEntries: ReturnType<typeof generateWaitlistEntries> = [];
+    let activities: ReturnType<typeof generateActivities> = [];
+
+    if (profile !== "onboarding") {
+      console.log("📊 Generating dynamic data...");
+      classes = generateClasses();
+      bookings = generateBookings(classes);
+      payments = generatePayments();
+      reviews = generateReviews();
+      waitlistEntries = generateWaitlistEntries();
+      activities = generateActivities(bookings);
+      console.log("✅ Dynamic data generated\n");
+    }
+
+    // --- Always created: users, staff, studio settings ---
 
     // Hash passwords for users
     console.log("🔐 Creating users...");
@@ -1498,55 +1537,104 @@ async function seed() {
     await db.collection("staff").insertMany(seedData.staff);
     console.log(`   ✅ Created ${seedData.staff.length} staff members`);
 
-    // Insert clients
-    console.log("🧘 Creating clients...");
-    await db.collection("clients").insertMany(seedData.clients);
-    console.log(`   ✅ Created ${seedData.clients.length} clients with diverse plans`);
-
-    // Insert units
-    console.log("🏢 Creating establishments...");
-    await db.collection("units").insertMany(seedData.units);
-    console.log(`   ✅ Created ${seedData.units.length} establishments`);
-
-    // Insert rooms
-    console.log("🚪 Creating rooms...");
-    await db.collection("rooms").insertMany(seedData.rooms);
-    console.log(`   ✅ Created ${seedData.rooms.length} rooms`);
-
-    // Insert classes
-    console.log("📅 Creating classes...");
-    await db.collection("classes").insertMany(classes);
-    console.log(`   ✅ Created ${classes.length} classes (past and upcoming)`);
-
-    // Insert bookings
-    console.log("📋 Creating bookings...");
-    await db.collection("bookings").insertMany(bookings);
-    console.log(`   ✅ Created ${bookings.length} bookings`);
-
-    // Insert payments
-    console.log("💳 Creating payments...");
-    await db.collection("payments").insertMany(payments);
-    console.log(`   ✅ Created ${payments.length} payment records`);
-
-    // Insert reviews
-    console.log("⭐ Creating reviews...");
-    await db.collection("reviews").insertMany(reviews);
-    console.log(`   ✅ Created ${reviews.length} instructor reviews`);
-
-    // Insert waitlist entries
-    console.log("📝 Creating waitlist entries...");
-    await db.collection("waitlist").insertMany(waitlistEntries);
-    console.log(`   ✅ Created ${waitlistEntries.length} waitlist entries`);
-
-    // Insert activities
-    console.log("📜 Creating activity logs...");
-    await db.collection("activities").insertMany(activities);
-    console.log(`   ✅ Created ${activities.length} activity records`);
-
     // Insert studio settings
     console.log("⚙️  Creating studio settings...");
     await db.collection("studio_settings").insertOne(seedData.studioSettings);
     console.log("   ✅ Studio settings configured");
+
+    // --- Conditionally created based on profile ---
+
+    if (profile !== "onboarding") {
+      // Insert clients
+      console.log("🧘 Creating clients...");
+      await db.collection("clients").insertMany(seedData.clients);
+      console.log(`   ✅ Created ${seedData.clients.length} clients with diverse plans`);
+
+      // Insert units
+      console.log("🏢 Creating establishments...");
+      await db.collection("units").insertMany(seedData.units);
+      console.log(`   ✅ Created ${seedData.units.length} establishments`);
+
+      // Insert rooms
+      console.log("🚪 Creating rooms...");
+      await db.collection("rooms").insertMany(seedData.rooms);
+      console.log(`   ✅ Created ${seedData.rooms.length} rooms`);
+
+      if (profile === "admin-ready") {
+        // For admin-ready: classes and bookings use phantom IDs so teacher/client dashboards are empty
+        // Admin still sees aggregated stats, but individual teacher/client queries return nothing
+        const phantomStaffId = new ObjectId().toString();
+        const phantomClientIds = Array.from({ length: 12 }, () => new ObjectId().toString());
+        const phantomClientNames = [
+          "Demo Student 1", "Demo Student 2", "Demo Student 3", "Demo Student 4",
+          "Demo Student 5", "Demo Student 6", "Demo Student 7", "Demo Student 8",
+          "Demo Student 9", "Demo Student 10", "Demo Student 11", "Demo Student 12",
+        ];
+
+        const modifiedClasses = classes.map(c => ({
+          ...c,
+          instructorId: phantomStaffId,
+          instructorName: "Studio Instructor",
+          enrolledClients: c.enrolledClients.map((ec: { clientId: string; clientName: string; status: string; enrolledAt: Date }, i: number) => ({
+            ...ec,
+            clientId: phantomClientIds[i % phantomClientIds.length],
+            clientName: phantomClientNames[i % phantomClientNames.length],
+          })),
+          waitlist: c.waitlist.map((w: { clientId: string; clientName: string; addedAt: Date }, i: number) => ({
+            ...w,
+            clientId: phantomClientIds[i % phantomClientIds.length],
+            clientName: phantomClientNames[i % phantomClientNames.length],
+          })),
+        }));
+
+        const modifiedBookings = bookings.map((b, i) => ({
+          ...b,
+          clientId: phantomClientIds[i % phantomClientIds.length],
+          clientName: phantomClientNames[i % phantomClientNames.length],
+          instructorId: phantomStaffId,
+          instructorName: "Studio Instructor",
+        }));
+
+        console.log("📅 Creating classes (admin-ready: phantom instructors)...");
+        await db.collection("classes").insertMany(modifiedClasses);
+        console.log(`   ✅ Created ${modifiedClasses.length} classes`);
+
+        console.log("📋 Creating bookings (admin-ready: phantom clients)...");
+        await db.collection("bookings").insertMany(modifiedBookings);
+        console.log(`   ✅ Created ${modifiedBookings.length} bookings`);
+      } else {
+        // Full profile: original behavior
+        console.log("📅 Creating classes...");
+        await db.collection("classes").insertMany(classes);
+        console.log(`   ✅ Created ${classes.length} classes (past and upcoming)`);
+
+        console.log("📋 Creating bookings...");
+        await db.collection("bookings").insertMany(bookings);
+        console.log(`   ✅ Created ${bookings.length} bookings`);
+      }
+
+      // Insert payments
+      console.log("💳 Creating payments...");
+      await db.collection("payments").insertMany(payments);
+      console.log(`   ✅ Created ${payments.length} payment records`);
+
+      // Insert reviews
+      console.log("⭐ Creating reviews...");
+      await db.collection("reviews").insertMany(reviews);
+      console.log(`   ✅ Created ${reviews.length} instructor reviews`);
+
+      // Insert waitlist entries
+      console.log("📝 Creating waitlist entries...");
+      await db.collection("waitlist").insertMany(waitlistEntries);
+      console.log(`   ✅ Created ${waitlistEntries.length} waitlist entries`);
+
+      // Insert activities
+      console.log("📜 Creating activity logs...");
+      await db.collection("activities").insertMany(activities);
+      console.log(`   ✅ Created ${activities.length} activity records`);
+    } else {
+      console.log("⏭️  Skipping business data (onboarding profile)\n");
+    }
 
     // Create indexes
     console.log("\n📇 Creating indexes...");
@@ -1567,19 +1655,28 @@ async function seed() {
     // Summary
     console.log("═".repeat(50));
     console.log("🎉 DATABASE SEED COMPLETED SUCCESSFULLY!");
+    console.log(`   Profile: ${profile}`);
     console.log("═".repeat(50));
     console.log("\n📊 Summary:");
     console.log(`   • Users: ${usersWithPasswords.length} (1 admin, 3 teachers, 12 clients)`);
     console.log(`   • Staff: ${seedData.staff.length}`);
-    console.log(`   • Clients: ${seedData.clients.length}`);
-    console.log(`   • Establishments: ${seedData.units.length}`);
-    console.log(`   • Rooms: ${seedData.rooms.length}`);
-    console.log(`   • Classes: ${classes.length}`);
-    console.log(`   • Bookings: ${bookings.length}`);
-    console.log(`   • Payments: ${payments.length}`);
-    console.log(`   • Reviews: ${reviews.length}`);
-    console.log(`   • Waitlist: ${waitlistEntries.length}`);
-    console.log(`   • Activities: ${activities.length}`);
+    if (profile !== "onboarding") {
+      console.log(`   • Clients: ${seedData.clients.length}`);
+      console.log(`   • Establishments: ${seedData.units.length}`);
+      console.log(`   • Rooms: ${seedData.rooms.length}`);
+      console.log(`   • Classes: ${classes.length}`);
+      console.log(`   • Bookings: ${bookings.length}`);
+      console.log(`   • Payments: ${payments.length}`);
+      console.log(`   • Reviews: ${reviews.length}`);
+      console.log(`   • Waitlist: ${waitlistEntries.length}`);
+      console.log(`   • Activities: ${activities.length}`);
+      if (profile === "admin-ready") {
+        console.log("\n   ⚠️  Classes use phantom instructor IDs (teacher dashboards empty)");
+        console.log("   ⚠️  Bookings use phantom client IDs (client dashboards empty)");
+      }
+    } else {
+      console.log("   • (No business data — onboarding profile)");
+    }
 
     console.log("\n📝 Test Credentials:");
     console.log("   ┌─────────────────────────────────────────────┐");
@@ -1610,5 +1707,5 @@ async function seed() {
   }
 }
 
-// Run seed
-seed();
+// Run seed with selected profile
+seed(getProfile());

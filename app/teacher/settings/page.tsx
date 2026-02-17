@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { AccountSettings } from "@/components/settings/AccountSettings";
+import { ReplayTourSection } from "@/components/settings/ReplayTourSection";
 import { api, getStoredTokens } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-type TeacherSettingsTab = "profile" | "availability" | "notifications";
+type TeacherSettingsTab = "profile" | "availability";
 
 const tabs: { id: TeacherSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "availability", label: "Availability" },
-  { id: "notifications", label: "Notifications" },
 ];
 
 // Helper to get initials from name
@@ -44,6 +44,7 @@ function ProfileSettings() {
     new: "",
     confirm: "",
   });
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   // Fetch profile on mount
   useEffect(() => {
@@ -316,35 +317,6 @@ function ProfileSettings() {
             </div>
           </div>
 
-          {/* Account Info - Right side */}
-          <div className="sm:ml-auto sm:text-right space-y-1">
-            <div className="flex items-center gap-2 sm:justify-end">
-              <span className="text-sm text-gray-500">Email:</span>
-              <span className="text-sm text-gray-900">{user?.email}</span>
-            </div>
-            <div className="flex items-center gap-2 sm:justify-end">
-              <span className="text-sm text-gray-500">Type:</span>
-              <span className="text-sm text-gray-900 capitalize">{user?.role}</span>
-            </div>
-            <div className="flex items-center gap-2 sm:justify-end">
-              <span className="text-sm text-gray-500">ID:</span>
-              <span className="text-sm text-gray-400 font-mono text-xs">{user?.id}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (user?.id) {
-                    navigator.clipboard.writeText(user.id);
-                  }
-                }}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                title="Copy Account ID"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Form Fields */}
@@ -389,204 +361,80 @@ function ProfileSettings() {
           />
         </div>
 
-        {/* Password Section */}
+        {/* Password Section - Collapsible */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Change password</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current password</label>
-              <input
-                type="password"
-                placeholder="Enter current password"
-                value={passwords.current}
-                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+          <button
+            type="button"
+            onClick={() => setShowPasswordFields(!showPasswordFields)}
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showPasswordFields ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Change password
+          </button>
+
+          {showPasswordFields && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current password</label>
+                <input
+                  type="password"
+                  placeholder="Enter current password"
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                  autoComplete="current-password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={passwords.new}
+                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
+                <input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-              <input
-                type="password"
-                placeholder="Enter new password"
-                value={passwords.new}
-                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                value={passwords.confirm}
-                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
-          <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+          <Button variant="secondary" onClick={() => {
+            handleCancel();
+            setShowPasswordFields(false);
+          }}>Cancel</Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Saving..." : "Save changes"}
           </Button>
         </div>
       </div>
 
+      {/* Replay Tour Section */}
+      <ReplayTourSection role="teacher" />
+
       {/* Account Settings Section */}
       <AccountSettings hideAccountInfo />
-    </div>
-  );
-}
-
-function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        enabled ? "bg-primary-600" : "bg-gray-200"
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
-}
-
-// Notifications Settings Component
-function NotificationsSettings() {
-  const [notifications, setNotifications] = useState({
-    classReminders: true,
-    newStudentEnrolled: true,
-    classCancellations: true,
-    scheduleChanges: true,
-    studentMessages: true,
-    weeklyReport: false,
-    emailNotifications: true,
-    pushNotifications: true,
-  });
-
-  const updateNotification = (key: string, value: boolean) => {
-    setNotifications((prev) => ({ ...prev, [key]: value }));
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Notifications</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage how you receive notifications.</p>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-6">
-        <div>
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Class Notifications</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Class reminders</p>
-                <p className="text-sm text-gray-500">Get notified before your classes start</p>
-              </div>
-              <Toggle
-                enabled={notifications.classReminders}
-                onChange={(value) => updateNotification("classReminders", value)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">New student enrolled</p>
-                <p className="text-sm text-gray-500">When a student enrolls in your class</p>
-              </div>
-              <Toggle
-                enabled={notifications.newStudentEnrolled}
-                onChange={(value) => updateNotification("newStudentEnrolled", value)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Class cancellations</p>
-                <p className="text-sm text-gray-500">When a student cancels their booking</p>
-              </div>
-              <Toggle
-                enabled={notifications.classCancellations}
-                onChange={(value) => updateNotification("classCancellations", value)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Schedule changes</p>
-                <p className="text-sm text-gray-500">When admin changes your schedule</p>
-              </div>
-              <Toggle
-                enabled={notifications.scheduleChanges}
-                onChange={(value) => updateNotification("scheduleChanges", value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Communication</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Student messages</p>
-                <p className="text-sm text-gray-500">When a student sends you a message</p>
-              </div>
-              <Toggle
-                enabled={notifications.studentMessages}
-                onChange={(value) => updateNotification("studentMessages", value)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Weekly report</p>
-                <p className="text-sm text-gray-500">Receive a weekly summary of your classes</p>
-              </div>
-              <Toggle
-                enabled={notifications.weeklyReport}
-                onChange={(value) => updateNotification("weeklyReport", value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Notification Channels</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Email notifications</p>
-                <p className="text-sm text-gray-500">Receive notifications via email</p>
-              </div>
-              <Toggle
-                enabled={notifications.emailNotifications}
-                onChange={(value) => updateNotification("emailNotifications", value)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Push notifications</p>
-                <p className="text-sm text-gray-500">Receive push notifications on your device</p>
-              </div>
-              <Toggle
-                enabled={notifications.pushNotifications}
-                onChange={(value) => updateNotification("pushNotifications", value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4">
-          <Button variant="secondary">Cancel</Button>
-          <Button>Save changes</Button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -720,8 +568,6 @@ export default function TeacherSettingsPage() {
         return <ProfileSettings />;
       case "availability":
         return <AvailabilitySettings />;
-      case "notifications":
-        return <NotificationsSettings />;
       default:
         return <ProfileSettings />;
     }
