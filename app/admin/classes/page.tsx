@@ -32,7 +32,6 @@ interface EstablishmentOption {
 interface CreateModalEstablishment {
   id: string;
   name: string;
-  rooms: string[];
 }
 
 const typeColors: Record<string, string> = {
@@ -81,13 +80,13 @@ interface StaffMember {
 function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [formData, setFormData] = useState({
     name: "",
+    description: "",
     type: "Pilates",
     date: "",
     time: "",
     duration: "50",
     establishmentId: "",
     unit: "",
-    room: "",
     capacity: "8",
     instructorId: "",
     instructorName: "",
@@ -97,6 +96,10 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   });
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewCount, setPreviewCount] = useState(0);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [createdClass, setCreatedClass] = useState<typeof formData & { classesCreated?: number } | null>(null);
   const [establishments, setEstablishments] = useState<CreateModalEstablishment[]>([]);
   const [loadingEstablishments, setLoadingEstablishments] = useState(true);
@@ -111,10 +114,9 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       try {
         const response = await fetch("/api/establishments?active=true");
         const data = await response.json();
-        const estabs = (data.establishments || []).map((e: { _id?: { toString(): string }; name: string; rooms?: string[] }) => ({
+        const estabs = (data.establishments || []).map((e: { _id?: { toString(): string }; name: string }) => ({
           id: e._id?.toString() || "",
           name: e.name,
-          rooms: e.rooms || ["Room 1", "Room 2", "Studio A"],
         }));
         setEstablishments(estabs);
         if (estabs.length > 0 && !formData.establishmentId) {
@@ -122,7 +124,6 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             ...prev,
             establishmentId: estabs[0].id,
             unit: estabs[0].name,
-            room: estabs[0].rooms[0] || "Room 1",
           }));
         }
       } catch (error) {
@@ -155,8 +156,6 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const selectedEstablishment = establishments.find(e => e.id === formData.establishmentId);
-  const availableRooms = selectedEstablishment?.rooms || ["Room 1", "Room 2", "Studio A"];
 
   // Filter staff by selected establishment
   const filteredStaff = formData.establishmentId
@@ -165,56 +164,70 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   if (!isOpen) return null;
 
+  // Calculate how many classes will be created
+  const calculateDates = useCallback(() => {
+    if (formData.recurrence === "none") return [formData.date].filter(Boolean);
+    if (!formData.date || !formData.recurrenceEndDate) return [];
+
+    const dates: string[] = [];
+    const startDate = new Date(formData.date);
+    const endDate = new Date(formData.recurrenceEndDate);
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      if (formData.recurrence === "daily") {
+        dates.push(currentDate.toISOString().split("T")[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      } else if (formData.recurrence === "weekly") {
+        const dayOfWeek = currentDate.getDay().toString();
+        if (formData.recurrenceDays.includes(dayOfWeek)) {
+          dates.push(currentDate.toISOString().split("T")[0]);
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      } else if (formData.recurrence === "biweekly") {
+        dates.push(currentDate.toISOString().split("T")[0]);
+        currentDate.setDate(currentDate.getDate() + 14);
+      } else if (formData.recurrence === "monthly") {
+        dates.push(currentDate.toISOString().split("T")[0]);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+    }
+    return dates;
+  }, [formData.date, formData.recurrence, formData.recurrenceEndDate, formData.recurrenceDays]);
+
   const handleSubmit = async () => {
+    setFormError(null);
+
     if (!formData.name || !formData.date || !formData.time || !formData.instructorId) {
       return;
     }
 
     if (formData.recurrence !== "none" && !formData.recurrenceEndDate) {
-      alert("Please select an end date for the recurring classes");
+      setFormError("Please select an end date for the recurring classes.");
       return;
     }
     if (formData.recurrence === "weekly" && formData.recurrenceDays.length === 0) {
-      alert("Please select at least one day for weekly recurrence");
+      setFormError("Please select at least one day for weekly recurrence.");
+      return;
+    }
+
+    const dates = calculateDates();
+
+    // Show preview for batch creation
+    if (dates.length > 1 && !showPreview) {
+      setPreviewCount(dates.length);
+      setShowPreview(true);
       return;
     }
 
     setIsCreating(true);
+    setShowPreview(false);
     try {
       const [hours, minutes] = formData.time.split(":").map(Number);
       const durationMinutes = parseInt(formData.duration);
       const endHours = Math.floor((hours * 60 + minutes + durationMinutes) / 60);
       const endMinutes = (hours * 60 + minutes + durationMinutes) % 60;
       const endTime = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
-
-      const dates: string[] = [];
-      const startDate = new Date(formData.date);
-
-      if (formData.recurrence === "none") {
-        dates.push(formData.date);
-      } else {
-        const endDate = new Date(formData.recurrenceEndDate);
-        const currentDate = new Date(startDate);
-
-        while (currentDate <= endDate) {
-          if (formData.recurrence === "daily") {
-            dates.push(currentDate.toISOString().split("T")[0]);
-            currentDate.setDate(currentDate.getDate() + 1);
-          } else if (formData.recurrence === "weekly") {
-            const dayOfWeek = currentDate.getDay().toString();
-            if (formData.recurrenceDays.includes(dayOfWeek)) {
-              dates.push(currentDate.toISOString().split("T")[0]);
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-          } else if (formData.recurrence === "biweekly") {
-            dates.push(currentDate.toISOString().split("T")[0]);
-            currentDate.setDate(currentDate.getDate() + 14);
-          } else if (formData.recurrence === "monthly") {
-            dates.push(currentDate.toISOString().split("T")[0]);
-            currentDate.setMonth(currentDate.getMonth() + 1);
-          }
-        }
-      }
 
       let successCount = 0;
       for (const date of dates) {
@@ -223,15 +236,15 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: formData.name,
+            description: formData.description || undefined,
             type: formData.type.toLowerCase(),
             scheduledDate: date,
             startTime: formData.time,
             endTime: endTime,
             duration: parseInt(formData.duration),
             maxCapacity: parseInt(formData.capacity),
-            roomId: formData.room,
             establishmentId: formData.establishmentId,
-            location: `${formData.unit} - ${formData.room}`,
+            location: formData.unit,
             instructorId: formData.instructorId,
             instructorName: formData.instructorName,
           }),
@@ -246,11 +259,11 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         setCreatedClass({ ...formData, classesCreated: successCount });
         setShowSuccess(true);
       } else {
-        alert("Failed to create class");
+        setFormError("Failed to create class. Please check your data and try again.");
       }
     } catch (error) {
       console.error("Error creating class:", error);
-      alert("Failed to create class");
+      setFormError("Connection error. Please check your internet and try again.");
     } finally {
       setIsCreating(false);
     }
@@ -263,13 +276,13 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     const defaultStaff = staff[0];
     setFormData({
       name: "",
+      description: "",
       type: "Pilates",
       date: "",
       time: "",
       duration: "50",
       establishmentId: defaultEstab?.id || "",
       unit: defaultEstab?.name || "",
-      room: defaultEstab?.rooms[0] || "Room 1",
       capacity: "8",
       instructorId: defaultStaff?.id || "",
       instructorName: defaultStaff?.name || "",
@@ -341,7 +354,7 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>{createdClass.unit} - {createdClass.room}</span>
+                  <span>{createdClass.unit}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,6 +396,7 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         </div>
 
         <div className="p-6 space-y-4">
+          {/* Essential fields */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Class Name <span className="text-red-500">*</span>
@@ -394,6 +408,32 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               placeholder="e.g., Intermediate Pilates"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -414,14 +454,12 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   value={formData.establishmentId}
                   onChange={(e) => {
                     const estab = establishments.find((est) => est.id === e.target.value);
-                    // Find first instructor for new establishment
                     const newFilteredStaff = staff.filter(s => !s.establishmentIds?.length || s.establishmentIds.includes(e.target.value));
                     const firstInstructor = newFilteredStaff[0];
                     setFormData({
                       ...formData,
                       establishmentId: e.target.value,
                       unit: estab?.name || "",
-                      room: estab?.rooms[0] || "Room 1",
                       instructorId: firstInstructor?.id || "",
                       instructorName: firstInstructor?.name || "",
                     });
@@ -472,158 +510,194 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Class Type</label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-            >
-              <option value="Pilates">Pilates</option>
-              <option value="Yoga">Yoga</option>
-              <option value="Functional">Functional Training</option>
-              <option value="Stretching">Stretching</option>
-              <option value="Meditation">Meditation</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
+          {/* Defaults summary line */}
+          {!showMoreOptions && (
+            <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg text-sm text-gray-500">
+              <span>{formData.type} · {formData.duration}min · {formData.capacity} spots</span>
+              <button
+                type="button"
+                onClick={() => setShowMoreOptions(true)}
+                className="text-primary-600 hover:text-primary-700 font-medium shrink-0 ml-3"
+              >
+                Edit
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-          </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-            <select
-              value={formData.duration}
-              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-            >
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="50">50 minutes</option>
-              <option value="60">60 minutes</option>
-              <option value="75">75 minutes</option>
-              <option value="90">90 minutes</option>
-            </select>
-          </div>
-
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence</label>
-            <select
-              value={formData.recurrence}
-              onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as typeof formData.recurrence })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-            >
-              <option value="none">Does not repeat</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Every 2 weeks</option>
-              <option value="monthly">Monthly</option>
-            </select>
-          </div>
-
-          {formData.recurrence !== "none" && (
-            <>
-              {formData.recurrence === "weekly" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Repeat on</label>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: "0", label: "Sun" },
-                      { value: "1", label: "Mon" },
-                      { value: "2", label: "Tue" },
-                      { value: "3", label: "Wed" },
-                      { value: "4", label: "Thu" },
-                      { value: "5", label: "Fri" },
-                      { value: "6", label: "Sat" },
-                    ].map((day) => (
-                      <button
-                        key={day.value}
-                        type="button"
-                        onClick={() => {
-                          const days = formData.recurrenceDays.includes(day.value)
-                            ? formData.recurrenceDays.filter((d) => d !== day.value)
-                            : [...formData.recurrenceDays, day.value];
-                          setFormData({ ...formData, recurrenceDays: days });
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          formData.recurrenceDays.includes(day.value)
-                            ? "bg-primary-600 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        {day.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* More options (collapsed by default) */}
+          {showMoreOptions && (
+            <div className="space-y-4 border-t border-gray-200 pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">More options</span>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreOptions(false)}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Collapse
+                </button>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description visible to clients (optional)"
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Class Type</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                  >
+                    <option value="Pilates">Pilates</option>
+                    <option value="Yoga">Yoga</option>
+                    <option value="Functional">Functional Training</option>
+                    <option value="Stretching">Stretching</option>
+                    <option value="Meditation">Meditation</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                  <select
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                  >
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="50">50 min</option>
+                    <option value="60">60 min</option>
+                    <option value="75">75 min</option>
+                    <option value="90">90 min</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
                 <input
-                  type="date"
-                  value={formData.recurrenceEndDate}
-                  onChange={(e) => setFormData({ ...formData, recurrenceEndDate: e.target.value })}
-                  min={formData.date}
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
-            </>
-          )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
-              <select
-                value={formData.room}
-                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-                disabled={loadingEstablishments || establishments.length === 0}
-              >
-                {availableRooms.map((room) => (
-                  <option key={room} value={room}>
-                    {room}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence</label>
+                <select
+                  value={formData.recurrence}
+                  onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as typeof formData.recurrence })}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                >
+                  <option value="none">Does not repeat</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {formData.recurrence !== "none" && (
+                <>
+                  {formData.recurrence === "weekly" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Repeat on</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "0", label: "Sun" },
+                          { value: "1", label: "Mon" },
+                          { value: "2", label: "Tue" },
+                          { value: "3", label: "Wed" },
+                          { value: "4", label: "Thu" },
+                          { value: "5", label: "Fri" },
+                          { value: "6", label: "Sat" },
+                        ].map((day) => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => {
+                              const days = formData.recurrenceDays.includes(day.value)
+                                ? formData.recurrenceDays.filter((d) => d !== day.value)
+                                : [...formData.recurrenceDays, day.value];
+                              setFormData({ ...formData, recurrenceDays: days });
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                              formData.recurrenceDays.includes(day.value)
+                                ? "bg-primary-600 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.recurrenceEndDate}
+                      onChange={(e) => setFormData({ ...formData, recurrenceEndDate: e.target.value })}
+                      min={formData.date}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
+          )}
+        </div>
+
+        {/* Inline Error */}
+        {formError && (
+          <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+            <p className="text-sm text-red-600">{formError}</p>
+            <button onClick={() => setFormError(null)} className="text-red-400 hover:text-red-600 p-1 shrink-0">
+              <CloseIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Batch Preview Confirmation */}
+        {showPreview && (
+          <div className="mx-6 mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm font-medium text-amber-800 mb-2">
+              This will create {previewCount} classes
+            </p>
+            <p className="text-xs text-amber-700 mb-3">
+              From {formData.date} to {formData.recurrenceEndDate}, {getRecurrenceLabel(formData.recurrence).toLowerCase()}.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="flex-1 px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="flex-1 px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+              >
+                Confirm & Create
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="p-6 border-t border-gray-200 flex gap-3">
           <button
@@ -848,18 +922,26 @@ export default function AdminClassesPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm text-gray-600">Today&apos;s Classes</p>
             <p className="text-2xl font-bold text-primary-600 mt-1">{todayClasses}</p>
+            <p className="text-xs text-gray-400 mt-1">scheduled for today</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm text-gray-600">Upcoming</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">{upcomingClasses}</p>
+            <p className="text-xs text-gray-400 mt-1">classes ahead</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm text-gray-600">Total Enrolled</p>
             <p className="text-2xl font-bold text-green-600 mt-1">{totalEnrolled}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {filteredClasses.length > 0
+                ? `avg ${Math.round(totalEnrolled / filteredClasses.length)} per class`
+                : "across all classes"}
+            </p>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm text-gray-600">Total Classes</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{classes.length}</p>
+            <p className="text-xs text-gray-400 mt-1">all time</p>
           </div>
         </div>
 
@@ -926,10 +1008,12 @@ export default function AdminClassesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No classes found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {classes.length === 0 ? "No classes yet" : "No matching classes"}
+            </h3>
             <p className="text-sm text-gray-500 mb-4">
               {classes.length === 0
-                ? "Get started by creating your first class."
+                ? "Classes are where your revenue happens. Create your first class to start filling spots."
                 : "Try adjusting your filters to find classes."}
             </p>
             {classes.length === 0 && (
@@ -993,7 +1077,14 @@ export default function AdminClassesPage() {
                           <p className="text-sm font-semibold text-gray-900">
                             {cls.currentEnrollment}/{cls.maxCapacity}
                           </p>
-                          <div className="w-20 h-2 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                          <div
+                            className="w-20 h-2 bg-gray-200 rounded-full mt-1 overflow-hidden"
+                            role="progressbar"
+                            aria-valuenow={cls.currentEnrollment}
+                            aria-valuemin={0}
+                            aria-valuemax={cls.maxCapacity}
+                            aria-label={`${cls.currentEnrollment} of ${cls.maxCapacity} spots filled`}
+                          >
                             <div
                               className={`h-full rounded-full ${
                                 cls.currentEnrollment >= cls.maxCapacity
@@ -1005,6 +1096,11 @@ export default function AdminClassesPage() {
                               style={{ width: `${(cls.currentEnrollment / cls.maxCapacity) * 100}%` }}
                             />
                           </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {cls.maxCapacity - cls.currentEnrollment > 0
+                              ? `${cls.maxCapacity - cls.currentEnrollment} left`
+                              : "full"}
+                          </p>
                         </div>
 
                         {/* Actions */}

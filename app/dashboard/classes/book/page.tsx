@@ -11,6 +11,7 @@ import {
   ArrowRightIcon,
 } from "@/components/icons";
 import Button from "@/components/ui/Button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AvailableClass {
   _id: string;
@@ -45,18 +46,18 @@ const classTypeColors: Record<string, { bg: string; text: string; border: string
 };
 
 function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("pt-BR", {
+  return new Date(date).toLocaleDateString("en-US", {
     weekday: "long",
-    day: "numeric",
     month: "long",
+    day: "numeric",
   });
 }
 
 function formatShortDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString("pt-BR", {
+  return new Date(date).toLocaleDateString("en-US", {
     weekday: "short",
-    day: "numeric",
     month: "short",
+    day: "numeric",
   });
 }
 
@@ -172,22 +173,21 @@ function ConfirmBookingModal({
 
           <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg mb-4">
             <p className="text-sm text-amber-800">
-              <strong>Política de cancelamento:</strong> Cancelamentos devem ser
-              feitos com pelo menos 12 horas de antecedência para reembolso do
-              crédito.
+              <strong>Cancellation policy:</strong> Cancellations must be made
+              at least 12 hours in advance for a credit refund.
             </p>
           </div>
 
           <div className="flex gap-3">
             <Button variant="secondary" fullWidth onClick={onCancel}>
-              Voltar
+              Back
             </Button>
             <Button
               fullWidth
               onClick={onConfirm}
               disabled={bookingState.loading}
             >
-              {bookingState.loading ? "Agendando..." : "Confirmar Agendamento"}
+              {bookingState.loading ? "Booking..." : "Confirm Booking"}
             </Button>
           </div>
         </div>
@@ -203,47 +203,58 @@ function ConfirmBookingModal({
   );
 }
 
-// Class Card Component
+// Class Card Component with inline waitlist
 function ClassCard({
   classInfo,
   onSelect,
   isSelected,
+  onJoinWaitlist,
+  waitlistJoining,
+  waitlistJoined,
 }: {
   classInfo: AvailableClass;
   onSelect: (c: AvailableClass) => void;
   isSelected: boolean;
+  onJoinWaitlist: (classInfo: AvailableClass) => void;
+  waitlistJoining: string | null;
+  waitlistJoined: Record<string, { position: number; total: number }>;
 }) {
   const colors = classTypeColors[classInfo.type] || classTypeColors.other;
   const spotsText =
     classInfo.availableSpots === 0
       ? "Full"
       : classInfo.availableSpots === 1
-      ? "1 spot"
+      ? "1 spot left!"
+      : classInfo.availableSpots <= 2
+      ? `Only ${classInfo.availableSpots} spots left`
       : `${classInfo.availableSpots} spots`;
 
+  const joined = waitlistJoined[classInfo._id];
+  const isJoining = waitlistJoining === classInfo._id;
+
   return (
-    <button
+    <div
       onClick={() => !classInfo.isFull && onSelect(classInfo)}
-      disabled={classInfo.isFull}
+      role={classInfo.isFull ? undefined : "button"}
       className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
         isSelected
           ? "border-primary-500 bg-primary-50 ring-2 ring-primary-200"
           : classInfo.isFull
-          ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+          ? "border-gray-200 bg-gray-50"
           : `${colors.border} ${colors.bg} hover:shadow-md cursor-pointer`
       }`}
     >
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className={`font-semibold ${colors.text}`}>{classInfo.title}</h4>
+          <h4 className={`font-semibold ${classInfo.isFull ? "text-gray-700" : colors.text}`}>{classInfo.title}</h4>
           <p className="text-sm text-gray-600">{classInfo.instructorName}</p>
         </div>
         <span
-          className={`text-xs px-2 py-1 rounded-full ${
+          className={`text-xs px-2 py-1 rounded-full font-medium ${
             classInfo.isFull
               ? "bg-red-100 text-red-700"
               : classInfo.availableSpots <= 2
-              ? "bg-amber-100 text-amber-700"
+              ? "bg-amber-100 text-amber-700 animate-pulse"
               : "bg-green-100 text-green-700"
           }`}
         >
@@ -280,20 +291,48 @@ function ClassCard({
         )}
       </div>
 
+      {/* Inline Waitlist - No redirect, zero friction */}
       {classInfo.isFull && (
         <div className="mt-3 pt-3 border-t border-gray-200">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // Will implement waitlist
-            }}
-            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            Join waitlist →
-          </button>
+          {joined ? (
+            <div className="flex items-center gap-2 text-sm">
+              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-green-700 font-medium">
+                You&apos;re #{joined.position} of {joined.total} — we&apos;ll WhatsApp you when a spot opens
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onJoinWaitlist(classInfo);
+              }}
+              disabled={isJoining}
+              className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+            >
+              {isJoining ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Joining...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  Notify me when a spot opens
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -312,7 +351,7 @@ function ClassFilters({
   instructors: { id: string; name: string }[];
 }) {
   const types = [
-    { id: "all", label: "Todas" },
+    { id: "all", label: "All" },
     { id: "pilates", label: "Pilates" },
     { id: "yoga", label: "Yoga" },
     { id: "stretching", label: "Stretching" },
@@ -367,6 +406,7 @@ function ClassFilters({
 
 export default function BookClassPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(new Date());
   const [classes, setClasses] = useState<AvailableClass[]>([]);
@@ -380,9 +420,39 @@ export default function BookClassPage() {
     error: null,
     success: false,
   });
+  const [waitlistJoining, setWaitlistJoining] = useState<string | null>(null);
+  const [waitlistJoined, setWaitlistJoined] = useState<Record<string, { position: number; total: number }>>({});
 
-  // Get current user/client ID (in production, from auth context)
-  const clientId = "demo-client-id"; // Will be replaced with actual auth
+  const clientId = user?.id || "";
+
+  // Inline waitlist join - zero friction, no redirect
+  const handleJoinWaitlist = async (classInfo: AvailableClass) => {
+    setWaitlistJoining(classInfo._id);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: classInfo._id,
+          className: classInfo.title,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWaitlistJoined((prev) => ({
+          ...prev,
+          [classInfo._id]: {
+            position: data.entry.position,
+            total: data.entry.totalInQueue || data.entry.position,
+          },
+        }));
+      }
+    } catch (err) {
+      console.error("Error joining waitlist:", err);
+    } finally {
+      setWaitlistJoining(null);
+    }
+  };
 
   // Fetch available classes
   const fetchClasses = useCallback(async () => {
@@ -539,21 +609,29 @@ export default function BookClassPage() {
       {/* Week Navigation */}
       <div className="px-6 py-4 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={goToPrevWeek}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={goToPrevWeek}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={() => { setWeekStart(new Date()); setSelectedDate(new Date()); }}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
+              Today
+            </button>
+            <button
+              onClick={goToNextWeek}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowRightIcon className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
           <span className="font-medium text-gray-900">
             {formatShortDate(weekDates[0])} - {formatShortDate(weekDates[6])}
           </span>
-          <button
-            onClick={goToNextWeek}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowRightIcon className="w-5 h-5 text-gray-600" />
-          </button>
         </div>
 
         {/* Day Selector */}
@@ -611,19 +689,14 @@ export default function BookClassPage() {
           <div className="text-center py-12">
             <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No classes available
+              No classes on this day
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-1">
               There are no classes scheduled for {formatDate(selectedDate)}.
             </p>
-            <button
-              onClick={() => {
-                router.push("/dashboard/classes/waitlist");
-              }}
-              className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Join waitlist →
-            </button>
+            <p className="text-sm text-gray-500">
+              Try selecting a different day to find available classes.
+            </p>
           </div>
         ) : (
           <div className="space-y-3 max-w-2xl mx-auto">
@@ -641,6 +714,9 @@ export default function BookClassPage() {
                   setBookingState({ loading: false, error: null, success: false });
                 }}
                 isSelected={selectedClass?._id === classInfo._id}
+                onJoinWaitlist={handleJoinWaitlist}
+                waitlistJoining={waitlistJoining}
+                waitlistJoined={waitlistJoined}
               />
             ))}
           </div>

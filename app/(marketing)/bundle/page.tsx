@@ -411,7 +411,7 @@ export default function BundlePage() {
           </form>
 
           <p className="text-sm text-primary-200 mt-6">
-            30-day money-back guarantee • No long-term contracts
+            60-day money-back guarantee • No long-term contracts
           </p>
         </div>
       </section>

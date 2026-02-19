@@ -204,14 +204,33 @@ export const authApi = {
 };
 
 // Clients API
+export type ClientLifecycleStage = "lead" | "trial" | "active" | "at_risk" | "churned" | "won_back";
+
 export interface ClientPlan {
-  type: "monthly" | "quarterly" | "annual" | "drop-in";
+  type: "monthly" | "quarterly" | "annual" | "drop-in" | "trial" | "challenge" | "premium" | "vip";
   totalClasses: number;
   usedClasses: number;
   remainingClasses: number;
   startDate: Date;
   endDate: Date;
   price: number;
+}
+
+export interface ClientHealthScore {
+  overall: number;
+  breakdown: {
+    attendance: number;
+    planUtilization: number;
+    recency: number;
+    paymentHealth: number;
+  };
+  lastCalculatedAt: Date;
+}
+
+export interface ClientMilestone {
+  type: string;
+  achievedAt: Date;
+  acknowledged: boolean;
 }
 
 export interface Client {
@@ -222,8 +241,26 @@ export interface Client {
   whatsappId?: string;
   instagramId?: string;
   avatar?: string;
-  plan?: ClientPlan | string; // Can be object from DB or string for display
+  plan?: ClientPlan | string;
   status: "active" | "inactive" | "pending" | "paused" | "expired";
+  // Hormozi lifecycle
+  lifecycleStage?: ClientLifecycleStage;
+  healthScore?: ClientHealthScore;
+  currentStreak?: number;
+  longestStreak?: number;
+  lastClassDate?: string;
+  totalLifetimeRevenue?: number;
+  milestones?: ClientMilestone[];
+  churnRiskScore?: number;
+  onboarding?: {
+    welcomeEmailSent: boolean;
+    healthAssessmentCompleted: boolean;
+    firstClassBooked: boolean;
+    firstClassCompleted: boolean;
+    weekOneCheckInSent: boolean;
+    weekTwoGoalReviewSent: boolean;
+    onboardingCompletedAt?: Date;
+  };
   preferences?: {
     preferredInstructors?: string[];
     preferredTimeSlots?: string[];
@@ -252,8 +289,19 @@ export interface ClientsResponse {
   limit: number;
 }
 
+// LTV & Churn metrics (Hormozi)
+export interface ClientMetrics {
+  avgLTV: number;
+  avgLifespanMonths: number;
+  monthlyChurnRate: number;
+  revenuePerClientPerMonth: number;
+  atRiskCount: number;
+  churnedThisMonth: number;
+  upgradeConversionRate: number;
+}
+
 export const clientsApi = {
-  list: (params?: { page?: number; limit?: number; search?: string; status?: string }) =>
+  list: (params?: { page?: number; limit?: number; search?: string; status?: string; lifecycleStage?: string }) =>
     api.get<ClientsResponse>(`/api/clients${buildQueryString(params || {})}`),
 
   get: (id: string) => api.get<{ client: Client }>(`/api/clients/${id}`),
@@ -264,6 +312,14 @@ export const clientsApi = {
     api.put<{ client: Client }>(`/api/clients/${id}`, data),
 
   delete: (id: string) => api.delete(`/api/clients/${id}`),
+
+  getMetrics: () => api.get<ClientMetrics>("/api/admin/clients/metrics"),
+
+  triggerOnboarding: (id: string, step: string) =>
+    api.post<{ success: boolean }>(`/api/clients/${id}/onboarding`, { step }),
+
+  sendWinBack: (ids: string[]) =>
+    api.post<{ success: boolean }>("/api/clients/win-back", { clientIds: ids }),
 };
 
 // Staff API

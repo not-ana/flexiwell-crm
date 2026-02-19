@@ -89,10 +89,31 @@ export async function GET(request: NextRequest) {
     // Calculate "protected revenue" - direct clients served before aggregators
     const protectedRevenue = await calculateProtectedRevenue(db);
 
+    // Waitlist counts per class (for social proof and demand visibility)
+    const classWaitlistCounts = await db
+      .collection<WaitlistEntry>("waitlist")
+      .aggregate<{ _id: string; className: string; count: number }>([
+        { $match: { status: { $in: ["waiting", "notified"] } } },
+        { $group: { _id: "$classId", className: { $first: "$className" }, count: { $sum: 1 } } },
+      ])
+      .toArray();
+
+    const waitlistByClass = classWaitlistCounts.reduce(
+      (acc, item) => ({ ...acc, [item._id]: item.count }),
+      {} as Record<string, number>
+    );
+
+    const waitlistClassNames = classWaitlistCounts.reduce(
+      (acc, item) => ({ ...acc, [item._id]: item.className }),
+      {} as Record<string, string>
+    );
+
     return NextResponse.json({
       entries: entriesWithPosition,
       stats: { ...statsMap, total: entries.length },
       protectedRevenue,
+      waitlistByClass,
+      waitlistClassNames,
     });
   } catch (error) {
     console.error("Error fetching waitlist:", error);
@@ -185,12 +206,18 @@ export async function POST(request: NextRequest) {
 
     const result = await db.collection<WaitlistEntry>("waitlist").insertOne(newEntry);
 
-    // Get position in queue
-    const position = await db.collection<WaitlistEntry>("waitlist").countDocuments({
-      classId,
-      status: "waiting",
-      priority: { $gt: priority },
-    }) + 1;
+    // Get position in queue and total queue size
+    const [position, totalInQueue] = await Promise.all([
+      db.collection<WaitlistEntry>("waitlist").countDocuments({
+        classId,
+        status: "waiting",
+        priority: { $gt: priority },
+      }).then(count => count + 1),
+      db.collection<WaitlistEntry>("waitlist").countDocuments({
+        classId,
+        status: { $in: ["waiting", "notified"] },
+      }),
+    ]);
 
     return NextResponse.json(
       {
@@ -199,6 +226,7 @@ export async function POST(request: NextRequest) {
           id: result.insertedId.toString(),
           ...newEntry,
           position,
+          totalInQueue,
         },
       },
       { status: 201 }
@@ -221,7 +249,6 @@ function getClientSource(client: Client | null): ClientSource {
 
   if (source === "gympass" || source === "wellhub") return "gympass";
   if (source === "classpass") return "classpass";
-  if (source === "totalpass") return "totalpass";
   if (source === "trial") return "trial";
 
   // Check if has package (any plan type that's not drop-in indicates a package)
@@ -250,7 +277,7 @@ async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDataba
   // Count aggregators still waiting
   const aggregatorsWaiting = await db.collection<WaitlistEntry>("waitlist").countDocuments({
     status: "waiting",
-    clientSource: { $in: ["gympass", "totalpass", "classpass"] },
+    clientSource: { $in: ["gympass", "classpass"] },
   });
 
   // Estimate protected revenue (average class value R$80 for direct vs R$20 for aggregator)

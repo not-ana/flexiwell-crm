@@ -1,4 +1,4 @@
-// Notification Service - Email (Resend) and WhatsApp (Twilio/Cloud API) notifications
+// Notification Service - Email (Resend), WhatsApp (Twilio/Cloud API), and SMS (Twilio) notifications
 import { Resend } from "resend";
 import { getDatabase } from "@/lib/db/mongodb";
 import { getWhatsAppCredentials } from "@/lib/integrations/credentials";
@@ -6,12 +6,13 @@ import type { TwilioCredentials, CloudApiCredentials } from "@/lib/whatsapp/type
 import { formatPhoneForWhatsApp } from "@/lib/utils/phone";
 import { formatDateBR } from "@/lib/utils/date";
 import type { Client, Booking, Class } from "@/lib/db/schemas";
+import { SMS_TEMPLATES } from "@/lib/services/notifications/templates/sms-templates";
 
 // ============================================
 // Types
 // ============================================
 
-export type NotificationChannel = "email" | "whatsapp" | "both";
+export type NotificationChannel = "email" | "whatsapp" | "sms" | "both" | "all";
 export type NotificationType =
   | "booking_confirmation"
   | "booking_cancellation"
@@ -30,6 +31,7 @@ interface NotificationResult {
   success: boolean;
   emailSent?: boolean;
   whatsappSent?: boolean;
+  smsSent?: boolean;
   error?: string;
 }
 
@@ -43,7 +45,7 @@ interface NotificationPayload {
 interface NotificationRecord {
   _id?: string;
   type: NotificationType;
-  channel: "email" | "whatsapp";
+  channel: "email" | "whatsapp" | "sms";
   clientId: string;
   clientName: string;
   recipient: string; // email or phone
@@ -483,7 +485,7 @@ export class NotificationService {
     const results: NotificationResult = { success: true };
 
     // Send email
-    if (channels === "email" || channels === "both") {
+    if (channels === "email" || channels === "both" || channels === "all") {
       if (client.email) {
         const emailResult = await this.sendEmail(type, client.email, enrichedData);
         results.emailSent = emailResult.success;
@@ -494,7 +496,7 @@ export class NotificationService {
     }
 
     // Send WhatsApp
-    if (channels === "whatsapp" || channels === "both") {
+    if (channels === "whatsapp" || channels === "both" || channels === "all") {
       if (client.phone) {
         const whatsappResult = await this.sendWhatsApp(type, client.phone, client._id?.toString() || "", enrichedData);
         results.whatsappSent = whatsappResult.success;
@@ -504,8 +506,19 @@ export class NotificationService {
       }
     }
 
+    // Send SMS
+    if (channels === "sms" || channels === "all") {
+      if (client.phone) {
+        const smsResult = await this.sendSMS(type, client.phone, client._id?.toString() || "", enrichedData);
+        results.smsSent = smsResult.success;
+        if (!smsResult.success && !results.error) {
+          results.error = smsResult.error;
+        }
+      }
+    }
+
     // Update success status
-    results.success = results.emailSent === true || results.whatsappSent === true;
+    results.success = results.emailSent === true || results.whatsappSent === true || results.smsSent === true;
 
     return results;
   }
@@ -692,6 +705,92 @@ export class NotificationService {
     }
   }
 
+
+  // Send SMS via Twilio
+  private async sendSMS(
+    type: NotificationType,
+    phone: string,
+    clientId: string,
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; error?: string }> {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const smsNumber = process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER;
+
+    if (!accountSid || !authToken || !smsNumber) {
+      console.log("[SMS] Twilio SMS not configured, skipping");
+      return { success: false, error: "SMS service not configured" };
+    }
+
+    try {
+      const template = SMS_TEMPLATES[type as keyof typeof SMS_TEMPLATES];
+      if (!template) {
+        return { success: false, error: `SMS template not found: ${type}` };
+      }
+
+      const message = template(data as Parameters<typeof template>[0]);
+
+      // Format phone to E.164
+      const cleaned = phone.replace(/\D/g, "");
+      const formattedPhone = cleaned.length >= 12
+        ? `+${cleaned}`
+        : `+55${cleaned}`;
+
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+      const body = new URLSearchParams({
+        To: formattedPhone,
+        From: smsNumber,
+        Body: message,
+      });
+
+      const response = await fetch(twilioUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+      });
+
+      const result = await response.json() as Record<string, unknown>;
+
+      if (!response.ok) {
+        const errorMsg = (result.message as string) || "Failed to send SMS";
+        console.error("[SMS] Error sending:", result);
+        await this.logNotification({
+          type,
+          channel: "sms",
+          clientId,
+          clientName: data.clientName as string || "",
+          recipient: formattedPhone,
+          content: message,
+          status: "failed",
+          error: errorMsg,
+          createdAt: new Date(),
+        });
+        return { success: false, error: errorMsg };
+      }
+
+      await this.logNotification({
+        type,
+        channel: "sms",
+        clientId,
+        clientName: data.clientName as string || "",
+        recipient: formattedPhone,
+        content: message,
+        status: "sent",
+        sentAt: new Date(),
+        createdAt: new Date(),
+      });
+
+      console.log(`[SMS] Sent ${type} to ${formattedPhone}`);
+      return { success: true };
+    } catch (error) {
+      console.error("[SMS] Error:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
 
   // Log notification to database
   private async logNotification(notification: NotificationRecord): Promise<void> {

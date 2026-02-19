@@ -4,31 +4,17 @@ import { useState } from "react";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { PlansSettings } from "@/components/settings/PlansSettings";
 import { WaitlistSettings } from "@/components/settings/WaitlistSettings";
-import { EstablishmentsSettings } from "@/components/settings/EstablishmentsSettings";
-import { RoomsSettings } from "@/components/settings/RoomsSettings";
-import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
-import { NotificationsSettings } from "@/components/settings/NotificationsSettings";
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
-import { AddonsSettings } from "@/components/settings/AddonsSettings";
-import { WhatsAppSettings } from "@/components/settings/WhatsAppSettings";
-import { SMSSettings } from "@/components/settings/SMSSettings";
-import { SMSBotSettings } from "@/components/settings/SMSBotSettings";
-import { BrandingSettings } from "@/components/settings/BrandingSettings";
 
-type AdminSettingsTab = "general" | "plans" | "waitlist" | "establishments" | "rooms" | "subscription" | "notifications" | "team" | "integrations" | "addons" | "whatsapp" | "sms" | "sms-bot" | "branding";
+type AdminSettingsTab = "general" | "plans" | "waitlist" | "team" | "integrations";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "plans", label: "Plans" },
   { id: "waitlist", label: "Waitlist" },
   { id: "team", label: "Staff" },
-  { id: "establishments", label: "Establishments" },
   { id: "integrations", label: "Import" },
-  { id: "addons", label: "Add-ons" },
-  // { id: "branding", label: "Branding" },
-  { id: "subscription", label: "Subscription" },
-  { id: "notifications", label: "Notifications" },
 ];
 
 export default function AdminSettingsPage() {
@@ -42,28 +28,10 @@ export default function AdminSettingsPage() {
         return <PlansSettings />;
       case "waitlist":
         return <WaitlistSettings />;
-      case "establishments":
-        return <EstablishmentsSettings />;
-      case "rooms":
-        return <RoomsSettings />;
-      case "subscription":
-        return <SubscriptionSettings />;
-      case "notifications":
-        return <NotificationsSettings />;
       case "team":
         return <TeamSettings />;
       case "integrations":
         return <IntegrationsSettings />;
-      case "addons":
-        return <AddonsSettings onNavigate={setActiveTab} />;
-      case "whatsapp":
-        return <WhatsAppSettings onBack={() => setActiveTab("addons")} />;
-      case "sms":
-        return <SMSSettings onBack={() => setActiveTab("addons")} />;
-      case "sms-bot":
-        return <SMSBotSettings onBack={() => setActiveTab("addons")} />;
-      case "branding":
-        return <BrandingSettings onNavigate={(tab) => setActiveTab(tab as AdminSettingsTab)} />;
       default:
         return <GeneralSettings />;
     }
@@ -95,9 +63,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-5xl">
-          {renderTabContent()}
-        </div>
+        {renderTabContent()}
       </div>
     </div>
   );

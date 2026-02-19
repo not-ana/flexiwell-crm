@@ -67,6 +67,54 @@ function getSourceInfo(source: ClientSource) {
   return sourcePriorities.find((s) => s.source === source) || sourcePriorities[0];
 }
 
+// Countdown hook for notified entries
+function useCountdown(expiresAt: string | undefined) {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [urgency, setUrgency] = useState<"normal" | "warning" | "critical">("normal");
+
+  useEffect(() => {
+    if (!expiresAt) return;
+
+    const update = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft("Expired");
+        setUrgency("critical");
+        return;
+      }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${m}:${s.toString().padStart(2, "0")}`);
+      if (m < 5) setUrgency("critical");
+      else if (m < 15) setUrgency("warning");
+      else setUrgency("normal");
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  return { timeLeft, urgency };
+}
+
+function CountdownBadge({ expiresAt }: { expiresAt?: string }) {
+  const { timeLeft, urgency } = useCountdown(expiresAt);
+  if (!expiresAt || !timeLeft) return null;
+
+  const colors = {
+    normal: "bg-blue-100 text-blue-700 border-blue-200",
+    warning: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    critical: "bg-red-100 text-red-700 border-red-200 animate-pulse",
+  };
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${colors[urgency]}`}>
+      {timeLeft}
+    </span>
+  );
+}
+
 export default function WaitlistPage() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +125,10 @@ export default function WaitlistPage() {
     directClientsServed: 0,
     aggregatorsWaiting: 0,
   });
+  const [waitlistByClass, setWaitlistByClass] = useState<Record<string, number>>({});
+  const [waitlistClassNames, setWaitlistClassNames] = useState<Record<string, string>>({});
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [notifySuccess, setNotifySuccess] = useState<string | null>(null);
 
   const fetchWaitlist = useCallback(async () => {
     try {
@@ -91,6 +142,8 @@ export default function WaitlistPage() {
       setEntries(data.entries);
       setStats(data.stats);
       setProtectedRevenue(data.protectedRevenue);
+      if (data.waitlistByClass) setWaitlistByClass(data.waitlistByClass);
+      if (data.waitlistClassNames) setWaitlistClassNames(data.waitlistClassNames);
     } catch (error) {
       console.error("Error fetching waitlist:", error);
     } finally {
@@ -102,14 +155,16 @@ export default function WaitlistPage() {
     fetchWaitlist();
   }, [fetchWaitlist]);
 
-  const handleNotify = async (entryId: string) => {
-    setActionLoading(entryId);
+  const handleNotify = async (entry: WaitlistEntry) => {
+    setActionLoading(entry.id);
     try {
-      const response = await authFetch(`/api/waitlist/${entryId}`, {
+      const response = await authFetch(`/api/waitlist/${entry.id}`, {
         method: "PATCH",
         body: JSON.stringify({ action: "notify" }),
       });
       if (response.ok) {
+        setNotifySuccess(entry.clientName);
+        setTimeout(() => setNotifySuccess(null), 3000);
         fetchWaitlist();
       }
     } catch (error) {
@@ -137,6 +192,23 @@ export default function WaitlistPage() {
     }
   };
 
+  // Sort: notified first (needs action), then by position
+  const sortedEntries = [...entries].sort((a, b) => {
+    if (a.status === "notified" && b.status !== "notified") return -1;
+    if (b.status === "notified" && a.status !== "notified") return 1;
+    return a.position - b.position;
+  });
+
+  // Group entries by class for demand visibility
+  const classDemand = Object.entries(waitlistByClass)
+    .map(([classId, count]) => ({
+      classId,
+      className: waitlistClassNames[classId] || entries.find((e) => e.classId === classId)?.className || "Class",
+      count,
+    }))
+    .filter((cls) => cls.className && cls.className !== "null")
+    .sort((a, b) => b.count - a.count);
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -149,14 +221,26 @@ export default function WaitlistPage() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-6 lg:p-8 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold text-gray-900">Waitlist</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Never Lose a Client to a Full Class</h1>
         <p className="text-gray-600 mt-1">
-          Direct clients have priority over aggregators
+          Direct clients get priority. Every spot goes to your highest-value clients first.
         </p>
+
+        {/* Notify Success Toast */}
+        {notifySuccess && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-sm text-green-700">
+              <span className="font-medium">{notifySuccess}</span> has been notified via WhatsApp and SMS. They have 30 minutes to confirm.
+            </p>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          {/* Protected Revenue - Key Differentiator */}
+          {/* Protected Revenue */}
           <div className="col-span-2 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-5 text-white">
             <div className="flex items-center gap-2 mb-1">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,8 +265,27 @@ export default function WaitlistPage() {
           </div>
         </div>
 
+        {/* Class Demand Bar - Social proof for admin */}
+        {classDemand.length > 0 && (
+          <div className="mt-4 flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-medium text-gray-500">Demand:</span>
+            {classDemand.slice(0, 5).map((cls) => (
+              <span
+                key={cls.classId}
+                className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                  cls.count >= 3
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {cls.className} ({cls.count} waiting)
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Filter */}
-        <div className="flex items-center gap-3 mt-6">
+        <div className="flex items-center gap-3 mt-4">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -204,24 +307,30 @@ export default function WaitlistPage() {
 
       {/* List */}
       <div className="flex-1 overflow-auto p-6 lg:p-8">
-        {entries.length === 0 ? (
+        {sortedEntries.length === 0 ? (
           <div className="text-center py-12">
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <p className="text-gray-500">No clients on the waitlist</p>
+            <p className="text-gray-500 font-medium">No clients on the waitlist</p>
+            <p className="text-sm text-gray-400 mt-1">Clients will appear here when classes are full</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {entries.map((entry) => {
+            {sortedEntries.map((entry) => {
               const sourceInfo = getSourceInfo(entry.clientSource);
-              const isAggregator = ["gympass", "totalpass", "classpass"].includes(entry.clientSource);
+              const isAggregator = ["gympass", "classpass"].includes(entry.clientSource);
+              const isNotified = entry.status === "notified";
 
               return (
                 <div
                   key={entry.id}
-                  className={`bg-white border rounded-xl p-4 hover:shadow-md transition-shadow ${
-                    isAggregator ? "border-gray-200" : "border-primary-200 bg-primary-50/30"
+                  className={`bg-white border rounded-xl p-4 transition-all ${
+                    isNotified
+                      ? "border-blue-300 bg-blue-50/50 shadow-md shadow-blue-100"
+                      : isAggregator
+                      ? "border-gray-200 hover:shadow-md"
+                      : "border-primary-200 bg-primary-50/30 hover:shadow-md"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -257,11 +366,17 @@ export default function WaitlistPage() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig[entry.status].color}`}>
                             {statusConfig[entry.status].label}
                           </span>
+                          {isNotified && <CountdownBadge expiresAt={entry.expiresAt} />}
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">{entry.className}</p>
                         <p className="text-xs text-gray-400 mt-1">
                           Joined {formatDate(entry.createdAt)}
                         </p>
+                        {isNotified && (
+                          <p className="text-xs text-blue-600 mt-1 font-medium">
+                            Waiting for client to confirm their spot
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -269,17 +384,12 @@ export default function WaitlistPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {entry.status === "waiting" && (
                         <button
-                          onClick={() => handleNotify(entry.id)}
+                          onClick={() => handleNotify(entry)}
                           disabled={actionLoading === entry.id}
                           className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
                         >
-                          {actionLoading === entry.id ? "..." : "Notify"}
+                          {actionLoading === entry.id ? "Sending..." : "Notify"}
                         </button>
-                      )}
-                      {entry.status === "notified" && entry.expiresAt && (
-                        <span className="text-xs text-blue-600">
-                          Expires {formatDate(entry.expiresAt)}
-                        </span>
                       )}
                       <button
                         onClick={() => handleRemove(entry.id)}

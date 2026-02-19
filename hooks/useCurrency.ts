@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-export type Currency = "USD" | "BRL" | "EUR" | "GBP";
+export type Currency = "USD";
 
 interface CurrencyConfig {
   code: Currency;
@@ -18,27 +18,6 @@ const currencyConfigs: Record<Currency, CurrencyConfig> = {
     symbol: "$",
     name: "US Dollar",
     locale: "en-US",
-    position: "before",
-  },
-  BRL: {
-    code: "BRL",
-    symbol: "R$",
-    name: "Brazilian Real",
-    locale: "pt-BR",
-    position: "before",
-  },
-  EUR: {
-    code: "EUR",
-    symbol: "€",
-    name: "Euro",
-    locale: "de-DE",
-    position: "before",
-  },
-  GBP: {
-    code: "GBP",
-    symbol: "£",
-    name: "British Pound",
-    locale: "en-GB",
     position: "before",
   },
 };

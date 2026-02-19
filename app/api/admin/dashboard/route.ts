@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Run all queries in parallel
     const [
       // Current period stats
-      totalClients,
+      , // totalClients (unused)
       activeClients,
       newClients,
       totalClasses,
@@ -75,12 +75,12 @@ export async function GET(request: NextRequest) {
       previousRevenue,
       // Recent activity
       recentActivity,
-      // Staff performance
-      staffList,
       // Today's classes
       todayClasses,
-      // Class types distribution
-      classTypeDistribution,
+      // Waitlist fills this period
+      waitlistFills,
+      // No-shows this period
+      noShows,
     ] = await Promise.all([
       // Total clients
       db.collection("clients").countDocuments(establishmentFilter),
@@ -150,11 +150,6 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .limit(5)
         .toArray(),
-      // Staff list with their class counts
-      db.collection("staff")
-        .find({ status: "active", ...establishmentFilter })
-        .limit(10)
-        .toArray(),
       // Upcoming classes (from today onwards)
       db.collection("classes")
         .find({
@@ -166,21 +161,18 @@ export async function GET(request: NextRequest) {
         .sort({ scheduledDate: 1, startTime: 1 })
         .limit(5)
         .toArray(),
-      // Class type distribution
-      db.collection("classes").aggregate([
-        {
-          $match: {
-            scheduledDate: { $gte: startDate },
-            ...establishmentFilter,
-          },
-        },
-        {
-          $group: {
-            _id: "$type",
-            count: { $sum: 1 },
-          },
-        },
-      ]).toArray(),
+      // Waitlist fills (confirmed waitlist entries)
+      db.collection("waitlist").countDocuments({
+        status: "confirmed",
+        updatedAt: { $gte: startDate },
+        ...establishmentFilter,
+      }),
+      // No-shows
+      db.collection("bookings").countDocuments({
+        status: { $in: ["no-show", "noshow", "no_show"] },
+        scheduledDate: { $gte: startDate },
+        ...establishmentFilter,
+      }),
     ]);
 
     // Calculate changes
@@ -215,89 +207,6 @@ export async function GET(request: NextRequest) {
             booking.status === "cancelled" ? "cancel" : "booking",
     }));
 
-    // Format staff performance - Optimized with single aggregation query
-    // Get all staff IDs for the aggregation
-    const staffIds = staffList.map((staff: any) => staff._id.toString());
-
-    // Single aggregation to get all staff metrics at once
-    const staffMetrics = await db.collection("bookings").aggregate([
-      {
-        $match: {
-          instructorId: { $in: staffIds },
-          scheduledDate: { $gte: startDate },
-          ...establishmentFilter,
-        }
-      },
-      {
-        $group: {
-          _id: "$instructorId",
-          totalBookings: { $sum: 1 },
-          completedBookings: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
-          },
-          clientsServed: {
-            $addToSet: {
-              $cond: [
-                { $in: ["$status", ["completed", "confirmed"]] },
-                "$clientId",
-                null
-              ]
-            }
-          }
-        }
-      }
-    ]).toArray();
-
-    // Get classes count for all staff in one query
-    const classMetrics = await db.collection("classes").aggregate([
-      {
-        $match: {
-          instructorId: { $in: staffIds },
-          scheduledDate: { $gte: startDate },
-          ...establishmentFilter,
-        }
-      },
-      {
-        $group: {
-          _id: "$instructorId",
-          classCount: { $sum: 1 }
-        }
-      }
-    ]).toArray();
-
-    // Create lookup maps for O(1) access
-    const metricsMap = new Map(staffMetrics.map(m => [m._id, m]));
-    const classCountMap = new Map(classMetrics.map(c => [c._id, c.classCount]));
-
-    // Format staff performance with pre-computed metrics
-    const staffPerformance = staffList.map((staff: any) => {
-      const staffId = staff._id.toString();
-      const metrics = metricsMap.get(staffId);
-      const classCount = classCountMap.get(staffId) || 0;
-
-      // Calculate stats from aggregated data
-      const totalBookings = metrics?.totalBookings || 0;
-      const completedBookings = metrics?.completedBookings || 0;
-      const clientsServed = metrics?.clientsServed?.filter((c: any) => c !== null).length || 0;
-      const attendance = totalBookings > 0
-        ? Math.round((completedBookings / totalBookings) * 100)
-        : 0;
-
-      return {
-        id: staffId,
-        name: staff.name,
-        role: staff.role,
-        initials: staff.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
-        avatar: staff.avatar,
-        stats: {
-          classesThisMonth: classCount,
-          clientsServed,
-          attendance,
-        },
-        trend: classCount > 10 ? "up" : classCount > 5 ? "stable" : "down",
-      };
-    });
-
     // Format today's classes
     const formattedClasses = todayClasses.map((cls: any) => ({
       id: cls._id.toString(),
@@ -308,124 +217,16 @@ export async function GET(request: NextRequest) {
       capacity: cls.maxCapacity || 10,
     }));
 
-    // Format class type distribution
-    const classTypes = classTypeDistribution.map((type: any) => ({
-      name: type._id ? type._id.charAt(0).toUpperCase() + type._id.slice(1) : "Other",
-      value: type.count,
-    }));
-
-    // Calculate percentages for pie chart
-    const totalClassCount = classTypes.reduce((sum: number, t: any) => sum + t.value, 0);
-    const classTypesWithPercent = classTypes.map((type: any, index: number) => ({
-      ...type,
-      value: totalClassCount > 0 ? Math.round((type.value / totalClassCount) * 100) : 0,
-      color: ["#6938EF", "#8870E9", "#5925DC", "#BDB4FE"][index % 4],
-    }));
-
-    // Calculate previous period attendance for change comparison
-    const previousBookingsInPeriod = await db.collection("bookings").countDocuments({
-      scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
-      ...establishmentFilter,
-    });
-    const previousCompletedBookings = await db.collection("bookings").countDocuments({
-      status: "completed",
-      scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
-      ...establishmentFilter,
-    });
-    const previousAttendanceRate = previousBookingsInPeriod > 0
-      ? (previousCompletedBookings / previousBookingsInPeriod) * 100
-      : 0;
-    const currentAttendanceNum = parseFloat(attendanceRate);
-    const attendanceChange = previousAttendanceRate > 0
-      ? (currentAttendanceNum - previousAttendanceRate).toFixed(1)
+    // Calculate no-show rate
+    const noShowRate = totalBookingsInPeriod > 0
+      ? ((noShows / totalBookingsInPeriod) * 100).toFixed(1)
       : "0";
 
-    // Get monthly revenue data for chart (12 months of selected year)
-    const monthlyRevenueData = [];
-    for (let i = 0; i < 12; i++) {
-      const monthStart = new Date(selectedYear, i, 1);
-      const monthEnd = new Date(selectedYear, i + 1, 0);
-      const lastYearMonthStart = new Date(selectedYear - 1, i, 1);
-      const lastYearMonthEnd = new Date(selectedYear - 1, i + 1, 0);
-
-      const [currentMonthRevenue, lastYearMonthRevenue] = await Promise.all([
-        db.collection("payments").aggregate([
-          { $match: { status: "completed", createdAt: { $gte: monthStart, $lte: monthEnd }, ...establishmentFilter } },
-          { $group: { _id: null, total: { $sum: "$amount" } } }
-        ]).toArray(),
-        db.collection("payments").aggregate([
-          { $match: { status: "completed", createdAt: { $gte: lastYearMonthStart, $lte: lastYearMonthEnd }, ...establishmentFilter } },
-          { $group: { _id: null, total: { $sum: "$amount" } } }
-        ]).toArray()
-      ]);
-
-      monthlyRevenueData.push({
-        month: monthStart.toLocaleString("en-US", { month: "short" }),
-        revenue: currentMonthRevenue[0]?.total || 0,
-        lastYear: lastYearMonthRevenue[0]?.total || 0,
-      });
-    }
-
-    // Get weekly attendance data for chart (last 8 weeks)
-    const weeklyAttendanceData = [];
-    for (let i = 7; i >= 0; i--) {
-      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
-      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-
-      const [weekBookings, weekCompleted] = await Promise.all([
-        db.collection("bookings").countDocuments({
-          scheduledDate: { $gte: weekStart, $lt: weekEnd },
-          ...establishmentFilter,
-        }),
-        db.collection("bookings").countDocuments({
-          status: "completed",
-          scheduledDate: { $gte: weekStart, $lt: weekEnd },
-          ...establishmentFilter,
-        })
-      ]);
-
-      const weekRate = weekBookings > 0 ? Math.round((weekCompleted / weekBookings) * 100) : 0;
-      weeklyAttendanceData.push({
-        week: `W${8 - i}`,
-        rate: weekRate,
-      });
-    }
-
-    // Calculate retention rate
-    // Retention = clients who had bookings in both previous and current period / clients in previous period
-    const previousPeriodClients = await db.collection("bookings").aggregate([
-      {
-        $match: {
-          scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
-          ...establishmentFilter,
-        }
-      },
-      {
-        $group: { _id: "$clientId" }
-      }
-    ]).toArray();
-    const previousClientIds = previousPeriodClients.map(c => c._id);
-
-    let retentionRate = 0;
-    if (previousClientIds.length > 0) {
-      const returningClients = await db.collection("bookings").aggregate([
-        {
-          $match: {
-            clientId: { $in: previousClientIds },
-            scheduledDate: { $gte: startDate },
-            ...establishmentFilter,
-          }
-        },
-        {
-          $group: { _id: "$clientId" }
-        },
-        {
-          $count: "count"
-        }
-      ]).toArray();
-      const returningCount = returningClients[0]?.count || 0;
-      retentionRate = Math.round((returningCount / previousClientIds.length) * 100);
-    }
+    // Estimate revenue recovered from waitlist fills (fills × avg class price)
+    const avgClassPrice = totalClasses > 0 && currentRevenue > 0
+      ? currentRevenue / totalClasses
+      : 35; // Default avg price estimate
+    const revenueRecovered = Math.round(waitlistFills * avgClassPrice);
 
     return NextResponse.json({
       stats: {
@@ -436,24 +237,13 @@ export async function GET(request: NextRequest) {
         classes: totalClasses,
         classesChange: `${parseFloat(classesChange) >= 0 ? "+" : ""}${classesChange}%`,
         attendance: `${attendanceRate}%`,
-        attendanceChange: `${parseFloat(attendanceChange) >= 0 ? "+" : ""}${attendanceChange}%`,
+        noShowRate: `${noShowRate}%`,
+        noShows,
+        waitlistFills,
+        revenueRecovered,
       },
       recentActivity: formattedActivity,
-      staffPerformance,
       todayClasses: formattedClasses,
-      classTypeDistribution: classTypesWithPercent.length > 0 ? classTypesWithPercent : [
-        { name: "Pilates", value: 45, color: "#6938EF" },
-        { name: "Yoga", value: 25, color: "#8870E9" },
-        { name: "Reformer", value: 20, color: "#5925DC" },
-        { name: "Stretch", value: 10, color: "#BDB4FE" },
-      ],
-      monthlyHighlights: {
-        newClients,
-        retentionRate,
-        revenueGrowth: revenueChange,
-      },
-      revenueData: monthlyRevenueData,
-      attendanceData: weeklyAttendanceData,
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);

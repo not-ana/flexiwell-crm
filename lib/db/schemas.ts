@@ -1,6 +1,42 @@
 // MongoDB Schema Types for FlexiWell CRM
 import { ObjectId } from "mongodb";
 
+// Lifecycle stages based on Hormozi's lead-to-retention framework
+export type ClientLifecycleStage = "lead" | "trial" | "active" | "at_risk" | "churned" | "won_back";
+
+export interface ClientHealthScore {
+  overall: number; // 0-100
+  breakdown: {
+    attendance: number; // 0-25 - based on class attendance rate
+    planUtilization: number; // 0-25 - remaining vs total classes vs time elapsed
+    recency: number; // 0-25 - days since last activity
+    paymentHealth: number; // 0-25 - payment status and history
+  };
+  lastCalculatedAt: Date;
+}
+
+export interface ClientOnboarding {
+  welcomeEmailSent: boolean;
+  welcomeEmailSentAt?: Date;
+  healthAssessmentCompleted: boolean;
+  healthAssessmentCompletedAt?: Date;
+  firstClassBooked: boolean;
+  firstClassBookedAt?: Date;
+  firstClassCompleted: boolean;
+  firstClassCompletedAt?: Date;
+  weekOneCheckInSent: boolean;
+  weekOneCheckInSentAt?: Date;
+  weekTwoGoalReviewSent: boolean;
+  weekTwoGoalReviewSentAt?: Date;
+  onboardingCompletedAt?: Date;
+}
+
+export interface ClientMilestone {
+  type: "first_class" | "10_classes" | "25_classes" | "50_classes" | "100_classes" | "3_months" | "6_months" | "1_year" | "streak_4_weeks" | "streak_12_weeks";
+  achievedAt: Date;
+  acknowledged: boolean;
+}
+
 export interface Client {
   _id?: ObjectId;
   name: string;
@@ -10,7 +46,7 @@ export interface Client {
   instagramId?: string;
   avatar?: string;
   plan: {
-    type: "monthly" | "quarterly" | "annual" | "drop-in";
+    type: "monthly" | "quarterly" | "annual" | "drop-in" | "trial" | "challenge" | "premium" | "vip";
     totalClasses: number;
     usedClasses: number;
     remainingClasses: number;
@@ -19,6 +55,22 @@ export interface Client {
     price: number;
   };
   status: "active" | "inactive" | "pending";
+  // Hormozi lifecycle tracking
+  lifecycleStage?: ClientLifecycleStage;
+  healthScore?: ClientHealthScore;
+  onboarding?: ClientOnboarding;
+  milestones?: ClientMilestone[];
+  // Streak tracking
+  currentStreak?: number; // consecutive weeks with at least 1 class
+  longestStreak?: number;
+  lastClassDate?: Date;
+  // Ascension tracking
+  totalLifetimeRevenue?: number;
+  upgradeHistory?: { from: string; to: string; date: Date }[];
+  // Churn prevention
+  churnRiskScore?: number; // 0-100, higher = more likely to churn
+  lastChurnAlertSentAt?: Date;
+  pauseHistory?: { pausedAt: Date; resumedAt?: Date; reason?: string }[];
   preferences: {
     preferredInstructors?: string[];
     preferredClassTypes?: string[];
@@ -438,13 +490,6 @@ export interface StudioSettings {
     region: SupportedRegion;
     businessType: string;
     country?: string;
-    // Custom terminology for "other" business type
-    customTerminology?: {
-      classes: string;
-      teachers: string;
-      clients: string;
-      studio: string;
-    };
   };
   // Branding settings
   branding?: {

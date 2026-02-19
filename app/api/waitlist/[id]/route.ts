@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { WaitlistEntry } from "@/lib/db/schemas";
+import type { WaitlistEntry, WaitlistNotification } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
+import { notificationService } from "@/lib/services/notification.service";
 
 // GET /api/waitlist/[id] - Get a single waitlist entry
 export async function GET(
@@ -239,6 +240,66 @@ export async function PATCH(
         { error: "Waitlist entry not found" },
         { status: 404 }
       );
+    }
+
+    // Send actual notification when action is "notify"
+    if (action === "notify") {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const confirmUrl = `${baseUrl}/dashboard/classes/book?confirm=${id}`;
+
+      // Send notification via WhatsApp and SMS (no email)
+      const notificationData = {
+        type: "waitlist_spot_available" as const,
+        clientId: result.clientId,
+        data: {
+          clientId: result.clientId,
+          className: result.preferredClassName || "Aula",
+          date: result.confirmedDate
+            ? new Date(result.confirmedDate).toLocaleDateString("pt-BR")
+            : "",
+          startTime: "",
+          confirmUrl,
+        },
+      };
+
+      const [whatsappResult, smsResult] = await Promise.all([
+        notificationService.send({ ...notificationData, channels: "whatsapp" }),
+        notificationService.send({ ...notificationData, channels: "sms" }),
+      ]);
+
+      const sent = whatsappResult.success || smsResult.success;
+
+      // Log waitlist notification record for tracking
+      const notificationRecord: Omit<WaitlistNotification, "_id"> = {
+        waitlistEntryId: id,
+        clientId: result.clientId,
+        clientName: result.clientName,
+        classId: result.preferredClassId || "",
+        className: result.preferredClassName || "Aula",
+        classDate: result.confirmedDate || new Date(),
+        classTime: "",
+        spotsAvailable: 1,
+        status: sent ? "sent" : "expired",
+        sentAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        notificationChannel: whatsappResult.whatsappSent ? "whatsapp" : "sms",
+        createdAt: new Date(),
+      };
+
+      await db
+        .collection<WaitlistNotification>("waitlist_notifications")
+        .insertOne(notificationRecord as WaitlistNotification);
+
+      return NextResponse.json({
+        success: true,
+        entry: result,
+        notification: {
+          sent,
+          whatsappSent: whatsappResult.whatsappSent || false,
+          smsSent: smsResult.smsSent || false,
+          error: whatsappResult.error || smsResult.error,
+        },
+      });
     }
 
     return NextResponse.json({

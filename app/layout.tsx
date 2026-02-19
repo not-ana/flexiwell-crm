@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlexiWell - Studio Management Software",
-  description: "All-in-one studio management for yoga, pilates, and wellness businesses",
+  title: "FlexiWell - Stop Losing Revenue to No-Shows | Pilates Studio Software",
+  description: "Pilates studios lose $3,500/mo to no-shows. FlexiWell recovers $2,300+ with smart waitlist, SMS reminders, and online scheduling. Founding member pricing: $179/mo.",
 };
 
 export default function RootLayout({

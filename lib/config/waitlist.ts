@@ -6,7 +6,6 @@ export type ClientSource =
   | "package"      // Purchased package/credits
   | "classpass"    // ClassPass
   | "gympass"      // Gympass/Wellhub
-  | "totalpass"    // TotalPass
   | "trial";       // Trial/first-time
 
 export interface SourcePriority {
@@ -22,7 +21,6 @@ export const sourcePriorities: SourcePriority[] = [
   { source: "package", label: "Package", points: 75, color: "#8870E9" },
   { source: "classpass", label: "ClassPass", points: 50, color: "#DD2590" },
   { source: "gympass", label: "Gympass", points: 25, color: "#F79009" },
-  { source: "totalpass", label: "TotalPass", points: 25, color: "#12B76A" },
   { source: "trial", label: "Trial", points: 10, color: "#98A2B3" },
 ];
 
@@ -45,7 +43,6 @@ export const defaultSourcePriorities: SourcePriorityConfig[] = [
   { source: "package", enabled: true, points: 75 },
   { source: "classpass", enabled: false, points: 50 },
   { source: "gympass", enabled: false, points: 25 },
-  { source: "totalpass", enabled: false, points: 25 },
   { source: "trial", enabled: true, points: 10 },
 ];
 

@@ -581,6 +581,68 @@ export const trialConfig = {
   features: "full", // Full access to selected plan features during trial
 };
 
+// Founding Member Offer (aligned with flexiwell.net)
+// Alex Hormozi: Irresistible offer with scarcity, urgency, value stacking, and risk reversal
+export const foundingMemberOffer = {
+  enabled: true,
+  targetTier: "growth" as PlanTier,
+  regularPrice: 249, // Anchoring: what it "normally" costs
+  foundingPrice: 179, // What founding members pay
+  lockedMonths: 24, // Price locked for 24 months
+  totalSpots: 10,
+  spotsClaimed: 7, // Update as spots fill
+
+  // Value stacking: show total value of what they get
+  bonuses: [
+    { name: "White-Glove Data Migration", value: 2000, description: "We migrate all your data from Mindbody, Glofox, or spreadsheets" },
+    { name: "1-on-1 Onboarding Session", value: 500, description: "Personal setup and training with our team" },
+  ],
+  totalBonusValue: 2500,
+
+  // Risk reversal: 60-day guarantee
+  guarantee: {
+    days: 60,
+    promise: "20% fewer no-shows in 60 days — or your money back",
+    description: "No questions asked. If you don't see results, we refund every penny.",
+  },
+
+  // Social proof - keep realistic for pre-launch
+  socialProof: {
+    rating: 4.9,
+    reviewCount: 10,
+    studiosUsing: "10",
+  },
+
+  // Pain-based messaging (from flexiwell.net)
+  painPoints: {
+    headline: "Pilates Studios Lose $3,500/mo to No-Shows",
+    subheadline: "The First 10 to Join Us Won't.",
+    stats: [
+      { label: "Average monthly loss to no-shows", value: "$3,500" },
+      { label: "Revenue lost to late cancellations", value: "15-25%" },
+      { label: "Recovery with smart waitlist + reminders", value: "$2,300+" },
+    ],
+  },
+
+  // Competitor anchoring
+  competitorAnchoring: {
+    mindbody: { range: "$200-400/mo", note: "for basic features" },
+    average: "$300/mo",
+  },
+};
+
+// What founding members get (for value stacking display)
+export const foundingMemberBenefits = [
+  "Unlimited clients & instructors",
+  "Up to 3 locations",
+  "Smart waitlist with auto-fill",
+  "SMS & email reminders",
+  "Online scheduling & client portal",
+  "Stripe payment processing",
+  "CSV import from any platform",
+  "Direct founder access & roadmap input",
+];
+
 // Competitor comparison data
 export interface CompetitorPricing {
   name: string;

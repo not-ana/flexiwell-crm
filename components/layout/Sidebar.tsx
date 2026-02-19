@@ -78,8 +78,6 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
-      { name: "Staff", href: "/admin/staff", icon: UserIcon, onboardingId: "sidebar-staff" },
-      { name: "Reports", href: "/admin/reports", icon: ReportIcon, requiresFeature: "advancedReports" },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },

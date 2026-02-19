@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { GoogleIcon, CloseIcon } from "@/components/icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { foundingMemberOffer, foundingMemberBenefits } from "@/lib/config/pricing";
 
 type UserRole = "client" | "admin" | "teacher";
 
@@ -19,13 +20,14 @@ function SignUpContent() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [userRole, setUserRole] = useState<UserRole>("client");
+  const [userRole, setUserRole] = useState<UserRole>("admin");
   const [inviteCode, setInviteCode] = useState("");
   const [inviteCodeValid, setInviteCodeValid] = useState<boolean | null>(null);
   const [inviteCompanyName, setInviteCompanyName] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [inviteDebounceTimer, setInviteDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Check for error in URL params (e.g., from OAuth callback)
   useEffect(() => {
@@ -124,354 +126,493 @@ function SignUpContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-600 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     );
   }
 
+  const spotsRemaining = foundingMemberOffer.totalSpots - foundingMemberOffer.spotsClaimed;
+
   return (
-    <div className="min-h-screen bg-gray-600 flex items-center justify-center p-4">
-      <div className="w-full max-w-[440px] bg-white rounded-xl shadow-xl">
-        {/* Header */}
-        <div className="relative pt-6 pb-4 px-6">
-          {/* Logo */}
-          <div className="flex justify-center mb-5">
+    <div className="min-h-screen bg-gray-900 flex">
+      {/* Left side - Hormozi messaging (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 via-primary-700 to-purple-900 text-white p-12 flex-col justify-center relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+        <div className="relative z-10 max-w-lg">
+          {/* Scarcity badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full mb-8">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+            <span className="text-sm font-medium">
+              Only {spotsRemaining} Founding Member spots left
+            </span>
+          </div>
+
+          {/* Pain-based headline */}
+          <h1 className="text-4xl font-bold mb-4 leading-tight">
+            {foundingMemberOffer.painPoints.headline}
+          </h1>
+          <p className="text-xl text-primary-100 mb-8">
+            {foundingMemberOffer.painPoints.subheadline}
+          </p>
+
+          {/* Price anchoring */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8">
+            <div className="flex items-baseline gap-3 mb-2">
+              <span className="text-3xl font-bold">${foundingMemberOffer.foundingPrice}</span>
+              <span className="text-primary-200">/month</span>
+              <span className="text-lg text-primary-300 line-through">${foundingMemberOffer.regularPrice}/mo</span>
+            </div>
+            <p className="text-sm text-primary-200">
+              Locked for {foundingMemberOffer.lockedMonths} months. Competitors charge {foundingMemberOffer.competitorAnchoring.mindbody.range}.
+            </p>
+          </div>
+
+          {/* Value stacking */}
+          <div className="space-y-3 mb-8">
+            <p className="text-sm font-semibold text-primary-200 uppercase tracking-wider">Included free for Founding Members:</p>
+            {foundingMemberOffer.bonuses.map((bonus) => (
+              <div key={bonus.name} className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm">
+                  {bonus.name} <span className="text-primary-300 line-through">(${bonus.value.toLocaleString()} value)</span>
+                </span>
+              </div>
+            ))}
+            <div className="pt-2 border-t border-white/20">
+              <p className="text-sm font-semibold text-green-400">
+                Total included value: ${foundingMemberOffer.totalBonusValue.toLocaleString()} FREE
+              </p>
+            </div>
+          </div>
+
+          {/* Guarantee (risk reversal) */}
+          <div className="flex items-start gap-3 bg-green-500/15 rounded-xl p-4 mb-6">
+            <svg className="w-6 h-6 text-green-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm">{foundingMemberOffer.guarantee.days}-Day No-Show Guarantee</p>
+              <p className="text-sm text-primary-200">{foundingMemberOffer.guarantee.promise}</p>
+            </div>
+          </div>
+
+          {/* Social proof */}
+          <div className="flex items-center gap-4">
+            <div className="flex -space-x-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-8 h-8 rounded-full bg-primary-400 border-2 border-primary-700 flex items-center justify-center text-xs font-bold">
+                  {String.fromCharCode(65 + i)}
+                </div>
+              ))}
+            </div>
+            <div className="text-sm">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-primary-200">
+                {foundingMemberOffer.socialProof.rating}/5 from {foundingMemberOffer.socialProof.reviewCount}+ reviews
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Sign up form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-[440px]">
+          {/* Mobile-only value props (ABOVE form) */}
+          <div className="lg:hidden mb-4 space-y-3">
             <Image
               src="/flexiwell-logo.svg"
               alt="Flexiwell"
-              width={87}
-              height={19}
+              width={110}
+              height={24}
               priority
             />
-          </div>
-
-          {/* Close button */}
-          <Link
-            href="/"
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <CloseIcon className="w-6 h-6" />
-          </Link>
-
-          {/* Title */}
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-gray-900">
-              {step === "email" ? "Create an account" : "Complete your profile"}
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {step === "email"
-                ? "Start your free 30-day trial. Cancel anytime."
-                : "Just a few more details to get you started."}
-            </p>
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {/* Step 1: Email */}
-        {step === "email" && (
-          <form onSubmit={handleEmailSubmit} className="px-6 pb-6">
-            <div className="space-y-4">
-              {/* Email */}
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-
-              {/* Get started button */}
-              <Button type="submit" fullWidth size="lg">
-                Get started
-              </Button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-sm text-gray-500">OR</span>
-                <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-lg">
+              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
+              <p className="text-sm text-primary-700">
+                Studios lose <span className="font-semibold">$3,500/mo</span> to no-shows. We fix that.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                Only {spotsRemaining} spots left
+              </div>
+              <span className="text-xs text-gray-500">30-day free trial</span>
+            </div>
+          </div>
 
-              {/* Social buttons */}
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                size="lg"
-                leftIcon={<GoogleIcon className="w-5 h-5" />}
-                onClick={() => socialLogin("google", "signup")}
-              >
-                Sign up with Google
-              </Button>
+          <div className="bg-white rounded-xl shadow-xl">
+          {/* Header */}
+          <div className="relative pt-6 pb-4 px-6">
+            {/* Logo - desktop only */}
+            <div className="hidden lg:flex justify-center mb-5">
+              <Image
+                src="/flexiwell-logo.svg"
+                alt="Flexiwell"
+                width={87}
+                height={19}
+                priority
+              />
             </div>
 
-            {/* Login link */}
-            <p className="text-center text-sm text-gray-600 mt-8">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-primary-700 hover:text-primary-800"
-              >
-                Log in
-              </Link>
-            </p>
-          </form>
-        )}
+            {/* Close button */}
+            <Link
+              href="/"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <CloseIcon className="w-6 h-6" />
+            </Link>
 
-        {/* Step 2: Details */}
-        {step === "details" && (
-          <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="space-y-4">
-              {/* Back button */}
-              <button
-                type="button"
-                onClick={() => setStep("email")}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back
-              </button>
+            {/* Step indicator */}
+            <div className="flex justify-center gap-2 mb-4">
+              <div className={`h-1 w-8 rounded-full ${step === "email" ? "bg-primary-600" : "bg-primary-600"}`} />
+              <div className={`h-1 w-8 rounded-full ${step === "details" ? "bg-primary-600" : "bg-gray-200"}`} />
+            </div>
 
-              {/* Email display */}
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  Email: <span className="font-medium text-gray-900">{email}</span>
-                </p>
-              </div>
+            {/* Title */}
+            <div className="text-center">
+              <h1 className="text-lg font-semibold text-gray-900">
+                {step === "email" ? "Claim Your Founding Member Spot" : "Complete your profile"}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {step === "email"
+                  ? "30-day free trial. Cancel anytime. No risk."
+                  : "Step 2 of 2 — just a few more details."}
+              </p>
+            </div>
+          </div>
 
-              {/* User Role Selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  I am a...
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Client */}
-                  <button
-                    type="button"
-                    onClick={() => setUserRole("client")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                      userRole === "client"
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        userRole === "client"
-                          ? "bg-primary-100 text-primary-600"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <span className={`text-xs font-medium ${userRole === "client" ? "text-primary-700" : "text-gray-700"}`}>
-                      Client
-                    </span>
-                  </button>
+          {/* Error Message */}
+          {error && (
+            <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
-                  {/* Admin */}
-                  <button
-                    type="button"
-                    onClick={() => setUserRole("admin")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                      userRole === "admin"
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        userRole === "admin"
-                          ? "bg-primary-100 text-primary-600"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <span className={`text-xs font-medium ${userRole === "admin" ? "text-primary-700" : "text-gray-700"}`}>
-                      Owner
-                    </span>
-                  </button>
+          {/* Step 1: Email */}
+          {step === "email" && (
+            <form onSubmit={handleEmailSubmit} className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* Email */}
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
 
-                  {/* Teacher */}
-                  <button
-                    type="button"
-                    onClick={() => setUserRole("teacher")}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                      userRole === "teacher"
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        userRole === "teacher"
-                          ? "bg-primary-100 text-primary-600"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <span className={`text-xs font-medium ${userRole === "teacher" ? "text-primary-700" : "text-gray-700"}`}>
-                      Staff
-                    </span>
-                  </button>
+                {/* Get started button */}
+                <Button type="submit" fullWidth size="lg">
+                  Start My Free Trial
+                </Button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-sm text-gray-500">OR</span>
+                  <div className="flex-1 h-px bg-gray-200" />
                 </div>
+
+                {/* Social buttons */}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  size="lg"
+                  leftIcon={<GoogleIcon className="w-5 h-5" />}
+                  onClick={() => socialLogin("google", "signup")}
+                >
+                  Sign up with Google
+                </Button>
               </div>
 
-              {/* Invite Code - Only for clients */}
-              {userRole === "client" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Invite code *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Ex: FW-ABC123"
-                      value={inviteCode}
-                      onChange={(e) => {
-                        const code = e.target.value.toUpperCase();
-                        setInviteCode(code);
-                        validateInviteCode(code);
-                      }}
-                      className={`uppercase ${
-                        inviteCodeValid === true
-                          ? "border-green-500 focus:border-green-500"
-                          : inviteCodeValid === false
-                          ? "border-red-500 focus:border-red-500"
-                          : ""
-                      }`}
-                    />
-                    {isValidatingCode && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
-                        </svg>
-                      </div>
-                    )}
-                    {!isValidatingCode && inviteCodeValid === true && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    {!isValidatingCode && inviteCodeValid === false && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  {inviteCodeValid === true && inviteCompanyName && (
-                    <p className="mt-1 text-sm text-green-600">
-                      You will be linked to: <span className="font-medium">{inviteCompanyName}</span>
-                    </p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Ask for the invite code from your studio or gym
+              {/* Login link */}
+              <p className="text-center text-sm text-gray-600 mt-8">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-primary-700 hover:text-primary-800"
+                >
+                  Log in
+                </Link>
+              </p>
+            </form>
+          )}
+
+          {/* Step 2: Details */}
+          {step === "details" && (
+            <form onSubmit={handleSubmit} className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* Back button */}
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+
+                {/* Email display */}
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Email: <span className="font-medium text-gray-900">{email}</span>
                   </p>
                 </div>
-              )}
 
-              {/* Name */}
-              <Input
-                label="Full name"
-                type="text"
-                placeholder="Enter your full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+                {/* User Role Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    I am a...
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* Client */}
+                    <button
+                      type="button"
+                      onClick={() => setUserRole("client")}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                        userRole === "client"
+                          ? "border-primary-600 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          userRole === "client"
+                            ? "bg-primary-100 text-primary-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <span className={`text-xs font-medium ${userRole === "client" ? "text-primary-700" : "text-gray-700"}`}>
+                        Client
+                      </span>
+                    </button>
 
-              {/* Phone (optional) */}
-              <Input
-                label="Phone (optional)"
-                type="tel"
-                placeholder="+1 (555) 000-0000"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
+                    {/* Admin */}
+                    <button
+                      type="button"
+                      onClick={() => setUserRole("admin")}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                        userRole === "admin"
+                          ? "border-primary-600 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          userRole === "admin"
+                            ? "bg-primary-100 text-primary-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <span className={`text-xs font-medium ${userRole === "admin" ? "text-primary-700" : "text-gray-700"}`}>
+                        Owner
+                      </span>
+                    </button>
 
-              {/* Password */}
-              <Input
-                label="Password"
-                type="password"
-                placeholder="Create a password (min. 8 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+                    {/* Teacher */}
+                    <button
+                      type="button"
+                      onClick={() => setUserRole("teacher")}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                        userRole === "teacher"
+                          ? "border-primary-600 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          userRole === "teacher"
+                            ? "bg-primary-100 text-primary-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <span className={`text-xs font-medium ${userRole === "teacher" ? "text-primary-700" : "text-gray-700"}`}>
+                        Staff
+                      </span>
+                    </button>
+                  </div>
+                </div>
 
-              {/* Confirm Password */}
-              <Input
-                label="Confirm password"
-                type="password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-
-              {/* Terms */}
-              <p className="text-xs text-gray-500">
-                By creating an account, you agree to our{" "}
-                <Link href="/terms" className="text-primary-700 hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="text-primary-700 hover:underline">
-                  Privacy Policy
-                </Link>
-                .
-              </p>
-
-              {/* Create account button */}
-              <Button type="submit" fullWidth size="lg" disabled={isLoading}>
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
-                    </svg>
-                    Creating account...
-                  </span>
-                ) : (
-                  "Create account"
+                {/* Invite Code - Only for clients */}
+                {userRole === "client" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Invite code *
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Ex: FW-ABC123"
+                        value={inviteCode}
+                        onChange={(e) => {
+                          const code = e.target.value.toUpperCase();
+                          setInviteCode(code);
+                          if (inviteDebounceTimer) clearTimeout(inviteDebounceTimer);
+                          setInviteDebounceTimer(setTimeout(() => validateInviteCode(code), 500));
+                        }}
+                        className={`uppercase ${
+                          inviteCodeValid === true
+                            ? "border-green-500 focus:border-green-500"
+                            : inviteCodeValid === false
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
+                        }`}
+                      />
+                      {isValidatingCode && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                          </svg>
+                        </div>
+                      )}
+                      {!isValidatingCode && inviteCodeValid === true && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                      {!isValidatingCode && inviteCodeValid === false && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {inviteCodeValid === true && inviteCompanyName && (
+                      <p className="mt-1 text-sm text-green-600">
+                        You will be linked to: <span className="font-medium">{inviteCompanyName}</span>
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      Ask for the invite code from your studio or gym
+                    </p>
+                  </div>
                 )}
-              </Button>
-            </div>
 
-            {/* Login link */}
-            <p className="text-center text-sm text-gray-600 mt-6">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-primary-700 hover:text-primary-800"
-              >
-                Log in
-              </Link>
-            </p>
-          </form>
-        )}
+                {/* Name */}
+                <Input
+                  label="Full name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+
+                {/* Phone (optional) */}
+                <Input
+                  label="Phone (optional)"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+
+                {/* Password */}
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="Create a password (min. 8 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+
+                {/* Confirm Password */}
+                <Input
+                  label="Confirm password"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+
+                {/* Terms */}
+                <p className="text-xs text-gray-500">
+                  By creating an account, you agree to our{" "}
+                  <Link href="/terms" className="text-primary-700 hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-primary-700 hover:underline">
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
+
+                {/* Create account button */}
+                <Button type="submit" fullWidth size="lg" disabled={isLoading}>
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                      </svg>
+                      Creating account...
+                    </span>
+                  ) : (
+                    "Create account"
+                  )}
+                </Button>
+              </div>
+
+              {/* Login link */}
+              <p className="text-center text-sm text-gray-600 mt-6">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-primary-700 hover:text-primary-800"
+                >
+                  Log in
+                </Link>
+              </p>
+            </form>
+          )}
+        </div>
+        </div>
       </div>
     </div>
   );
@@ -480,7 +621,7 @@ function SignUpContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-600 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     }>

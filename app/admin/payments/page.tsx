@@ -280,10 +280,22 @@ export default function PaymentsPage() {
   }, [clientSearchQuery]);
 
   // Filter payments client-side for status
-  const filteredPayments = payments.filter((payment) => {
-    if (statusFilter === "all") return true;
-    return payment.status === statusFilter;
-  });
+  const filteredPayments = payments
+    .filter((payment) => {
+      if (statusFilter === "all") return true;
+      return payment.status === statusFilter;
+    })
+    // Hormozi: Sort by urgency — overdue first (most days), then pending, then rest
+    .sort((a, b) => {
+      const urgencyOrder: Record<PaymentStatus, number> = { overdue: 0, pending: 1, failed: 2, paid: 3, refunded: 4 };
+      const orderDiff = urgencyOrder[a.status] - urgencyOrder[b.status];
+      if (orderDiff !== 0) return orderDiff;
+      // Within same status, sort overdue by most days first
+      if (a.status === "overdue" && b.status === "overdue") {
+        return (b.daysOverdue || 0) - (a.daysOverdue || 0);
+      }
+      return 0;
+    });
 
   // Calculate display stats from transformed payments
   const stats = {
@@ -295,6 +307,45 @@ export default function PaymentsPage() {
     pendingCount: payments.filter(p => p.status === "pending").length,
     overdueCount: payments.filter(p => p.status === "overdue").length,
     failedCount: payments.filter(p => p.status === "failed").length,
+  };
+
+  // Hormozi: Collection Rate — the KPI that matters
+  const totalDue = stats.totalRevenue + stats.pendingAmount + stats.overdueAmount + stats.failedAmount;
+  const collectionRate = totalDue > 0 ? Math.round((stats.totalRevenue / totalDue) * 100) : 0;
+  const hasNoPayments = payments.length === 0;
+  const revenueAtRisk = stats.overdueAmount + stats.pendingAmount;
+
+  // Hormozi: 1-click reminder — send without modal friction
+  const handleQuickReminder = async (payment: DisplayPayment) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch("/api/payments/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIds: [payment._id],
+          type: "reminder",
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.results.sent > 0) {
+        showToast(`Reminder sent to ${payment.clientName}!`);
+      } else {
+        showToast(result.error || "Failed to send reminder", "error");
+      }
+    } catch (error) {
+      console.error("Quick reminder error:", error);
+      showToast("Failed to send reminder", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Hormozi: Collect all overdue in batch
+  const handleCollectAllOverdue = () => {
+    const overdueIds = payments.filter(p => p.status === "overdue" || p.status === "pending").map(p => p._id);
+    setSelectedPayments(overdueIds);
+    setStatusFilter("all");
   };
 
   const toggleSelectAll = () => {
@@ -705,51 +756,61 @@ export default function PaymentsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payments</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
-            Track payments and send reminders to clients
+            Collect faster, lose less revenue
           </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Period Filter */}
-          <select
-            value={periodFilter}
-            onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          >
-            <option value="this_month">This Month</option>
-            <option value="last_month">Last Month</option>
-            <option value="this_quarter">This Quarter</option>
-            <option value="this_year">This Year</option>
-          </select>
+          {/* Period Filter — only show when there's data to filter */}
+          {!hasNoPayments && (
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="this_quarter">This Quarter</option>
+              <option value="this_year">This Year</option>
+            </select>
+          )}
+          {/* Hormozi: Batch action — prominent when items selected */}
           {selectedPayments.length > 0 && (
             <button
               onClick={handleBulkReminder}
-              className="hidden lg:flex px-4 py-2.5 text-primary-600 font-medium border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors items-center gap-2"
+              disabled={actionLoading}
+              className="px-3 sm:px-4 py-2 sm:py-2.5 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Send Reminders ({selectedPayments.length})
+              <span className="hidden sm:inline">Send Reminders ({selectedPayments.length})</span>
+              <span className="sm:hidden">Remind ({selectedPayments.length})</span>
             </button>
           )}
-          <button
-            onClick={handleOpenDeletedHistory}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-            title="View deleted payments"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span className="hidden lg:inline">Trash</span>
-          </button>
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span className="hidden lg:inline">Export</span>
-          </button>
+          {/* Trash & Export — only show when there's data */}
+          {!hasNoPayments && (
+            <>
+              <button
+                onClick={handleOpenDeletedHistory}
+                className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                title="View deleted payments"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span className="hidden lg:inline">Trash</span>
+              </button>
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="hidden lg:inline">Export</span>
+              </button>
+            </>
+          )}
           <button
             onClick={() => setShowRecordPaymentModal(true)}
             className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
@@ -763,71 +824,149 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      {/* Hormozi: Collection Rate — the KPI that matters */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Collection Rate</h2>
+              {hasNoPayments ? (
+                <span className="text-2xl sm:text-3xl font-black text-gray-300">--</span>
+              ) : (
+                <span className={`text-2xl sm:text-3xl font-black ${collectionRate >= 80 ? "text-green-600" : collectionRate >= 50 ? "text-yellow-600" : "text-red-600"}`}>
+                  {collectionRate}%
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {hasNoPayments
+                ? "Record payments to start tracking"
+                : `${formatCurrency(stats.totalRevenue)} collected of ${formatCurrency(totalDue)} total`
+              }
+            </p>
+          </div>
+          {revenueAtRisk > 0 && (
+            <button
+              onClick={handleCollectAllOverdue}
+              className="px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500">Collected</p>
-              <p className="text-base sm:text-xl font-bold text-green-600 truncate">{formatCurrency(stats.totalRevenue)}</p>
-              <p className="text-xs text-gray-400">{stats.paidCount} payments</p>
-            </div>
+              Recover {formatCurrency(revenueAtRisk)}
+            </button>
+          )}
+        </div>
+        {/* Progress bar */}
+        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+          <div className="h-full rounded-full flex">
+            <div
+              className="bg-green-500 transition-all duration-500"
+              style={{ width: `${totalDue > 0 ? (stats.totalRevenue / totalDue) * 100 : 0}%` }}
+            />
+            <div
+              className="bg-yellow-400 transition-all duration-500"
+              style={{ width: `${totalDue > 0 ? (stats.pendingAmount / totalDue) * 100 : 0}%` }}
+            />
+            <div
+              className="bg-red-500 transition-all duration-500"
+              style={{ width: `${totalDue > 0 ? (stats.overdueAmount / totalDue) * 100 : 0}%` }}
+            />
+            <div
+              className="bg-gray-300 transition-all duration-500"
+              style={{ width: `${totalDue > 0 ? (stats.failedAmount / totalDue) * 100 : 0}%` }}
+            />
           </div>
         </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500">Pending</p>
-              <p className="text-base sm:text-xl font-bold text-yellow-600 truncate">{formatCurrency(stats.pendingAmount)}</p>
-              <p className="text-xs text-gray-400">{stats.pendingCount} payments</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500">Overdue</p>
-              <p className="text-base sm:text-xl font-bold text-red-600 truncate">{formatCurrency(stats.overdueAmount)}</p>
-              <p className="text-xs text-gray-400">{stats.overdueCount} payments</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500">Failed</p>
-              <p className="text-base sm:text-xl font-bold text-gray-600 truncate">{formatCurrency(stats.failedAmount)}</p>
-              <p className="text-xs text-gray-400">{stats.failedCount} payments</p>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Collected ({stats.paidCount})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400" /> Pending ({stats.pendingCount})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Overdue ({stats.overdueCount})</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300" /> Failed ({stats.failedCount})</span>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 mb-4 sm:mb-6 bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
+      {/* Only show detailed stats, alerts, and filters when there's data */}
+      {!hasNoPayments && (
+        <>
+          {/* Hormozi: Revenue at Risk — make the money you're losing SCREAM */}
+          {(stats.overdueCount > 0 || stats.failedCount > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              {stats.overdueCount > 0 && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 sm:p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <p className="text-sm font-bold text-red-800">Overdue Payments</p>
+                      </div>
+                      <p className="text-2xl sm:text-3xl font-black text-red-700">{formatCurrency(stats.overdueAmount)}</p>
+                      <p className="text-xs text-red-600 mt-1">{stats.overdueCount} client{stats.overdueCount !== 1 ? "s" : ""} need{stats.overdueCount === 1 ? "s" : ""} follow-up</p>
+                    </div>
+                    <button
+                      onClick={() => setStatusFilter("overdue")}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                    >
+                      View All
+                    </button>
+                  </div>
+                </div>
+              )}
+              {stats.failedCount > 0 && (
+                <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 sm:p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <p className="text-sm font-bold text-gray-800">Failed Payments</p>
+                      </div>
+                      <p className="text-2xl sm:text-3xl font-black text-gray-700">{formatCurrency(stats.failedAmount)}</p>
+                      <p className="text-xs text-gray-500 mt-1">{stats.failedCount} transaction{stats.failedCount !== 1 ? "s" : ""} to retry</p>
+                    </div>
+                    <button
+                      onClick={() => setStatusFilter("failed")}
+                      className="px-3 py-1.5 bg-gray-600 text-white text-xs font-bold rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap"
+                    >
+                      View All
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Stats Row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+              <p className="text-xs text-gray-500">Collected</p>
+              <p className="text-lg sm:text-xl font-bold text-green-600 truncate">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-xs text-gray-400">{stats.paidCount} payments</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+              <p className="text-xs text-gray-500">Pending</p>
+              <p className="text-lg sm:text-xl font-bold text-yellow-600 truncate">{formatCurrency(stats.pendingAmount)}</p>
+              <p className="text-xs text-gray-400">{stats.pendingCount} payments</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+              <p className="text-xs text-gray-500">Overdue</p>
+              <p className="text-lg sm:text-xl font-bold text-red-600 truncate">{formatCurrency(stats.overdueAmount)}</p>
+              <p className="text-xs text-gray-400">{stats.overdueCount} payments</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+              <p className="text-xs text-gray-500">Failed</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-600 truncate">{formatCurrency(stats.failedAmount)}</p>
+              <p className="text-xs text-gray-400">{stats.failedCount} payments</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Filters — only show when there's data to filter */}
+      {!hasNoPayments && <div className="flex flex-col gap-3 mb-4 sm:mb-6 bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
         {/* Search */}
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -861,19 +1000,28 @@ export default function PaymentsPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Payments Table/Cards */}
       <div className="bg-white border border-gray-200 rounded-xl">
         {/* Mobile/Tablet Card View */}
         <div className="lg:hidden divide-y divide-gray-100">
           {filteredPayments.length === 0 ? (
-            <div className="py-12 text-center">
+            <div className="py-12 text-center px-4">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <h3 className="text-base font-medium text-gray-900 mb-1">No payments found</h3>
-              <p className="text-sm text-gray-500">Try adjusting your search or filter</p>
+              <h3 className="text-base font-bold text-gray-900 mb-1">No payments yet</h3>
+              <p className="text-sm text-gray-500 mb-4">Start recording payments to track your revenue and collection rate.</p>
+              <button
+                onClick={() => setShowRecordPaymentModal(true)}
+                className="px-5 py-2.5 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-colors inline-flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Record Your First Payment
+              </button>
             </div>
           ) : (
             filteredPayments.map((payment) => (
@@ -923,17 +1071,18 @@ export default function PaymentsPage() {
                     <button
                       onClick={() => handleMarkPaid(payment)}
                       disabled={actionLoading}
-                      className="flex-1 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                      className="flex-1 py-2.5 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                       aria-label={`Mark payment as paid for ${payment.clientName}`}
                     >
                       Mark Paid
                     </button>
                     <button
-                      onClick={() => handleSendReminder(payment)}
-                      className="flex-1 py-2.5 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
+                      onClick={() => handleQuickReminder(payment)}
+                      disabled={actionLoading}
+                      className="flex-1 py-2.5 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors disabled:opacity-50"
                       aria-label={`Send reminder to ${payment.clientName}`}
                     >
-                      Reminder
+                      {actionLoading ? "Sending..." : "Remind"}
                     </button>
                   </div>
                 )}
@@ -994,8 +1143,17 @@ export default function PaymentsPage() {
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">No payments found</h3>
-                  <p className="text-gray-500">Try adjusting your search or filter</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">No payments yet</h3>
+                  <p className="text-gray-500 mb-4">Start recording payments to track your revenue and collection rate.</p>
+                  <button
+                    onClick={() => setShowRecordPaymentModal(true)}
+                    className="px-5 py-2.5 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-colors inline-flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Record Your First Payment
+                  </button>
                 </td>
               </tr>
             ) : (
@@ -1050,15 +1208,16 @@ export default function PaymentsPage() {
                           <button
                             onClick={() => handleMarkPaid(payment)}
                             disabled={actionLoading}
-                            className="px-3 py-1.5 text-xs font-medium text-green-700 bg-white border border-green-300 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 shadow-sm"
+                            className="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
                           >
                             Mark Paid
                           </button>
                           <button
-                            onClick={() => handleSendReminder(payment)}
-                            className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-300 rounded-md hover:bg-primary-50 hover:border-primary-400 transition-colors shadow-sm"
+                            onClick={() => handleQuickReminder(payment)}
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-300 rounded-md hover:bg-primary-50 hover:border-primary-400 transition-colors shadow-sm disabled:opacity-50"
                           >
-                            Reminder
+                            {actionLoading ? "..." : "Remind"}
                           </button>
                         </>
                       )}

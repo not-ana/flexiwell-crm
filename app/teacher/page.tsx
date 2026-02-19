@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronIcon } from "@/components/icons";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Toast notification helper
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -73,8 +73,6 @@ interface DashboardData {
   todaySchedule: TodaySchedule[];
   upcomingClasses: UpcomingClass[];
   makeupRequests: MakeupRequest[];
-  weeklyClassData: { day: string; classes: number; students: number }[];
-  classTypeData: { name: string; value: number; color: string }[];
   studentAttendance: StudentAttendance[];
 }
 
@@ -88,21 +86,6 @@ const defaultStats = {
   makeupPending: 0,
 };
 
-// Default empty chart data
-const defaultWeeklyClassData = [
-  { day: "Mon", classes: 0, students: 0 },
-  { day: "Tue", classes: 0, students: 0 },
-  { day: "Wed", classes: 0, students: 0 },
-  { day: "Thu", classes: 0, students: 0 },
-  { day: "Fri", classes: 0, students: 0 },
-  { day: "Sat", classes: 0, students: 0 },
-  { day: "Sun", classes: 0, students: 0 },
-];
-
-const defaultClassTypeData = [
-  { name: "Yoga", value: 0, color: "#7C3AED" },
-  { name: "Pilates", value: 0, color: "#8B5CF6" },
-];
 
 function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
   const styles = {
@@ -152,6 +135,7 @@ function MakeupStatusBadge({ status }: { status: MakeupRequest["status"] }) {
 }
 
 export default function TeacherDashboard() {
+  const { user } = useAuth();
   const router = useRouter();
   const [showAllSchedule, setShowAllSchedule] = useState(false);
   const [activeTab, setActiveTab] = useState<"today" | "makeups">("today");
@@ -172,12 +156,10 @@ export default function TeacherDashboard() {
   const [todaySchedule, setTodaySchedule] = useState<TodaySchedule[]>([]);
   const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
   const [makeupRequests, setMakeupRequests] = useState<MakeupRequest[]>([]);
-  const [weeklyClassData, setWeeklyClassData] = useState(defaultWeeklyClassData);
-  const [classTypeData, setClassTypeData] = useState(defaultClassTypeData);
   const [studentAttendance, setStudentAttendance] = useState<StudentAttendance[]>([]);
 
   // Onboarding
-  const { shouldShow: showOnboarding, markComplete } = useInteractiveOnboarding("teacher");
+  const { shouldShow: showOnboardingRaw, markComplete } = useInteractiveOnboarding("teacher");
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -189,8 +171,6 @@ export default function TeacherDashboard() {
         setTodaySchedule(data.todaySchedule);
         setUpcomingClasses(data.upcomingClasses);
         setMakeupRequests(data.makeupRequests);
-        setWeeklyClassData(data.weeklyClassData.length > 0 ? data.weeklyClassData : defaultWeeklyClassData);
-        setClassTypeData(data.classTypeData.length > 0 ? data.classTypeData : defaultClassTypeData);
         setStudentAttendance(data.studentAttendance);
       }
     } catch (error) {
@@ -260,6 +240,12 @@ export default function TeacherDashboard() {
   const completedClasses = todaySchedule.filter(c => c.status === "completed").length;
   const inProgressClass = todaySchedule.find(c => c.status === "in-progress");
 
+  const isEmptyDashboard = stats.totalClasses === 0 && stats.studentsServed === 0 &&
+    todaySchedule.length === 0 && upcomingClasses.length === 0 && studentAttendance.length === 0;
+
+  // Only show tour when dashboard has data
+  const showOnboarding = showOnboardingRaw && !isEmptyDashboard;
+
   // Show loading state
   if (loading) {
     return (
@@ -283,7 +269,7 @@ export default function TeacherDashboard() {
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
             <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">
-              Good morning, Sarah
+              {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}, {user?.name?.split(" ")[0] || "there"}
             </h1>
             <div className="flex items-center gap-2 lg:gap-3">
               <button
@@ -305,120 +291,78 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Stats Cards Row */}
+          {/* Stats Cards Row - hidden when no data */}
+          {!isEmptyDashboard && (
           <div data-onboarding="teacher-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Classes */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Classes This Week</p>
               <p className="text-2xl font-bold text-gray-900">{stats.classesCompleted}/{stats.totalClasses}</p>
               <p className="text-sm text-gray-600">completed</p>
             </div>
-
-            {/* Students */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Students Served</p>
               <p className="text-2xl font-bold text-gray-900">{stats.studentsServed}</p>
               <p className="text-sm text-gray-600">this week</p>
             </div>
-
-            {/* Attendance */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Avg. Attendance</p>
               <p className="text-2xl font-bold text-green-600">{stats.avgAttendance}%</p>
               <p className="text-sm text-gray-600">this week</p>
             </div>
-
-            {/* Hours Teaching */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Hours Teaching</p>
               <p className="text-2xl font-bold text-gray-900">{stats.hoursTeaching}h</p>
               <p className="text-sm text-gray-600">this week</p>
             </div>
-
           </div>
+          )}
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-          {/* Weekly Chart */}
-          <div className="lg:col-span-8 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
-              <div>
-                <h2 className="text-lg lg:text-xl font-bold text-gray-900">Weekly Overview</h2>
-                <p className="text-sm text-gray-500 mt-1">Classes and students per day</p>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary-500" />
-                  <span className="text-gray-600">Classes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary-200" />
-                  <span className="text-gray-600">Students</span>
-                </div>
-              </div>
+        {isEmptyDashboard ? (
+        <div className="max-w-xl mx-auto py-8">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyClassData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#6B7280" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #E5E7EB",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Bar dataKey="classes" fill="#7C3AED" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to fill your classes</h2>
+            <p className="text-gray-500">3 quick steps to start tracking attendance and reducing no-shows</p>
+          </div>
+
+          <div className="space-y-3">
+            <Link href="/teacher/classes" className="flex items-center gap-4 p-4 bg-white border-2 border-primary-200 rounded-xl hover:border-primary-400 transition-colors group">
+              <div className="w-10 h-10 bg-primary-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shrink-0">1</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">Set up your class schedule</p>
+                <p className="text-sm text-gray-500">Add your weekly classes and time slots</p>
+              </div>
+              <ChevronIcon className="w-5 h-5 text-gray-300 group-hover:text-primary-500 shrink-0" direction="right" />
+            </Link>
+
+            <Link href="/teacher/students" className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors group">
+              <div className="w-10 h-10 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center font-bold text-sm shrink-0">2</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">Add your students</p>
+                <p className="text-sm text-gray-500">Import or manually add your student roster</p>
+              </div>
+              <ChevronIcon className="w-5 h-5 text-gray-300 group-hover:text-gray-500 shrink-0" direction="right" />
+            </Link>
+
+            <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl opacity-50">
+              <div className="w-10 h-10 bg-gray-100 text-gray-400 rounded-xl flex items-center justify-center font-bold text-sm shrink-0">3</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-500">Track your first class</p>
+                <p className="text-sm text-gray-400">Take attendance and watch your dashboard come alive</p>
+              </div>
             </div>
           </div>
 
-          {/* Class Distribution */}
-          <div className="lg:col-span-4 bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Class Types</h2>
-            <p className="text-sm text-gray-500 mb-4">Your teaching distribution</p>
-            <div className="h-[140px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={classTypeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={65}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {classTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #E5E7EB",
-                      borderRadius: "8px",
-                    }}
-                    formatter={(value) => [`${value}%`, ""]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {classTypeData.map((type) => (
-                <div key={type.name} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: type.color }} />
-                  <span className="text-xs text-gray-600">{type.name}</span>
-                  <span className="text-xs font-medium text-gray-900 ml-auto">{type.value}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="text-center text-xs text-gray-400 mt-8">
+            Studios using FlexiWell see 20% fewer no-shows in 60 days
+          </p>
         </div>
-
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch">
           {/* Schedule & Makeups */}
           <div className="order-2 lg:order-1 flex flex-col">
@@ -474,8 +418,8 @@ export default function TeacherDashboard() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No classes today</h3>
-                      <p className="text-sm text-gray-500">Your schedule is clear for today. Enjoy your day off!</p>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Rest day</h3>
+                      <p className="text-sm text-gray-500">No classes scheduled for today. Check upcoming classes for what&apos;s next.</p>
                     </div>
                   ) : (showAllSchedule ? todaySchedule : todaySchedule.slice(0, 4)).map((classItem) => (
                     <div
@@ -683,6 +627,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Walk-in Modal */}
