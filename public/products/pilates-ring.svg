@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <ellipse cx="200" cy="320" rx="80" ry="8" fill="#000" opacity="0.04"/>
+  <!-- Ring -->
+  <circle cx="200" cy="200" r="90" stroke="url(#rg2)" stroke-width="10" fill="none"/>
+  <!-- Top pad -->
+  <rect x="182" y="100" width="36" height="24" rx="8" fill="#7C3AED"/>
+  <rect x="188" y="104" width="24" height="16" rx="5" fill="#A78BFA"/>
+  <!-- Bottom pad -->
+  <rect x="182" y="276" width="36" height="24" rx="8" fill="#7C3AED"/>
+  <rect x="188" y="280" width="24" height="16" rx="5" fill="#A78BFA"/>
+  <!-- Inner ring highlight -->
+  <circle cx="200" cy="200" r="82" stroke="white" stroke-width="1" opacity="0.15" fill="none"/>
+  <defs><linearGradient id="rg2" x1="110" y1="110" x2="290" y2="290"><stop stop-color="#A78BFA"/><stop offset="1" stop-color="#6D28D9"/></linearGradient></defs>
+</svg>

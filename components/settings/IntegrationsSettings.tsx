@@ -94,11 +94,14 @@ export function IntegrationsSettings() {
 
   const handleImport = async (data: Record<string, string>[]) => {
     try {
-      const response = await api.post("/api/clients/import", {
+      const response = await api.post<{
+        success: boolean;
+        results: { success: number; failed: number; errors: string[] };
+      }>("/api/clients/import", {
         clientsData: data,
       });
 
-      if (response.data.success) {
+      if (response.data?.success) {
         console.log(`Successfully imported ${response.data.results.success} clients from ${selectedPlatform}`);
         if (response.data.results.failed > 0) {
           console.warn(`${response.data.results.failed} records failed to import:`, response.data.results.errors);

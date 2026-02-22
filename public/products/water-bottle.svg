@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <ellipse cx="200" cy="330" rx="50" ry="8" fill="#000" opacity="0.04"/>
+  <!-- Bottle body -->
+  <rect x="160" y="130" width="80" height="190" rx="12" fill="url(#bottleGrad)"/>
+  <!-- Cap -->
+  <rect x="175" y="90" width="50" height="45" rx="8" fill="#475569"/>
+  <rect x="180" y="85" width="40" height="12" rx="6" fill="#64748B"/>
+  <!-- Cap ring -->
+  <rect x="170" y="128" width="60" height="8" rx="4" fill="#334155"/>
+  <!-- Highlight -->
+  <rect x="175" y="150" width="12" height="140" rx="6" fill="white" opacity="0.2"/>
+  <!-- Label area -->
+  <rect x="168" y="220" width="64" height="40" rx="4" fill="white" opacity="0.15"/>
+  <text x="200" y="244" text-anchor="middle" fill="white" opacity="0.5" font-size="10" font-family="sans-serif" font-weight="600">24oz</text>
+  <defs>
+    <linearGradient id="bottleGrad" x1="160" y1="130" x2="240" y2="320">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+  </defs>
+</svg>

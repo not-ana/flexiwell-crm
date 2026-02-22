@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <ellipse cx="200" cy="310" rx="100" ry="10" fill="#000" opacity="0.04"/>
+  <!-- Folded towel body -->
+  <rect x="100" y="140" width="200" height="50" rx="4" fill="#EC4899" opacity="0.2"/>
+  <rect x="100" y="185" width="200" height="50" rx="4" fill="#EC4899" opacity="0.3"/>
+  <rect x="100" y="230" width="200" height="50" rx="4" fill="#EC4899" opacity="0.4"/>
+  <!-- Texture lines -->
+  <line x1="110" y1="155" x2="290" y2="155" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <line x1="110" y1="165" x2="290" y2="165" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <line x1="110" y1="200" x2="290" y2="200" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <line x1="110" y1="210" x2="290" y2="210" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <line x1="110" y1="245" x2="290" y2="245" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <line x1="110" y1="255" x2="290" y2="255" stroke="#EC4899" stroke-width="1" opacity="0.15"/>
+  <!-- Side fold detail -->
+  <path d="M300 140 Q310 140 312 148 L312 272 Q310 280 300 280" fill="#EC4899" opacity="0.15"/>
+  <!-- Label -->
+  <rect x="175" y="235" width="50" height="18" rx="3" fill="white" opacity="0.2"/>
+  <text x="200" y="248" text-anchor="middle" fill="#EC4899" opacity="0.3" font-size="9" font-family="sans-serif" font-weight="600">FW</text>
+</svg>

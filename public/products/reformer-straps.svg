@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <ellipse cx="200" cy="320" rx="80" ry="10" fill="#000" opacity="0.04"/>
+  <!-- Left strap -->
+  <path d="M130 90 L130 260" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+  <rect x="112" y="250" width="36" height="45" rx="10" fill="#F59E0B" opacity="0.5"/>
+  <rect x="118" y="256" width="24" height="33" rx="7" fill="#FBBF24"/>
+  <!-- Right strap -->
+  <path d="M270 90 L270 260" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+  <rect x="252" y="250" width="36" height="45" rx="10" fill="#F59E0B" opacity="0.5"/>
+  <rect x="258" y="256" width="24" height="33" rx="7" fill="#FBBF24"/>
+  <!-- Top loops -->
+  <rect x="118" y="70" width="24" height="30" rx="8" fill="#F59E0B" opacity="0.35"/>
+  <rect x="258" y="70" width="24" height="30" rx="8" fill="#F59E0B" opacity="0.35"/>
+  <!-- Connecting cord -->
+  <path d="M130 120 Q200 105 270 120" stroke="#F59E0B" stroke-width="3" fill="none" opacity="0.3"/>
+</svg>

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { CheckCircleIcon } from "@/components/icons";
 
-interface ImportField {
+export interface ImportField {
   key: string;
   label: string;
   required: boolean;

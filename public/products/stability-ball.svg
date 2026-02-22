@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <ellipse cx="200" cy="320" rx="80" ry="10" fill="#000" opacity="0.05"/>
+  <!-- Ball -->
+  <circle cx="200" cy="200" r="100" fill="url(#bg)"/>
+  <!-- Highlight -->
+  <ellipse cx="170" cy="160" rx="35" ry="25" fill="white" opacity="0.2" transform="rotate(-20 170 160)"/>
+  <!-- Seam lines -->
+  <path d="M200 100 Q230 200 200 300" stroke="#E11D48" stroke-width="1.5" opacity="0.15" fill="none"/>
+  <path d="M110 160 Q200 180 290 160" stroke="#E11D48" stroke-width="1.5" opacity="0.15" fill="none"/>
+  <path d="M110 240 Q200 220 290 240" stroke="#E11D48" stroke-width="1.5" opacity="0.15" fill="none"/>
+  <!-- Nub on top -->
+  <circle cx="200" cy="102" r="5" fill="#BE123C" opacity="0.4"/>
+  <defs><linearGradient id="bg" x1="140" y1="120" x2="280" y2="300"><stop stop-color="#FB7185"/><stop offset="1" stop-color="#E11D48"/></linearGradient></defs>
+</svg>
