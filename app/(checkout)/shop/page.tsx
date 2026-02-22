@@ -137,10 +137,10 @@ export default function ShopPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+              className={`whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-colors flex-shrink-0 ${
                 activeTab === tab.id
-                  ? "bg-primary-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "text-gray-900"
+                  : "text-gray-400 hover:text-gray-600"
               }`}
             >
               {tab.label}

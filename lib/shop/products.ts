@@ -30,7 +30,7 @@ export const products: Product[] = [
     price: 24.99,
     sku: "FW-BAND-001",
     image:
-      "https://images.unsplash.com/photo-1767404890803-228d5390fcd4?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1584827386916-b5351d3ba34b?w=600&h=600&fit=crop",
     category: "accessories",
     inStock: true,
     weight: 16,
@@ -65,7 +65,7 @@ export const products: Product[] = [
     price: 22.99,
     sku: "FW-BTL-001",
     image:
-      "https://images.unsplash.com/photo-1544003484-3cd181d17917?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1605714312496-01e90cb509cc?w=600&h=600&fit=crop",
     category: "accessories",
     inStock: true,
     weight: 14,
@@ -82,7 +82,7 @@ export const products: Product[] = [
     price: 39.99,
     sku: "FW-STRAP-001",
     image:
-      "https://images.unsplash.com/photo-1530021356476-0a6375ffe73b?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1754258166811-5a09a47800b4?w=600&h=600&fit=crop",
     category: "equipment",
     inStock: true,
     weight: 12,
@@ -100,7 +100,7 @@ export const products: Product[] = [
     compareAtPrice: 24.99,
     sku: "FW-TWL-001",
     image:
-      "https://images.unsplash.com/photo-1639298108944-76a403a7c38d?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1684248655527-46bee8e79029?w=600&h=600&fit=crop",
     category: "apparel",
     inStock: true,
     badge: "Sale",
@@ -153,7 +153,7 @@ export const products: Product[] = [
     price: 16.99,
     sku: "FW-ROPE-001",
     image:
-      "https://images.unsplash.com/photo-1516876345887-6dd74f80787a?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1514994667787-b48ca37155f0?w=600&h=600&fit=crop",
     category: "accessories",
     inStock: true,
     badge: "Best Seller",
@@ -171,7 +171,7 @@ export const products: Product[] = [
     price: 19.99,
     sku: "FW-MBALL-001",
     image:
-      "https://images.unsplash.com/photo-1735150649571-a8f96e45f081?w=600&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1634892562163-3cf7253b88a8?w=600&h=600&fit=crop",
     category: "accessories",
     inStock: true,
     weight: 10,
