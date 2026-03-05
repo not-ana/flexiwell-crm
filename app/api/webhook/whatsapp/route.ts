@@ -166,7 +166,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
       await sendWhatsAppMessage(
         senderId,
         phoneNumberId,
-        { body: "Desculpe, este recurso não está disponível no momento. Por favor, entre em contato com o suporte." },
+        { body: "Sorry, this feature is not available at the moment. Please contact support." },
         accessToken
       );
       return;
@@ -178,7 +178,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
       await sendWhatsAppMessage(
         senderId,
         phoneNumberId,
-        { body: "Desculpe, o limite de mensagens do WhatsApp foi atingido este mês. Por favor, entre em contato com o estúdio diretamente." },
+        { body: "Sorry, the WhatsApp message limit has been reached this month. Please contact the studio directly." },
         accessToken
       );
       return;
@@ -193,7 +193,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, metadata: WhatsA
     await sendWhatsAppMessage(
       senderId,
       phoneNumberId,
-      { body: "Desculpe, eu só consigo processar mensagens de texto. Por favor, digite sua mensagem." },
+      { body: "Sorry, I can only process text messages. Please type your message." },
       accessToken
     );
     return;

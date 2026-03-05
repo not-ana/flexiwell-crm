@@ -97,16 +97,16 @@ export async function POST(
     try {
       await notificationService.sendCustomMessage(
         id,
-        `Convite Reenviado - FlexiWell`,
-        `Olá ${staff.name}!\n\n` +
-        `Este é um novo convite para ativar sua conta no FlexiWell.\n\n` +
-        `Cargo: ${staff.role === "admin" ? "Administrador" : staff.role === "teacher" ? "Professor" : "Recepcionista"}\n\n` +
-        `Para ativar sua conta, clique no link abaixo:\n${inviteUrl}\n\n` +
-        `Ou use as credenciais temporárias:\n` +
+        `Invitation Resent - FlexiWell`,
+        `Hi ${staff.name}!\n\n` +
+        `This is a new invite to activate your FlexiWell account.\n\n` +
+        `Role: ${staff.role === "admin" ? "Administrator" : staff.role === "teacher" ? "Teacher" : "Receptionist"}\n\n` +
+        `To activate your account, click the link below:\n${inviteUrl}\n\n` +
+        `Or use the temporary credentials:\n` +
         `Email: ${staff.email}\n` +
-        `Senha temporária: ${tempPassword}\n\n` +
-        `Este convite expira em 7 dias.\n\n` +
-        `Bem-vindo(a) à equipe!`,
+        `Temporary password: ${tempPassword}\n\n` +
+        `This invite expires in 7 days.\n\n` +
+        `Welcome to the team!`,
         "email"
       );
     } catch (emailError) {

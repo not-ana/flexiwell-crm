@@ -523,7 +523,7 @@ const DEFAULT_COMMANDS: BotMenuCommand[] = [
   { id: "1", trigger: "1", label: "📅 Ver Aulas", action: "VIEW_CLASSES", enabled: true, order: 1 },
   { id: "2", trigger: "2", label: "📖 Agendar", action: "BOOK_CLASS", enabled: true, order: 2 },
   { id: "3", trigger: "3", label: "📋 Minhas Reservas", action: "MY_BOOKINGS", enabled: true, order: 3 },
-  { id: "4", trigger: "4", label: "❌ Cancelar", action: "CANCEL_BOOKING", enabled: true, order: 4 },
+  { id: "4", trigger: "4", label: "❌ Cancel", action: "CANCEL_BOOKING", enabled: true, order: 4 },
   { id: "5", trigger: "5", label: "💬 Suporte", action: "CONTACT_SUPPORT", enabled: true, order: 5 },
 ];
 
@@ -882,7 +882,7 @@ function HowItWorksCard({ t, isBrazil }: HowItWorksCardProps) {
                   {isBrazil ? "📅 Ver Aulas" : "📅 View Classes"}
                 </span>
                 <span className="bg-gray-600 px-2 py-1 rounded text-xs">
-                  {isBrazil ? "✅ Confirmar" : "✅ Confirm"}
+                  {isBrazil ? "✅ Confirm" : "✅ Confirm"}
                 </span>
                 <span className="bg-gray-600 px-2 py-1 rounded text-xs">
                   {isBrazil ? "📖 Agendar" : "📖 Book"}

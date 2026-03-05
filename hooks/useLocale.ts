@@ -23,20 +23,6 @@ export interface LocaleInfo {
 // ============================================================================
 
 function detectLocale(): SupportedLocale {
-  if (typeof navigator === "undefined") {
-    return "en-US";
-  }
-
-  const browserLang = navigator.language || (navigator as { userLanguage?: string }).userLanguage || "en-US";
-
-  if (browserLang.startsWith("pt")) {
-    return "pt-BR";
-  }
-
-  if (browserLang.startsWith("es")) {
-    return "es-ES";
-  }
-
   return "en-US";
 }
 

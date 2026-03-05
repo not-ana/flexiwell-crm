@@ -92,7 +92,7 @@ export function SupportChat() {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: "Desculpe, ocorreu um erro. Tente novamente ou entre em contato: support@flexiwell.net",
+            content: "Sorry, an error occurred. Please try again or contact: support@flexiwell.net",
             timestamp: new Date(),
           },
         ]);
@@ -104,7 +104,7 @@ export function SupportChat() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Erro de conexao. Verifique sua internet e tente novamente.",
+          content: "Connection error. Check your internet connection and try again.",
           timestamp: new Date(),
         },
       ]);
@@ -114,7 +114,7 @@ export function SupportChat() {
   };
 
   const clearHistory = async () => {
-    if (!confirm("Limpar todo o historico do chat?")) return;
+    if (!confirm("Clear all chat history?")) return;
 
     try {
       const response = await authFetch("/api/support/chat", {
@@ -148,14 +148,14 @@ export function SupportChat() {
             </svg>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">Suporte FlexiWell</h2>
-            <p className="text-xs text-gray-500">Estamos aqui para ajudar</p>
+            <h2 className="font-semibold text-gray-900">FlexiWell Support</h2>
+            <p className="text-xs text-gray-500">We're here to help</p>
           </div>
         </div>
         <button
           onClick={clearHistory}
           className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Limpar historico"
+          title="Clear history"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -172,9 +172,9 @@ export function SupportChat() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Ola, {user?.name?.split(" ")[0] || "Admin"}!</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">Hi, {user?.name?.split(" ")[0] || "Admin"}!</h3>
             <p className="text-gray-500 text-sm max-w-xs">
-              Como posso ajudar? Pergunte sobre clientes, aulas, pagamentos, relatorios ou qualquer funcionalidade do FlexiWell.
+              How can I help? Ask about clients, classes, payments, reports, or any FlexiWell feature.
             </p>
           </div>
         ) : (
@@ -198,7 +198,7 @@ export function SupportChat() {
                       message.role === "admin" ? "text-green-200" : "text-gray-500"
                     }`}
                   >
-                    {message.role === "admin" ? "Ana Julia (Suporte)" : "FlexiWell Bot"}
+                    {message.role === "admin" ? "Ana Julia (Support)" : "FlexiWell Bot"}
                   </p>
                 )}
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -238,7 +238,7 @@ export function SupportChat() {
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="Digite sua mensagem..."
+            placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !loading && sendMessage()}
@@ -250,7 +250,7 @@ export function SupportChat() {
             disabled={!input.trim() || loading}
             className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Enviar
+            Send
           </button>
         </div>
       </div>

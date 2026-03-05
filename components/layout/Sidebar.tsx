@@ -64,7 +64,7 @@ export interface SidebarProps {
 const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }> = {
   client: {
     main: [
-      { name: "Dashboard", href: "/dashboard", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Overview", href: "/dashboard", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "Classes", href: "/dashboard/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
     ],
     bottom: [
@@ -74,7 +74,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
   },
   admin: {
     main: [
-      { name: "Dashboard", href: "/admin", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Overview", href: "/admin", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
@@ -86,7 +86,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
   },
   teacher: {
     main: [
-      { name: "Dashboard", href: "/teacher", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Overview", href: "/teacher", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
       { name: "My Classes", href: "/teacher/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
       { name: "My Students", href: "/teacher/students", icon: ClientsIcon },
     ],

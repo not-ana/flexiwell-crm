@@ -169,14 +169,14 @@ export class MessagingRouter implements IMessagingRouter {
   private getTemplates(locale: string): Record<string, string> {
     if (locale.startsWith("pt")) {
       return {
-        greeting: "Ola! Sou o assistente virtual do {studioName}. Como posso ajudar?",
-        bookingConfirmation: "Sua aula de {className} esta confirmada para {classDate} as {classTime}.",
-        bookingReminder: "Lembrete: Sua aula de {className} comeca em breve as {classTime}.",
-        bookingCancellation: "Cancelamento recebido. Voce gostaria de remarcar?",
-        waitlistNotification: "Boa noticia! Uma vaga abriu para {className} em {classDate}. Responda SIM em ate {minutes} minutos para confirmar.",
-        waitlistConfirmation: "Vaga confirmada! Voce esta inscrito em {className} para {classDate} as {classTime}.",
-        waitlistExpired: "A oferta de vaga expirou. Voce permanece na lista de espera.",
-        paymentConfirmation: "Pagamento recebido com sucesso! Obrigado.",
+        greeting: "Hi! I'm the virtual assistant for {studioName}. How can I help?",
+        bookingConfirmation: "Your {className} class is confirmed for {classDate} at {classTime}.",
+        bookingReminder: "Reminder: Your {className} class starts soon at {classTime}.",
+        bookingCancellation: "Cancellation received. Would you like to reschedule?",
+        waitlistNotification: "Great news! A spot opened for {className} on {classDate}. Reply YES within {minutes} minutes to confirm.",
+        waitlistConfirmation: "Spot confirmed! You're booked for {className} on {classDate} at {classTime}.",
+        waitlistExpired: "The spot offer has expired. You remain on the waitlist.",
+        paymentConfirmation: "Payment received successfully! Thank you.",
       };
     }
 

@@ -104,7 +104,7 @@ export default function SupportPage() {
       id: String(Date.now()),
       content: newMessage,
       sender: "user",
-      timestamp: "Agora",
+      timestamp: "Now",
       type: "text",
       isRead: false,
     };
@@ -127,9 +127,9 @@ export default function SupportPage() {
           setIsTyping(false);
           const supportResponse: Message = {
             id: String(Date.now() + 1),
-            content: "Obrigado pela sua mensagem! Nossa equipe responderá em breve.",
+            content: "Thank you for your message! Our team will respond shortly.",
             sender: "support",
-            timestamp: "Agora",
+            timestamp: "Now",
             type: "text",
           };
           setMessages((prev) => [...prev, supportResponse]);

@@ -182,7 +182,7 @@ const FREE_ADDONS: Addon[] = [
     featuresBrl: [
       "Processamento de cartão",
       "Gerenciamento de assinaturas",
-      "Faturamento",
+      "Billing",
       "Proteção contra fraude",
     ],
     active: false,

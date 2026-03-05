@@ -176,15 +176,15 @@ export async function POST(request: NextRequest) {
     try {
       await notificationService.sendCustomMessage(
         staffResult.insertedId.toString(),
-        `Convite para ${role === "admin" ? "Administrador" : role === "teacher" ? "Professor" : "Recepcionista"} - FlexiWell`,
-        `Olá ${name}!\n\n` +
-        `Você foi convidado(a) para se juntar à equipe do FlexiWell como ${role === "admin" ? "Administrador" : role === "teacher" ? "Professor" : "Recepcionista"}.\n\n` +
-        `Para ativar sua conta, clique no link abaixo:\n${inviteUrl}\n\n` +
-        `Ou use as credenciais temporárias:\n` +
+        `Invitation for ${role === "admin" ? "Administrator" : role === "teacher" ? "Teacher" : "Receptionist"} - FlexiWell`,
+        `Hi ${name}!\n\n` +
+        `You have been invited to join the FlexiWell team as ${role === "admin" ? "Administrator" : role === "teacher" ? "Teacher" : "Receptionist"}.\n\n` +
+        `To activate your account, click the link below:\n${inviteUrl}\n\n` +
+        `Or use the temporary credentials:\n` +
         `Email: ${email.toLowerCase()}\n` +
-        `Senha temporária: ${tempPassword}\n\n` +
-        `Este convite expira em 7 dias.\n\n` +
-        `Bem-vindo(a) à equipe!`,
+        `Temporary password: ${tempPassword}\n\n` +
+        `This invite expires in 7 days.\n\n` +
+        `Welcome to the team!`,
         "email"
       );
     } catch (emailError) {

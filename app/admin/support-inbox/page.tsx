@@ -43,14 +43,14 @@ function formatTime(date: Date | string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Agora";
+  if (diffMins < 1) return "Now";
   if (diffMins < 60) return `${diffMins}min`;
   if (diffHours < 24) return `${diffHours}h`;
   return `${diffDays}d`;
 }
 
 function formatFullTime(date: Date | string): string {
-  return new Date(date).toLocaleTimeString("pt-BR", {
+  return new Date(date).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -72,12 +72,12 @@ export default function SupportInboxPage() {
       if (searchQuery) params.set("search", searchQuery);
 
       const response = await authFetch(`/api/support/inbox?${params}`);
-      if (!response.ok) throw new Error("Erro ao carregar conversas");
+      if (!response.ok) throw new Error("Error loading conversations");
 
       const data = await response.json();
       setConversations(data.conversations || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar");
+      setError(err instanceof Error ? err.message : "Error loading");
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export default function SupportInboxPage() {
         body: JSON.stringify({ message: replyText }),
       });
 
-      if (!response.ok) throw new Error("Erro ao enviar mensagem");
+      if (!response.ok) throw new Error("Error sending message");
 
       const data = await response.json();
 
@@ -121,7 +121,7 @@ export default function SupportInboxPage() {
       setSelectedConversation(data.conversation);
       setReplyText("");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao enviar");
+      alert(err instanceof Error ? err.message : "Error sending");
     } finally {
       setSending(false);
     }
@@ -163,10 +163,10 @@ export default function SupportInboxPage() {
         <svg className="w-12 h-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Erro</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error</h3>
         <p className="text-gray-500 mb-4">{error}</p>
         <button onClick={fetchConversations} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-          Tentar Novamente
+          Try Again
         </button>
       </div>
     );
@@ -178,15 +178,15 @@ export default function SupportInboxPage() {
       <div className={`p-4 sm:p-6 border-b border-gray-200 bg-white ${selectedConversation ? "hidden lg:block" : ""}`}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inbox de Suporte</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Support Inbox</h1>
             <p className="text-gray-600 mt-1 hidden lg:block">
-              Todas as conversas dos clientes FlexiWell
+              All FlexiWell client conversations
             </p>
           </div>
           {needsAttentionCount > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-100 text-orange-700 rounded-lg">
               <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-              <span className="text-sm sm:text-base font-medium">{needsAttentionCount} aguardando</span>
+              <span className="text-sm sm:text-base font-medium">{needsAttentionCount} awaiting</span>
             </div>
           )}
         </div>
@@ -201,7 +201,7 @@ export default function SupportInboxPage() {
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por nome ou email..."
+                placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -216,7 +216,7 @@ export default function SupportInboxPage() {
                 <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p className="text-gray-500">Nenhuma conversa encontrada</p>
+                <p className="text-gray-500">No conversations found</p>
               </div>
             ) : (
               sortedConversations.map((conv) => {
@@ -251,15 +251,15 @@ export default function SupportInboxPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-gray-900 truncate">{conv.userName || "Usuario"}</p>
+                          <p className="font-semibold text-gray-900 truncate">{conv.userName || "User"}</p>
                           <span className="text-xs text-gray-500">{formatTime(conv.updatedAt)}</span>
                         </div>
                         <p className="text-xs text-gray-500 truncate">{conv.userEmail}</p>
-                        <p className="text-sm text-gray-600 truncate mt-1">{lastMessage?.content || "Sem mensagens"}</p>
+                        <p className="text-sm text-gray-600 truncate mt-1">{lastMessage?.content || "No messages"}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {needsReply && (
                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                              Aguardando resposta
+                              Awaiting reply
                             </span>
                           )}
                         </div>
@@ -295,13 +295,13 @@ export default function SupportInboxPage() {
                   </span>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">{selectedConversation.userName || "Usuario"}</p>
+                  <p className="font-semibold text-gray-900">{selectedConversation.userName || "User"}</p>
                   <p className="text-sm text-gray-500">{selectedConversation.userEmail}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">
-                  {conversations.length} conversas
+                  {conversations.length} conversations
                 </span>
               </div>
             </div>
@@ -328,7 +328,7 @@ export default function SupportInboxPage() {
                           message.role === "admin" ? "text-green-200" : "text-gray-500"
                         }`}
                       >
-                        {message.role === "admin" ? "Voce (Ana Julia)" : "Bot"}
+                        {message.role === "admin" ? "You (Admin)" : "Bot"}
                       </p>
                     )}
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -354,7 +354,7 @@ export default function SupportInboxPage() {
               <div className="flex gap-2 sm:gap-3">
                 <input
                   type="text"
-                  placeholder="Digite sua resposta..."
+                  placeholder="Type your reply..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !sending && handleSendReply()}
@@ -366,7 +366,7 @@ export default function SupportInboxPage() {
                   disabled={!replyText.trim() || sending}
                   className="px-4 sm:px-6 py-2.5 bg-green-600 text-white font-medium rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {sending ? "..." : "Responder"}
+                  {sending ? "..." : "Reply"}
                 </button>
               </div>
             </div>
@@ -379,7 +379,7 @@ export default function SupportInboxPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <p className="text-gray-500">Selecione uma conversa para ver</p>
+              <p className="text-gray-500">Select a conversation to view</p>
             </div>
           </div>
         )}

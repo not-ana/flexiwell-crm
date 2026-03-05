@@ -216,7 +216,7 @@ export async function DELETE(request: NextRequest) {
       { clientId: userId },
       {
         $set: {
-          clientName: "[Conta Excluida]",
+          clientName: "[Deleted Account]",
           clientEmail: null,
         },
       }
@@ -230,7 +230,7 @@ export async function DELETE(request: NextRequest) {
       { clientId: userId },
       {
         $set: {
-          clientName: "[Conta Excluida]",
+          clientName: "[Deleted Account]",
           clientEmail: null,
         },
       }
@@ -241,7 +241,7 @@ export async function DELETE(request: NextRequest) {
       { clientId: userId },
       {
         $set: {
-          clientName: "[Conta Excluida]",
+          clientName: "[Deleted Account]",
         },
       }
     );

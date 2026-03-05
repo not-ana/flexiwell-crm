@@ -22,7 +22,7 @@ function AcceptInviteContent() {
       verifyToken();
     } else {
       setStatus("invalid");
-      setErrorMessage("Token de convite inválido ou ausente.");
+      setErrorMessage("Invalid or missing invite token.");
     }
   }, [token]);
 
@@ -36,12 +36,12 @@ function AcceptInviteContent() {
         setStatus("valid");
       } else {
         setStatus("invalid");
-        setErrorMessage(data.error || "Convite inválido ou expirado.");
+        setErrorMessage(data.error || "Invalid or expired invite.");
       }
     } catch (error) {
       console.error("Error verifying token:", error);
       setStatus("invalid");
-      setErrorMessage("Erro ao verificar convite.");
+      setErrorMessage("Error verifying invite.");
     }
   };
 
@@ -49,12 +49,12 @@ function AcceptInviteContent() {
     e.preventDefault();
 
     if (password.length < 8) {
-      setErrorMessage("A senha deve ter pelo menos 8 caracteres.");
+      setErrorMessage("Password must be at least 8 characters.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage("As senhas não coincidem.");
+      setErrorMessage("Passwords do not match.");
       return;
     }
 
@@ -77,11 +77,11 @@ function AcceptInviteContent() {
           router.push("/auth/login");
         }, 2000);
       } else {
-        setErrorMessage(data.error || "Erro ao ativar conta.");
+        setErrorMessage(data.error || "Error activating account.");
       }
     } catch (error) {
       console.error("Error accepting invite:", error);
-      setErrorMessage("Erro ao ativar conta. Tente novamente.");
+      setErrorMessage("Error activating account. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +92,7 @@ function AcceptInviteContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Verificando convite...</p>
+          <p className="mt-4 text-gray-600">Verifying invite...</p>
         </div>
       </div>
     );
@@ -107,13 +107,13 @@ function AcceptInviteContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Convite Inválido</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Invite</h1>
           <p className="text-gray-600 mb-6">{errorMessage}</p>
           <Link
             href="/auth/login"
             className="inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
-            Ir para Login
+            Go to Login
           </Link>
         </div>
       </div>
@@ -129,9 +129,9 @@ function AcceptInviteContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Conta Ativada!</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Account Activated!</h1>
           <p className="text-gray-600 mb-6">
-            Sua conta foi ativada com sucesso. Você será redirecionado para o login...
+            Your account has been activated successfully. You will be redirected to login...
           </p>
           <LoadingSpinner size="sm" />
         </div>
@@ -150,8 +150,8 @@ function AcceptInviteContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Bem-vindo(a) à Equipe!</h1>
-            <p className="text-gray-600">Crie sua senha para ativar sua conta</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to the Team!</h1>
+            <p className="text-gray-600">Create your password to activate your account</p>
           </div>
 
           {/* User Info */}
@@ -167,8 +167,8 @@ function AcceptInviteContent() {
                   <p className="font-medium text-gray-900">{userInfo.name}</p>
                   <p className="text-sm text-gray-500">{userInfo.email}</p>
                   <span className="inline-block px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full mt-1">
-                    {userInfo.role === "admin" ? "Administrador" :
-                     userInfo.role === "teacher" ? "Professor" : "Recepcionista"}
+                    {userInfo.role === "admin" ? "Administrator" :
+                     userInfo.role === "teacher" ? "Teacher" : "Receptionist"}
                   </span>
                 </div>
               </div>
@@ -179,13 +179,13 @@ function AcceptInviteContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nova Senha
+                New Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Minimum 8 characters"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 required
                 minLength={8}
@@ -194,13 +194,13 @@ function AcceptInviteContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmar Senha
+                Confirm Password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repita a senha"
+                placeholder="Repeat your password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 required
               />
@@ -220,18 +220,18 @@ function AcceptInviteContent() {
               {isSubmitting ? (
                 <>
                   <LoadingSpinner size="sm" />
-                  Ativando...
+                  Activating...
                 </>
               ) : (
-                "Ativar Minha Conta"
+                "Activate My Account"
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Já tem uma conta?{" "}
+            Already have an account?{" "}
             <Link href="/auth/login" className="text-primary-600 hover:text-primary-700 font-medium">
-              Faça login
+              Sign in
             </Link>
           </p>
         </div>
