@@ -111,7 +111,7 @@ function ConfirmBookingModal({
           </p>
           <div className="bg-green-50 p-4 rounded-lg mb-4">
             <p className="text-sm text-green-800">
-              You will receive a WhatsApp reminder 24h before the class.
+              You will receive an SMS reminder 24h before the class.
             </p>
           </div>
           <Button fullWidth onClick={onCancel}>
@@ -300,7 +300,7 @@ function ClassCard({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <span className="text-green-700 font-medium">
-                You&apos;re #{joined.position} of {joined.total} — we&apos;ll WhatsApp you when a spot opens
+                You&apos;re #{joined.position} of {joined.total} — we&apos;ll text you when a spot opens
               </span>
             </div>
           ) : (

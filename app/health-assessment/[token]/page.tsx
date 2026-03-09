@@ -25,6 +25,8 @@ export default function PublicHealthAssessmentPage({ params }: PageProps) {
     establishmentId,
     formConfig,
     expiresAt,
+    isEdit,
+    existingData,
     isLoading,
     error,
     submitAssessment,
@@ -138,9 +140,13 @@ export default function PublicHealthAssessmentPage({ params }: PageProps) {
           <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <HeartPulseIcon className="w-8 h-8 text-primary-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Health Assessment</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEdit ? "Update Your Health Assessment" : "Health Assessment"}
+          </h1>
           <p className="text-gray-600 mt-2">
-            Please complete this form to help us provide you with the best possible care.
+            {isEdit
+              ? "Review and update your information below. Changes will be saved automatically."
+              : "Please complete this form to help us provide you with the best possible care."}
           </p>
         </div>
 
@@ -155,7 +161,7 @@ export default function PublicHealthAssessmentPage({ params }: PageProps) {
         {/* Form */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <HealthAssessmentForm
-            initialData={{
+            initialData={existingData || {
               clientName: clientName || "",
               clientEmail: clientEmail || "",
             }}

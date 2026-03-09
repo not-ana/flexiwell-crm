@@ -10,6 +10,7 @@ import {
   CloseIcon,
   PlusIcon,
 } from "@/components/icons";
+import { Badge } from "@/components/ui/Badge";
 
 // Types
 type ViewMode = "day" | "week" | "month";
@@ -394,9 +395,7 @@ function DayView({ events, selectedDate, onEventClick, selectedEventId }: { even
                     {isLowFill && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 animate-pulse" />}
                     {event.title}
                   </div>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
-                    {statusStyle.label}
-                  </span>
+                  <Badge style={statusStyle} />
                 </div>
                 <div className="text-xs opacity-75 mt-0.5">{formatTime(event.start)} - {formatTime(event.end)}</div>
                 <div className="flex items-center justify-between mt-1">
@@ -2241,9 +2240,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
             <CloseIcon className="w-5 h-5" />
           </button>
         </div>
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${statusStyle.bg} ${statusStyle.text}`}>
-          {statusStyle.label}
-        </span>
+        <span className="mt-2"><Badge style={statusStyle} /></span>
 
         {/* Fill Rate Bar - Hormozi: make occupancy visible */}
         <div className="mt-3 p-3 bg-gray-50 rounded-lg">

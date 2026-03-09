@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
 
     if (!clientId || !classId) {
       return NextResponse.json(
-        { error: "clientId e classId são obrigatórios" },
+        { error: "clientId and classId are required" },
         { status: 400 }
       );
     }

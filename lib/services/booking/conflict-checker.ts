@@ -13,7 +13,7 @@ export class ConflictChecker implements IConflictChecker {
     });
 
     if (!classDoc) {
-      return { hasConflict: true, conflictType: "capacity", conflictDetails: "Aula não encontrada" };
+      return { hasConflict: true, conflictType: "capacity", conflictDetails: "Class not found" };
     }
 
     // Check for duplicate booking
@@ -27,7 +27,7 @@ export class ConflictChecker implements IConflictChecker {
       return {
         hasConflict: true,
         conflictType: "duplicate",
-        conflictDetails: "Você já possui um agendamento para esta aula",
+        conflictDetails: "You already have a booking for this class",
       };
     }
 
@@ -42,7 +42,7 @@ export class ConflictChecker implements IConflictChecker {
       return {
         hasConflict: true,
         conflictType: "capacity",
-        conflictDetails: "Aula lotada",
+        conflictDetails: "Class is full",
       };
     }
 
@@ -79,7 +79,7 @@ export class ConflictChecker implements IConflictChecker {
         return {
           hasConflict: true,
           conflictType: "time",
-          conflictDetails: `Você já possui um agendamento às ${existingBooking.startTime} (${existingBooking.className})`,
+          conflictDetails: `You already have a booking at ${existingBooking.startTime} (${existingBooking.className})`,
         };
       }
     }

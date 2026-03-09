@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/Badge";
 
 // Types
 interface ScheduledClass {
@@ -279,20 +280,12 @@ function ClassCardComponent({
   isConfirming: boolean;
   isWithdrawing: boolean;
 }) {
-  const statusStyles: Record<ScheduledClass["status"], string> = {
-    confirmed: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    completed: "bg-gray-100 text-gray-600",
-    cancellation_requested: "bg-red-100 text-red-700",
-    reschedule_requested: "bg-orange-100 text-orange-700",
-  };
-
-  const statusLabels: Record<ScheduledClass["status"], string> = {
-    confirmed: "Confirmed",
-    pending: "Pending",
-    completed: "Completed",
-    cancellation_requested: "Cancellation Requested",
-    reschedule_requested: "Reschedule Requested",
+  const statusBadgeStyles: Record<ScheduledClass["status"], { bg: string; text: string; label: string }> = {
+    confirmed: { bg: "bg-green-100", text: "text-green-700", label: "Confirmed" },
+    pending: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Pending" },
+    completed: { bg: "bg-gray-100", text: "text-gray-600", label: "Completed" },
+    cancellation_requested: { bg: "bg-red-100", text: "text-red-700", label: "Cancellation Requested" },
+    reschedule_requested: { bg: "bg-orange-100", text: "text-orange-700", label: "Reschedule Requested" },
   };
 
   const hasPendingRequest = classData.status === "cancellation_requested" || classData.status === "reschedule_requested";
@@ -301,9 +294,7 @@ function ClassCardComponent({
     <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <h3 className="font-semibold text-gray-900">{classData.title}</h3>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[classData.status]}`}>
-          {statusLabels[classData.status]}
-        </span>
+        <Badge style={statusBadgeStyles[classData.status]} />
       </div>
 
       <div className="space-y-2">

@@ -46,7 +46,7 @@ const flexiwellPlans = [
       "Unlimited team accounts",
       "2 locations",
       "SMS notifications",
-      "WhatsApp notifications",
+      "Email notifications",
       "Smart Waitlist (basic)",
       "Advanced reports",
       "Chat support",

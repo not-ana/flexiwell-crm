@@ -129,15 +129,15 @@ export async function GET(request: NextRequest) {
       // Send payment confirmation notification
       await notificationService.sendPaymentConfirmation(
         client._id!.toString(),
-        planName || `Plano ${planId}`,
+        planName || `Plan ${planId}`,
         `R$${price}`,
-        "Cartão de crédito",
+        "Credit card",
         planConfig.classes
       );
     } else {
       // Create new client with plan
       const newClient: Omit<Client, "_id"> = {
-        name: session.customer_details?.name || session.customer_details?.email?.split("@")[0] || "Cliente",
+        name: session.customer_details?.name || session.customer_details?.email?.split("@")[0] || "Client",
         email: session.customer_details?.email || "",
         phone: session.customer_details?.phone || "",
         plan: {
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       const createdClient = { ...newClient, _id: result.insertedId };
       await notificationService.sendWelcome(
         createdClient as Client,
-        planName || `Plano ${planId}`,
+        planName || `Plan ${planId}`,
         planConfig.classes
       );
     }
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      planName: planName || `Plano ${planId}`,
+      planName: planName || `Plan ${planId}`,
       classes: planConfig.classes,
     });
   } catch (error) {

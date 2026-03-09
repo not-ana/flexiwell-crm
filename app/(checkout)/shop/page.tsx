@@ -77,53 +77,34 @@ export default function ShopPage() {
       </div>
 
       {/* Promo banner */}
-      <div className="bg-primary-50">
-        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 flex items-center gap-8">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 leading-tight">
-              Mix, Match &amp; Save<br />Up to 30% Off
+      <div className="relative bg-[#f5f0eb] overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 lg:py-24 flex items-center">
+          <div className="relative z-10 flex-1 min-w-0 max-w-md">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 leading-[1.1] tracking-tight">
+              Mix, Match, and<br />Save Up to 30%
             </h1>
-            <p className="text-gray-500 text-sm sm:text-base mb-5">
-              Pick the essentials you want — nothing more, nothing less.
+            <p className="text-gray-600 text-base sm:text-lg mb-6">
+              Pick the products you want — nothing more, nothing less.
             </p>
             <button
               type="button"
               onClick={() => setActiveTab("sale")}
-              className="inline-flex items-center gap-2 bg-primary-600 text-white font-semibold text-sm px-6 py-3 rounded-full hover:bg-primary-700 transition-colors"
+              className="bg-gray-900 text-white font-medium text-sm px-8 py-3.5 rounded-full hover:bg-gray-800 transition-colors"
             >
               Shop now
             </button>
           </div>
-          <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
-            <div className="relative w-36 h-36 lg:w-44 lg:h-44 rounded-2xl overflow-hidden">
+          <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-[55%] lg:w-[58%]">
+            <div className="relative h-full">
               <Image
                 src={products[0].image}
                 alt={products[0].name}
                 fill
-                sizes="176px"
+                sizes="50vw"
                 className="object-cover"
                 priority
               />
-            </div>
-            <div className="relative w-40 h-40 lg:w-48 lg:h-48 rounded-2xl overflow-hidden">
-              <Image
-                src={products[10].image}
-                alt={products[10].name}
-                fill
-                sizes="192px"
-                className="object-cover"
-                priority
-              />
-            </div>
-            <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden hidden lg:block">
-              <Image
-                src={products[1].image}
-                alt={products[1].name}
-                fill
-                sizes="160px"
-                className="object-cover"
-                priority
-              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#f5f0eb] via-[#f5f0eb]/40 to-transparent" />
             </div>
           </div>
         </div>

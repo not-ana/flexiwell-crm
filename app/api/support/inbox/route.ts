@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const allowedEmails = ["anajulia@flexiwell.net", "ana@flexiwell.net", "admin@flexiwell.net"];
   if (!allowedEmails.includes(user!.email?.toLowerCase() || "")) {
     return NextResponse.json(
-      { error: "Acesso nao autorizado" },
+      { error: "Unauthorized access" },
       { status: 403 }
     );
   }
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("Error fetching inbox:", err);
     return NextResponse.json(
-      { error: "Erro ao carregar conversas" },
+      { error: "Failed to load conversations" },
       { status: 500 }
     );
   }

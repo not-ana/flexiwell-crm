@@ -2,67 +2,67 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://www.flexiwell.net/es/categories/</loc>
+    <loc>http://localhost:1313/es/categories/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="en-US"
-                href="https://www.flexiwell.net/categories/"
+                href="http://localhost:1313/categories/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="pt-BR"
-                href="https://www.flexiwell.net/pt-br/categories/"
+                href="http://localhost:1313/pt-br/categories/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
-                href="https://www.flexiwell.net/es/categories/"
+                href="http://localhost:1313/es/categories/"
                 />
   </url><url>
-    <loc>https://www.flexiwell.net/es/</loc>
+    <loc>http://localhost:1313/es/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="en-US"
-                href="https://www.flexiwell.net/"
+                href="http://localhost:1313/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="pt-BR"
-                href="https://www.flexiwell.net/pt-br/"
+                href="http://localhost:1313/pt-br/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
-                href="https://www.flexiwell.net/es/"
+                href="http://localhost:1313/es/"
                 />
   </url><url>
-    <loc>https://www.flexiwell.net/es/pricing/</loc>
+    <loc>http://localhost:1313/es/pricing/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="pt-BR"
-                href="https://www.flexiwell.net/pt-br/pricing/"
+                href="http://localhost:1313/pt-br/pricing/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
-                href="https://www.flexiwell.net/es/pricing/"
+                href="http://localhost:1313/es/pricing/"
                 />
   </url><url>
-    <loc>https://www.flexiwell.net/es/tags/</loc>
+    <loc>http://localhost:1313/es/tags/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="en-US"
-                href="https://www.flexiwell.net/tags/"
+                href="http://localhost:1313/tags/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="pt-BR"
-                href="https://www.flexiwell.net/pt-br/tags/"
+                href="http://localhost:1313/pt-br/tags/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
-                href="https://www.flexiwell.net/es/tags/"
+                href="http://localhost:1313/es/tags/"
                 />
   </url>
 </urlset>

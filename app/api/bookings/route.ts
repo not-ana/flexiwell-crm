@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!clientId || !classId) {
       return NextResponse.json(
-        { error: "clientId e classId são obrigatórios" },
+        { error: "clientId and classId are required" },
         { status: 400 }
       );
     }
@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
                          result.errorCode === "DUPLICATE" ? 409 :
                          result.errorCode === "CLIENT_NOT_FOUND" ? 404 :
                          result.errorCode === "CLASS_NOT_FOUND" ? 404 :
+                         result.errorCode === "HEALTH_ASSESSMENT_REQUIRED" ? 403 :
                          400;
 
       return NextResponse.json(
@@ -125,14 +126,14 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         booking: result.booking,
-        message: "Aula agendada com sucesso!",
+        message: "Class booked successfully!",
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error creating booking:", error);
     return NextResponse.json(
-      { error: "Erro ao criar agendamento" },
+      { error: "Failed to create booking" },
       { status: 500 }
     );
   }

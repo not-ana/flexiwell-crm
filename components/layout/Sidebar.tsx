@@ -15,7 +15,6 @@ import {
   ClientsIcon,
   LogoutIcon,
   SwitchIcon,
-  ReportIcon,
   PaymentIcon,
   CloseIcon,
   WaitlistIcon,
@@ -24,7 +23,8 @@ import {
   ChatIcon,
 } from "@/components/icons";
 
-export type AccountType = "client" | "admin" | "teacher";
+export type SidebarVariant = "client" | "admin" | "teacher";
+export type AccountType = "admin" | "teacher";
 
 interface Account {
   id: string;
@@ -32,7 +32,7 @@ interface Account {
   email: string;
   initials: string;
   avatar?: string;
-  type: AccountType;
+  type: SidebarVariant;
   isActive: boolean;
 }
 
@@ -49,28 +49,21 @@ interface MenuItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   hasBadge?: boolean;
-  requiresFeature?: string;
   onboardingId?: string;
 }
 
 export interface SidebarProps {
-  variant?: AccountType;
+  variant?: SidebarVariant;
   notificationCount?: number;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }
 
 // Menu configurations per role
-const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }> = {
+const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[] }> = {
   client: {
-    main: [
-      { name: "Overview", href: "/dashboard", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
-      { name: "Classes", href: "/dashboard/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
-    ],
-    bottom: [
-      { name: "Settings", href: "/dashboard/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/dashboard/support", icon: ChatIcon, requiresFeature: "chatSupport" },
-    ],
+    main: [],
+    bottom: [],
   },
   admin: {
     main: [
@@ -81,7 +74,7 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/admin/support", icon: ChatIcon, requiresFeature: "chatSupport" },
+      { name: "Support", href: "/admin/support", icon: ChatIcon },
     ],
   },
   teacher: {
@@ -92,20 +85,20 @@ const menuConfigs: Record<AccountType, { main: MenuItem[]; bottom: MenuItem[] }>
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/teacher/support", icon: ChatIcon, requiresFeature: "chatSupport" },
+      { name: "Support", href: "/teacher/support", icon: ChatIcon },
     ],
   },
 };
 
 // getInitials moved to @/lib/utils/formatters
 
-const accountTypeStyles: Record<AccountType, { bg: string; text: string; label: string }> = {
+const accountTypeStyles: Record<SidebarVariant, { bg: string; text: string; label: string }> = {
   client: { bg: "bg-primary-50", text: "text-primary-700", label: "Client" },
   admin: { bg: "bg-primary-100", text: "text-primary-700", label: "Admin" },
   teacher: { bg: "bg-primary-100", text: "text-primary-700", label: "Teacher" },
 };
 
-function AccountTypeBadge({ type }: { type: AccountType }) {
+function AccountTypeBadge({ type }: { type: SidebarVariant }) {
   const style = accountTypeStyles[type];
   return (
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${style.bg} ${style.text}`}>
@@ -122,7 +115,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [addAccountStep, setAddAccountStep] = useState<"role" | "credentials">("role");
-  const [newAccountRole, setNewAccountRole] = useState<AccountType>("client");
+  const [newAccountRole, setNewAccountRole] = useState<AccountType>("admin");
   const [newAccountEmail, setNewAccountEmail] = useState("");
   const [newAccountPassword, setNewAccountPassword] = useState("");
   const [isAddingAccount, setIsAddingAccount] = useState(false);
@@ -145,7 +138,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     email: user?.email || "",
     initials: getInitials(user?.name || ""),
     avatar: user?.avatar,
-    type: (user?.role as AccountType) || variant,
+    type: (user?.role as SidebarVariant) || variant,
     isActive: true,
   };
 
@@ -155,7 +148,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
   const otherAccounts: Account[] = isDev ? ([
     { id: "demo-admin", name: "Admin Demo", email: "admin@flexiwell.com", initials: "AD", type: "admin" as AccountType, isActive: false },
     { id: "demo-teacher", name: "Teacher Demo", email: "teacher@flexiwell.com", initials: "TD", type: "teacher" as AccountType, isActive: false },
-    { id: "demo-client", name: "Client Demo", email: "client@flexiwell.com", initials: "CD", type: "client" as AccountType, isActive: false },
   ] as Account[]).filter(a => a.type !== currentUserRole) : [];
 
   const accounts: Account[] = [activeAccount, ...otherAccounts];
@@ -206,7 +198,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
   const resetAddAccountModal = () => {
     setShowAddAccountModal(false);
     setAddAccountStep("role");
-    setNewAccountRole("client");
+    setNewAccountRole("admin");
     setNewAccountEmail("");
     setNewAccountPassword("");
   };
@@ -446,29 +438,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
               {/* Content */}
               <div className="p-4 sm:p-6">
                 {addAccountStep === "role" ? (
-                  <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3">
-                    {/* Client */}
-                    <button
-                      type="button"
-                      onClick={() => setNewAccountRole("client")}
-                      className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
-                        newAccountRole === "client"
-                          ? "border-primary-600 bg-primary-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        newAccountRole === "client" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                      }`}>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                      <span className={`text-sm font-medium ${newAccountRole === "client" ? "text-primary-700" : "text-gray-700"}`}>
-                        Client
-                      </span>
-                    </button>
-
+                  <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
                     {/* Admin */}
                     <button
                       type="button"

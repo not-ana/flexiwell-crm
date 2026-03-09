@@ -51,8 +51,13 @@ export async function GET(request: NextRequest) {
       filter.clientId = clientIdParam;
     }
 
-    if (status && status !== "all") {
+    if (status === "removed") {
+      filter.status = "removed";
+    } else if (status && status !== "all") {
       filter.status = status;
+    } else {
+      // By default, exclude removed/trashed entries
+      filter.status = { $ne: "removed" };
     }
 
     if (classId) {
@@ -197,7 +202,7 @@ export async function POST(request: NextRequest) {
       clientPhone: client?.phone,
       clientSource,
       classId,
-      className: className || "Aula",
+      className: className || "Class",
       priority,
       status: "waiting",
       createdAt: now,

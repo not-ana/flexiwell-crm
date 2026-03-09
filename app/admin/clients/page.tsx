@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect, memo, useCallback } from "react";
-import { SearchIcon, FilterIcon, ChevronIcon, UploadIcon } from "@/components/icons";
+import { useState, useRef, useEffect, memo, useMemo } from "react";
+import { SearchIcon, UploadIcon } from "@/components/icons";
 import { useClients } from "@/hooks/useData";
 import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
-import type { Client, ClientLifecycleStage, ClientMetrics } from "@/lib/api/client";
+import { StatCard } from "@/components/ui/StatCard";
+import type { Client, ClientLifecycleStage } from "@/lib/api/client";
 import { clientsApi } from "@/lib/api/client";
 import { formatCurrency, getInitials } from "@/lib/utils/formatters";
+import { INITIAL_PLANS } from "@/components/settings/PlansSettings";
+import type { Plan } from "@/components/settings/PlansSettings";
+import { Badge } from "@/components/ui/Badge";
 
 type ClientStatus = "active" | "paused" | "expired" | "pending";
 
@@ -83,22 +87,12 @@ function StreakBadge({ streak }: { streak: number }) {
 // ============================================
 const LifecycleBadge = memo(function LifecycleBadge({ stage }: { stage: ClientLifecycleStage }) {
   const style = lifecycleStyles[stage] || lifecycleStyles.active;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 });
 
 const StatusBadge = memo(function StatusBadge({ status }: { status: ClientStatus }) {
   const style = statusStyles[status] || statusStyles.active;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 });
 
 // ============================================
@@ -110,7 +104,6 @@ function UpgradeChip({ client }: { client: Client }) {
 
   const utilization = plan.totalClasses > 0 ? plan.usedClasses / plan.totalClasses : 0;
 
-  // Simple ascension logic
   if (plan.type === "drop-in") {
     return (
       <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-50 text-purple-600 rounded-full whitespace-nowrap">
@@ -136,7 +129,7 @@ function UpgradeChip({ client }: { client: Client }) {
 }
 
 // ============================================
-// Client Row (Desktop Table)
+// Client Row (Desktop Table) - Redesigned
 // ============================================
 const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit, onDelete, onWinBack }: {
   client: Client;
@@ -152,10 +145,14 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
   const classesTotal = client.classesTotal || 0;
   const progressPercent = classesTotal > 0 ? (classesRemaining / classesTotal) * 100 : 0;
   const healthScore = client.healthScore?.overall ?? null;
+  const planName = typeof client.plan === "string" ? client.plan : (client.plan?.type || "—");
+  const planObj = typeof client.plan === "object" ? client.plan : null;
+  const hasDiscount = !!(planObj?.discountType);
+  const ltv = client.totalLifetimeRevenue || client.revenue || 0;
 
   return (
-    <tr className={`hover:bg-gray-50 transition-colors ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}>
-      {/* Client info */}
+    <tr className={`hover:bg-gray-50/80 transition-colors group ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}>
+      {/* Client info + health score */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           {healthScore !== null ? (
@@ -167,26 +164,40 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-medium text-gray-900 truncate">{client.name}</p>
+              <a href={`/admin/clients/${client._id}`} className="font-medium text-gray-900 truncate hover:text-primary-600 transition-colors">{client.name}</a>
               <StreakBadge streak={client.currentStreak || 0} />
             </div>
-            <p className="text-sm text-gray-500 truncate">{client.email}</p>
+            <p className="text-xs text-gray-500 truncate">{client.email}</p>
           </div>
         </div>
       </td>
-      {/* Lifecycle Stage */}
+      {/* Stage + Status combined */}
       <td className="px-4 py-3">
-        <LifecycleBadge stage={lifecycle} />
+        <div className="flex flex-col gap-1">
+          <LifecycleBadge stage={lifecycle} />
+          {status !== "active" && <StatusBadge status={status} />}
+          {status === "pending" && !client.onboarding?.healthAssessmentCompleted && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Intake pending
+            </span>
+          )}
+        </div>
       </td>
-      {/* Plan + Upgrade */}
+      {/* Plan + Classes progress */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-900">{typeof client.plan === "string" ? client.plan : (client.plan?.type || "No plan")}</p>
+          <p className="text-sm text-gray-900 capitalize">{planName}</p>
+          {hasDiscount && (
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-50 text-green-600 rounded-full whitespace-nowrap" title={planObj?.discountReason || "Custom price"}>
+              {planObj?.discountType === "percentage" ? `−${planObj.discountValue}%` : planObj?.discountType === "fixed" ? `−$${planObj.discountValue}` : `$${planObj?.price}`}
+            </span>
+          )}
           <UpgradeChip client={client} />
         </div>
         {classesTotal > 0 && (
           <div className="flex items-center gap-2 mt-1">
-            <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full ${progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"}`}
                 style={{ width: `${progressPercent}%` }}
@@ -198,11 +209,15 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
       </td>
       {/* LTV */}
       <td className="px-4 py-3">
-        <p className="text-sm font-medium text-gray-900">{formatCurrency(client.totalLifetimeRevenue || client.revenue || 0)}</p>
+        <p className={`text-sm font-medium ${ltv > 0 ? "text-gray-900" : "text-gray-400"}`}>
+          {ltv > 0 ? formatCurrency(ltv) : "—"}
+        </p>
       </td>
       {/* Last Activity */}
       <td className="px-4 py-3">
-        <p className="text-sm text-gray-500">{client.lastActivity || "—"}</p>
+        <p className={`text-sm ${client.lastActivity ? "text-gray-700" : "text-gray-400"}`}>
+          {client.lastActivity || "—"}
+        </p>
       </td>
       {/* Actions */}
       <td className="px-4 py-3">
@@ -220,7 +235,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
             <button onClick={onWinBack} className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
               Win Back
             </button>
-            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -228,7 +243,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -249,7 +264,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
 });
 
 // ============================================
-// Client Card (Mobile)
+// Client Card (Mobile) - Redesigned
 // ============================================
 function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }: {
   client: Client;
@@ -265,11 +280,15 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
   const classesTotal = client.classesTotal || 0;
   const progressPercent = classesTotal > 0 ? (classesRemaining / classesTotal) * 100 : 0;
   const healthScore = client.healthScore?.overall ?? null;
+  const planName = typeof client.plan === "string" ? client.plan : (client.plan?.type || "—");
+  const planObj = typeof client.plan === "object" ? client.plan : null;
+  const hasDiscount = !!(planObj?.discountType);
+  const ltv = client.totalLifetimeRevenue || client.revenue || 0;
 
   return (
     <div className={`p-4 border-b border-gray-100 last:border-b-0 ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}>
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-center gap-3 min-w-0">
           {healthScore !== null ? (
             <HealthScoreBadge score={healthScore} />
           ) : (
@@ -277,175 +296,168 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
               <span className="text-xs font-semibold text-primary-700">{getInitials(client.name)}</span>
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-medium text-gray-900">{client.name}</p>
+              <a href={`/admin/clients/${client._id}`} className="font-medium text-gray-900 truncate hover:text-primary-600 transition-colors">{client.name}</a>
               <StreakBadge streak={client.currentStreak || 0} />
             </div>
-            <p className="text-xs text-gray-500">{client.email}</p>
+            <p className="text-xs text-gray-500 truncate">{client.email}</p>
           </div>
         </div>
-        <LifecycleBadge stage={lifecycle} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-        <div>
-          <p className="text-gray-500 text-xs">Plan</p>
-          <div className="flex items-center gap-1">
-            <p className="font-medium text-gray-900 truncate">{typeof client.plan === "string" ? client.plan : (client.plan?.type || "No plan")}</p>
-            <UpgradeChip client={client} />
-          </div>
-          {classesTotal > 0 && (
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className="text-xs text-gray-500">{classesRemaining}/{classesTotal}</span>
-            </div>
+        <div className="flex flex-col items-end gap-1">
+          <LifecycleBadge stage={lifecycle} />
+          {status === "pending" && !client.onboarding?.healthAssessmentCompleted && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600">
+              Intake pending
+            </span>
           )}
         </div>
-        <div>
-          <p className="text-gray-500 text-xs">Lifetime Revenue</p>
-          <p className="font-medium text-green-600">{formatCurrency(client.totalLifetimeRevenue || client.revenue || 0)}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">Last Activity</p>
-          <p className="font-medium text-gray-900">{client.lastActivity || "—"}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 text-xs">Health Score</p>
-          <p className="font-medium text-gray-900">{healthScore !== null ? `${healthScore}/100` : "—"}</p>
-        </div>
       </div>
 
-      {status === "pending" ? (
-        <div className="flex items-center gap-2">
-          <button onClick={onApprove} className="flex-1 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
-            Approve
-          </button>
-          <button onClick={onReject} className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-            Reject
-          </button>
+      {/* Key info row */}
+      <div className="flex items-center gap-4 text-sm ml-[52px]">
+        <div className="flex items-center gap-1.5">
+          <span className="text-gray-400 text-xs">Plan</span>
+          <span className="font-medium text-gray-700 capitalize">{planName}</span>
+          {hasDiscount && (
+            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-50 text-green-600 rounded-full whitespace-nowrap">
+              {planObj?.discountType === "percentage" ? `−${planObj.discountValue}%` : planObj?.discountType === "fixed" ? `−$${planObj.discountValue}` : `$${planObj?.price}`}
+            </span>
+          )}
+          <UpgradeChip client={client} />
         </div>
-      ) : lifecycle === "churned" ? (
-        <button onClick={onWinBack} className="w-full px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-          Send Win-Back Offer
-        </button>
-      ) : (
-        <div className="flex items-center justify-end gap-1">
-          <button onClick={onEdit} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
+        {classesTotal > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${progressPercent > 50 ? "bg-green-500" : progressPercent > 20 ? "bg-yellow-500" : "bg-red-500"}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-500">{classesRemaining}/{classesTotal}</span>
+          </div>
+        )}
+        {ltv > 0 && (
+          <span className="text-xs font-medium text-emerald-600">{formatCurrency(ltv)}</span>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="mt-3 ml-[52px]">
+        {status === "pending" ? (
+          <div className="flex items-center gap-2">
+            <button onClick={onApprove} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+              Approve
+            </button>
+            <button onClick={onReject} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Reject
+            </button>
+          </div>
+        ) : lifecycle === "churned" ? (
+          <button onClick={onWinBack} className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+            Send Win-Back Offer
           </button>
-          <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-1">
+            <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 // ============================================
-// Offer Stack Plan Options (Hormozi Value Stack)
+// Plans (from Settings)
 // ============================================
-const planOptions = [
-  {
-    id: "monthly-8", name: "Monthly - 8 classes", price: 299,
-    bonuses: [
-      { name: "8 group classes", value: 400 },
-      { name: "Health Assessment", value: 75 },
-      { name: "Priority waitlist", value: 50 },
-      { name: "WhatsApp booking", value: 0 },
-    ],
-    totalValue: 525,
-  },
-  {
-    id: "monthly-12", name: "Monthly - 12 classes", price: 399,
-    bonuses: [
-      { name: "12 group classes", value: 600 },
-      { name: "Health Assessment", value: 75 },
-      { name: "Priority waitlist", value: 50 },
-      { name: "WhatsApp booking", value: 0 },
-    ],
-    totalValue: 725,
-  },
-  {
-    id: "quarterly-24", name: "Quarterly - 24 classes", price: 799,
-    bonuses: [
-      { name: "24 group classes", value: 1200 },
-      { name: "Health Assessment + Review", value: 150 },
-      { name: "Priority waitlist", value: 50 },
-      { name: "Goal tracking", value: 100 },
-    ],
-    totalValue: 1500,
-  },
-  {
-    id: "semiannual-48", name: "Semi-annual - 48 classes", price: 1499,
-    bonuses: [
-      { name: "48 group classes", value: 2400 },
-      { name: "2 Health Assessments", value: 150 },
-      { name: "VIP waitlist priority", value: 100 },
-      { name: "Goal tracking + Reviews", value: 200 },
-    ],
-    totalValue: 2850,
-  },
-  {
-    id: "annual-96", name: "Annual - 96 classes", price: 2499,
-    bonuses: [
-      { name: "96 group classes", value: 4800 },
-      { name: "Quarterly Health Assessments", value: 300 },
-      { name: "VIP priority everything", value: 200 },
-      { name: "1:1 onboarding session", value: 150 },
-    ],
-    totalValue: 5450,
-  },
-];
+const activePlans = INITIAL_PLANS.filter((p) => p.isActive);
 
 // ============================================
-// Add Client Modal with Value Stack
+// Add Client Modal
 // ============================================
 function AddClientModal({
-  isOpen, onClose, onSubmit, isSubmitting,
+  isOpen, onClose, onSubmit, isSubmitting, apiError,
 }: {
   isOpen: boolean; onClose: () => void;
-  onSubmit: (data: Partial<Client>) => Promise<void>;
+  onSubmit: (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string }) => Promise<void>;
   isSubmitting: boolean;
+  apiError?: string;
 }) {
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "",
-    plan: planOptions[0].id,
+    plan: activePlans[0]?.id || "",
     unit: "FlexiWell Downtown", notes: "",
+    hasDiscount: false,
+    discountType: "percentage" as "percentage" | "fixed" | "custom",
+    discountValue: 0,
+    customPrice: 0,
+    discountReason: "",
   });
+  const [sendIntakeForm, setSendIntakeForm] = useState(true);
+  const [intakeChannel, setIntakeChannel] = useState<"whatsapp" | "email" | "sms">("whatsapp");
+  const [formError, setFormError] = useState("");
 
-  const selectedPlan = planOptions.find((p) => p.id === formData.plan) || planOptions[0];
+  const selectedPlan = activePlans.find((p) => p.id === formData.plan) || activePlans[0];
+
+  const calculatedPrice = (() => {
+    const base = selectedPlan?.price || 0;
+    if (!formData.hasDiscount) return base;
+    if (formData.discountType === "percentage") return Math.round(base * (1 - formData.discountValue / 100) * 100) / 100;
+    if (formData.discountType === "fixed") return Math.max(0, base - formData.discountValue);
+    return formData.customPrice || base; // custom
+  })();
 
   const handleSubmit = async () => {
+    setFormError("");
     if (!formData.name || !formData.email) {
-      alert("Please fill in name and email");
+      setFormError("Please fill in name and email");
       return;
     }
-    await onSubmit({
+    if (sendIntakeForm && (intakeChannel === "whatsapp" || intakeChannel === "sms") && !formData.phone) {
+      setFormError("Phone number is required for WhatsApp/SMS");
+      return;
+    }
+    const clientData: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string } = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       plan: selectedPlan.name,
       unit: formData.unit,
-      status: "active",
-    });
-    setFormData({ name: "", email: "", phone: "", plan: planOptions[0].id, unit: "FlexiWell Downtown", notes: "" });
-    onClose();
+      status: sendIntakeForm ? "pending" : "active",
+      _sendIntake: sendIntakeForm,
+      _intakeChannel: intakeChannel,
+    };
+    if (formData.hasDiscount) {
+      (clientData as Record<string, unknown>)._discount = {
+        type: formData.discountType,
+        value: formData.discountType === "custom" ? undefined : formData.discountValue,
+        customPrice: formData.discountType === "custom" ? formData.customPrice : undefined,
+        reason: formData.discountReason,
+        finalPrice: calculatedPrice,
+        originalPrice: selectedPlan?.price || 0,
+      };
+    }
+    await onSubmit(clientData);
   };
 
   if (!isOpen) return null;
+
+  const channelOptions = [
+    { value: "whatsapp" as const, label: "WhatsApp", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> },
+    { value: "email" as const, label: "Email", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
+    { value: "sms" as const, label: "SMS", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -460,9 +472,17 @@ function AddClientModal({
         </div>
 
         <div className="p-4 sm:p-6 space-y-4">
+          {(formError || apiError) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{formError || apiError}</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-            <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            <input type="text" value={formData.name} onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormError(""); }}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="Enter client's full name" />
           </div>
@@ -475,7 +495,9 @@ function AddClientModal({
                 placeholder="email@example.com" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone {sendIntakeForm && intakeChannel !== "email" ? "*" : ""}
+              </label>
               <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder="(555) 123-4567" />
@@ -486,52 +508,134 @@ function AddClientModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan *</label>
             <select value={formData.plan} onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-              {planOptions.map((plan) => (
-                <option key={plan.id} value={plan.id}>{plan.name} - ${plan.price}</option>
+              {activePlans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} - ${plan.price}/{plan.period}
+                  {plan.classes === -1 ? " (Unlimited)" : ` (${plan.classes} classes)`}
+                </option>
               ))}
             </select>
           </div>
 
-          {/* Hormozi Value Stack */}
-          <div className="bg-gradient-to-br from-primary-50 to-purple-50 rounded-xl p-4 border border-primary-100">
-            <p className="text-sm font-semibold text-gray-900 mb-3">What&apos;s included:</p>
-            <div className="space-y-2">
-              {selectedPlan.bonuses.map((bonus, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span className="text-gray-700">{bonus.name}</span>
+          {/* Custom Pricing Section */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.hasDiscount}
+                onChange={(e) => setFormData({ ...formData, hasDiscount: e.target.checked })}
+                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-900">Custom pricing</span>
+                <p className="text-xs text-gray-500">Apply a discount or set a custom price for this client</p>
+              </div>
+            </label>
+
+            {formData.hasDiscount && (
+              <div className="mt-3 ml-7 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount type</label>
+                  <div className="flex gap-2">
+                    {([
+                      { value: "percentage" as const, label: "%" },
+                      { value: "fixed" as const, label: "$" },
+                      { value: "custom" as const, label: "Custom" },
+                    ]).map((opt) => (
+                      <button key={opt.value} type="button"
+                        onClick={() => setFormData({ ...formData, discountType: opt.value })}
+                        className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          formData.discountType === opt.value
+                            ? "border-primary-500 bg-primary-50 text-primary-700"
+                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >{opt.label}</button>
+                    ))}
                   </div>
-                  {bonus.value > 0 && (
-                    <span className="text-gray-400 line-through text-xs">${bonus.value}</span>
-                  )}
                 </div>
-              ))}
-            </div>
-            <div className="mt-3 pt-3 border-t border-primary-200 flex items-center justify-between">
-              <span className="text-sm text-gray-500">Total value: <span className="line-through">${selectedPlan.totalValue}</span></span>
-              <span className="text-lg font-bold text-primary-700">${selectedPlan.price}/mo</span>
-            </div>
-            <p className="text-xs text-green-600 font-medium mt-1">
-              Save {Math.round(((selectedPlan.totalValue - selectedPlan.price) / selectedPlan.totalValue) * 100)}%
-            </p>
+
+                {formData.discountType !== "custom" ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.discountType === "percentage" ? "Discount (%)" : "Discount ($)"}
+                    </label>
+                    <input type="number" min="0" max={formData.discountType === "percentage" ? 100 : selectedPlan?.price || 9999}
+                      value={formData.discountValue || ""}
+                      onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder={formData.discountType === "percentage" ? "e.g. 20" : "e.g. 50"} />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Final price ($)</label>
+                    <input type="number" min="0"
+                      value={formData.customPrice || ""}
+                      onChange={(e) => setFormData({ ...formData, customPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="e.g. 199" />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+                  <input type="text"
+                    value={formData.discountReason}
+                    onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="e.g. early bird, family, partner" />
+                </div>
+
+                {/* Price summary */}
+                <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">List price</p>
+                    <p className="text-sm text-gray-400 line-through">${selectedPlan?.price || 0}/{selectedPlan?.period || "month"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Final price</p>
+                    <p className="text-lg font-semibold text-green-600">${calculatedPrice}/{selectedPlan?.period || "month"}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Onboarding auto-triggers info */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="flex gap-3">
-              <svg className="w-5 h-5 text-blue-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
-              </svg>
+          {/* Intake Form Section */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendIntakeForm}
+                onChange={(e) => setSendIntakeForm(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
               <div>
-                <p className="text-sm font-medium text-blue-900">Auto-Onboarding Sequence</p>
-                <p className="text-sm text-blue-700 mt-1">
-                  Welcome email + Health Assessment invite + first class nudge + Week 1 check-in will be sent automatically.
-                </p>
+                <span className="text-sm font-medium text-gray-900">Send intake form (health assessment)</span>
+                <p className="text-xs text-gray-500">Client will receive a link to complete their health assessment</p>
               </div>
-            </div>
+            </label>
+
+            {sendIntakeForm && (
+              <div className="mt-3 ml-7">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Send via</label>
+                <div className="flex gap-2">
+                  {channelOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setIntakeChannel(option.value)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                        intakeChannel === option.value
+                          ? "border-primary-500 bg-primary-50 text-primary-700"
+                          : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {option.icon} {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -540,7 +644,7 @@ function AddClientModal({
           <button onClick={handleSubmit} disabled={isSubmitting}
             className="w-full sm:w-auto px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isSubmitting ? <LoadingSpinner size="sm" className="text-white" /> : null}
-            Add Client
+            {sendIntakeForm ? "Add & Send Form" : "Add Client"}
           </button>
         </div>
       </div>
@@ -549,7 +653,7 @@ function AddClientModal({
 }
 
 // ============================================
-// Import Modal (unchanged)
+// Import Modal
 // ============================================
 function ImportModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) {
   const [dragActive, setDragActive] = useState(false);
@@ -683,7 +787,7 @@ function AtRiskBanner({ clients, onViewAtRisk }: { clients: Client[]; onViewAtRi
   if (atRiskClients.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4 mb-4 sm:mb-6">
+    <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -692,7 +796,7 @@ function AtRiskBanner({ clients, onViewAtRisk }: { clients: Client[]; onViewAtRi
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-orange-900">{atRiskClients.length} client{atRiskClients.length !== 1 ? "s" : ""} at risk of churning</p>
+            <p className="font-semibold text-orange-900">{atRiskClients.length} client{atRiskClients.length !== 1 ? "s" : ""} at risk</p>
             <p className="text-sm text-orange-700">
               {atRiskClients.slice(0, 3).map(c => c.name).join(", ")}
               {atRiskClients.length > 3 ? ` +${atRiskClients.length - 3} more` : ""}
@@ -701,7 +805,7 @@ function AtRiskBanner({ clients, onViewAtRisk }: { clients: Client[]; onViewAtRi
         </div>
         <button onClick={onViewAtRisk}
           className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors whitespace-nowrap">
-          View at-risk
+          View
         </button>
       </div>
     </div>
@@ -709,7 +813,7 @@ function AtRiskBanner({ clients, onViewAtRisk }: { clients: Client[]; onViewAtRi
 }
 
 // ============================================
-// Main Page Component
+// Main Page Component - Redesigned
 // ============================================
 export default function AdminClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -719,29 +823,66 @@ export default function AdminClientsPage() {
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-  const [metrics, setMetrics] = useState<ClientMetrics | null>(null);
 
-  // Fetch clients
   const { clients, isLoading, error, refetch, createClient, updateClient, deleteClient } = useClients({
     search: searchQuery || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  // Fetch Hormozi metrics
-  const fetchMetrics = useCallback(async () => {
-    try {
-      const response = await clientsApi.getMetrics();
-      if (response.data) setMetrics(response.data);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
-
-  const handleAddClient = async (data: Partial<Client>) => {
+  const [addClientError, setAddClientError] = useState("");
+  const handleAddClient = async (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string }) => {
     setIsSubmitting(true);
+    setAddClientError("");
     try {
-      const result = await createClient(data);
-      if (!result.success) alert(result.error || "Failed to add client");
+      // Extract discount data and build plan object with pricing
+      const discount = (data as Record<string, unknown>)._discount as { type?: string; value?: number; customPrice?: number; reason?: string; finalPrice?: number; originalPrice?: number } | undefined;
+      const planName = typeof data.plan === "string" ? data.plan : "";
+      const selectedPlanDef = activePlans.find((p) => p.name === planName) || activePlans.find((p) => p.id === planName) || activePlans[0];
+
+      const planPayload: Record<string, unknown> = {
+        type: selectedPlanDef?.id || "monthly",
+        totalClasses: selectedPlanDef?.classes === -1 ? 999 : (selectedPlanDef?.classes || 8),
+        usedClasses: 0,
+        remainingClasses: selectedPlanDef?.classes === -1 ? 999 : (selectedPlanDef?.classes || 8),
+        startDate: new Date(),
+        endDate: new Date(Date.now() + (selectedPlanDef?.period === "year" ? 365 : 30) * 86_400_000),
+        price: discount ? discount.finalPrice : (selectedPlanDef?.price || 299),
+      };
+      if (discount && discount.type) {
+        planPayload.originalPrice = discount.originalPrice || selectedPlanDef?.price || 0;
+        planPayload.discountType = discount.type;
+        if (discount.type !== "custom") planPayload.discountValue = discount.value;
+        if (discount.reason) planPayload.discountReason = discount.reason;
+      }
+
+      if (data._sendIntake) {
+        const response = await fetch("/api/clients/send-intake", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            plan: planPayload,
+            unit: data.unit,
+            channel: data._intakeChannel || "whatsapp",
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          setAddClientError(result.error || "Failed to add client");
+        } else {
+          setShowAddClientModal(false);
+          refetch();
+        }
+      } else {
+        const result = await createClient({ name: data.name, email: data.email, phone: data.phone, plan: planPayload as unknown as Client["plan"], unit: data.unit, status: data.status });
+        if (!result.success) {
+          setAddClientError(result.error || "Failed to add client");
+        } else {
+          setShowAddClientModal(false);
+        }
+      }
     } finally { setIsSubmitting(false); }
   };
 
@@ -759,11 +900,45 @@ export default function AdminClientsPage() {
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  const handleUpdateClient = async (data: Partial<Client>) => {
+  const handleUpdateClient = async (data: Partial<Client> & { _discount?: Record<string, unknown> }) => {
     if (!editingClient) return;
     setIsSubmitting(true);
     try {
-      const result = await updateClient(editingClient._id, data);
+      const discount = data._discount as { clear?: boolean; type?: string; value?: number; customPrice?: number; reason?: string; finalPrice?: number; originalPrice?: number } | undefined;
+      const updateData: Partial<Client> = { name: data.name, email: data.email, phone: data.phone, status: data.status, lifecycleStage: data.lifecycleStage };
+
+      // Build plan update with discount
+      const existingPlan = typeof editingClient.plan === "object" ? editingClient.plan : null;
+      if (discount && !discount.clear) {
+        updateData.plan = {
+          ...(existingPlan || {}),
+          price: discount.finalPrice || existingPlan?.price || 0,
+          originalPrice: discount.originalPrice || existingPlan?.price || 0,
+          discountType: discount.type as "percentage" | "fixed" | "custom",
+          discountValue: discount.type !== "custom" ? (discount.value as number) : undefined,
+          discountReason: discount.reason as string,
+        } as Client["plan"];
+      } else if (discount?.clear && existingPlan) {
+        updateData.plan = {
+          ...existingPlan,
+          price: existingPlan.originalPrice || existingPlan.price,
+          originalPrice: undefined,
+          discountType: undefined,
+          discountValue: undefined,
+          discountReason: undefined,
+        } as Client["plan"];
+      }
+
+      // Update plan type if changed
+      const planName = typeof data.plan === "string" ? data.plan : "";
+      const newPlanDef = activePlans.find((p) => p.name === planName) || activePlans.find((p) => p.id === planName);
+      if (newPlanDef && updateData.plan) {
+        (updateData.plan as unknown as Record<string, unknown>).type = newPlanDef.id;
+      } else if (newPlanDef) {
+        updateData.plan = planName as unknown as Client["plan"];
+      }
+
+      const result = await updateClient(editingClient._id, updateData);
       if (!result.success) alert(result.error || "Failed to update client");
       else setEditingClient(null);
     } finally { setIsSubmitting(false); }
@@ -787,180 +962,189 @@ export default function AdminClientsPage() {
   // Filter by lifecycle
   const filteredClients = (clients || []).filter(c => {
     if (lifecycleFilter === "all") return true;
-    return c.lifecycleStage === lifecycleFilter;
+    return (c.lifecycleStage || "active") === lifecycleFilter;
   });
 
-  // Stats
-  const totalClients = clients?.length || 0;
-  const activeClients = clients?.filter(c => c.status === "active").length || 0;
-  const atRiskCount = clients?.filter(c => c.lifecycleStage === "at_risk" || (c.healthScore && c.healthScore.overall < 40)).length || 0;
-  const totalRevenue = clients?.reduce((sum, c) => sum + (c.totalLifetimeRevenue || c.revenue || 0), 0) || 0;
+  // Summary metrics
+  const metrics = useMemo(() => {
+    const all = clients || [];
+    const totalRevenue = all.reduce((sum, c) => sum + (c.totalLifetimeRevenue || c.revenue || 0), 0);
+    const atRisk = all.filter(c => c.lifecycleStage === "at_risk").length;
+    const active = all.filter(c => (c.lifecycleStage || "active") === "active").length;
+    const healthScores = all.filter(c => c.healthScore?.overall != null).map(c => c.healthScore!.overall);
+    const avgHealth = healthScores.length > 0 ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length) : 0;
+    const pending = all.filter(c => c.status === "pending").length;
+    return { total: all.length, totalRevenue, atRisk, active, avgHealth, pending };
+  }, [clients]);
+
+  // Lifecycle counts for filter tabs
+  const lifecycleCounts = useMemo(() => {
+    const all = clients || [];
+    const counts: Record<string, number> = { all: all.length };
+    for (const c of all) {
+      const stage = c.lifecycleStage || "active";
+      counts[stage] = (counts[stage] || 0) + 1;
+    }
+    return counts;
+  }, [clients]);
 
   if (error) {
     return <div className="p-4 sm:p-6 lg:p-8"><ErrorMessage message={error} onRetry={refetch} /></div>;
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
+      <div className="p-4 sm:p-6 lg:p-8 pb-0 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-sm text-gray-600 mt-1 hidden lg:block">Manage client lifecycle, health scores & revenue</p>
-        </div>
-        <div className="flex items-center gap-2 lg:gap-3">
-          <button onClick={() => setShowImportModal(true)}
-            className="p-2 lg:px-4 lg:py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-            <UploadIcon className="w-5 h-5" /><span className="hidden lg:inline">Import</span>
-          </button>
-          <button onClick={() => setShowAddClientModal(true)}
-            className="px-3 py-2 lg:px-4 lg:py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            <span className="hidden lg:inline">Add</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Hormozi LTV Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-600">Total Clients</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{isLoading ? "—" : totalClients}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-600">Active</p>
-          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{isLoading ? "—" : activeClients}</p>
-        </div>
-        <div className="bg-white border border-orange-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-orange-600">At Risk</p>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-lg sm:text-2xl font-bold text-orange-600">{isLoading ? "—" : atRiskCount}</p>
-            {atRiskCount > 0 && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full animate-pulse">Alert</span>}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowImportModal(true)}
+              className="p-2 lg:px-3 lg:py-2 text-gray-600 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <UploadIcon className="w-4 h-4" /><span className="hidden lg:inline text-sm">Import</span>
+            </button>
+            <button onClick={() => setShowAddClientModal(true)}
+              className="px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1.5">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              <span className="hidden sm:inline">Add Client</span>
+            </button>
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-600">Avg LTV</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{metrics ? formatCurrency(metrics.avgLTV) : "—"}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 hidden lg:block">
-          <p className="text-xs sm:text-sm text-gray-600">Churn Rate</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{metrics ? `${metrics.monthlyChurnRate}%` : "—"}</p>
-          <p className="text-xs text-gray-500">monthly</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 hidden lg:block">
-          <p className="text-xs sm:text-sm text-gray-600">Rev/Client/Mo</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{metrics ? formatCurrency(metrics.revenuePerClientPerMonth) : "—"}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
-          <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{isLoading ? "—" : formatCurrency(totalRevenue)}</p>
-        </div>
-      </div>
 
-      {/* At-Risk Alert Banner */}
-      <AtRiskBanner
-        clients={clients || []}
-        onViewAtRisk={() => setLifecycleFilter("at_risk")}
-      />
-
-      {/* Filters */}
-      <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
-        <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input type="text" placeholder="Search by name, email or instructor..." value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 sm:bg-transparent border border-gray-200 sm:border-0 rounded-lg sm:rounded-none focus:outline-none focus:ring-2 sm:focus:ring-0 focus:ring-primary-500 text-gray-900 placeholder-gray-500" />
+        {/* Summary metrics */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+          <StatCard label="Total" value={metrics.total} />
+          <StatCard label="Active" value={metrics.active} accent="emerald" />
+          <StatCard label="At Risk" value={metrics.atRisk} accent={metrics.atRisk > 0 ? "orange" : "default"} muted={metrics.atRisk === 0} />
+          <StatCard label="Avg Health" value={metrics.avgHealth > 0 ? metrics.avgHealth : "—"} muted={metrics.avgHealth === 0} />
+          <StatCard label="Total LTV" value={metrics.totalRevenue > 0 ? formatCurrency(metrics.totalRevenue) : "—"} muted={metrics.totalRevenue === 0} />
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
-            <FilterIcon className="w-5 h-5 text-gray-400 hidden lg:block flex-shrink-0" />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="expired">Expired</option>
-              <option value="pending">Pending</option>
-            </select>
+
+        {/* At-Risk Banner */}
+        <AtRiskBanner
+          clients={clients || []}
+          onViewAtRisk={() => setLifecycleFilter("at_risk")}
+        />
+
+        {/* Search + filters in one compact row */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="relative flex-1 max-w-sm">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" placeholder="Search clients..." value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 placeholder-gray-400" />
           </div>
-          {/* Lifecycle Stage Filter */}
-          <select value={lifecycleFilter} onChange={(e) => setLifecycleFilter(e.target.value as typeof lifecycleFilter)}
-            className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option value="all">All lifecycle stages</option>
-            <option value="lead">Lead</option>
-            <option value="trial">Trial</option>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="px-2.5 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="all">All statuses</option>
             <option value="active">Active</option>
-            <option value="at_risk">At Risk</option>
-            <option value="churned">Churned</option>
-            <option value="won_back">Won Back</option>
+            <option value="paused">Paused</option>
+            <option value="expired">Expired</option>
+            <option value="pending">Pending</option>
           </select>
+        </div>
+
+        {/* Lifecycle tabs */}
+        <div className="flex items-center gap-1 -mb-px overflow-x-auto">
+          {[
+            { value: "all", label: "All" },
+            { value: "active", label: "Active" },
+            { value: "trial", label: "Trial" },
+            { value: "at_risk", label: "At Risk" },
+            { value: "churned", label: "Churned" },
+            { value: "lead", label: "Lead" },
+            { value: "won_back", label: "Won Back" },
+          ].filter(tab => tab.value === "all" || (lifecycleCounts[tab.value] || 0) > 0).map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setLifecycleFilter(tab.value as typeof lifecycleFilter)}
+              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                lifecycleFilter === tab.value
+                  ? "border-primary-600 text-primary-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              {tab.label}
+              {(lifecycleCounts[tab.value] || 0) > 0 && (
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                  lifecycleFilter === tab.value ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500"
+                }`}>
+                  {lifecycleCounts[tab.value]}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Content */}
-      {isLoading ? (
-        <LoadingTable rows={5} />
-      ) : filteredClients.length > 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LTV</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredClients.map((client) => (
-                  <ClientRow
-                    key={client._id}
-                    client={client}
-                    onApprove={() => handleApprove(client._id)}
-                    onReject={() => handleReject(client._id)}
-                    onEdit={() => setEditingClient(client)}
-                    onDelete={() => handleDeleteClick(client)}
-                    onWinBack={() => handleWinBack(client._id)}
-                  />
-                ))}
-              </tbody>
-            </table>
+      <div className="flex-1 overflow-auto">
+        {isLoading ? (
+          <div className="p-4 sm:p-6 lg:p-8"><LoadingTable rows={5} /></div>
+        ) : filteredClients.length > 0 ? (
+          <div className="bg-white">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50/50">
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LTV</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredClients.map((client) => (
+                    <ClientRow
+                      key={client._id}
+                      client={client}
+                      onApprove={() => handleApprove(client._id)}
+                      onReject={() => handleReject(client._id)}
+                      onEdit={() => setEditingClient(client)}
+                      onDelete={() => handleDeleteClick(client)}
+                      onWinBack={() => handleWinBack(client._id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredClients.map((client) => (
+                <ClientCard
+                  key={client._id}
+                  client={client}
+                  onApprove={() => handleApprove(client._id)}
+                  onReject={() => handleReject(client._id)}
+                  onEdit={() => setEditingClient(client)}
+                  onDelete={() => handleDeleteClick(client)}
+                  onWinBack={() => handleWinBack(client._id)}
+                />
+              ))}
+            </div>
           </div>
-          {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-gray-100">
-            {filteredClients.map((client) => (
-              <ClientCard
-                key={client._id}
-                client={client}
-                onApprove={() => handleApprove(client._id)}
-                onReject={() => handleReject(client._id)}
-                onEdit={() => setEditingClient(client)}
-                onDelete={() => handleDeleteClick(client)}
-                onWinBack={() => handleWinBack(client._id)}
-              />
-            ))}
+        ) : (
+          <div className="p-4 sm:p-6 lg:p-8">
+            <EmptyState
+              title="No clients found"
+              description={searchQuery || statusFilter !== "all" || lifecycleFilter !== "all" ? "Try adjusting your search filters" : "Add your first client to get started"}
+              icon={
+                <svg className="w-12 h-12 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              }
+              action={!searchQuery && statusFilter === "all" && lifecycleFilter === "all" ? { label: "Add Client", onClick: () => setShowAddClientModal(true) } : undefined}
+            />
           </div>
-        </div>
-      ) : (
-        <EmptyState
-          title="No clients found"
-          description={searchQuery || statusFilter !== "all" || lifecycleFilter !== "all" ? "Try adjusting your search filters" : "Add your first client to get started"}
-          icon={
-            <svg className="w-12 h-12 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          }
-          action={!searchQuery && statusFilter === "all" && lifecycleFilter === "all" ? { label: "Add Client", onClick: () => setShowAddClientModal(true) } : undefined}
-        />
-      )}
+        )}
+      </div>
 
       {/* Modals */}
       <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onSuccess={refetch} />
-      <AddClientModal isOpen={showAddClientModal} onClose={() => setShowAddClientModal(false)} onSubmit={handleAddClient} isSubmitting={isSubmitting} />
+      <AddClientModal isOpen={showAddClientModal} onClose={() => { setShowAddClientModal(false); setAddClientError(""); }} onSubmit={handleAddClient} isSubmitting={isSubmitting} apiError={addClientError} />
       <EditClientModal client={editingClient} isOpen={!!editingClient} onClose={() => setEditingClient(null)} onSubmit={handleUpdateClient} isSubmitting={isSubmitting} />
 
       {/* Delete Confirmation Modal */}
@@ -1002,12 +1186,19 @@ function EditClientModal({
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", plan: "", status: "active" as ClientStatus,
     lifecycleStage: "active" as ClientLifecycleStage,
+    hasDiscount: false,
+    discountType: "percentage" as "percentage" | "fixed" | "custom",
+    discountValue: 0,
+    customPrice: 0,
+    discountReason: "",
+    originalPrice: 0,
   });
 
   const prevIsOpenRef = useRef(isOpen);
 
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current && client) {
+      const planObj = typeof client.plan === "object" ? client.plan : null;
       setFormData({
         name: client.name || "",
         email: client.email || "",
@@ -1015,18 +1206,47 @@ function EditClientModal({
         plan: typeof client.plan === "string" ? client.plan : (client.plan?.type || ""),
         status: (client.status as ClientStatus) || "active",
         lifecycleStage: client.lifecycleStage || "active",
+        hasDiscount: !!(planObj?.discountType),
+        discountType: (planObj?.discountType as "percentage" | "fixed" | "custom") || "percentage",
+        discountValue: planObj?.discountValue || 0,
+        customPrice: planObj?.discountType === "custom" ? (planObj?.price || 0) : 0,
+        discountReason: planObj?.discountReason || "",
+        originalPrice: planObj?.originalPrice || planObj?.price || 0,
       });
     }
     prevIsOpenRef.current = isOpen;
   }, [isOpen, client]);
 
+  const selectedPlanDef = activePlans.find((p) => p.name === formData.plan) || activePlans.find((p) => p.id === formData.plan);
+  const basePrice = formData.originalPrice || selectedPlanDef?.price || 0;
+
+  const editCalculatedPrice = (() => {
+    if (!formData.hasDiscount) return basePrice;
+    if (formData.discountType === "percentage") return Math.round(basePrice * (1 - formData.discountValue / 100) * 100) / 100;
+    if (formData.discountType === "fixed") return Math.max(0, basePrice - formData.discountValue);
+    return formData.customPrice || basePrice;
+  })();
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) { alert("Please fill in name and email"); return; }
-    await onSubmit({
+    const data: Partial<Client> & { _discount?: Record<string, unknown> } = {
       name: formData.name, email: formData.email, phone: formData.phone,
       plan: formData.plan, status: formData.status,
       lifecycleStage: formData.lifecycleStage,
-    });
+    };
+    if (formData.hasDiscount) {
+      data._discount = {
+        type: formData.discountType,
+        value: formData.discountType === "custom" ? undefined : formData.discountValue,
+        customPrice: formData.discountType === "custom" ? formData.customPrice : undefined,
+        reason: formData.discountReason,
+        finalPrice: editCalculatedPrice,
+        originalPrice: basePrice,
+      };
+    } else {
+      data._discount = { clear: true };
+    }
+    await onSubmit(data);
   };
 
   if (!isOpen || !client) return null;
@@ -1066,7 +1286,7 @@ function EditClientModal({
             <select value={formData.plan} onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
               <option value="">No plan</option>
-              {planOptions.map((plan) => <option key={plan.id} value={plan.name}>{plan.name} - ${plan.price}</option>)}
+              {activePlans.map((plan) => <option key={plan.id} value={plan.name}>{plan.name} - ${plan.price}/{plan.period}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1092,6 +1312,78 @@ function EditClientModal({
                 <option value="won_back">Won Back</option>
               </select>
             </div>
+          </div>
+
+          {/* Custom Pricing */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={formData.hasDiscount}
+                onChange={(e) => setFormData({ ...formData, hasDiscount: e.target.checked })}
+                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <div>
+                <span className="text-sm font-medium text-gray-900">Custom pricing</span>
+                <p className="text-xs text-gray-500">Apply a discount or custom price</p>
+              </div>
+            </label>
+            {formData.hasDiscount && (
+              <div className="mt-3 ml-7 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount type</label>
+                  <div className="flex gap-2">
+                    {([
+                      { value: "percentage" as const, label: "%" },
+                      { value: "fixed" as const, label: "$" },
+                      { value: "custom" as const, label: "Custom" },
+                    ]).map((opt) => (
+                      <button key={opt.value} type="button"
+                        onClick={() => setFormData({ ...formData, discountType: opt.value })}
+                        className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
+                          formData.discountType === opt.value
+                            ? "border-primary-500 bg-primary-50 text-primary-700"
+                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                </div>
+                {formData.discountType !== "custom" ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {formData.discountType === "percentage" ? "Discount (%)" : "Discount ($)"}
+                    </label>
+                    <input type="number" min="0" max={formData.discountType === "percentage" ? 100 : basePrice}
+                      value={formData.discountValue || ""}
+                      onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Final price ($)</label>
+                    <input type="number" min="0"
+                      value={formData.customPrice || ""}
+                      onChange={(e) => setFormData({ ...formData, customPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <input type="text" value={formData.discountReason}
+                    onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="e.g. early bird, family" />
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500">List price</p>
+                    <p className="text-sm text-gray-400 line-through">${basePrice}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Final price</p>
+                    <p className="text-lg font-semibold text-green-600">${editCalculatedPrice}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Health Score Display */}

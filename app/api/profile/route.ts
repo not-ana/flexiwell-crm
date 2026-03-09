@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
+    const responseData: Record<string, unknown> = {
       id: dbUser._id.toString(),
       email: dbUser.email,
       name: dbUser.name,
@@ -45,7 +45,21 @@ export async function GET(request: NextRequest) {
       role: dbUser.role,
       createdAt: dbUser.createdAt,
       updatedAt: dbUser.updatedAt,
-    });
+    };
+
+    // For teachers, also fetch bio and specialties from staff collection
+    if (dbUser.role === "teacher") {
+      const staff = await db.collection("staff").findOne(
+        { email: dbUser.email },
+        { projection: { bio: 1, specialties: 1 } }
+      );
+      if (staff) {
+        responseData.bio = staff.bio || "";
+        responseData.specialties = staff.specialties || [];
+      }
+    }
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Get profile error:", error);
     return NextResponse.json(
@@ -125,6 +139,17 @@ export async function PUT(request: NextRequest) {
       { _id: new ObjectId(user.userId) },
       { $set: updateData }
     );
+
+    // For teachers, update bio and specialties in staff collection
+    if (dbUser.role === "teacher" && (body.bio !== undefined || body.specialties !== undefined)) {
+      const staffUpdate: Record<string, unknown> = { updatedAt: new Date() };
+      if (body.bio !== undefined) staffUpdate.bio = body.bio;
+      if (body.specialties !== undefined) staffUpdate.specialties = body.specialties;
+      await db.collection("staff").updateOne(
+        { email: dbUser.email },
+        { $set: staffUpdate }
+      );
+    }
 
     // Fetch updated user
     const updatedUser = await db.collection("users").findOne(

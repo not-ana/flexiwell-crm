@@ -32,7 +32,7 @@ const plans: Plan[] = [
     features: [
       "Up to 200 clients",
       "Advanced scheduling",
-      "WhatsApp integration",
+      "SMS reminders",
       "5 staff members",
       "Reports & analytics",
       "Priority support",

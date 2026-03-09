@@ -169,17 +169,14 @@ export function IntegrationsSettings() {
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
         <DataImportUploader
           platform={config.name}
-          platformLogo={config.logo}
-          platformColor={config.color}
           description={config.description}
-          docsUrl={config.docsUrl}
           templateUrl={config.templateUrl}
           fields={config.fields}
           onImport={handleImport}
           platformSelector={
             <div>
               <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
-                Select Platform
+                Where is your data coming from?
               </label>
               <select
                 id="platform-select"
@@ -191,6 +188,7 @@ export function IntegrationsSettings() {
                 <option value="mindbody">Mindbody</option>
                 <option value="glofox">Glofox</option>
                 <option value="tecnofit">Tecnofit</option>
+                <option value="other">Other Platform / Spreadsheet</option>
               </select>
             </div>
           }

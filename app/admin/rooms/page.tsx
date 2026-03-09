@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, PlusIcon, ChevronIcon } from "@/components/icons";
+import { Badge } from "@/components/ui/Badge";
 
 interface Room {
   id: string;
@@ -38,12 +39,7 @@ const roomColors = [
 
 function StatusBadge({ status }: { status: Room["status"] }) {
   const style = statusStyles[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 }
 
 function RoomCard({

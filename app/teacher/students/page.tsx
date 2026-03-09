@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
+import { Badge } from "@/components/ui/Badge";
 
 interface Student {
   id: string;
@@ -22,6 +23,32 @@ interface Student {
   healthScore?: number;
   daysSinceLastClass?: number;
   lifecycleStage?: "trial" | "active" | "at_risk" | "churned";
+  // Health assessment data (synced from intake form)
+  healthAssessmentId?: string;
+  medicalFlags?: {
+    hasHeartCondition?: boolean;
+    hasHighBloodPressure?: boolean;
+    hasAsthma?: boolean;
+    hasArthritis?: boolean;
+    hasOsteoporosis?: boolean;
+    hasScoliosis?: boolean;
+    hasHernias?: boolean;
+    hasDiabetes?: boolean;
+    isPregnant?: boolean;
+    hasSurgeryHistory?: boolean;
+    hasCurrentPain?: boolean;
+    hasMedications?: boolean;
+    hasAllergies?: boolean;
+  };
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  goals?: string[];
+  physicalRestrictions?: string[];
+  dateOfBirth?: string;
+  gender?: string;
 }
 
 interface Unit {
@@ -39,12 +66,7 @@ const statusStyles = {
 
 function StatusBadge({ status }: { status: Student["status"] }) {
   const style = statusStyles[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 }
 
 // Hormozi: Streak badge for attendance consistency
@@ -362,6 +384,86 @@ function StudentProfileModal({ student, isOpen, onClose }: { student: Student | 
               <p className="font-medium text-primary-600">{student.nextClass}</p>
             </div>
           )}
+
+          {/* Health Assessment Data */}
+          {student.healthAssessmentId && (
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700">Health Info</p>
+
+              {/* Medical flags as badges */}
+              {student.medicalFlags && (() => {
+                const flagLabels: Record<string, string> = {
+                  hasHeartCondition: "Heart Condition",
+                  hasHighBloodPressure: "High Blood Pressure",
+                  hasAsthma: "Asthma",
+                  hasArthritis: "Arthritis",
+                  hasOsteoporosis: "Osteoporosis",
+                  hasScoliosis: "Scoliosis",
+                  hasHernias: "Herniated Disc",
+                  hasDiabetes: "Diabetes",
+                  isPregnant: "Pregnant",
+                  hasSurgeryHistory: "Surgery History",
+                  hasCurrentPain: "Current Pain",
+                  hasMedications: "On Medication",
+                  hasAllergies: "Allergies",
+                };
+                const activeFlags = Object.entries(student.medicalFlags)
+                  .filter(([, value]) => value)
+                  .map(([key]) => flagLabels[key] || key);
+
+                if (activeFlags.length === 0) return (
+                  <p className="text-xs text-green-600">No medical conditions reported</p>
+                );
+
+                return (
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeFlags.map((flag) => (
+                      <span key={flag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                        {flag}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Physical restrictions */}
+              {student.physicalRestrictions && student.physicalRestrictions.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Restrictions</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.physicalRestrictions.map((r) => (
+                      <span key={r} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                        {r.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Goals */}
+              {student.goals && student.goals.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Goals</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.goals.map((g) => (
+                      <span key={g} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        {g.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Emergency contact */}
+              {student.emergencyContact && (
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">Emergency Contact</p>
+                  <p className="text-sm font-medium text-gray-900">{student.emergencyContact.name}</p>
+                  <p className="text-xs text-gray-600">{student.emergencyContact.phone} ({student.emergencyContact.relationship})</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-gray-200">
@@ -375,7 +477,7 @@ function StudentProfileModal({ student, isOpen, onClose }: { student: Student | 
 // Send Message Modal with retention-focused quick messages
 function SendMessageModal({ student, isOpen, onClose }: { student: Student | null; isOpen: boolean; onClose: () => void }) {
   const [message, setMessage] = useState("");
-  const [channel, setChannel] = useState<"whatsapp" | "email" | "sms">("whatsapp");
+  const [channel, setChannel] = useState<"whatsapp" | "email" | "sms">("sms");
 
   if (!isOpen || !student) return null;
 
@@ -413,10 +515,10 @@ function SendMessageModal({ student, isOpen, onClose }: { student: Student | nul
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Channel</label>
             <div className="flex gap-2">
-              {(["whatsapp", "email", "sms"] as const).map((ch) => (
+              {(["sms", "email"] as const).map((ch) => (
                 <button key={ch} onClick={() => setChannel(ch)}
                   className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${channel === ch ? "bg-primary-100 text-primary-700 border-2 border-primary-500" : "bg-gray-50 text-gray-700 border-2 border-transparent hover:bg-gray-100"}`}>
-                  {ch === "whatsapp" ? "WhatsApp" : ch === "email" ? "Email" : "SMS"}
+                  {ch === "email" ? "Email" : "SMS"}
                 </button>
               ))}
             </div>
@@ -504,6 +606,53 @@ export default function TeacherStudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [addStudentError, setAddStudentError] = useState("");
+
+  const handleAddStudent = async (data: { name: string; email: string; phone: string; plan: string; _sendIntake?: boolean; _intakeChannel?: string }) => {
+    setAddLoading(true);
+    setAddStudentError("");
+    try {
+      if (data._sendIntake) {
+        const response = await fetch("/api/clients/send-intake", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            plan: data.plan,
+            channel: data._intakeChannel || "email",
+          }),
+        });
+        if (response.ok) {
+          setShowAddModal(false);
+          fetchStudents();
+        } else {
+          const result = await response.json();
+          setAddStudentError(result.error || "Failed to add student");
+        }
+      } else {
+        const response = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: data.name, email: data.email, phone: data.phone, plan: data.plan, status: "active" }),
+        });
+        if (response.ok) {
+          setShowAddModal(false);
+          fetchStudents();
+        } else {
+          setAddStudentError("Failed to add student");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to add student:", error);
+      setAddStudentError("Failed to add student");
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -546,9 +695,18 @@ export default function TeacherStudentsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Students</h1>
-        <p className="text-sm text-gray-600 mt-1">Manage your students across all locations</p>
+      <div className="mb-6 sm:mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Students</h1>
+          <p className="text-sm text-gray-600 mt-1">Manage your students across all locations</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 text-sm bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 4v16m8-8H4" /></svg>
+          Add
+        </button>
       </div>
 
       {/* Stats with at-risk count */}
@@ -625,6 +783,161 @@ export default function TeacherStudentsPage() {
       {/* Modals */}
       <StudentProfileModal student={selectedStudent} isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
       <SendMessageModal student={selectedStudent} isOpen={showMessageModal} onClose={() => setShowMessageModal(false)} />
+      <AddStudentModal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setAddStudentError(""); }} onSubmit={handleAddStudent} isSubmitting={addLoading} apiError={addStudentError} />
+    </div>
+  );
+}
+
+// ============================================
+// Add Student Modal
+// ============================================
+const addStudentPlans = [
+  { id: "starter", name: "Starter", price: 49, classes: 8 },
+  { id: "growth", name: "Growth", price: 79, classes: 16 },
+  { id: "professional", name: "Professional", price: 149, classes: -1 },
+];
+
+function AddStudentModal({
+  isOpen, onClose, onSubmit, isSubmitting, apiError,
+}: {
+  isOpen: boolean; onClose: () => void;
+  onSubmit: (data: { name: string; email: string; phone: string; plan: string; _sendIntake?: boolean; _intakeChannel?: string }) => Promise<void>;
+  isSubmitting: boolean;
+  apiError?: string;
+}) {
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", plan: "starter" });
+  const [sendIntakeForm, setSendIntakeForm] = useState(true);
+  const [intakeChannel, setIntakeChannel] = useState<"whatsapp" | "email" | "sms">("email");
+  const [formError, setFormError] = useState("");
+
+  const handleSubmit = async () => {
+    setFormError("");
+    if (!formData.name || !formData.email) {
+      setFormError("Please fill in name and email");
+      return;
+    }
+    if (sendIntakeForm && intakeChannel === "sms" && !formData.phone) {
+      setFormError("Phone number is required for SMS");
+      return;
+    }
+    const selectedPlan = addStudentPlans.find((p) => p.id === formData.plan) || addStudentPlans[0];
+    await onSubmit({
+      ...formData,
+      plan: selectedPlan.name,
+      _sendIntake: sendIntakeForm,
+      _intakeChannel: intakeChannel,
+    });
+  };
+
+  if (!isOpen) return null;
+
+  const channelOptions = [
+    { value: "whatsapp" as const, label: "WhatsApp", icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> },
+    { value: "email" as const, label: "Email", icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
+    { value: "sms" as const, label: "SMS", icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="px-5 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Add Student</h2>
+            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          {(formError || apiError) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-700">{formError || apiError}</p>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <input type="text" value={formData.name} onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormError(""); }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+              placeholder="Full name" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                placeholder="email@example.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone {sendIntakeForm && intakeChannel !== "email" ? "*" : ""}
+              </label>
+              <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                placeholder="(555) 123-4567" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Plan *</label>
+            <select value={formData.plan} onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+              {addStudentPlans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} - ${plan.price}/mo ({plan.classes === -1 ? "Unlimited" : `${plan.classes} classes`})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Intake Form Section */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendIntakeForm}
+                onChange={(e) => setSendIntakeForm(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-900">Send intake form</span>
+                <p className="text-xs text-gray-500">Student receives a health assessment link</p>
+              </div>
+            </label>
+
+            {sendIntakeForm && (
+              <div className="mt-3 ml-7">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Send via</label>
+                <div className="flex gap-2">
+                  {channelOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setIntakeChannel(option.value)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
+                        intakeChannel === option.value
+                          ? "border-primary-500 bg-primary-50 text-primary-700"
+                          : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {option.icon} {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="px-5 py-4 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 bg-white">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={isSubmitting}
+            className="px-4 py-2 text-sm bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+            {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {sendIntakeForm ? "Add & Send Form" : "Add Student"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

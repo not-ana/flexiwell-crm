@@ -93,7 +93,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/waitlist/[id] - Delete a waitlist entry
+// DELETE /api/waitlist/[id] - Soft-delete (move to trash)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -110,20 +110,58 @@ export async function DELETE(
 
     const db = await getDatabase();
 
-    const result = await db.collection<WaitlistEntry>("waitlist").deleteOne({
-      _id: new ObjectId(id),
-    });
+    // Check for ?permanent=true to hard-delete from trash
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get("permanent") === "true";
 
-    if (result.deletedCount === 0) {
+    if (permanent) {
+      const result = await db.collection<WaitlistEntry>("waitlist").deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      if (result.deletedCount === 0) {
+        return NextResponse.json(
+          { error: "Waitlist entry not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Waitlist entry permanently deleted",
+      });
+    }
+
+    // Soft-delete: move to "removed" status
+    const result = await db.collection<WaitlistEntry>("waitlist").findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status: "removed",
+          removedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
       return NextResponse.json(
         { error: "Waitlist entry not found" },
         { status: 404 }
       );
     }
 
+    // Auto-cleanup: permanently delete entries removed more than 7 days ago
+    await db.collection<WaitlistEntry>("waitlist").deleteMany({
+      status: "removed",
+      removedAt: { $lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Waitlist entry deleted successfully",
+      message: "Moved to trash. Will be permanently deleted after 7 days.",
+      entry: result,
     });
   } catch (error) {
     console.error("Error deleting waitlist entry:", error);
@@ -222,6 +260,18 @@ export async function PATCH(
         };
         break;
 
+      case "restore":
+        updateOperation = {
+          $set: {
+            status: "waiting",
+            updatedAt: new Date(),
+          },
+          $unset: {
+            removedAt: "",
+          },
+        };
+        break;
+
       default:
         return NextResponse.json(
           { error: "Invalid action" },
@@ -247,42 +297,67 @@ export async function PATCH(
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const confirmUrl = `${baseUrl}/dashboard/classes/book?confirm=${id}`;
 
-      // Send notification via WhatsApp and SMS (no email)
+      // Look up client notification preferences
+      const client = await db.collection("clients").findOne({
+        _id: new ObjectId(result.clientId),
+      });
+      const prefs = client?.preferences?.notifications;
+      const wantsSMS = prefs?.sms !== false; // default true
+      const wantsEmail = prefs?.email !== false; // default true
+
       const notificationData = {
         type: "waitlist_spot_available" as const,
         clientId: result.clientId,
         data: {
           clientId: result.clientId,
-          className: result.preferredClassName || "Aula",
-          date: result.confirmedDate
-            ? new Date(result.confirmedDate).toLocaleDateString("pt-BR")
+          className: result.className || "Class",
+          date: result.createdAt
+            ? new Date(result.createdAt).toLocaleDateString("en-US")
             : "",
           startTime: "",
           confirmUrl,
         },
       };
 
-      const [whatsappResult, smsResult] = await Promise.all([
-        notificationService.send({ ...notificationData, channels: "whatsapp" }),
-        notificationService.send({ ...notificationData, channels: "sms" }),
-      ]);
+      // Send via SMS (primary) and Email (secondary)
+      const smsResult = wantsSMS
+        ? await notificationService.send({ ...notificationData, channels: "sms" })
+        : { success: false, error: "SMS disabled by client", smsSent: false };
 
-      const sent = whatsappResult.success || smsResult.success;
+      const emailResult = wantsEmail
+        ? await notificationService.send({ ...notificationData, channels: "email" })
+        : { success: false, error: "Email disabled by client", emailSent: false };
+
+      const sent = smsResult.success || emailResult.success;
+      const noChannelsEnabled = !wantsSMS && !wantsEmail;
+
+      // Build per-channel status for the frontend
+      const channels: { name: string; sent: boolean; error?: string; disabled?: boolean }[] = [];
+      if (wantsSMS) {
+        channels.push({ name: "sms", sent: !!smsResult.smsSent, error: smsResult.error });
+      } else {
+        channels.push({ name: "sms", sent: false, disabled: true });
+      }
+      if (wantsEmail) {
+        channels.push({ name: "email", sent: !!emailResult.emailSent, error: emailResult.error });
+      } else {
+        channels.push({ name: "email", sent: false, disabled: true });
+      }
 
       // Log waitlist notification record for tracking
       const notificationRecord: Omit<WaitlistNotification, "_id"> = {
         waitlistEntryId: id,
         clientId: result.clientId,
         clientName: result.clientName,
-        classId: result.preferredClassId || "",
-        className: result.preferredClassName || "Aula",
-        classDate: result.confirmedDate || new Date(),
+        classId: result.classId || "",
+        className: result.className || "Class",
+        classDate: result.createdAt || new Date(),
         classTime: "",
         spotsAvailable: 1,
         status: sent ? "sent" : "expired",
         sentAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-        notificationChannel: whatsappResult.whatsappSent ? "whatsapp" : "sms",
+        notificationChannel: smsResult.smsSent ? "sms" : "email",
         createdAt: new Date(),
       };
 
@@ -295,9 +370,11 @@ export async function PATCH(
         entry: result,
         notification: {
           sent,
-          whatsappSent: whatsappResult.whatsappSent || false,
           smsSent: smsResult.smsSent || false,
-          error: whatsappResult.error || smsResult.error,
+          emailSent: emailResult.emailSent || false,
+          channels,
+          noChannelsEnabled,
+          error: smsResult.error || emailResult.error,
         },
       });
     }

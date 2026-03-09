@@ -65,7 +65,7 @@ export class NotificationOrchestrator {
 
     const client = await this.getClient(clientId);
     if (!client) {
-      return { success: false, error: "Cliente não encontrado" };
+      return { success: false, error: "Client not found" };
     }
 
     const enrichedData = this.enrichData(data, client);

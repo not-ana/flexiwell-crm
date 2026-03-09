@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Convite inválido ou já utilizado." },
+        { error: "Invite is invalid or has already been used." },
         { status: 404 }
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Check if token has expired
     if (user.invitationExpires && new Date(user.invitationExpires) < new Date()) {
       return NextResponse.json(
-        { error: "Este convite expirou. Solicite um novo convite." },
+        { error: "This invite has expired. Please request a new invite." },
         { status: 410 }
       );
     }

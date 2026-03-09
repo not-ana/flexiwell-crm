@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { GoogleIcon } from "../icons";
 
-export type AccountRole = "client" | "admin" | "teacher";
+export type AccountRole = "admin" | "teacher";
 export type AddAccountStep = "role" | "credentials";
 
 interface AddAccountModalProps {
@@ -14,14 +14,14 @@ interface AddAccountModalProps {
 
 export function AddAccountModal({ isOpen, onClose, onAddAccount }: AddAccountModalProps) {
   const [step, setStep] = useState<AddAccountStep>("role");
-  const [role, setRole] = useState<AccountRole>("client");
+  const [role, setRole] = useState<AccountRole>("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleReset = () => {
     setStep("role");
-    setRole("client");
+    setRole("admin");
     setEmail("");
     setPassword("");
     setIsLoading(false);
@@ -74,29 +74,7 @@ export function AddAccountModal({ isOpen, onClose, onAddAccount }: AddAccountMod
         {/* Content */}
         <div className="p-4 sm:p-6">
           {step === "role" ? (
-            <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3">
-              {/* Client */}
-              <button
-                type="button"
-                onClick={() => setRole("client")}
-                className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
-                  role === "client"
-                    ? "border-primary-600 bg-primary-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  role === "client" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                }`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <span className={`text-sm font-medium ${role === "client" ? "text-primary-700" : "text-gray-700"}`}>
-                  Client
-                </span>
-              </button>
-
+            <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
               {/* Admin */}
               <button
                 type="button"

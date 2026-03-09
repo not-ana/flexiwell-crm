@@ -10,7 +10,7 @@ import { FormField } from "@/components/ui/FormField";
 // Types
 // ============================================================================
 
-interface Plan {
+export interface Plan {
   id: string;
   name: string;
   price: number;
@@ -60,7 +60,7 @@ const CheckIcon = () => (
 // Constants
 // ============================================================================
 
-const INITIAL_PLANS: Plan[] = [
+export const INITIAL_PLANS: Plan[] = [
   {
     id: "starter",
     name: "Starter",

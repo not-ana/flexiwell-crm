@@ -50,17 +50,12 @@ const conversations = new Map<string, ChatMessage[]>();
 
 // Escalation detection
 const ESCALATION_KEYWORDS = [
-  "falar com gerente",
   "speak to manager",
-  "reclamação",
+  "talk to manager",
   "complaint",
-  "problema urgente",
   "urgent problem",
-  "cancelar conta",
   "cancel account",
-  "reembolso",
   "refund",
-  "insatisfeito",
   "unsatisfied",
 ];
 
@@ -107,10 +102,10 @@ async function getClientContext(clientId: string): Promise<ClientContext | null>
 
     // Map plan type to display name
     const planTypeNames: Record<string, string> = {
-      "monthly": "Plano Mensal",
-      "quarterly": "Plano Trimestral",
-      "annual": "Plano Anual",
-      "drop-in": "Avulso",
+      "monthly": "Monthly Plan",
+      "quarterly": "Quarterly Plan",
+      "annual": "Annual Plan",
+      "drop-in": "Drop-in",
     };
 
     return {

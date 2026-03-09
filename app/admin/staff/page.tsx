@@ -6,6 +6,7 @@ import { useStaff } from "@/hooks/useData";
 import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
 import type { Staff } from "@/lib/api/client";
+import { Badge } from "@/components/ui/Badge";
 
 type StaffRole = "admin" | "teacher";
 type StaffStatus = "active" | "invited" | "inactive";
@@ -39,21 +40,12 @@ function getInitials(name: string): string {
 
 function RoleBadge({ role }: { role: StaffRole }) {
   const style = roleStyles[role] || roleStyles.teacher;
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 }
 
 function StatusBadge({ status }: { status: StaffStatus }) {
   const style = statusStyles[status] || statusStyles.active;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-      {style.label}
-    </span>
-  );
+  return <Badge style={style} />;
 }
 
 function StaffRow({ staff }: {

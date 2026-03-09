@@ -1,6 +1,7 @@
 import { MongoClient, Db } from "mongodb";
 
 const uri = process.env.MONGODB_URI || "";
+const dbName = process.env.MONGODB_DB_NAME || (process.env.NODE_ENV === "production" ? "flexiwell" : "flexiwell-dev");
 const options = {};
 
 let client: MongoClient | null = null;
@@ -34,7 +35,7 @@ export async function getDatabase(): Promise<Db> {
     throw new Error("MongoDB is not configured. Please add MONGODB_URI to your environment variables.");
   }
   const client = await clientPromise;
-  return client.db("flexiwell");
+  return client.db(dbName);
 }
 
 export function isMongoConfigured(): boolean {

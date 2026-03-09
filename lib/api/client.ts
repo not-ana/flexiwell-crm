@@ -213,7 +213,11 @@ export interface ClientPlan {
   remainingClasses: number;
   startDate: Date;
   endDate: Date;
-  price: number;
+  price: number; // Final price (after discount)
+  originalPrice?: number; // List/catalog price before discount
+  discountType?: "percentage" | "fixed" | "custom";
+  discountValue?: number; // % or fixed amount
+  discountReason?: string; // e.g. "early bird", "family", "partner"
 }
 
 export interface ClientHealthScore {
@@ -294,6 +298,7 @@ export interface ClientMetrics {
   avgLTV: number;
   avgLifespanMonths: number;
   monthlyChurnRate: number;
+  previousMonthlyChurnRate: number;
   revenuePerClientPerMonth: number;
   atRiskCount: number;
   churnedThisMonth: number;

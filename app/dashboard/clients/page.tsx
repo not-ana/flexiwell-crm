@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui";
 import {
   PlusIcon,
@@ -38,24 +39,15 @@ function Avatar({ name, initials, avatar }: { name: string; initials: string; av
   );
 }
 
+const clientStatusStyles: Record<Client["status"], { bg: string; text: string; dot: string; label: string }> = {
+  active: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Active" },
+  inactive: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400", label: "Inactive" },
+  pending: { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500", label: "Pending" },
+};
+
 function StatusBadge({ status }: { status: Client["status"] }) {
-  const styles = {
-    active: "bg-green-50 text-green-700 border-green-200",
-    inactive: "bg-gray-50 text-gray-600 border-gray-200",
-    pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  };
-
-  const labels = {
-    active: "Active",
-    inactive: "Inactive",
-    pending: "Pending",
-  };
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status]}`}>
-      {labels[status]}
-    </span>
-  );
+  const style = clientStatusStyles[status];
+  return <Badge style={style} />;
 }
 
 export default function ClientsPage() {

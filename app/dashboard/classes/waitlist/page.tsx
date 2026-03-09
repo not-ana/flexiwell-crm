@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Badge } from "@/components/ui/Badge";
 
 interface WaitlistClass {
   id: string;
@@ -33,34 +34,64 @@ interface JoinSuccess {
   totalInQueue: number;
 }
 
-// Countdown timer hook for notified entries
+// -- Icons (outline, stroke-2, Untitled UI) --
+function ChevronLeftIcon() {
+  return (
+    <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ZapIcon() {
+  return (
+    <svg className="size-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ className = "size-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg className="size-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function FireIcon() {
+  return (
+    <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-2 1-3 .5 1.5 1 2 2 3a3 3 0 01-.38 1.62z" />
+    </svg>
+  );
+}
+
+// -- Countdown Hook --
 function useCountdown(expiresAt: string | undefined) {
   const [timeLeft, setTimeLeft] = useState("");
   const [urgency, setUrgency] = useState<"normal" | "warning" | "critical">("normal");
 
   useEffect(() => {
     if (!expiresAt) return;
-
     const update = () => {
-      const now = Date.now();
-      const expires = new Date(expiresAt).getTime();
-      const diff = expires - now;
-
-      if (diff <= 0) {
-        setTimeLeft("Expired");
-        setUrgency("critical");
-        return;
-      }
-
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-
-      if (minutes < 5) setUrgency("critical");
-      else if (minutes < 15) setUrgency("warning");
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Expired"); setUrgency("critical"); return; }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${m}:${s.toString().padStart(2, "0")}`);
+      if (m < 5) setUrgency("critical");
+      else if (m < 15) setUrgency("warning");
       else setUrgency("normal");
     };
-
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
@@ -71,22 +102,35 @@ function useCountdown(expiresAt: string | undefined) {
 
 function CountdownBadge({ expiresAt }: { expiresAt?: string }) {
   const { timeLeft, urgency } = useCountdown(expiresAt);
-
   if (!expiresAt || !timeLeft) return null;
 
   const colors = {
-    normal: "bg-blue-100 text-blue-700",
-    warning: "bg-yellow-100 text-yellow-700",
-    critical: "bg-red-100 text-red-700 animate-pulse",
+    normal: "bg-blue-50 text-blue-700 ring-blue-700/10",
+    warning: "bg-amber-50 text-amber-700 ring-amber-600/20",
+    critical: "bg-red-50 text-red-700 ring-red-600/10 animate-pulse",
   };
 
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${colors[urgency]}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium tabular-nums ring-1 ring-inset ${colors[urgency]}`}>
       {timeLeft}
     </span>
   );
 }
 
+// -- Status Badge --
+const waitlistStatusStyles: Record<WaitlistEntry["status"], { bg: string; text: string; dot: string; label: string }> = {
+  waiting: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "In queue" },
+  notified: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Spot available!" },
+  confirmed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Confirmed" },
+  expired: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400", label: "Expired" },
+};
+
+function StatusBadge({ status }: { status: WaitlistEntry["status"] }) {
+  const style = waitlistStatusStyles[status];
+  return <Badge style={style} />;
+}
+
+// -- Main Content --
 function WaitlistContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -110,18 +154,15 @@ function WaitlistContent() {
 
       if (classesRes.ok) {
         const classesData = await classesRes.json();
-        const full = classesData.classes.filter(
+        setFullClasses(classesData.classes.filter(
           (c: WaitlistClass) => c.currentEnrollment >= c.maxCapacity
-        );
-        setFullClasses(full);
+        ));
       }
 
       if (waitlistRes.ok) {
         const waitlistData = await waitlistRes.json();
         setMyWaitlist(waitlistData.entries || []);
-        if (waitlistData.waitlistByClass) {
-          setWaitlistCounts(waitlistData.waitlistByClass);
-        }
+        if (waitlistData.waitlistByClass) setWaitlistCounts(waitlistData.waitlistByClass);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -130,9 +171,7 @@ function WaitlistContent() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const joinWaitlist = async (classToJoin: WaitlistClass) => {
     setJoining(classToJoin.id);
@@ -142,10 +181,7 @@ function WaitlistContent() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          classId: classToJoin.id,
-          className: classToJoin.title,
-        }),
+        body: JSON.stringify({ classId: classToJoin.id, className: classToJoin.title }),
       });
 
       if (res.ok) {
@@ -156,14 +192,12 @@ function WaitlistContent() {
           totalInQueue: data.entry.totalInQueue || data.entry.position,
         });
         await fetchData();
-        // Auto-dismiss after 4 seconds
         setTimeout(() => setJoinSuccess(null), 4000);
       } else {
         const data = await res.json();
         setError(data.error || "Failed to join waitlist. Please try again.");
       }
-    } catch (err) {
-      console.error("Error joining waitlist:", err);
+    } catch {
       setError("Connection error. Please check your internet and try again.");
     } finally {
       setJoining(null);
@@ -172,54 +206,24 @@ function WaitlistContent() {
 
   const leaveWaitlist = async (entryId: string) => {
     try {
-      const res = await fetch(`/api/waitlist/${entryId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        await fetchData();
-      }
+      const res = await fetch(`/api/waitlist/${entryId}`, { method: "DELETE" });
+      if (res.ok) await fetchData();
     } catch (err) {
       console.error("Error leaving waitlist:", err);
     }
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
   };
 
-  const isOnWaitlist = (classIdToCheck: string) => {
-    return myWaitlist.some((w) => w.classId === classIdToCheck);
-  };
-
+  const isOnWaitlist = (classIdToCheck: string) => myWaitlist.some((w) => w.classId === classIdToCheck);
   const getQueueCount = (clsId: string) => waitlistCounts[clsId] || 0;
 
-  const getStatusBadge = (status: WaitlistEntry["status"]) => {
-    const styles = {
-      waiting: "bg-yellow-100 text-yellow-700",
-      notified: "bg-green-100 text-green-700",
-      confirmed: "bg-green-100 text-green-700",
-      expired: "bg-gray-100 text-gray-500",
-    };
-    const labels = {
-      waiting: "In queue",
-      notified: "Spot available!",
-      confirmed: "Confirmed",
-      expired: "Expired",
-    };
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
-  };
-
-  // Sort notified entries first (they need urgent action)
   const sortedWaitlist = [...myWaitlist].sort((a, b) => {
     if (a.status === "notified" && b.status !== "notified") return -1;
     if (b.status === "notified" && a.status !== "notified") return 1;
@@ -229,132 +233,124 @@ function WaitlistContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full size-8 border-2 border-gray-200 border-t-primary-600" />
       </div>
     );
   }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      {/* Header - Dream Outcome Framing */}
+      {/* Back + Header */}
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="text-gray-600 hover:text-gray-900 flex items-center gap-2 mb-4"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeftIcon />
           Back
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Never Miss Your Favorite Class</h1>
-        <p className="text-gray-600 mt-1">
-          Be first in line when a spot opens. One tap to join, instant WhatsApp alert when it&apos;s your turn.
+        <h1 className="text-xl font-semibold text-gray-900">Never Miss Your Favorite Class</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Be first in line when a spot opens. One tap to join, instant text alert when it's your turn.
         </p>
       </div>
 
-      {/* How It Works - ABOVE the list (reduce anxiety before CTA) */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl border border-primary-100">
+      {/* How It Works — Untitled UI featured section */}
+      <div className="mb-6 p-4 rounded-xl bg-primary-50 ring-1 ring-inset ring-primary-600/10">
         <div className="flex gap-3">
-          <svg className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <div className="text-sm">
-            <p className="font-semibold text-gray-900">How it works — 3 simple steps</p>
-            <div className="mt-2 grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center mx-auto text-sm font-bold">1</div>
-                <p className="text-gray-700 mt-1 font-medium text-xs">Join with 1 tap</p>
-              </div>
-              <div className="text-center">
-                <div className="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center mx-auto text-sm font-bold">2</div>
-                <p className="text-gray-700 mt-1 font-medium text-xs">Get instant WhatsApp alert</p>
-              </div>
-              <div className="text-center">
-                <div className="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center mx-auto text-sm font-bold">3</div>
-                <p className="text-gray-700 mt-1 font-medium text-xs">Confirm &amp; your spot is secured</p>
-              </div>
+          <div className="size-10 rounded-lg bg-primary-100 flex items-center justify-center shrink-0">
+            <ZapIcon />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">How it works</p>
+            <div className="mt-3 grid grid-cols-3 gap-4">
+              {[
+                { step: "1", text: "Join with 1 tap" },
+                { step: "2", text: "Get an instant text alert" },
+                { step: "3", text: "Confirm & spot is yours" },
+              ].map((item) => (
+                <div key={item.step} className="text-center">
+                  <div className="size-8 rounded-lg bg-white text-primary-700 font-semibold text-sm flex items-center justify-center mx-auto shadow-xs ring-1 ring-gray-200">
+                    {item.step}
+                  </div>
+                  <p className="text-xs font-medium text-gray-700 mt-2">{item.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Success Celebration Toast */}
+      {/* Success Toast */}
       {joinSuccess && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl animate-in slide-in-from-top">
+        <div className="mb-6 p-4 rounded-xl bg-emerald-50 ring-1 ring-inset ring-emerald-600/20">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div className="size-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+              <CheckCircleIcon className="size-5 text-emerald-600" />
             </div>
-            <div>
-              <p className="font-semibold text-green-900">You&apos;re in!</p>
-              <p className="text-sm text-green-700 mt-0.5">
-                Position <span className="font-bold">#{joinSuccess.position}</span> of {joinSuccess.totalInQueue} for <span className="font-medium">{joinSuccess.className}</span>.
-                We&apos;ll notify you on WhatsApp the moment a spot opens.
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-emerald-900">You're in!</p>
+              <p className="text-sm text-gray-600 mt-0.5">
+                Position <span className="font-semibold">#{joinSuccess.position}</span> of {joinSuccess.totalInQueue} for{" "}
+                <span className="font-medium">{joinSuccess.className}</span>.
+                We'll text you the moment a spot opens.
               </p>
             </div>
-            <button onClick={() => setJoinSuccess(null)} className="text-green-400 hover:text-green-600 p-1 shrink-0">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <button onClick={() => setJoinSuccess(null)} className="text-gray-400 hover:text-gray-600 p-1 shrink-0">
+              <XIcon />
             </button>
           </div>
         </div>
       )}
 
-      {/* Error Banner */}
+      {/* Error */}
       {error && (
-        <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-sm text-red-600">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 p-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 ring-1 ring-inset ring-red-600/10 flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 p-1 shrink-0">
+            <XIcon />
           </button>
         </div>
       )}
 
-      {/* My Waitlist Entries - Notified first with countdown */}
+      {/* Your Queues */}
       {sortedWaitlist.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Your Queues
-          </h2>
-          <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Your queues</h2>
+          <div className="space-y-3">
             {sortedWaitlist.map((entry) => (
               <div
                 key={entry.id}
-                className={`rounded-xl border p-4 transition-all ${
+                className={`rounded-xl ring-1 ring-inset p-4 transition-all ${
                   entry.status === "notified"
-                    ? "border-green-300 bg-green-50 shadow-md shadow-green-100"
-                    : "bg-white border-gray-200"
+                    ? "bg-emerald-50/50 ring-emerald-200 shadow-sm"
+                    : "bg-white ring-gray-200"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="font-medium text-gray-900">{entry.className}</h3>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-sm text-gray-500">
+                    <h3 className="text-sm font-semibold text-gray-900">{entry.className}</h3>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-sm text-gray-600">
                         Position #{entry.position}
                         {entry.totalInQueue ? ` of ${entry.totalInQueue}` : ""}
                       </span>
-                      {getStatusBadge(entry.status)}
+                      <StatusBadge status={entry.status} />
                       {entry.status === "notified" && (
                         <CountdownBadge expiresAt={entry.notificationExpiresAt} />
                       )}
                     </div>
                     {entry.status === "notified" && (
-                      <p className="text-xs text-green-700 mt-1.5 font-medium">
+                      <p className="text-xs text-emerald-700 font-medium mt-2">
                         A spot just opened up — confirm now before it goes to the next person!
                       </p>
                     )}
                   </div>
+
                   {entry.status === "notified" ? (
                     <button
                       onClick={() => router.push(`/dashboard/classes/book?confirm=${entry.id}`)}
-                      className="px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-200 shrink-0"
+                      className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-xs shrink-0"
                     >
                       Confirm Spot
                     </button>
@@ -362,13 +358,13 @@ function WaitlistContent() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => { leaveWaitlist(entry.id); setConfirmLeave(null); }}
-                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700"
+                        className="px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 shadow-xs"
                       >
                         Leave
                       </button>
                       <button
                         onClick={() => setConfirmLeave(null)}
-                        className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50"
+                        className="px-3 py-2 bg-white text-gray-700 rounded-lg text-xs font-semibold ring-1 ring-gray-300 shadow-xs hover:bg-gray-50"
                       >
                         Cancel
                       </button>
@@ -379,9 +375,7 @@ function WaitlistContent() {
                       className="text-gray-400 hover:text-red-500 p-2 shrink-0"
                       title="Leave queue"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <XIcon />
                     </button>
                   )}
                 </div>
@@ -391,26 +385,24 @@ function WaitlistContent() {
         </div>
       )}
 
-      {/* Full Classes - With social proof */}
+      {/* Full Classes */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-          Full Classes
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">Full classes</h2>
         {fullClasses.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl">
-            <svg className="w-12 h-12 mx-auto text-green-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-gray-600 font-medium">All classes have availability!</p>
+          <div className="flex flex-col items-center justify-center py-12 rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200">
+            <div className="size-12 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+              <CheckCircleIcon className="size-6 text-emerald-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-900">All classes have availability!</p>
             <button
               onClick={() => router.push("/dashboard/classes/book")}
-              className="mt-3 text-primary-600 hover:text-primary-700 text-sm font-medium"
+              className="mt-3 text-sm font-semibold text-primary-700 hover:text-primary-800"
             >
-              View available classes →
+              View available classes &rarr;
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {fullClasses.map((cls) => {
               const queueCount = getQueueCount(cls.id);
               const isHighDemand = queueCount >= 3;
@@ -418,52 +410,47 @@ function WaitlistContent() {
               return (
                 <div
                   key={cls.id}
-                  className={`bg-white rounded-xl border p-4 ${
-                    classId === cls.id ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-200"
+                  className={`rounded-xl ring-1 ring-inset p-4 bg-white ${
+                    classId === cls.id ? "ring-primary-300 shadow-sm" : "ring-gray-200"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-medium text-gray-900">{cls.title}</h3>
-                        <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-medium">
+                        <h3 className="text-sm font-semibold text-gray-900">{cls.title}</h3>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10">
                           Full
                         </span>
                         {isHighDemand && (
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-2 1-3 .5 1.5 1 2 2 3a3 3 0 01-.38 1.62z" />
-                            </svg>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                            <FireIcon />
                             High demand
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {cls.instructorName} · {formatDate(cls.scheduledDate)} · {cls.startTime}
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        {cls.instructorName} &middot; {formatDate(cls.scheduledDate)} &middot; {cls.startTime}
                       </p>
-                      {/* Social proof - people in queue */}
                       {queueCount > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                           {queueCount} {queueCount === 1 ? "person" : "people"} waiting
                         </p>
                       )}
                     </div>
+
                     {isOnWaitlist(cls.id) ? (
-                      <span className="px-4 py-2 bg-primary-50 text-primary-600 rounded-lg text-sm font-medium border border-primary-200 shrink-0">
+                      <span className="inline-flex items-center px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-50 rounded-lg ring-1 ring-inset ring-primary-600/20 shrink-0">
                         In queue
                       </span>
                     ) : (
                       <button
                         onClick={() => joinWaitlist(cls)}
                         disabled={joining === cls.id}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 shrink-0"
+                        className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs shrink-0"
                       >
                         {joining === cls.id ? (
                           <span className="flex items-center gap-2">
-                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
+                            <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             Joining...
                           </span>
                         ) : (
@@ -482,17 +469,15 @@ function WaitlistContent() {
   );
 }
 
-function LoadingFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-    </div>
-  );
-}
-
 export default function WaitlistPage() {
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full size-8 border-2 border-gray-200 border-t-primary-600" />
+        </div>
+      }
+    >
       <WaitlistContent />
     </Suspense>
   );

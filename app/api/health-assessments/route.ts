@@ -191,6 +191,26 @@ export async function POST(request: NextRequest) {
 
     const result = await db.collection<HealthAssessment>("health_assessments").insertOne(newAssessment);
 
+    // If submitted (not draft), update client status to active
+    if (!isDraft && newAssessment.clientId) {
+      try {
+        await db.collection("clients").updateOne(
+          { _id: new ObjectId(newAssessment.clientId) },
+          {
+            $set: {
+              status: "active",
+              "onboarding.healthAssessmentCompleted": true,
+              "onboarding.healthAssessmentCompletedAt": now,
+              updatedAt: now,
+            },
+          }
+        );
+      } catch {
+        // Non-critical: client status update failed
+        console.error("Failed to update client status after assessment submission");
+      }
+    }
+
     return NextResponse.json({
       success: true,
       assessmentId: result.insertedId,

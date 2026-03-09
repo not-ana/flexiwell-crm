@@ -187,7 +187,7 @@ export async function PATCH(
         return NextResponse.json({
           success: true,
           booking: cancelResult.booking,
-          message: "Agendamento cancelado com sucesso",
+          message: "Booking cancelled successfully",
         });
         break;
 
@@ -209,7 +209,7 @@ export async function PATCH(
         return NextResponse.json({
           success: true,
           booking: completeResult.booking,
-          message: "Presença registrada com sucesso",
+          message: "Attendance recorded successfully",
         });
         break;
 
@@ -231,7 +231,7 @@ export async function PATCH(
         return NextResponse.json({
           success: true,
           booking: noShowResult.booking,
-          message: "Falta registrada",
+          message: "No-show recorded",
         });
         break;
 

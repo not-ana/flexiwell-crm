@@ -25,6 +25,7 @@ export type NotificationType =
   | "welcome"
   | "class_cancelled"
   | "class_rescheduled"
+  | "intake_form"
   | "custom";
 
 interface NotificationResult {
@@ -63,36 +64,36 @@ interface NotificationRecord {
 
 const EMAIL_TEMPLATES = {
   booking_confirmation: (data: Record<string, unknown>) => ({
-    subject: `✅ Aula Confirmada - ${data.className}`,
+    subject: `✅ Class Confirmed - ${data.className}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Aula Confirmada! 🎉</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Class Confirmed! 🎉</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Sua aula foi agendada com sucesso!</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Your class has been booked successfully!</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #7c3aed;">
-            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Aula:</strong> ${data.className}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Data:</strong> ${data.date}</p>
-            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Horário:</strong> ${data.startTime} - ${data.endTime}</p>
-            <p style="margin: 5px 0; color: #64748b;">👩‍🏫 <strong>Instrutor(a):</strong> ${data.instructorName}</p>
-            ${data.roomName ? `<p style="margin: 5px 0; color: #64748b;">🏠 <strong>Sala:</strong> ${data.roomName}</p>` : ""}
+            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Class:</strong> ${data.className}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Date:</strong> ${data.date}</p>
+            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Time:</strong> ${data.startTime} - ${data.endTime}</p>
+            <p style="margin: 5px 0; color: #64748b;">👩‍🏫 <strong>Instructor:</strong> ${data.instructorName}</p>
+            ${data.roomName ? `<p style="margin: 5px 0; color: #64748b;">🏠 <strong>Room:</strong> ${data.roomName}</p>` : ""}
           </div>
 
           <p style="font-size: 14px; color: #64748b;">
-            Lembre-se: cancelamentos devem ser feitos com pelo menos 12 horas de antecedência para reembolso do crédito.
+            Remember: cancellations must be made at least 12 hours in advance for a credit refund.
           </p>
 
           <div style="text-align: center; margin-top: 30px;">
             <a href="${data.dashboardUrl}" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Ver Meus Agendamentos
+              View My Bookings
             </a>
           </div>
 
           <p style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center;">
-            ${data.studioName} • Até logo! 💜
+            ${data.studioName} • See you soon! 💜
           </p>
         </div>
       </div>
@@ -100,36 +101,36 @@ const EMAIL_TEMPLATES = {
   }),
 
   booking_cancellation: (data: Record<string, unknown>) => ({
-    subject: `❌ Aula Cancelada - ${data.className}`,
+    subject: `❌ Booking Cancelled - ${data.className}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #ef4444; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Aula Cancelada</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Booking Cancelled</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Seu agendamento foi cancelado.</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Your booking has been cancelled.</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Aula:</strong> ${data.className}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Data:</strong> ${data.date}</p>
-            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Horário:</strong> ${data.startTime}</p>
-            ${data.reason ? `<p style="margin: 5px 0; color: #64748b;">📝 <strong>Motivo:</strong> ${data.reason}</p>` : ""}
+            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Class:</strong> ${data.className}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Date:</strong> ${data.date}</p>
+            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Time:</strong> ${data.startTime}</p>
+            ${data.reason ? `<p style="margin: 5px 0; color: #64748b;">📝 <strong>Reason:</strong> ${data.reason}</p>` : ""}
           </div>
 
           ${data.creditRefunded ? `
             <p style="font-size: 14px; color: #22c55e; background: #f0fdf4; padding: 10px; border-radius: 8px;">
-              ✅ O crédito foi devolvido ao seu plano.
+              ✅ Credit has been refunded to your plan.
             </p>
           ` : `
             <p style="font-size: 14px; color: #ef4444; background: #fef2f2; padding: 10px; border-radius: 8px;">
-              ⚠️ Cancelamento fora do prazo - crédito não reembolsado.
+              ⚠️ Late cancellation - credit not refunded.
             </p>
           `}
 
           <div style="text-align: center; margin-top: 30px;">
             <a href="${data.bookingUrl}" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Agendar Nova Aula
+              Book Another Class
             </a>
           </div>
         </div>
@@ -138,25 +139,25 @@ const EMAIL_TEMPLATES = {
   }),
 
   booking_reminder: (data: Record<string, unknown>) => ({
-    subject: `⏰ Lembrete: Sua aula é ${data.timeUntil}`,
+    subject: `⏰ Reminder: Your class is ${data.timeUntil}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Lembrete de Aula ⏰</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Class Reminder ⏰</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Sua aula é <strong>${data.timeUntil}</strong>!</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Your class is <strong>${data.timeUntil}</strong>!</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
-            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Aula:</strong> ${data.className}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Data:</strong> ${data.date}</p>
-            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Horário:</strong> ${data.startTime} - ${data.endTime}</p>
-            <p style="margin: 5px 0; color: #64748b;">👩‍🏫 <strong>Instrutor(a):</strong> ${data.instructorName}</p>
+            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Class:</strong> ${data.className}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Date:</strong> ${data.date}</p>
+            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Time:</strong> ${data.startTime} - ${data.endTime}</p>
+            <p style="margin: 5px 0; color: #64748b;">👩‍🏫 <strong>Instructor:</strong> ${data.instructorName}</p>
           </div>
 
           <p style="font-size: 14px; color: #64748b; text-align: center;">
-            Não se esqueça de trazer sua garrafa de água! 💧
+            Don't forget your water bottle! 💧
           </p>
         </div>
       </div>
@@ -164,29 +165,29 @@ const EMAIL_TEMPLATES = {
   }),
 
   waitlist_spot_available: (data: Record<string, unknown>) => ({
-    subject: `🎉 Vaga Liberada! - ${data.className}`,
+    subject: `🎉 Spot Available! - ${data.className}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Vaga Disponível! 🎉</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Spot Available! 🎉</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Uma vaga foi liberada na aula que você estava na lista de espera!</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">A spot just opened up in the class you were waiting for!</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Aula:</strong> ${data.className}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Data:</strong> ${data.date}</p>
-            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Horário:</strong> ${data.startTime}</p>
+            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Class:</strong> ${data.className}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Date:</strong> ${data.date}</p>
+            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Time:</strong> ${data.startTime}</p>
           </div>
 
           <p style="font-size: 14px; color: #ef4444; background: #fef2f2; padding: 12px; border-radius: 8px; text-align: center;">
-            ⏳ Você tem <strong>2 horas</strong> para confirmar sua presença!
+            ⏳ You have <strong>30 minutes</strong> to confirm your spot!
           </p>
 
           <div style="text-align: center; margin-top: 20px;">
             <a href="${data.confirmUrl}" style="background: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-              Confirmar Presença
+              Confirm My Spot
             </a>
           </div>
         </div>
@@ -195,29 +196,29 @@ const EMAIL_TEMPLATES = {
   }),
 
   plan_expiring: (data: Record<string, unknown>) => ({
-    subject: `⚠️ Seu plano expira em ${data.daysUntilExpiry} dias`,
+    subject: `⚠️ Your plan expires in ${data.daysUntilExpiry} days`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Plano Expirando ⚠️</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Plan Expiring ⚠️</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Seu plano <strong>${data.planName}</strong> expira em <strong>${data.daysUntilExpiry} dias</strong>.</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Your plan <strong>${data.planName}</strong> expires in <strong>${data.daysUntilExpiry} days</strong>.</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 5px 0; color: #64748b;">📋 <strong>Plano:</strong> ${data.planName}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Expira em:</strong> ${data.expiryDate}</p>
-            <p style="margin: 5px 0; color: #64748b;">🎯 <strong>Aulas restantes:</strong> ${data.remainingClasses}</p>
+            <p style="margin: 5px 0; color: #64748b;">📋 <strong>Plan:</strong> ${data.planName}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Expires on:</strong> ${data.expiryDate}</p>
+            <p style="margin: 5px 0; color: #64748b;">🎯 <strong>Remaining classes:</strong> ${data.remainingClasses}</p>
           </div>
 
           <p style="font-size: 14px; color: #64748b;">
-            Renove agora e não perca suas aulas favoritas!
+            Renew now so you don't miss your favorite classes!
           </p>
 
           <div style="text-align: center; margin-top: 20px;">
             <a href="${data.renewUrl}" style="background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Renovar Plano
+              Renew Plan
             </a>
           </div>
         </div>
@@ -226,40 +227,40 @@ const EMAIL_TEMPLATES = {
   }),
 
   welcome: (data: Record<string, unknown>) => ({
-    subject: `🎉 Bem-vindo(a) ao ${data.studioName}!`,
+    subject: `🎉 Welcome to ${data.studioName}!`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">Bem-vindo(a)! 🎉</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome! 🎉</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">${data.studioName}</p>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">É com muita alegria que damos as boas-vindas a você!</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">We're thrilled to have you with us!</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #7c3aed; margin-top: 0;">Próximos passos:</h3>
-            <p style="margin: 10px 0; color: #64748b;">1️⃣ Acesse o portal do cliente para ver as aulas disponíveis</p>
-            <p style="margin: 10px 0; color: #64748b;">2️⃣ Agende sua primeira aula</p>
-            <p style="margin: 10px 0; color: #64748b;">3️⃣ Não se esqueça de trazer roupa confortável!</p>
+            <h3 style="color: #7c3aed; margin-top: 0;">Next steps:</h3>
+            <p style="margin: 10px 0; color: #64748b;">1️⃣ Access the client portal to see available classes</p>
+            <p style="margin: 10px 0; color: #64748b;">2️⃣ Book your first class</p>
+            <p style="margin: 10px 0; color: #64748b;">3️⃣ Don't forget to bring comfortable clothes!</p>
           </div>
 
           ${data.planName ? `
             <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0; color: #22c55e;">
-                ✅ Plano ativado: <strong>${data.planName}</strong> - ${data.totalClasses} aulas
+                ✅ Plan activated: <strong>${data.planName}</strong> - ${data.totalClasses} classes
               </p>
             </div>
           ` : ""}
 
           <div style="text-align: center; margin-top: 30px;">
             <a href="${data.dashboardUrl}" style="background: #7c3aed; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-              Acessar Portal
+              Access Portal
             </a>
           </div>
 
           <p style="font-size: 14px; color: #64748b; margin-top: 30px; text-align: center;">
-            Qualquer dúvida, estamos à disposição! 💜
+            If you have any questions, we're here to help! 💜
           </p>
         </div>
       </div>
@@ -267,35 +268,35 @@ const EMAIL_TEMPLATES = {
   }),
 
   class_cancelled: (data: Record<string, unknown>) => ({
-    subject: `⚠️ Aula Cancelada - ${data.className}`,
+    subject: `⚠️ Booking Cancelled - ${data.className}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #ef4444; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Aula Cancelada ⚠️</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Booking Cancelled ⚠️</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Infelizmente a aula abaixo foi cancelada:</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Unfortunately, the following class has been cancelled:</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
-            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Aula:</strong> ${data.className}</p>
-            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Data:</strong> ${data.date}</p>
-            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Horário:</strong> ${data.startTime}</p>
-            ${data.reason ? `<p style="margin: 5px 0; color: #64748b;">📝 <strong>Motivo:</strong> ${data.reason}</p>` : ""}
+            <p style="margin: 5px 0; color: #64748b;">📚 <strong>Class:</strong> ${data.className}</p>
+            <p style="margin: 5px 0; color: #64748b;">📅 <strong>Date:</strong> ${data.date}</p>
+            <p style="margin: 5px 0; color: #64748b;">⏰ <strong>Time:</strong> ${data.startTime}</p>
+            ${data.reason ? `<p style="margin: 5px 0; color: #64748b;">📝 <strong>Reason:</strong> ${data.reason}</p>` : ""}
           </div>
 
           <p style="font-size: 14px; color: #22c55e; background: #f0fdf4; padding: 12px; border-radius: 8px;">
-            ✅ O crédito foi devolvido ao seu plano automaticamente.
+            ✅ Credit has been refunded to your plan automatically.
           </p>
 
           <div style="text-align: center; margin-top: 20px;">
             <a href="${data.bookingUrl}" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Agendar Outra Aula
+              Book Another Class
             </a>
           </div>
 
           <p style="font-size: 14px; color: #64748b; margin-top: 20px; text-align: center;">
-            Pedimos desculpas pelo inconveniente.
+            We apologize for the inconvenience.
           </p>
         </div>
       </div>
@@ -303,26 +304,26 @@ const EMAIL_TEMPLATES = {
   }),
 
   payment_confirmation: (data: Record<string, unknown>) => ({
-    subject: `✅ Pagamento Confirmado - ${data.planName}`,
+    subject: `✅ Payment Confirmed - ${data.planName}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Pagamento Confirmado! ✅</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Payment Confirmed! ✅</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
-          <p style="font-size: 16px; color: #334155;">Seu pagamento foi processado com sucesso!</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Your payment has been processed successfully!</p>
 
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-            <p style="margin: 5px 0; color: #64748b;">📋 <strong>Plano:</strong> ${data.planName}</p>
-            <p style="margin: 5px 0; color: #64748b;">💰 <strong>Valor:</strong> ${data.amount}</p>
-            <p style="margin: 5px 0; color: #64748b;">💳 <strong>Método:</strong> ${data.paymentMethod}</p>
-            <p style="margin: 5px 0; color: #64748b;">🎯 <strong>Aulas creditadas:</strong> ${data.classesAdded}</p>
+            <p style="margin: 5px 0; color: #64748b;">📋 <strong>Plan:</strong> ${data.planName}</p>
+            <p style="margin: 5px 0; color: #64748b;">💰 <strong>Amount:</strong> ${data.amount}</p>
+            <p style="margin: 5px 0; color: #64748b;">💳 <strong>Method:</strong> ${data.paymentMethod}</p>
+            <p style="margin: 5px 0; color: #64748b;">🎯 <strong>Classes added:</strong> ${data.classesAdded}</p>
           </div>
 
           <div style="text-align: center; margin-top: 20px;">
             <a href="${data.dashboardUrl}" style="background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Agendar Aulas
+              Book Classes
             </a>
           </div>
         </div>
@@ -330,15 +331,41 @@ const EMAIL_TEMPLATES = {
     `,
   }),
 
+  intake_form: (data: Record<string, unknown>) => ({
+    subject: `Complete Your Health Assessment - ${data.studioName}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Health Assessment</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">${data.studioName}</p>
+        </div>
+        <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Please complete your health assessment form before your first class. This helps us provide safe, personalized instruction.</p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.formUrl}" style="background: #7c3aed; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+              Complete Health Assessment
+            </a>
+          </div>
+
+          <p style="font-size: 14px; color: #64748b; text-align: center;">
+            This link expires in ${data.expiresInDays} days.
+          </p>
+        </div>
+      </div>
+    `,
+  }),
+
   custom: (data: Record<string, unknown>) => ({
-    subject: data.subject as string || "Mensagem do Studio",
+    subject: data.subject as string || "Message from Studio",
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">${data.studioName}</h1>
         </div>
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-          <p style="font-size: 16px; color: #334155;">Olá <strong>${data.clientName}</strong>,</p>
+          <p style="font-size: 16px; color: #334155;">Hi <strong>${data.clientName}</strong>,</p>
           <div style="font-size: 16px; color: #334155; white-space: pre-wrap;">${data.message}</div>
         </div>
       </div>
@@ -352,74 +379,82 @@ const EMAIL_TEMPLATES = {
 
 const WHATSAPP_TEMPLATES = {
   booking_confirmation: (data: Record<string, unknown>) =>
-    `✅ *Aula Confirmada!*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `📚 Aula: ${data.className}\n` +
-    `📅 Data: ${data.date}\n` +
-    `⏰ Horário: ${data.startTime} - ${data.endTime}\n` +
-    `👩‍🏫 Instrutor(a): ${data.instructorName}\n\n` +
-    `_Cancelamentos: até 12h antes para reembolso._`,
+    `✅ *Class Confirmed!*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `📚 Class: ${data.className}\n` +
+    `📅 Date: ${data.date}\n` +
+    `⏰ Time: ${data.startTime} - ${data.endTime}\n` +
+    `👩‍🏫 Instructor: ${data.instructorName}\n\n` +
+    `_Cancellations: up to 12 hours before for a refund._`,
 
   booking_cancellation: (data: Record<string, unknown>) =>
-    `❌ *Agendamento Cancelado*\n\n` +
-    `Olá ${data.clientName},\n\n` +
-    `📚 Aula: ${data.className}\n` +
-    `📅 Data: ${data.date}\n` +
-    `⏰ Horário: ${data.startTime}\n` +
-    (data.reason ? `📝 Motivo: ${data.reason}\n\n` : "\n") +
-    (data.creditRefunded ? "✅ Crédito devolvido." : "⚠️ Crédito não reembolsado (prazo expirado)."),
+    `❌ *Booking Cancelled*\n\n` +
+    `Hi ${data.clientName},\n\n` +
+    `📚 Class: ${data.className}\n` +
+    `📅 Date: ${data.date}\n` +
+    `⏰ Time: ${data.startTime}\n` +
+    (data.reason ? `📝 Reason: ${data.reason}\n\n` : "\n") +
+    (data.creditRefunded ? "✅ Credit refunded." : "⚠️ Credit not refunded (deadline passed)."),
 
   booking_reminder: (data: Record<string, unknown>) =>
-    `⏰ *Lembrete de Aula*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `Sua aula é *${data.timeUntil}*!\n\n` +
+    `⏰ *Class Reminder*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `Your class is *${data.timeUntil}*!\n\n` +
     `📚 ${data.className}\n` +
     `⏰ ${data.startTime} - ${data.endTime}\n` +
     `👩‍🏫 ${data.instructorName}\n\n` +
-    `💧 Não esqueça sua garrafa de água!`,
+    `💧 Don't forget your water bottle!`,
 
   waitlist_spot_available: (data: Record<string, unknown>) =>
-    `🎉 *Vaga Liberada!*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `Uma vaga foi liberada:\n` +
+    `🎉 *Spot Available!*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `A spot just opened up:\n` +
     `📚 ${data.className}\n` +
     `📅 ${data.date}\n` +
     `⏰ ${data.startTime}\n\n` +
-    `⚠️ *Você tem 2 horas para confirmar!*\n\n` +
-    `Confirme sua presença: ${data.confirmUrl}`,
+    `⚠️ *You have 30 minutes to confirm!*\n\n` +
+    `Confirm your spot: ${data.confirmUrl}`,
 
   plan_expiring: (data: Record<string, unknown>) =>
-    `⚠️ *Plano Expirando*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `Seu plano *${data.planName}* expira em *${data.daysUntilExpiry} dias*.\n\n` +
-    `🎯 Aulas restantes: ${data.remainingClasses}\n\n` +
-    `Renove agora: ${data.renewUrl}`,
+    `⚠️ *Plan Expiring*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `Your plan *${data.planName}* expires in *${data.daysUntilExpiry} days*.\n\n` +
+    `🎯 Remaining classes: ${data.remainingClasses}\n\n` +
+    `Renew now: ${data.renewUrl}`,
 
   welcome: (data: Record<string, unknown>) =>
-    `🎉 *Bem-vindo(a) ao ${data.studioName}!*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `É um prazer ter você conosco! 💜\n\n` +
-    (data.planName ? `✅ Plano ativado: *${data.planName}* - ${data.totalClasses} aulas\n\n` : "") +
-    `Acesse o portal para agendar: ${data.dashboardUrl}`,
+    `🎉 *Welcome to ${data.studioName}!*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `We're thrilled to have you with us! 💜\n\n` +
+    (data.planName ? `✅ Plan activated: *${data.planName}* - ${data.totalClasses} classes\n\n` : "") +
+    `Access the portal to book: ${data.dashboardUrl}`,
 
   class_cancelled: (data: Record<string, unknown>) =>
-    `⚠️ *Aula Cancelada*\n\n` +
-    `Olá ${data.clientName},\n\n` +
-    `A seguinte aula foi cancelada:\n` +
+    `⚠️ *Class Cancelled*\n\n` +
+    `Hi ${data.clientName},\n\n` +
+    `The following class has been cancelled:\n` +
     `📚 ${data.className}\n` +
     `📅 ${data.date}\n` +
     `⏰ ${data.startTime}\n` +
     (data.reason ? `📝 ${data.reason}\n\n` : "\n") +
-    `✅ Crédito devolvido automaticamente.\n\n` +
-    `Agende outra aula: ${data.bookingUrl}`,
+    `✅ Credit refunded automatically.\n\n` +
+    `Book another class: ${data.bookingUrl}`,
 
   payment_confirmation: (data: Record<string, unknown>) =>
-    `✅ *Pagamento Confirmado!*\n\n` +
-    `Olá ${data.clientName}!\n\n` +
-    `📋 Plano: ${data.planName}\n` +
-    `💰 Valor: ${data.amount}\n` +
-    `🎯 Aulas: ${data.classesAdded}\n\n` +
-    `Bora agendar! ${data.dashboardUrl}`,
+    `✅ *Payment Confirmed!*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `📋 Plan: ${data.planName}\n` +
+    `💰 Amount: ${data.amount}\n` +
+    `🎯 Classes: ${data.classesAdded}\n\n` +
+    `Let's book! ${data.dashboardUrl}`,
+
+  intake_form: (data: Record<string, unknown>) =>
+    `📋 *Health Assessment*\n\n` +
+    `Hi ${data.clientName}!\n\n` +
+    `${data.studioName} needs you to complete a health assessment form before your first class.\n\n` +
+    `This helps us provide safe, personalized instruction.\n\n` +
+    `📝 Complete here: ${data.formUrl}\n\n` +
+    `_Link expires in ${data.expiresInDays} days._`,
 
   custom: (data: Record<string, unknown>) =>
     data.message as string,
@@ -442,7 +477,7 @@ export class NotificationService {
 
   // Main send method
   async send(payload: NotificationPayload): Promise<NotificationResult> {
-    const { type, clientId, data, channels = "both" } = payload;
+    const { type, clientId, data, channels = "all" } = payload;
     const db = await getDatabase();
 
     // Get client details
@@ -458,7 +493,7 @@ export class NotificationService {
       });
 
       if (!clientById) {
-        return { success: false, error: "Cliente não encontrado" };
+        return { success: false, error: "Client not found" };
       }
 
       return this.sendToClient(type, clientById, data, channels);
@@ -730,11 +765,18 @@ export class NotificationService {
 
       const message = template(data as Parameters<typeof template>[0]);
 
-      // Format phone to E.164
+      // Format phone to E.164 (US-first)
       const cleaned = phone.replace(/\D/g, "");
-      const formattedPhone = cleaned.length >= 12
-        ? `+${cleaned}`
-        : `+55${cleaned}`;
+      let formattedPhone: string;
+      if (cleaned.startsWith("1") && cleaned.length === 11) {
+        formattedPhone = `+${cleaned}`; // US number with country code
+      } else if (cleaned.length === 10) {
+        formattedPhone = `+1${cleaned}`; // US number without country code
+      } else if (cleaned.length >= 12) {
+        formattedPhone = `+${cleaned}`; // International with country code
+      } else {
+        formattedPhone = `+1${cleaned}`; // Default to US
+      }
 
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
 
@@ -960,11 +1002,29 @@ export class NotificationService {
     });
   }
 
+  async sendIntakeFormLink(
+    clientId: string,
+    formUrl: string,
+    channel: NotificationChannel = "email",
+    expiresInDays: number = 7
+  ): Promise<NotificationResult> {
+    return this.send({
+      type: "intake_form",
+      clientId,
+      data: {
+        clientId,
+        formUrl,
+        expiresInDays,
+      },
+      channels: channel,
+    });
+  }
+
   async sendCustomMessage(
     clientId: string,
     subject: string,
     message: string,
-    channels: NotificationChannel = "both"
+    channels: NotificationChannel = "all"
   ): Promise<NotificationResult> {
     return this.send({
       type: "custom",

@@ -33,7 +33,8 @@ export interface SourcePriorityConfig {
 export interface WaitlistSettings {
   enabled: boolean;
   maxPerClass: number;
-  notifyViaWhatsapp: boolean;
+  notifyViaSMS: boolean;
+  notifyViaEmail: boolean;
   autoConfirmDirect: boolean; // Auto-confirm direct clients
   sourcePriorities: SourcePriorityConfig[];
 }
@@ -49,7 +50,8 @@ export const defaultSourcePriorities: SourcePriorityConfig[] = [
 export const defaultWaitlistSettings: WaitlistSettings = {
   enabled: true,
   maxPerClass: 10,
-  notifyViaWhatsapp: true,
+  notifyViaSMS: true,
+  notifyViaEmail: true,
   autoConfirmDirect: false,
   sourcePriorities: defaultSourcePriorities,
 };
@@ -83,20 +85,15 @@ export function sortByPriority<T extends { source: ClientSource; joinedAt: Date 
 // Notification templates
 export const notificationTemplates = {
   spotAvailable: {
-    whatsapp: `Hi {{clientName}}! A spot opened up in {{className}} ({{date}} at {{time}}).
-
-Want to confirm? Reply YES to secure your spot.
-
-The spot will go to the next person in 30 minutes if not confirmed.`,
+    sms: `Spot open! {{className}} on {{date}} at {{time}}. Confirm in 30min or it goes to the next person. {{confirmUrl}}`,
+    email: `Hi {{clientName}}! A spot opened up in {{className}} ({{date}} at {{time}}). You have 30 minutes to confirm your spot.`,
   },
   confirmed: {
-    whatsapp: `Confirmed! You're in the {{className}} class on {{date}} at {{time}}.
-
-See you there!`,
+    sms: `Confirmed! You're in {{className}} on {{date}} at {{time}}. See you there!`,
+    email: `You're confirmed for {{className}} on {{date}} at {{time}}. See you there!`,
   },
   expired: {
-    whatsapp: `The time to confirm your spot in {{className}} has expired.
-
-You're still on the waitlist and we'll notify you when another spot opens up.`,
+    sms: `Your spot in {{className}} expired. You're still on the waitlist - we'll text you when another opens.`,
+    email: `The time to confirm your spot in {{className}} has expired. You're still on the waitlist and we'll notify you when another spot opens up.`,
   },
 };

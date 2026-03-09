@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
     const [
       totalClients,
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest) {
       recentChurned,
       upgradesThisMonth,
       totalClientsWithPlanChange,
+      previousChurned,
+      activeClientsTwoMonthsAgo,
     ] = await Promise.all([
       // Total clients ever
       db.collection("clients").countDocuments({}),
@@ -94,6 +97,16 @@ export async function GET(request: NextRequest) {
       db.collection("clients").countDocuments({
         upgradeHistory: { $exists: true, $not: { $size: 0 } },
       }),
+      // Previous period churned (60-90 days ago) for churn comparison
+      db.collection("clients").countDocuments({
+        status: "inactive",
+        updatedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      }),
+      // Active clients 60 days ago (for previous churn calc)
+      db.collection("clients").countDocuments({
+        status: "active",
+        createdAt: { $lt: sixtyDaysAgo },
+      }),
     ]);
 
     // Calculate metrics
@@ -122,10 +135,16 @@ export async function GET(request: NextRequest) {
       ? (totalClientsWithPlanChange / totalClients) * 100
       : 0;
 
+    // Previous monthly churn rate
+    const previousMonthlyChurnRate = activeClientsTwoMonthsAgo > 0
+      ? (previousChurned / activeClientsTwoMonthsAgo) * 100
+      : 0;
+
     return NextResponse.json({
       avgLTV: Math.round(avgLTV * 100) / 100,
       avgLifespanMonths: Math.round(avgLifespanMonths * 10) / 10,
       monthlyChurnRate: Math.round(monthlyChurnRate * 10) / 10,
+      previousMonthlyChurnRate: Math.round(previousMonthlyChurnRate * 10) / 10,
       revenuePerClientPerMonth: Math.round(revenuePerClientPerMonth * 100) / 100,
       atRiskCount: atRiskClients,
       churnedThisMonth: recentChurned,

@@ -31,14 +31,6 @@ export async function GET(
       return NextResponse.json({ error: "Invalid or expired link" }, { status: 404 });
     }
 
-    // Check if token is used
-    if (tokenDoc.isUsed) {
-      return NextResponse.json(
-        { error: "This link has already been used" },
-        { status: 410 }
-      );
-    }
-
     // Check if token is expired
     if (new Date() > tokenDoc.expiresAt) {
       return NextResponse.json(
@@ -55,8 +47,15 @@ export async function GET(
     // If no custom config, use default
     const formConfig = existingConfig || getDefaultFormConfig(tokenDoc.establishmentId);
 
-    // Get establishment info for branding (optional)
-    // const establishment = await db.collection("establishments").findOne({ _id: new ObjectId(tokenDoc.establishmentId) });
+    // If token was already used, return existing assessment data for editing
+    let existingAssessment: HealthAssessment | null = null;
+    if (tokenDoc.isUsed && tokenDoc.clientId) {
+      existingAssessment = await db.collection<HealthAssessment>("health_assessments")
+        .findOne(
+          { clientId: tokenDoc.clientId },
+          { sort: { version: -1 } }
+        );
+    }
 
     return NextResponse.json({
       valid: true,
@@ -69,6 +68,8 @@ export async function GET(
         termsText: formConfig.termsText,
       },
       expiresAt: tokenDoc.expiresAt,
+      isEdit: tokenDoc.isUsed,
+      existingData: existingAssessment || undefined,
     });
   } catch (error) {
     console.error("Error validating health assessment token:", error);
@@ -108,13 +109,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid or expired link" }, { status: 404 });
     }
 
-    if (tokenDoc.isUsed) {
-      return NextResponse.json(
-        { error: "This link has already been used" },
-        { status: 410 }
-      );
-    }
-
+    // Allow re-submission if token is used but not expired (edit mode)
     if (new Date() > tokenDoc.expiresAt) {
       return NextResponse.json(
         { error: "This link has expired" },
@@ -285,13 +280,58 @@ export async function POST(
 
     const assessmentResult = await db.collection<HealthAssessment>("health_assessments").insertOne(newAssessment);
 
-    // Mark token as used
-    await db.collection<HealthAssessmentToken>("health_assessment_tokens").updateOne(
-      { token },
+    // Mark token as used (if not already)
+    if (!tokenDoc.isUsed) {
+      await db.collection<HealthAssessmentToken>("health_assessment_tokens").updateOne(
+        { token },
+        {
+          $set: {
+            isUsed: true,
+            usedAt: now,
+            clientId,
+          },
+        }
+      );
+    }
+
+    // Build medical flags summary for quick teacher reference
+    const medicalFlags = {
+      hasHeartCondition: medicalHistory?.hasHeartCondition || false,
+      hasHighBloodPressure: medicalHistory?.hasHighBloodPressure || false,
+      hasAsthma: medicalHistory?.hasAsthma || false,
+      hasArthritis: medicalHistory?.hasArthritis || false,
+      hasOsteoporosis: medicalHistory?.hasOsteoporosis || false,
+      hasScoliosis: medicalHistory?.hasScoliosis || false,
+      hasHernias: medicalHistory?.hasHernias || false,
+      hasDiabetes: medicalHistory?.hasDiabetes || false,
+      isPregnant: medicalHistory?.isPregnant || false,
+      hasSurgeryHistory: medicalHistory?.hasSurgeryHistory || false,
+      hasCurrentPain: hasCurrentPain || false,
+      hasMedications: takingMedications || false,
+      hasAllergies: hasAllergies || false,
+    };
+
+    // Sync health assessment data to client profile
+    const { ObjectId } = await import("mongodb");
+    await db.collection<Client>("clients").updateOne(
+      { _id: new ObjectId(clientId) },
       {
         $set: {
-          isUsed: true,
-          usedAt: now,
+          status: "active",
+          "onboarding.healthAssessmentCompleted": true,
+          "onboarding.healthAssessmentCompletedAt": now,
+          // Sync key fields to client profile
+          healthAssessmentId: assessmentResult.insertedId.toString(),
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          gender,
+          height,
+          weight,
+          occupation,
+          emergencyContact,
+          medicalFlags,
+          goals: goals || [],
+          physicalRestrictions: physicalRestrictions || [],
+          updatedAt: now,
         },
       }
     );

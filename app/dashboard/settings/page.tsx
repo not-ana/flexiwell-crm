@@ -17,10 +17,12 @@ import { ProcessingStep } from "@/components/checkout/steps/ProcessingStep";
 import { CheckoutStepIndicator } from "@/components/checkout/CheckoutStepIndicator";
 import { Check, ArrowRight, ArrowLeft, ShieldCheck, BookOpen, Download, Calendar } from "lucide-react";
 
-type ClientSettingsTab = "profile" | "plans" | "payment-history";
+type ClientSettingsTab = "profile" | "health" | "notifications" | "plans" | "payment-history";
 
 const tabs: { id: ClientSettingsTab; label: string }[] = [
   { id: "profile", label: "Profile" },
+  { id: "health", label: "Health & Safety" },
+  { id: "notifications", label: "Notifications" },
   { id: "plans", label: "Plans" },
   { id: "payment-history", label: "Payment History" },
 ];
@@ -1274,6 +1276,202 @@ function AccountSettings() {
   );
 }
 
+// Health & Safety Settings Component (read-only view)
+function HealthSafetySettings() {
+  const [healthData, setHealthData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHealth() {
+      try {
+        const res = await api.get<any>("/api/profile/health");
+        if (res.data) setHealthData(res.data);
+      } catch {} finally { setLoading(false); }
+    }
+    fetchHealth();
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" /></div>;
+
+  if (!healthData || (!healthData.goals?.length && !healthData.medicalHistory && !healthData.emergencyContact)) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Health & Safety</h2>
+          <p className="text-sm text-gray-600 mt-1">Your health assessment information.</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">No health assessment on file</h3>
+          <p className="text-sm text-gray-500">Your studio may send you an intake form to complete.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Health & Safety</h2>
+        <p className="text-sm text-gray-600 mt-1">Your health assessment information. Contact your studio to request updates.</p>
+      </div>
+
+      {/* Physical Profile */}
+      {(healthData.dateOfBirth || healthData.gender || healthData.height || healthData.weight) && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Physical Profile</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {healthData.dateOfBirth && <div><p className="text-xs text-gray-500">Date of Birth</p><p className="text-sm text-gray-900">{new Date(healthData.dateOfBirth).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p></div>}
+            {healthData.gender && <div><p className="text-xs text-gray-500">Gender</p><p className="text-sm text-gray-900 capitalize">{healthData.gender}</p></div>}
+            {healthData.height && <div><p className="text-xs text-gray-500">Height</p><p className="text-sm text-gray-900">{healthData.height} cm</p></div>}
+            {healthData.weight && <div><p className="text-xs text-gray-500">Weight</p><p className="text-sm text-gray-900">{healthData.weight} kg</p></div>}
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Contact */}
+      {healthData.emergencyContact && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Emergency Contact</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div><p className="text-xs text-gray-500">Name</p><p className="text-sm text-gray-900">{healthData.emergencyContact.name}</p></div>
+            <div><p className="text-xs text-gray-500">Phone</p><p className="text-sm text-gray-900">{healthData.emergencyContact.phone}</p></div>
+            <div><p className="text-xs text-gray-500">Relationship</p><p className="text-sm text-gray-900">{healthData.emergencyContact.relationship}</p></div>
+          </div>
+        </div>
+      )}
+
+      {/* Goals */}
+      {healthData.goals && healthData.goals.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Goals</h3>
+          <div className="flex flex-wrap gap-2">
+            {healthData.goals.map((g: string) => (
+              <span key={g} className="px-3 py-1 bg-primary-50 text-primary-700 text-sm rounded-full">{g}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Medical Conditions */}
+      {healthData.medicalHistory && Object.entries(healthData.medicalHistory).some(([, v]) => v === true) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6">
+          <h3 className="text-sm font-semibold text-red-800 mb-3">Medical Conditions</h3>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(healthData.medicalHistory).filter(([, v]) => v === true).map(([k]) => (
+              <span key={k} className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-full">{k.replace(/^(has|is)/, "").replace(/([A-Z])/g, " $1").trim()}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Physical Restrictions */}
+      {healthData.physicalRestrictions && healthData.physicalRestrictions.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-6">
+          <h3 className="text-sm font-semibold text-amber-800 mb-3">Physical Restrictions</h3>
+          <div className="flex flex-wrap gap-2">
+            {healthData.physicalRestrictions.map((r: string) => (
+              <span key={r} className="px-3 py-1 bg-amber-100 text-amber-700 text-sm rounded-full">{r}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Notification Preferences Component
+function NotificationSettings() {
+  const [prefs, setPrefs] = useState({ email: true, sms: false });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    async function fetchPrefs() {
+      try {
+        const res = await api.get<any>("/api/profile/notifications");
+        if (res.data) setPrefs(res.data);
+      } catch {} finally { setLoading(false); }
+    }
+    fetchPrefs();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSuccess("");
+    try {
+      await api.put("/api/profile/notifications", prefs);
+      setSuccess("Notification preferences saved.");
+    } catch {} finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Notifications</h2>
+        <p className="text-sm text-gray-600 mt-1">Choose how you want to be notified.</p>
+      </div>
+
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-600">{success}</p>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-4">
+        <label className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Email notifications</p>
+            <p className="text-xs text-gray-500">Class reminders, booking confirmations, and studio updates</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={prefs.email}
+            onClick={() => setPrefs({ ...prefs, email: !prefs.email })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${prefs.email ? "bg-primary-600" : "bg-gray-200"}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prefs.email ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </label>
+
+        <label className="flex items-center justify-between py-3">
+          <div>
+            <p className="text-sm font-medium text-gray-900">SMS notifications</p>
+            <p className="text-xs text-gray-500">Text message reminders before your classes</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={prefs.sms}
+            onClick={() => setPrefs({ ...prefs, sms: !prefs.sms })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${prefs.sms ? "bg-primary-600" : "bg-gray-200"}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prefs.sms ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </label>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save preferences"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientSettingsPage() {
   const [activeTab, setActiveTab] = useState<ClientSettingsTab>("profile");
 
@@ -1281,6 +1479,10 @@ export default function ClientSettingsPage() {
     switch (activeTab) {
       case "profile":
         return <ProfileSettings />;
+      case "health":
+        return <HealthSafetySettings />;
+      case "notifications":
+        return <NotificationSettings />;
       case "plans":
         return <PlansSettings />;
       case "payment-history":
@@ -1316,7 +1518,7 @@ export default function ClientSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-4xl">
+        <div>
           {renderTabContent()}
         </div>
       </div>

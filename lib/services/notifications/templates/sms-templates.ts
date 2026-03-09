@@ -6,58 +6,63 @@ type SMSTemplate = (data: NotificationData) => string;
 
 export const SMS_TEMPLATES: Record<string, SMSTemplate> = {
   booking_confirmation: (data) =>
-    `Aula Confirmada!\n` +
+    `Class Confirmed!\n` +
     `${data.className}\n` +
-    `${data.date} as ${data.startTime}\n` +
-    `Instrutor: ${data.instructorName}\n` +
-    `Cancelamentos ate 12h antes.`,
+    `${data.date} at ${data.startTime}\n` +
+    `Instructor: ${data.instructorName}\n` +
+    `Cancel up to 12h before.`,
 
   booking_cancellation: (data) =>
-    `Agendamento Cancelado\n` +
+    `Booking Cancelled\n` +
     `${data.className}\n` +
     `${data.date} - ${data.startTime}\n` +
-    (data.reason ? `Motivo: ${data.reason}\n` : "") +
-    (data.creditRefunded ? "Credito devolvido." : "Credito nao reembolsado."),
+    (data.reason ? `Reason: ${data.reason}\n` : "") +
+    (data.creditRefunded ? "Credit refunded." : "Credit not refunded."),
 
   booking_reminder: (data) =>
-    `Lembrete: Sua aula e ${data.timeUntil}!\n` +
+    `Reminder: Your class is ${data.timeUntil}!\n` +
     `${data.className}\n` +
     `${data.startTime} - ${data.endTime}\n` +
-    `Instrutor: ${data.instructorName}`,
+    `Instructor: ${data.instructorName}`,
 
   waitlist_spot_available: (data) =>
-    `Vaga liberada!\n` +
+    `Spot available!\n` +
     `${data.className}\n` +
     `${data.date} - ${data.startTime}\n` +
-    `Voce tem 2h para confirmar!\n` +
+    `You have 30 min to confirm!\n` +
     `${data.confirmUrl}`,
 
   plan_expiring: (data) =>
-    `Seu plano ${data.planName} expira em ${data.daysUntilExpiry} dias.\n` +
-    `Aulas restantes: ${data.remainingClasses}\n` +
-    `Renove: ${data.renewUrl}`,
+    `Your plan ${data.planName} expires in ${data.daysUntilExpiry} days.\n` +
+    `Remaining classes: ${data.remainingClasses}\n` +
+    `Renew: ${data.renewUrl}`,
 
   welcome: (data) =>
-    `Bem-vindo(a) ao ${data.studioName}!\n` +
-    `Ola ${data.clientName}!\n` +
+    `Welcome to ${data.studioName}!\n` +
+    `Hi ${data.clientName}!\n` +
     (data.planName
-      ? `Plano ativado: ${data.planName} - ${data.totalClasses} aulas\n`
+      ? `Plan activated: ${data.planName} - ${data.totalClasses} classes\n`
       : "") +
-    `Agende: ${data.dashboardUrl}`,
+    `Book now: ${data.dashboardUrl}`,
 
   class_cancelled: (data) =>
-    `Aula Cancelada\n` +
+    `Class Cancelled\n` +
     `${data.className}\n` +
     `${data.date} - ${data.startTime}\n` +
     (data.reason ? `${data.reason}\n` : "") +
-    `Credito devolvido. Agende outra: ${data.bookingUrl}`,
+    `Credit refunded. Book another: ${data.bookingUrl}`,
 
   payment_confirmation: (data) =>
-    `Pagamento Confirmado!\n` +
-    `Plano: ${data.planName}\n` +
-    `Valor: ${data.amount}\n` +
-    `Aulas: ${data.classesAdded}\n` +
-    `Agende: ${data.dashboardUrl}`,
+    `Payment Confirmed!\n` +
+    `Plan: ${data.planName}\n` +
+    `Amount: ${data.amount}\n` +
+    `Classes: ${data.classesAdded}\n` +
+    `Book now: ${data.dashboardUrl}`,
+
+  intake_form: (data) =>
+    `${data.studioName}: Please complete your health assessment.\n` +
+    `${data.formUrl}\n` +
+    `Expires in ${data.expiresInDays} days.`,
 
   custom: (data) => data.message as string,
 };

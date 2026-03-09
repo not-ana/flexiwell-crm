@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronIcon } from "@/components/icons";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/Badge";
 
 // Toast notification helper
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -87,26 +88,16 @@ const defaultStats = {
 };
 
 
+const scheduleStatusStyles: Record<TodaySchedule["status"], { bg: string; text: string; label: string }> = {
+  completed: { bg: "bg-primary-100", text: "text-primary-700", label: "Completed" },
+  "in-progress": { bg: "bg-primary-50", text: "text-primary-600", label: "In Progress" },
+  upcoming: { bg: "bg-gray-100", text: "text-gray-600", label: "Upcoming" },
+  canceled: { bg: "bg-red-100", text: "text-red-700", label: "Canceled" },
+};
+
 function StatusBadge({ status }: { status: TodaySchedule["status"] }) {
-  const styles = {
-    completed: "bg-primary-100 text-primary-700",
-    "in-progress": "bg-primary-50 text-primary-600 animate-pulse",
-    upcoming: "bg-gray-100 text-gray-600",
-    canceled: "bg-red-100 text-red-700",
-  };
-
-  const labels = {
-    completed: "Completed",
-    "in-progress": "In Progress",
-    upcoming: "Upcoming",
-    canceled: "Canceled",
-  };
-
-  return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-      {labels[status]}
-    </span>
-  );
+  const style = scheduleStatusStyles[status];
+  return <Badge style={style} />;
 }
 
 function StudentAvatar({ name, initials }: { name: string; initials: string }) {
@@ -120,18 +111,15 @@ function StudentAvatar({ name, initials }: { name: string; initials: string }) {
   );
 }
 
-function MakeupStatusBadge({ status }: { status: MakeupRequest["status"] }) {
-  const styles = {
-    pending: "bg-yellow-100 text-yellow-700",
-    scheduled: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-  };
+const makeupStatusStyles: Record<MakeupRequest["status"], { bg: string; text: string; label: string }> = {
+  pending: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Pending" },
+  scheduled: { bg: "bg-blue-100", text: "text-blue-700", label: "Scheduled" },
+  completed: { bg: "bg-green-100", text: "text-green-700", label: "Completed" },
+};
 
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
-  );
+function MakeupStatusBadge({ status }: { status: MakeupRequest["status"] }) {
+  const style = makeupStatusStyles[status];
+  return <Badge style={style} />;
 }
 
 export default function TeacherDashboard() {

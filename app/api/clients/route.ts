@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 import { requireRole } from "@/lib/auth";
 import { sanitizeSearchInput } from "@/lib/security";
 import { checkResourceLimit, createPlanErrorResponse } from "@/lib/plans/enforcement";
+import { sendIntakeForm } from "@/lib/services/intake.service";
 
 // GET /api/clients - Get all clients with optional filters
 export async function GET(request: NextRequest) {
@@ -97,6 +98,30 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date();
+
+    // Build plan with optional discount
+    const basePlan = plan || {
+      type: "monthly",
+      totalClasses: 8,
+      usedClasses: 0,
+      remainingClasses: 8,
+      startDate: now,
+      endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+      price: 299,
+    };
+
+    // Calculate final price if discount is provided
+    if (basePlan.discountType && basePlan.discountValue != null && basePlan.discountValue > 0) {
+      const originalPrice = basePlan.originalPrice ?? basePlan.price;
+      basePlan.originalPrice = originalPrice;
+      if (basePlan.discountType === "percentage") {
+        basePlan.price = Math.round(originalPrice * (1 - basePlan.discountValue / 100) * 100) / 100;
+      } else if (basePlan.discountType === "fixed") {
+        basePlan.price = Math.max(0, originalPrice - basePlan.discountValue);
+      }
+      // "custom" type: price is set directly, originalPrice tracks the list price
+    }
+
     const newClient: Client = {
       name,
       email,
@@ -104,15 +129,7 @@ export async function POST(request: NextRequest) {
       whatsappId: body.whatsappId,
       instagramId: body.instagramId,
       avatar: body.avatar,
-      plan: plan || {
-        type: "monthly",
-        totalClasses: 8,
-        usedClasses: 0,
-        remainingClasses: 8,
-        startDate: now,
-        endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
-        price: 299,
-      },
+      plan: basePlan,
       status: "pending",
       preferences: preferences || {
         notifications: {
@@ -127,6 +144,16 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await db.collection<Client>("clients").insertOne(newClient);
+
+    // Auto-send health assessment intake form (async, don't block response)
+    sendIntakeForm({
+      clientId: result.insertedId.toString(),
+      clientName: name,
+      clientEmail: email,
+      createdBy: user!.userId,
+    }).catch((err) => {
+      console.error("Error auto-sending intake form:", err);
+    });
 
     return NextResponse.json({
       success: true,

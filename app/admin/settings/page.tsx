@@ -4,15 +4,19 @@ import { useState } from "react";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { PlansSettings } from "@/components/settings/PlansSettings";
 import { WaitlistSettings } from "@/components/settings/WaitlistSettings";
+import { NotificationsSettings } from "@/components/settings/NotificationsSettings";
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
+import { IntakeFormSettings } from "@/components/settings/IntakeFormSettings";
 
-type AdminSettingsTab = "general" | "plans" | "waitlist" | "team" | "integrations";
+type AdminSettingsTab = "general" | "plans" | "notifications" | "waitlist" | "intake" | "team" | "integrations";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "plans", label: "Plans" },
+  { id: "notifications", label: "Notifications" },
   { id: "waitlist", label: "Waitlist" },
+  { id: "intake", label: "Intake Form" },
   { id: "team", label: "Staff" },
   { id: "integrations", label: "Import" },
 ];
@@ -26,8 +30,12 @@ export default function AdminSettingsPage() {
         return <GeneralSettings />;
       case "plans":
         return <PlansSettings />;
+      case "notifications":
+        return <NotificationsSettings />;
       case "waitlist":
         return <WaitlistSettings />;
+      case "intake":
+        return <IntakeFormSettings />;
       case "team":
         return <TeamSettings />;
       case "integrations":
@@ -63,7 +71,9 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        {renderTabContent()}
+        <div>
+          {renderTabContent()}
+        </div>
       </div>
     </div>
   );

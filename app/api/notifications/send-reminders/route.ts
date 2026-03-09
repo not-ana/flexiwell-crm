@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
 
     // Time windows for reminders
     const windows = [
-      { hoursAhead: 24, label: "amanhã" },
-      { hoursAhead: 2, label: "em 2 horas" },
+      { hoursAhead: 24, label: "tomorrow" },
+      { hoursAhead: 2, label: "in 2 hours" },
     ];
 
     const results = {

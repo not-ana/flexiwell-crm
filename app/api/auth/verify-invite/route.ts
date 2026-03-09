@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { valid: false, error: "Convite inválido ou já utilizado." },
+        { valid: false, error: "Invite is invalid or has already been used." },
         { status: 404 }
       );
     }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Check if token has expired
     if (user.invitationExpires && new Date(user.invitationExpires) < new Date()) {
       return NextResponse.json(
-        { valid: false, error: "Este convite expirou. Solicite um novo convite." },
+        { valid: false, error: "This invite has expired. Please request a new invite." },
         { status: 410 }
       );
     }
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error verifying invite:", error);
     return NextResponse.json(
-      { valid: false, error: "Erro ao verificar convite." },
+      { valid: false, error: "Error verifying invite." },
       { status: 500 }
     );
   }

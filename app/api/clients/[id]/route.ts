@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Client } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
+import { sendIntakeForm } from "@/lib/services/intake.service";
 
 // GET /api/clients/[id] - Get a single client
 export async function GET(
@@ -220,6 +221,18 @@ export async function PATCH(
         { error: "Client not found" },
         { status: 404 }
       );
+    }
+
+    // Auto-send intake form when client is approved
+    if (action === "approve" && result.email) {
+      sendIntakeForm({
+        clientId: id,
+        clientName: result.name,
+        clientEmail: result.email,
+        createdBy: body.approvedBy || "",
+      }).catch((err) => {
+        console.error("Error auto-sending intake form on approval:", err);
+      });
     }
 
     return NextResponse.json({

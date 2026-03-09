@@ -345,7 +345,7 @@ function CheckoutSuccessContent() {
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <span className="text-sm text-gray-700">
-                    Join our WhatsApp community
+                    You'll receive SMS reminders for your classes
                   </span>
                 </div>
               </div>

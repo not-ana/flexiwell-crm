@@ -566,7 +566,7 @@ function RequestModal({ type, event, onClose, onSubmit }: { type: RequestType; e
           </h3>
           <p className="text-gray-600">
             {needsPreferences
-              ? "We'll notify you via WhatsApp as soon as a matching spot opens."
+              ? "We'll text you as soon as a matching spot opens."
               : "We'll get back to you soon."}
           </p>
           {needsPreferences && (
@@ -932,7 +932,7 @@ function WaitlistBanner({ entries, onConfirm, onBrowse }: { entries: WaitlistEnt
       </div>
       {active.length === 0 ? (
         <p className="text-xs text-gray-500">
-          When a class is full, join the waitlist and we&apos;ll WhatsApp you the moment a spot opens.
+          When a class is full, join the waitlist and we&apos;ll text you the moment a spot opens.
         </p>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1 mt-1">

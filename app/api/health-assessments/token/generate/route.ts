@@ -6,7 +6,7 @@ import { generateSecureToken } from "@/lib/security";
 
 // POST /api/health-assessments/token/generate - Generate a public access token
 export async function POST(request: NextRequest) {
-  const { user, error } = requireRole(request, ["admin"]);
+  const { user, error } = requireRole(request, ["admin", "teacher"]);
   if (error) return error;
 
   try {

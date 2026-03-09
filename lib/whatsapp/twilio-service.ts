@@ -78,7 +78,7 @@ export class TwilioWhatsAppService {
       content.action.buttons.forEach((btn: { type: "reply"; reply: { id: string; title: string } }, index: number) => {
         messageBody += `${index + 1}. ${btn.reply.title}\n`;
       });
-      messageBody += "\nResponda com o número da opção desejada.";
+      messageBody += "\nReply with the option number.";
     }
 
     if (content.footer?.text) {

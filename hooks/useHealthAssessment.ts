@@ -298,6 +298,8 @@ export function usePublicHealthAssessment(token: string | null) {
   const [establishmentId, setEstablishmentId] = useState<string | undefined>();
   const [formConfig, setFormConfig] = useState<Partial<HealthAssessmentFormConfig> | null>(null);
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [isEdit, setIsEdit] = useState(false);
+  const [existingData, setExistingData] = useState<HealthAssessment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -317,6 +319,8 @@ export function usePublicHealthAssessment(token: string | null) {
       establishmentId: string;
       formConfig: Partial<HealthAssessmentFormConfig>;
       expiresAt: string;
+      isEdit?: boolean;
+      existingData?: HealthAssessment;
     }>(`/api/public/health-assessment/${token}`);
 
     if (response.error) {
@@ -329,6 +333,8 @@ export function usePublicHealthAssessment(token: string | null) {
       setEstablishmentId(response.data.establishmentId);
       setFormConfig(response.data.formConfig);
       setExpiresAt(new Date(response.data.expiresAt));
+      setIsEdit(response.data.isEdit || false);
+      setExistingData(response.data.existingData || null);
     }
 
     setIsLoading(false);
@@ -370,6 +376,8 @@ export function usePublicHealthAssessment(token: string | null) {
     establishmentId,
     formConfig,
     expiresAt,
+    isEdit,
+    existingData,
     isLoading,
     error,
     validateToken,

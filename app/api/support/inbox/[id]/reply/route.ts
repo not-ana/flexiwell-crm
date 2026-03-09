@@ -33,7 +33,7 @@ export async function POST(
   const allowedEmails = ["anajulia@flexiwell.net", "ana@flexiwell.net", "admin@flexiwell.net"];
   if (!allowedEmails.includes(user!.email?.toLowerCase() || "")) {
     return NextResponse.json(
-      { error: "Acesso nao autorizado" },
+      { error: "Unauthorized access" },
       { status: 403 }
     );
   }
@@ -44,7 +44,7 @@ export async function POST(
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
-        { error: "Mensagem obrigatoria" },
+        { error: "Message is required" },
         { status: 400 }
       );
     }
@@ -87,7 +87,7 @@ export async function POST(
 
     if (!conversation) {
       return NextResponse.json(
-        { error: "Conversa nao encontrada" },
+        { error: "Conversation not found" },
         { status: 404 }
       );
     }
@@ -127,7 +127,7 @@ export async function POST(
   } catch (err) {
     console.error("Error sending reply:", err);
     return NextResponse.json(
-      { error: "Erro ao enviar resposta" },
+      { error: "Failed to send reply" },
       { status: 500 }
     );
   }

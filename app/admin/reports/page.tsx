@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { StatCard } from "@/components/ui/StatCard";
 import { useCurrency } from "@/hooks/useCurrency";
 
 // Types for API response
@@ -60,34 +61,13 @@ interface ReportsData {
   clients?: ClientMetrics;
 }
 
-function StatCard({ title, value, change, changeType, suffix = "" }: {
-  title: string;
-  value: string | number;
-  change?: number;
-  changeType?: "positive" | "negative";
-  suffix?: string;
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-      <p className="text-xs sm:text-sm font-medium text-gray-500">{title}</p>
-      <div className="flex items-end gap-2 mt-1 sm:mt-2">
-        <p className="text-xl sm:text-3xl font-bold text-gray-900">{value}{suffix}</p>
-        {change !== undefined && change !== 0 && (
-          <span className={`text-xs sm:text-sm font-medium ${changeType === "positive" ? "text-green-600" : "text-red-600"}`}>
-            {changeType === "positive" ? "↑" : "↓"} {Math.abs(change)}%
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function BarChart({ data, height = 200, formatValue }: { data: { label: string; value: number }[]; height?: number; formatValue?: (amount: number) => string }) {
   const maxValue = Math.max(...data.map(d => d.value), 1);
   const barAreaHeight = height - 24;
   const format = formatValue || ((v: number) => v.toLocaleString());
 
-  // Se tem 1-2 meses, mostrar visualização alternativa
+  // If 1-2 months, show alternative view
   if (data.length <= 2) {
     const current = data[data.length - 1];
     const previous = data.length > 1 ? data[data.length - 2] : null;
@@ -133,23 +113,39 @@ function BarChart({ data, height = 200, formatValue }: { data: { label: string; 
     );
   }
 
+  // Y-axis scale
+  const yTicks = 4;
+  const yStep = Math.ceil(maxValue / yTicks);
+  const yLabels = Array.from({ length: yTicks + 1 }, (_, i) => i * yStep).reverse();
+
   return (
     <div style={{ height }}>
-      <div className="flex items-end gap-3" style={{ height: barAreaHeight }}>
-        {data.map((item, index) => {
-          const barHeight = Math.max((item.value / maxValue) * 100, 2);
-          return (
-            <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
-              <div
-                className="w-[60%] bg-primary-500 rounded-t-lg transition-all hover:bg-primary-600 cursor-pointer"
-                style={{ height: `${barHeight}%` }}
-                title={`${item.label}: ${format(item.value)}`}
-              />
-            </div>
-          );
-        })}
+      <div className="flex" style={{ height: barAreaHeight }}>
+        {/* Y-axis labels */}
+        <div className="flex flex-col justify-between pr-2 shrink-0" style={{ height: barAreaHeight }}>
+          {yLabels.map((v, i) => (
+            <span key={i} className="text-[10px] text-gray-400 text-right leading-none whitespace-nowrap">
+              {format(v)}
+            </span>
+          ))}
+        </div>
+        {/* Bars */}
+        <div className="flex-1 flex items-end gap-3 border-l border-b border-gray-200 pl-2">
+          {data.map((item, index) => {
+            const barHeight = Math.max((item.value / (yStep * yTicks)) * 100, 2);
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
+                <span className="text-[10px] sm:text-xs font-medium text-gray-700">{format(item.value)}</span>
+                <div
+                  className="w-[40%] max-w-[48px] bg-primary-500 rounded-t-md transition-all hover:bg-primary-600"
+                  style={{ height: `${barHeight}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="flex gap-3 mt-2">
+      <div className="flex gap-3 mt-2" style={{ marginLeft: '3rem' }}>
         {data.map((item, index) => (
           <span key={index} className="flex-1 text-xs text-gray-500 text-center">{item.label}</span>
         ))}
@@ -184,7 +180,7 @@ function ClientGrowthDisplay({ data }: { data: { month: string; year: number; cl
     );
   }
 
-  // Se tem 1-2 meses, mostrar cards com números grandes
+  // If 1-2 months, show cards with large numbers
   if (data.length <= 2) {
     const current = data[data.length - 1];
     const previous = data.length > 1 ? data[data.length - 2] : null;
@@ -230,7 +226,7 @@ function ClientGrowthDisplay({ data }: { data: { month: string; year: number; cl
     );
   }
 
-  // Se tem 3+ meses, mostrar gráfico de barras normal
+  // If 3+ months, show normal bar chart
   return (
     <BarChart
       data={data.map(m => ({ label: m.month, value: m.clients }))}
@@ -460,27 +456,24 @@ export default function ReportsPage() {
         {activeTab === "overview" && (
           <>
             {/* Overview Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
               <StatCard
-                title="Total Revenue"
+                label="Total Revenue"
                 value={formatCurrency(revenue.total)}
-                change={revenue.growth}
-                changeType={revenue.growth >= 0 ? "positive" : "negative"}
+                change={revenue.growth !== 0 ? { text: `${revenue.growth >= 0 ? "+" : ""}${revenue.growth}%`, type: revenue.growth >= 0 ? "positive" : "negative" } : undefined}
               />
               <StatCard
-                title="Active Clients"
+                label="Active Clients"
                 value={clients.activeClients}
-                change={clients.newThisMonth > 0 ? Math.round((clients.newThisMonth / Math.max(clients.activeClients - clients.newThisMonth, 1)) * 100) : 0}
-                changeType="positive"
+                change={clients.newThisMonth > 0 ? { text: `+${Math.round((clients.newThisMonth / Math.max(clients.activeClients - clients.newThisMonth, 1)) * 100)}%`, type: "positive" } : undefined}
               />
               <StatCard
-                title="Total Classes"
+                label="Total Classes"
                 value={classes.totalClasses}
               />
               <StatCard
-                title="Avg. Attendance"
-                value={classes.avgAttendance}
-                suffix="%"
+                label="Avg. Attendance"
+                value={`${classes.avgAttendance}%`}
               />
             </div>
 
@@ -576,11 +569,11 @@ export default function ReportsPage() {
 
         {activeTab === "classes" && (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Total Classes" value={classes.totalClasses} />
-              <StatCard title="Avg. Attendance" value={classes.avgAttendance} suffix="%" />
-              <StatCard title="Cancel Rate" value={classes.cancelRate} suffix="%" changeType="negative" />
-              <StatCard title="Completed" value={data?.classes?.completedClasses || 0} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <StatCard label="Total Classes" value={classes.totalClasses} />
+              <StatCard label="Avg. Attendance" value={`${classes.avgAttendance}%`} />
+              <StatCard label="Cancel Rate" value={`${classes.cancelRate}%`} />
+              <StatCard label="Completed" value={data?.classes?.completedClasses || 0} />
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -656,10 +649,10 @@ export default function ReportsPage() {
 
         {activeTab === "instructors" && (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Active Instructors" value={instructors.totalInstructors} />
-              <StatCard title="Classes Taught" value={instructors.totalClassesTaught} />
-              <StatCard title="Satisfaction" value={instructors.satisfaction} suffix="%" />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+              <StatCard label="Active Instructors" value={instructors.totalInstructors} />
+              <StatCard label="Classes Taught" value={instructors.totalClassesTaught} />
+              <StatCard label="Satisfaction" value={`${instructors.satisfaction}%`} />
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -743,11 +736,11 @@ export default function ReportsPage() {
 
         {activeTab === "clients" && (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-              <StatCard title="Total Clients" value={clients.totalClients} />
-              <StatCard title="Active Clients" value={clients.activeClients} />
-              <StatCard title="New This Month" value={clients.newThisMonth} change={clients.newThisMonth > 0 ? 25 : 0} changeType="positive" />
-              <StatCard title="Churn Rate" value={clients.churnRate} suffix="%" changeType="negative" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <StatCard label="Total Clients" value={clients.totalClients} />
+              <StatCard label="Active Clients" value={clients.activeClients} />
+              <StatCard label="New This Month" value={clients.newThisMonth} change={clients.newThisMonth > 0 ? { text: `+${clients.newThisMonth}`, type: "positive" } : undefined} />
+              <StatCard label="Churn Rate" value={`${clients.churnRate}%`} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

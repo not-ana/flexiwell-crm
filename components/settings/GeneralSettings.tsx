@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
-import { BusinessType, businessTypes } from "@/lib/config/business-types";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { ReplayTourSection } from "@/components/settings/ReplayTourSection";
 import { api } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { showToast } from "./shared";
 
 export function GeneralSettings() {
   const { user, updateUser } = useAuth();
@@ -26,20 +24,6 @@ export function GeneralSettings() {
     new: "",
     confirm: "",
   });
-  const [settings, setSettings] = useState({
-    studioName: "FlexiWell Studio",
-    email: "contact@flexiwell.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main Street - New York, NY 10001",
-    timezone: "America/New_York",
-    currency: "USD",
-    language: "en-US",
-    businessType: "pilates" as BusinessType,
-  });
-  const [originalSettings, setOriginalSettings] = useState(settings);
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   // Load profile data
@@ -78,38 +62,6 @@ export function GeneralSettings() {
     }
     fetchProfile();
   }, [user]);
-
-  // Load settings from API
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const res = await fetch("/api/settings?section=general");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.general) {
-            const loadedSettings = { ...settings, ...data.general };
-            setSettings(loadedSettings);
-            setOriginalSettings(loadedSettings);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadSettings();
-  }, []);
-
-  // Check for unsaved changes
-  useEffect(() => {
-    const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
-    setHasUnsavedChanges(hasChanges);
-  }, [settings, originalSettings]);
-
-  const updateSetting = (key: string, value: string) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
 
   const handleProfileChange = (field: string, value: string) => {
     setProfileData({ ...profileData, [field]: value });
@@ -172,38 +124,6 @@ export function GeneralSettings() {
       setProfileSaving(false);
     }
   };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "general", data: settings }),
-      });
-      if (res.ok) {
-        setOriginalSettings(settings);
-        showToast("Settings saved successfully");
-      } else {
-        showToast("Failed to save settings", "error");
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-      showToast("Failed to save settings", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const selectedBusinessType = businessTypes[settings.businessType];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -337,27 +257,6 @@ export function GeneralSettings() {
           <Button onClick={handleProfileSave} disabled={profileSaving}>
             {profileSaving ? "Saving..." : "Save profile"}
           </Button>
-        </div>
-      </div>
-
-      {/* Studio Settings Section */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Studio Settings</h2>
-        <p className="text-sm text-gray-600 mt-1">Basic studio information and preferences.</p>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-0 divide-y divide-gray-100">
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm text-gray-500">Business Type</span>
-          <span className="text-sm font-medium text-gray-900">{selectedBusinessType.icon} {selectedBusinessType.name}</span>
-        </div>
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm text-gray-500">Currency</span>
-          <span className="text-sm font-medium text-gray-900">$ USD</span>
-        </div>
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm text-gray-500">Account type</span>
-          <span className="text-sm text-gray-500 capitalize">{user?.role}</span>
         </div>
       </div>
 

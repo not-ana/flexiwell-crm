@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useCurrency } from "@/hooks/useCurrency";
+import { StatCard } from "@/components/ui/StatCard";
 import { api, clientsApi } from "@/lib/api/client";
 import type { ClientMetrics } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,7 +68,7 @@ function computeHealthLevel(stats: DashboardStats, cm: ClientMetrics | null): "g
   if (!isNaN(att) && att > 0) { factors++; score += att >= 80 ? 2 : att >= 60 ? 1 : 0; }
 
   const noShow = parseFloat(stats.noShowRate);
-  if (!isNaN(noShow)) { factors++; score += noShow <= 5 ? 2 : noShow <= 15 ? 1 : 0; }
+  if (!isNaN(noShow)) { factors++; score += noShow <= 10 ? 2 : noShow <= 20 ? 1 : 0; }
 
   if (cm && cm.monthlyChurnRate > 0) { factors++; score += cm.monthlyChurnRate <= 5 ? 2 : cm.monthlyChurnRate <= 10 ? 1 : 0; }
 
@@ -144,10 +145,7 @@ export default function AdminDashboard() {
     async function fetchAiSummary() {
       setAiLoading(true);
       try {
-        const res = await fetch("/api/admin/dashboard/summary", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const response = await api.post<{ summary: string; provider: string | null }>("/api/admin/dashboard/summary", {
             revenue: stats.revenue,
             revenueChange: stats.revenueChange,
             clients: stats.clients,
@@ -161,10 +159,8 @@ export default function AdminDashboard() {
             revenueRecovered: stats.revenueRecovered,
             avgLTV: clientMetrics?.avgLTV ?? "N/A",
             period: selectedPeriod,
-          }),
         });
-        const data = await res.json();
-        if (data.summary) setAiSummary(data.summary);
+        if (response.data?.summary) setAiSummary(response.data.summary);
       } catch {
         setAiSummary("");
       } finally {
@@ -321,100 +317,62 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Value Banner - Waitlist ROI */}
-            {stats.revenueRecovered > 0 && (
-              <div className="mb-6 bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl p-4 sm:p-5 text-white">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm sm:text-base">Waitlist recovered {formatCurrency(stats.revenueRecovered)} this {periodLabel}</p>
-                      <p className="text-xs sm:text-sm text-white/80">{stats.waitlistFills} spots filled out of {stats.waitlistSpotsGenerated} opened ({stats.waitlistFillRate}% fill rate)</p>
-                    </div>
-                  </div>
-                  <Link href="/admin/waitlist" className="text-sm font-medium bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors shrink-0 text-center">
-                    View Waitlist
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* 3 Key Metric Cards */}
-            <div data-onboarding="admin-charts" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              {/* Revenue */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-500">Revenue</p>
-                  <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    revPositive ? "bg-green-100 text-green-700" : revNegative ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {stats.revenueChange !== "+0%" && stats.revenueChange !== "+0.0%"
-                      ? stats.revenueChange
-                      : "—"}
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{formatCurrency(stats.revenue)}</p>
-                <p className="text-xs text-gray-400">
-                  {clientMetrics
+            {/* 4 Key Metric Cards */}
+            <div data-onboarding="admin-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <StatCard
+                label="Revenue"
+                value={formatCurrency(stats.revenue)}
+                change={
+                  stats.revenueChange !== "+0%" && stats.revenueChange !== "+0.0%"
+                    ? { text: stats.revenueChange, type: revPositive ? "positive" : revNegative ? "negative" : "neutral" }
+                    : undefined
+                }
+                subtitle={
+                  clientMetrics
                     ? `Avg LTV: ${formatCurrency(clientMetrics.avgLTV)} · ${formatCurrency(clientMetrics.revenuePerClientPerMonth)}/client/month`
-                    : `This ${periodLabel}`}
-                </p>
-              </div>
-
-              {/* Client Health */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-500">Clients</p>
-                  <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    stats.clientsChange.startsWith("+") && stats.clientsChange !== "+0"
-                      ? "bg-green-100 text-green-700"
-                      : stats.clientsChange.startsWith("-")
-                        ? "bg-red-100 text-red-700"
-                        : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {stats.clientsChange !== "+0" ? `${stats.clientsChange} new` : "—"}
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{stats.clients} <span className="text-sm font-normal text-gray-400">active</span></p>
-                <p className="text-xs text-gray-400">
-                  {clientMetrics && clientMetrics.monthlyChurnRate > 0
-                    ? `Churn: ${clientMetrics.monthlyChurnRate}%${clientMetrics.previousMonthlyChurnRate > 0
-                        ? ` (prev: ${clientMetrics.previousMonthlyChurnRate}%)`
-                        : ""} · ${clientMetrics.atRiskCount} at risk`
-                    : `${stats.clientsChange} new this ${periodLabel}`}
-                </p>
-              </div>
-
-              {/* Operations */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-500">Operations</p>
-                  {attChange !== null && (
-                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      attChange >= 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}>
-                      {attChange >= 0 ? "+" : ""}{attChange.toFixed(1)}% att
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-baseline gap-3 mb-1">
-                  <p className={`text-2xl font-bold ${att >= 80 ? "text-green-600" : att >= 60 ? "text-amber-600" : att > 0 ? "text-red-600" : "text-gray-900"}`}>
-                    {stats.attendance}
-                  </p>
-                  <span className="text-sm text-gray-400">attendance</span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  No-show: {stats.noShowRate}
-                  {noShowChange !== null && (
-                    <span className={noShowChange <= 0 ? "text-green-600" : "text-red-500"}>
-                      {" "}({noShowChange > 0 ? "+" : ""}{noShowChange.toFixed(1)}%)
-                    </span>
-                  )}
-                  {" · "}{stats.classes} classes
-                </p>
-              </div>
+                    : `This ${periodLabel}`
+                }
+                href="/admin/payments"
+                hrefLabel="View Payments"
+              />
+              <StatCard
+                label="Clients"
+                value={`${stats.clients} active`}
+                change={
+                  stats.clientsChange !== "+0"
+                    ? { text: `${stats.clientsChange} new`, type: stats.clientsChange.startsWith("+") ? "positive" : stats.clientsChange.startsWith("-") ? "negative" : "neutral" }
+                    : undefined
+                }
+                subtitle={
+                  clientMetrics && clientMetrics.monthlyChurnRate > 0
+                    ? `Churn: ${clientMetrics.monthlyChurnRate}%${clientMetrics.previousMonthlyChurnRate > 0 ? ` (prev: ${clientMetrics.previousMonthlyChurnRate}%)` : ""} · ${clientMetrics.atRiskCount} at risk`
+                    : `${stats.clientsChange} new this ${periodLabel}`
+                }
+                href="/admin/clients"
+                hrefLabel="View Clients"
+              />
+              <StatCard
+                label="Operations"
+                value={stats.attendance}
+                change={
+                  attChange !== null
+                    ? { text: `${attChange >= 0 ? "+" : ""}${attChange.toFixed(1)}% att`, type: attChange >= 0 ? "positive" : "negative" }
+                    : undefined
+                }
+                subtitle={`No-show: ${stats.noShowRate}${noShowChange !== null ? ` (${noShowChange > 0 ? "+" : ""}${noShowChange.toFixed(1)}%)` : ""} · ${stats.classes} classes`}
+              />
+              <StatCard
+                label="Waitlist"
+                value={`${formatCurrency(stats.revenueRecovered)} recovered`}
+                change={
+                  stats.waitlistFillRate > 0
+                    ? { text: `${stats.waitlistFillRate}% fill`, type: stats.waitlistFillRate >= 50 ? "positive" : stats.waitlistFillRate >= 25 ? "neutral" : "neutral" }
+                    : undefined
+                }
+                subtitle={`${stats.waitlistFills} of ${stats.waitlistSpotsGenerated} spots filled this ${periodLabel}`}
+                href="/admin/waitlist"
+                hrefLabel="View Waitlist"
+              />
             </div>
 
             {/* Revenue Trend Chart */}

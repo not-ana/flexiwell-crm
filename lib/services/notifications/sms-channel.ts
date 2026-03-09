@@ -65,29 +65,28 @@ export class SMSChannel implements INotificationChannel {
   }
 
   /**
-   * Format phone number to E.164 format
+   * Format phone number to E.164 format (US-first)
    */
   private formatPhoneNumber(phone: string): string {
-    // Remove any non-digit characters
     const cleaned = phone.replace(/\D/g, "");
 
-    // Handle Brazilian numbers (11 digits without country code)
-    if (cleaned.length === 11 && cleaned.startsWith("9")) {
-      return `+55${cleaned}`;
+    // US number with country code (1 + 10 digits)
+    if (cleaned.startsWith("1") && cleaned.length === 11) {
+      return `+${cleaned}`;
     }
 
-    // Handle Brazilian numbers with area code (11 digits)
-    if (cleaned.length === 11 && !cleaned.startsWith("55")) {
-      return `+55${cleaned}`;
+    // US number without country code (10 digits)
+    if (cleaned.length === 10) {
+      return `+1${cleaned}`;
     }
 
-    // Handle numbers that already have country code
+    // International number with country code (12+ digits)
     if (cleaned.length >= 12) {
       return `+${cleaned}`;
     }
 
-    // Default: assume it needs country code
-    return `+${cleaned}`;
+    // Default: assume US
+    return `+1${cleaned}`;
   }
 }
 

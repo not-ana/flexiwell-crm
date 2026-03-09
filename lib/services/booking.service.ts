@@ -22,7 +22,7 @@ export interface BookingResult {
 
 export interface ConflictCheckResult {
   hasConflict: boolean;
-  conflictType?: "time" | "duplicate" | "capacity" | "credits" | "plan_expired";
+  conflictType?: "time" | "duplicate" | "capacity" | "credits" | "plan_expired" | "health_assessment";
   conflictDetails?: string;
   existingBooking?: Booking;
 }
@@ -41,16 +41,16 @@ export class BookingService {
       });
 
       if (!classDoc) {
-        return { success: false, error: "Aula não encontrada", errorCode: "CLASS_NOT_FOUND" };
+        return { success: false, error: "Class not found", errorCode: "CLASS_NOT_FOUND" };
       }
 
       // 2. Check if class is still open for booking
       if (classDoc.status === "cancelled") {
-        return { success: false, error: "Esta aula foi cancelada", errorCode: "CLASS_CANCELLED" };
+        return { success: false, error: "This class has been cancelled", errorCode: "CLASS_CANCELLED" };
       }
 
       if (classDoc.status === "completed") {
-        return { success: false, error: "Esta aula já foi realizada", errorCode: "CLASS_COMPLETED" };
+        return { success: false, error: "This class has already taken place", errorCode: "CLASS_COMPLETED" };
       }
 
       // 3. Check if class is in the past
@@ -59,7 +59,7 @@ export class BookingService {
       classDateTime.setHours(hours, minutes, 0, 0);
 
       if (classDateTime < new Date()) {
-        return { success: false, error: "Não é possível agendar aulas no passado", errorCode: "CLASS_IN_PAST" };
+        return { success: false, error: "Cannot book classes in the past", errorCode: "CLASS_IN_PAST" };
       }
 
       // 4. Get client details
@@ -68,12 +68,26 @@ export class BookingService {
       });
 
       if (!client) {
-        return { success: false, error: "Cliente não encontrado", errorCode: "CLIENT_NOT_FOUND" };
+        return { success: false, error: "Client not found", errorCode: "CLIENT_NOT_FOUND" };
       }
 
       // 5. Check client status
       if (client.status !== "active") {
-        return { success: false, error: "Cliente inativo. Por favor, regularize sua situação.", errorCode: "CLIENT_INACTIVE" };
+        return { success: false, error: "Inactive client. Please contact the studio.", errorCode: "CLIENT_INACTIVE" };
+      }
+
+      // 5.5. Check health assessment requirement
+      const hasHealthAssessment = await db.collection("health_assessments").findOne({
+        clientId,
+        status: { $in: ["submitted", "reviewed"] },
+      });
+
+      if (!hasHealthAssessment) {
+        return {
+          success: false,
+          error: "Please complete your health assessment before booking. Check your messages for the form link.",
+          errorCode: "HEALTH_ASSESSMENT_REQUIRED",
+        };
       }
 
       // 6. Check for conflicts
@@ -81,7 +95,7 @@ export class BookingService {
       if (conflictCheck.hasConflict) {
         return {
           success: false,
-          error: conflictCheck.conflictDetails || "Conflito detectado",
+          error: conflictCheck.conflictDetails || "Conflict detected",
           errorCode: conflictCheck.conflictType?.toUpperCase()
         };
       }
@@ -90,7 +104,7 @@ export class BookingService {
       if (classDoc.currentEnrollment >= classDoc.maxCapacity) {
         return {
           success: false,
-          error: "Aula lotada. Deseja entrar na lista de espera?",
+          error: "Class is full. Would you like to join the waitlist?",
           errorCode: "CLASS_FULL"
         };
       }
@@ -100,7 +114,7 @@ export class BookingService {
         if (client.plan.remainingClasses <= 0) {
           return {
             success: false,
-            error: "Você não possui aulas disponíveis no seu plano",
+            error: "No available classes in your plan",
             errorCode: "NO_CREDITS"
           };
         }
@@ -108,7 +122,7 @@ export class BookingService {
         if (new Date(client.plan.endDate) < new Date()) {
           return {
             success: false,
-            error: "Seu plano expirou. Por favor, renove para continuar agendando.",
+            error: "Your plan has expired. Please renew to continue booking.",
             errorCode: "PLAN_EXPIRED"
           };
         }
@@ -188,7 +202,7 @@ export class BookingService {
 
     } catch (error) {
       console.error("Error creating booking:", error);
-      return { success: false, error: "Erro ao criar agendamento", errorCode: "INTERNAL_ERROR" };
+      return { success: false, error: "Failed to create booking", errorCode: "INTERNAL_ERROR" };
     }
   }
 
@@ -207,7 +221,7 @@ export class BookingService {
       return {
         hasConflict: true,
         conflictType: "duplicate",
-        conflictDetails: "Você já possui um agendamento para esta aula",
+        conflictDetails: "You already have a booking for this class",
         existingBooking: duplicateBooking,
       };
     }
@@ -235,7 +249,7 @@ export class BookingService {
         return {
           hasConflict: true,
           conflictType: "time",
-          conflictDetails: `Você já possui um agendamento às ${existingBooking.startTime} (${existingBooking.className})`,
+          conflictDetails: `You already have a booking at ${existingBooking.startTime} (${existingBooking.className})`,
           existingBooking,
         };
       }
@@ -269,15 +283,15 @@ export class BookingService {
       });
 
       if (!booking) {
-        return { success: false, error: "Agendamento não encontrado", errorCode: "BOOKING_NOT_FOUND" };
+        return { success: false, error: "Booking not found", errorCode: "BOOKING_NOT_FOUND" };
       }
 
       if (booking.status === "cancelled") {
-        return { success: false, error: "Este agendamento já foi cancelado", errorCode: "ALREADY_CANCELLED" };
+        return { success: false, error: "This booking has already been cancelled", errorCode: "ALREADY_CANCELLED" };
       }
 
       if (booking.status === "completed") {
-        return { success: false, error: "Não é possível cancelar uma aula já realizada", errorCode: "ALREADY_COMPLETED" };
+        return { success: false, error: "Cannot cancel a completed class", errorCode: "ALREADY_COMPLETED" };
       }
 
       // Check cancellation policy (e.g., 12 hours before)
@@ -359,7 +373,7 @@ export class BookingService {
 
     } catch (error) {
       console.error("Error cancelling booking:", error);
-      return { success: false, error: "Erro ao cancelar agendamento", errorCode: "INTERNAL_ERROR" };
+      return { success: false, error: "Failed to cancel booking", errorCode: "INTERNAL_ERROR" };
     }
   }
 
@@ -436,7 +450,7 @@ export class BookingService {
     });
 
     if (!classDoc) {
-      return { success: false, error: "Aula não encontrada" };
+      return { success: false, error: "Class not found" };
     }
 
     const client = await db.collection<Client>("clients").findOne({
@@ -444,13 +458,13 @@ export class BookingService {
     });
 
     if (!client) {
-      return { success: false, error: "Cliente não encontrado" };
+      return { success: false, error: "Client not found" };
     }
 
     // Check if already in waitlist
     const alreadyInWaitlist = classDoc.waitlist?.some(w => w.clientId === clientId);
     if (alreadyInWaitlist) {
-      return { success: false, error: "Você já está na lista de espera desta aula" };
+      return { success: false, error: "You are already on the waitlist for this class" };
     }
 
     // Check if already enrolled
@@ -458,7 +472,7 @@ export class BookingService {
       e => e.clientId === clientId && e.status === "confirmed"
     );
     if (alreadyEnrolled) {
-      return { success: false, error: "Você já está inscrito nesta aula" };
+      return { success: false, error: "You are already enrolled in this class" };
     }
 
     await db.collection<Class>("classes").updateOne(
@@ -531,7 +545,7 @@ export class BookingService {
     });
 
     if (!booking) {
-      return { success: false, error: "Agendamento não encontrado", errorCode: "BOOKING_NOT_FOUND" };
+      return { success: false, error: "Booking not found", errorCode: "BOOKING_NOT_FOUND" };
     }
 
     const newStatus = attended ? "completed" : "no-show";

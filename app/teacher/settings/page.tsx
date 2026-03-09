@@ -57,6 +57,8 @@ function ProfileSettings() {
           phone: string;
           avatar: string | null;
           name: string;
+          bio?: string;
+          specialties?: string[];
         }>("/api/profile");
 
         if (response.data) {
@@ -66,8 +68,8 @@ function ProfileSettings() {
             lastName: data.lastName || "",
             email: data.email || "",
             phone: data.phone || "",
-            bio: "",
-            specialties: [],
+            bio: data.bio || "",
+            specialties: data.specialties || [],
           });
           setAvatar(data.avatar);
           setOriginalAvatar(data.avatar);
@@ -111,6 +113,8 @@ function ProfileSettings() {
         email: string;
         phone: string;
         avatar: string | null;
+        bio?: string;
+        specialties?: string[];
       }>("/api/profile");
 
       if (response.data) {
@@ -119,8 +123,8 @@ function ProfileSettings() {
           lastName: response.data.lastName || "",
           email: response.data.email || "",
           phone: response.data.phone || "",
-          bio: "",
-          specialties: [],
+          bio: response.data.bio || "",
+          specialties: response.data.specialties || [],
         });
         setAvatar(response.data.avatar);
         setOriginalAvatar(response.data.avatar);
@@ -189,10 +193,12 @@ function ProfileSettings() {
         newAvatarUrl = uploadData.url;
       }
 
-      const updateData: Record<string, string | undefined> = {
+      const updateData: Record<string, string | string[] | undefined> = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
+        bio: formData.bio,
+        specialties: formData.specialties,
       };
 
       if (newAvatarUrl) {
@@ -359,6 +365,38 @@ function ProfileSettings() {
             onChange={(e) => handleChange("phone", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+          <textarea
+            value={formData.bio}
+            onChange={(e) => handleChange("bio", e.target.value)}
+            rows={3}
+            placeholder="Tell your students about yourself..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+
+        {/* Specialties */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Specialties</label>
+          <input
+            type="text"
+            value={formData.specialties.join(", ")}
+            onChange={(e) => setFormData({ ...formData, specialties: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+            placeholder="Pilates, Yoga, Stretching..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
+          {formData.specialties.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {formData.specialties.map((s) => (
+                <span key={s} className="px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full">{s}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Password Section - Collapsible */}
@@ -599,7 +637,7 @@ export default function TeacherSettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-4xl">
+        <div>
           {renderTabContent()}
         </div>
       </div>

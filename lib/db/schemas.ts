@@ -52,7 +52,11 @@ export interface Client {
     remainingClasses: number;
     startDate: Date;
     endDate: Date;
-    price: number;
+    price: number; // Final price (after discount)
+    originalPrice?: number; // List/catalog price before discount
+    discountType?: "percentage" | "fixed" | "custom";
+    discountValue?: number; // % or fixed amount
+    discountReason?: string; // e.g. "early bird", "family", "partner"
   };
   status: "active" | "inactive" | "pending";
   // Hormozi lifecycle tracking
@@ -99,6 +103,35 @@ export interface Client {
       lastSyncAt?: Date;
     };
   };
+  // Health assessment data (synced from intake form)
+  healthAssessmentId?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  height?: number;
+  weight?: number;
+  occupation?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  medicalFlags?: {
+    hasHeartCondition?: boolean;
+    hasHighBloodPressure?: boolean;
+    hasAsthma?: boolean;
+    hasArthritis?: boolean;
+    hasOsteoporosis?: boolean;
+    hasScoliosis?: boolean;
+    hasHernias?: boolean;
+    hasDiabetes?: boolean;
+    isPregnant?: boolean;
+    hasSurgeryHistory?: boolean;
+    hasCurrentPain?: boolean;
+    hasMedications?: boolean;
+    hasAllergies?: boolean;
+  };
+  goals?: string[];
+  physicalRestrictions?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -330,25 +363,30 @@ export interface WaitlistEntry {
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
-  // Request details
-  requestType: WaitlistRequestType;
+  // Class info (current schema)
+  classId?: string;
+  className?: string;
+  clientSource?: string;
+  priority?: number;
+  // Legacy request details
+  requestType?: WaitlistRequestType;
   reason?: string;
-  isUrgent: boolean;
-  // Class preferences
-  preferredClassId?: string; // Specific class they want
+  isUrgent?: boolean;
+  // Legacy class preferences
+  preferredClassId?: string;
   preferredClassName?: string;
-  preferredClassTypes?: string[]; // e.g., ["yoga", "pilates"]
+  preferredClassTypes?: string[];
   preferredInstructorIds?: string[];
-  preferredDays?: string[]; // e.g., ["monday", "wednesday"]
+  preferredDays?: string[];
   preferredTimeSlots?: { start: string; end: string }[];
   // Original booking (for reschedules)
   originalBookingId?: string;
   originalClassId?: string;
   originalClassName?: string;
   originalDate?: Date;
-  // Priority calculation
-  priorityScore: number;
-  priorityBreakdown: {
+  // Priority calculation (legacy)
+  priorityScore?: number;
+  priorityBreakdown?: {
     planTypePoints: number;
     waitingTimePoints: number;
     attendancePoints: number;
@@ -363,13 +401,14 @@ export interface WaitlistEntry {
   confirmedClassId?: string;
   confirmedClassName?: string;
   confirmedDate?: Date;
+  confirmedAt?: Date;
   declinedAt?: Date;
   declineReason?: string;
   // Metadata
-  position?: number; // Current position in queue
+  position?: number;
   createdAt: Date;
   updatedAt: Date;
-  expiresAt?: Date; // Auto-expire after X days
+  expiresAt?: Date;
 }
 
 export interface WaitlistNotification {
@@ -502,7 +541,7 @@ export interface StudioSettings {
     emailEnabled: boolean;
     whatsappEnabled: boolean;
     smsEnabled: boolean;
-    // Primary messaging channel: BR = whatsapp only, US = whatsapp or sms
+    // Primary messaging channel: US = sms, BR = whatsapp
     primaryMessagingChannel: "whatsapp" | "sms";
     // Bot settings
     messagingBotEnabled: boolean;

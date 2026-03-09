@@ -8,8 +8,39 @@ import {
   defaultWaitlistSettings,
   defaultSourcePriorities,
   type WaitlistSettings as WaitlistSettingsType,
-  type ClientSource,
 } from "@/lib/config/waitlist";
+
+function Toggle({
+  enabled,
+  onChange,
+  size = "md",
+}: {
+  enabled: boolean;
+  onChange: () => void;
+  size?: "sm" | "md";
+}) {
+  const dims = size === "sm"
+    ? { track: "h-5 w-9", thumb: "h-3.5 w-3.5", on: "translate-x-4", off: "translate-x-0.5" }
+    : { track: "h-6 w-11", thumb: "h-4 w-4", on: "translate-x-6", off: "translate-x-1" };
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      onClick={onChange}
+      className={`relative inline-flex items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${dims.track} ${
+        enabled ? "bg-primary-600" : "bg-gray-200"
+      }`}
+    >
+      <span
+        className={`inline-block rounded-full bg-white shadow-xs transition-transform ${dims.thumb} ${
+          enabled ? dims.on : dims.off
+        }`}
+      />
+    </button>
+  );
+}
 
 export function WaitlistSettings() {
   const [settings, setSettings] = useState<WaitlistSettingsType>(defaultWaitlistSettings);
@@ -40,8 +71,7 @@ export function WaitlistSettings() {
   }, []);
 
   useEffect(() => {
-    const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
-    setHasUnsavedChanges(hasChanges);
+    setHasUnsavedChanges(JSON.stringify(settings) !== JSON.stringify(originalSettings));
   }, [settings, originalSettings]);
 
   const handleSave = async () => {
@@ -71,19 +101,19 @@ export function WaitlistSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full size-8 border-2 border-gray-200 border-t-primary-600" />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Section Header */}
+      <div className="flex items-start justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Waitlist Settings</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Waitlist</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Configure how the waitlist works for your classes
+            Configure how the waitlist works for your classes.
           </p>
         </div>
         <Button
@@ -91,40 +121,28 @@ export function WaitlistSettings() {
           disabled={saving || !hasUnsavedChanges}
           variant={hasUnsavedChanges ? "primary" : "secondary"}
         >
-          {saving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "Saved"}
+          {saving ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
         </Button>
       </div>
 
       {/* General Settings */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">General</h3>
-        <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">General</h3>
+        <div className="rounded-xl bg-white ring-1 ring-gray-200 shadow-xs divide-y divide-gray-200">
           {/* Enable Waitlist */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-6 py-4">
             <div>
-              <p className="font-medium text-gray-900">Enable Waitlist</p>
-              <p className="text-sm text-gray-500">Allow clients to join a waitlist when classes are full</p>
+              <p className="text-sm font-medium text-gray-900">Enable waitlist</p>
+              <p className="text-sm text-gray-600 mt-0.5">Allow clients to join a waitlist when classes are full</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSettings({ ...settings, enabled: !settings.enabled })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.enabled ? "bg-primary-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.enabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+            <Toggle enabled={settings.enabled} onChange={() => setSettings({ ...settings, enabled: !settings.enabled })} />
           </div>
 
           {/* Max per class */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-6 py-4">
             <div>
-              <p className="font-medium text-gray-900">Max Waitlist Size</p>
-              <p className="text-sm text-gray-500">Maximum number of people per class waitlist</p>
+              <p className="text-sm font-medium text-gray-900">Max waitlist size</p>
+              <p className="text-sm text-gray-600 mt-0.5">Maximum number of people per class waitlist</p>
             </div>
             <input
               type="number"
@@ -132,61 +150,49 @@ export function WaitlistSettings() {
               max={50}
               value={settings.maxPerClass}
               onChange={(e) => setSettings({ ...settings, maxPerClass: parseInt(e.target.value) || 10 })}
-              className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center"
+              className="w-20 px-3 py-2 text-sm text-center rounded-lg ring-1 ring-gray-300 shadow-xs focus:ring-2 focus:ring-primary-600 focus:outline-none"
             />
           </div>
 
-          {/* WhatsApp Notifications */}
-          <div className="flex items-center justify-between">
+          {/* SMS */}
+          <div className="flex items-center justify-between px-6 py-4">
             <div>
-              <p className="font-medium text-gray-900">WhatsApp Notifications</p>
-              <p className="text-sm text-gray-500">Notify clients via WhatsApp when a spot opens</p>
+              <p className="text-sm font-medium text-gray-900">SMS notifications</p>
+              <p className="text-sm text-gray-600 mt-0.5">Text clients via SMS when a spot opens (via Twilio)</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSettings({ ...settings, notifyViaWhatsapp: !settings.notifyViaWhatsapp })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.notifyViaWhatsapp ? "bg-primary-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.notifyViaWhatsapp ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+            <Toggle enabled={settings.notifyViaSMS} onChange={() => setSettings({ ...settings, notifyViaSMS: !settings.notifyViaSMS })} />
           </div>
 
-          {/* Auto-confirm Direct Clients */}
-          <div className="flex items-center justify-between">
+          {/* Email */}
+          <div className="flex items-center justify-between px-6 py-4">
             <div>
-              <p className="font-medium text-gray-900">Auto-confirm Direct Clients</p>
-              <p className="text-sm text-gray-500">Automatically confirm direct clients when a spot opens</p>
+              <p className="text-sm font-medium text-gray-900">Email notifications</p>
+              <p className="text-sm text-gray-600 mt-0.5">Send email when a spot opens (as backup)</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSettings({ ...settings, autoConfirmDirect: !settings.autoConfirmDirect })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.autoConfirmDirect ? "bg-primary-600" : "bg-gray-200"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.autoConfirmDirect ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+            <Toggle enabled={settings.notifyViaEmail} onChange={() => setSettings({ ...settings, notifyViaEmail: !settings.notifyViaEmail })} />
+          </div>
+
+          {/* Auto-confirm */}
+          <div className="flex items-center justify-between px-6 py-4">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Auto-confirm direct clients</p>
+              <p className="text-sm text-gray-600 mt-0.5">Automatically confirm direct clients when a spot opens</p>
+            </div>
+            <Toggle enabled={settings.autoConfirmDirect} onChange={() => setSettings({ ...settings, autoConfirmDirect: !settings.autoConfirmDirect })} />
           </div>
         </div>
       </div>
 
       {/* Priority Settings */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Priority by Client Source</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Enable and configure priority points for each client source. Higher points = higher priority.
-        </p>
-        <div className="space-y-3">
+      <div>
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-gray-900">Priority by client source</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Configure priority points for each client source. Higher points = higher priority in the queue.
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-white ring-1 ring-gray-200 shadow-xs divide-y divide-gray-200">
           {sourcePriorities.map((priority) => {
             const config = settings.sourcePriorities?.find(s => s.source === priority.source)
               || defaultSourcePriorities.find(s => s.source === priority.source)!;
@@ -207,31 +213,14 @@ export function WaitlistSettings() {
             };
 
             return (
-              <div
-                key={priority.source}
-                className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                  isEnabled ? "bg-gray-50" : "bg-gray-100/50"
-                }`}
-              >
+              <div key={priority.source} className="flex items-center justify-between px-6 py-3.5">
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleToggle}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      isEnabled ? "bg-primary-600" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        isEnabled ? "translate-x-5" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
+                  <Toggle size="sm" enabled={isEnabled} onChange={handleToggle} />
                   <div
-                    className={`w-3 h-3 rounded-full transition-opacity ${!isEnabled && "opacity-40"}`}
+                    className={`size-3 rounded-full transition-opacity ${!isEnabled ? "opacity-30" : ""}`}
                     style={{ backgroundColor: priority.color }}
                   />
-                  <span className={`font-medium ${isEnabled ? "text-gray-900" : "text-gray-400"}`}>
+                  <span className={`text-sm font-medium ${isEnabled ? "text-gray-900" : "text-gray-400"}`}>
                     {priority.label}
                   </span>
                 </div>
@@ -243,20 +232,20 @@ export function WaitlistSettings() {
                     value={config?.points ?? priority.points}
                     onChange={(e) => handlePointsChange(parseInt(e.target.value) || 0)}
                     disabled={!isEnabled}
-                    className={`w-16 px-2 py-1 text-sm border border-gray-300 rounded text-center ${
-                      !isEnabled && "opacity-50 cursor-not-allowed"
+                    className={`w-16 px-2 py-1.5 text-sm text-center rounded-lg ring-1 ring-gray-300 shadow-xs focus:ring-2 focus:ring-primary-600 focus:outline-none ${
+                      !isEnabled ? "opacity-40 cursor-not-allowed bg-gray-50" : ""
                     }`}
                   />
-                  <span className={`text-sm ${isEnabled ? "text-gray-500" : "text-gray-400"}`}>
-                    points
+                  <span className={`text-sm ${isEnabled ? "text-gray-600" : "text-gray-400"}`}>
+                    pts
                   </span>
                 </div>
               </div>
             );
           })}
         </div>
-        <p className="text-xs text-gray-400 mt-3">
-          * Points increase by 1 per hour in queue (max +24 points/day)
+        <p className="text-xs text-gray-500 mt-3">
+          Points increase by 1 per hour in queue (max +24 points/day).
         </p>
       </div>
     </div>

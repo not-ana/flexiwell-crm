@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: "Plano adquirido com sucesso!",
+        message: "Plan purchased successfully!",
         redirectUrl: "/dashboard",
       });
     }

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Sidebar, { AccountType } from "./Sidebar";
+import Sidebar, { SidebarVariant } from "./Sidebar";
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
-  variant?: AccountType;
+  variant?: SidebarVariant;
   notificationCount?: number;
 }
 

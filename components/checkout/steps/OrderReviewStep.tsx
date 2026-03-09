@@ -147,7 +147,7 @@ export function OrderReviewStep({
             <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
               <Check className="w-3 h-3 text-white" />
             </div>
-            <span className="text-sm text-primary-800">WhatsApp Support</span>
+            <span className="text-sm text-primary-800">SMS Reminders</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">

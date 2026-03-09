@@ -5,6 +5,7 @@ import { Button } from "@/components/ui";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle, ModalDescription } from "@/components/ui/Modal";
 import { FormField } from "@/components/ui/FormField";
 import { showToast } from "./shared";
+import { Badge } from "@/components/ui/Badge";
 
 // ============================================================================
 // Types
@@ -178,20 +179,15 @@ function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("");
 }
 
-function getRoleBadgeClass(role: TeamMember["role"]): string {
-  switch (role) {
-    case "Admin":
-      return "bg-primary-100 text-primary-700";
-    case "Teacher":
-      return "bg-green-100 text-green-700";
-    default:
-      return "bg-gray-100 text-gray-700";
-  }
-}
+const roleBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {
+  Admin: { bg: "bg-primary-100", text: "text-primary-700", label: "Admin" },
+  Teacher: { bg: "bg-green-100", text: "text-green-700", label: "Teacher" },
+};
 
-function getStatusBadgeClass(status: TeamMember["status"]): string {
-  return status === "Active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700";
-}
+const teamStatusBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {
+  Active: { bg: "bg-green-100", text: "text-green-700", label: "Active" },
+  Invited: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Invited" },
+};
 
 interface MemberActionMenuProps {
   member: TeamMember;
@@ -274,12 +270,8 @@ function MemberCard({ member, onEdit, onResendInvite, onRemove, t }: MemberCardP
         <p className="text-sm font-medium text-gray-900">{member.name}</p>
         <p className="text-sm text-gray-500">{member.email}</p>
       </div>
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(member.role)}`}>
-        {member.role}
-      </span>
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(member.status)}`}>
-        {member.status}
-      </span>
+      <Badge style={roleBadgeStyles[member.role] || { bg: "bg-gray-100", text: "text-gray-700", label: member.role }} />
+      <Badge style={teamStatusBadgeStyles[member.status] || { bg: "bg-gray-100", text: "text-gray-700", label: member.status }} />
       <MemberActionMenu
         member={member}
         onEdit={onEdit}
@@ -507,12 +499,63 @@ export function TeamSettings() {
     loadTeamMembers();
   }, [loadTeamMembers]);
 
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editForm, setEditForm] = useState<InviteFormData>(INITIAL_FORM_DATA);
+  const [editSaving, setEditSaving] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
   const handleEditMember = (member: TeamMember) => {
-    showToast(getMessage("editComingSoon", member.name));
+    setEditingMember(member);
+    setEditForm({ name: member.name, email: member.email, role: member.role });
   };
 
-  const handleResendInvite = (member: TeamMember) => {
-    showToast(getMessage("inviteSent", member.email));
+  const handleEditSave = async () => {
+    if (!editingMember) return;
+    if (!editForm.name || !editForm.email) {
+      showToast(t("fillNameEmail"), "error");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/staff/${editingMember.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          email: editForm.email,
+          role: editForm.role.toLowerCase(),
+        }),
+      });
+      if (res.ok) {
+        showToast(`${editForm.name} updated successfully`);
+        setEditingMember(null);
+        loadTeamMembers();
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to update staff member", "error");
+      }
+    } catch {
+      showToast("Failed to update staff member", "error");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleResendInvite = async (member: TeamMember) => {
+    setResendingId(member.id);
+    try {
+      const res = await fetch(`/api/staff/${member.id}/resend-invite`, { method: "POST" });
+      if (res.ok) {
+        showToast(getMessage("inviteSent", member.email));
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to resend invite", "error");
+      }
+    } catch {
+      showToast("Failed to resend invite", "error");
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const confirmRemoveMember = async () => {
@@ -584,6 +627,48 @@ export function TeamSettings() {
         t={t}
         getMessage={getMessage}
       />
+
+      {/* Edit Member Modal */}
+      <Modal isOpen={!!editingMember} onClose={() => setEditingMember(null)}>
+        <ModalHeader onClose={() => setEditingMember(null)}>
+          <ModalTitle>{t("editMember")}</ModalTitle>
+        </ModalHeader>
+        <ModalBody className="space-y-4">
+          <FormField
+            label={`${t("fullName")} *`}
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            placeholder={t("enterFullName")}
+          />
+          <FormField
+            label={`${t("email")} *`}
+            type="email"
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            placeholder="email@example.com"
+          />
+          <FormField
+            as="select"
+            label={`${t("role")} *`}
+            value={editForm.role}
+            onChange={(e) => setEditForm({ ...editForm, role: e.target.value as TeamMember["role"] })}
+          >
+            {ROLE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </FormField>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setEditingMember(null)} disabled={editSaving}>
+            {t("cancel")}
+          </Button>
+          <Button onClick={handleEditSave} disabled={editSaving}>
+            {editSaving ? "Saving..." : "Save Changes"}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

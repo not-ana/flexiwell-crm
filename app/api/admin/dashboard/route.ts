@@ -81,6 +81,11 @@ export async function GET(request: NextRequest) {
       waitlistFills,
       // No-shows this period
       noShows,
+      // Waitlist spots generated (all statuses)
+      waitlistSpotsGenerated,
+      // Previous period no-shows & bookings for comparison
+      previousNoShows,
+      previousBookings,
     ] = await Promise.all([
       // Total clients
       db.collection("clients").countDocuments(establishmentFilter),
@@ -173,7 +178,59 @@ export async function GET(request: NextRequest) {
         scheduledDate: { $gte: startDate },
         ...establishmentFilter,
       }),
+      // All waitlist entries generated this period
+      db.collection("waitlist").countDocuments({
+        createdAt: { $gte: startDate },
+        ...establishmentFilter,
+      }),
+      // Previous period no-shows
+      db.collection("bookings").countDocuments({
+        status: { $in: ["no-show", "noshow", "no_show"] },
+        scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+        ...establishmentFilter,
+      }),
+      // Previous period total bookings
+      db.collection("bookings").countDocuments({
+        scheduledDate: { $gte: previousStartDate, $lt: previousEndDate },
+        ...establishmentFilter,
+      }),
     ]);
+
+    // Build trend data (last 6 periods)
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const trendPromises = [];
+    for (let i = 5; i >= 0; i--) {
+      let trendStart: Date;
+      let trendEnd: Date;
+      let label: string;
+
+      if (period === "week") {
+        trendStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+        trendEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        label = `W-${i}`;
+      } else if (period === "year") {
+        const y = now.getFullYear() - i;
+        trendStart = new Date(y, 0, 1);
+        trendEnd = new Date(y + 1, 0, 1);
+        label = `${y}`;
+      } else {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        trendStart = d;
+        trendEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        label = monthNames[d.getMonth()];
+      }
+
+      trendPromises.push(
+        Promise.all([
+          db.collection("payments").aggregate([
+            { $match: { status: "completed", createdAt: { $gte: trendStart, $lt: trendEnd }, ...establishmentFilter } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]).toArray(),
+          db.collection("clients").countDocuments({ status: "active", createdAt: { $lte: trendEnd }, ...establishmentFilter }),
+        ]).then(([rev, clients]) => ({ label, revenue: rev[0]?.total || 0, clients }))
+      );
+    }
+    const trend = await Promise.all(trendPromises);
 
     // Calculate changes
     const currentRevenue = totalRevenue[0]?.total || 0;
@@ -228,6 +285,19 @@ export async function GET(request: NextRequest) {
       : 35; // Default avg price estimate
     const revenueRecovered = Math.round(waitlistFills * avgClassPrice);
 
+    // Previous period attendance & no-show rates
+    const previousAttendanceRate = previousBookings > 0
+      ? (((previousBookings - previousNoShows) / previousBookings) * 100).toFixed(1)
+      : "0";
+    const previousNoShowRate = previousBookings > 0
+      ? ((previousNoShows / previousBookings) * 100).toFixed(1)
+      : "0";
+
+    // Waitlist fill rate
+    const waitlistFillRate = waitlistSpotsGenerated > 0
+      ? Math.round((waitlistFills / waitlistSpotsGenerated) * 100)
+      : 0;
+
     return NextResponse.json({
       stats: {
         revenue: currentRevenue,
@@ -237,13 +307,18 @@ export async function GET(request: NextRequest) {
         classes: totalClasses,
         classesChange: `${parseFloat(classesChange) >= 0 ? "+" : ""}${classesChange}%`,
         attendance: `${attendanceRate}%`,
+        previousAttendance: `${previousAttendanceRate}%`,
         noShowRate: `${noShowRate}%`,
+        previousNoShowRate: `${previousNoShowRate}%`,
         noShows,
         waitlistFills,
+        waitlistSpotsGenerated,
+        waitlistFillRate,
         revenueRecovered,
       },
       recentActivity: formattedActivity,
       todayClasses: formattedClasses,
+      trend,
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
