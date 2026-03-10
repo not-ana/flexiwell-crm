@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WhatsAppBotHandler } from "@/lib/whatsapp/bot-handler";
 import { TwilioSMSService, initializeSMSService } from "@/lib/sms/twilio-sms-service";
-import { IncomingMessage } from "@/lib/whatsapp/types";
+import { getDatabase } from "@/lib/db/mongodb";
+import type { IncomingMessage, InteractiveContent } from "@/lib/whatsapp/types";
+import type { EstablishmentWhatsAppCredentials } from "@/lib/db/schemas";
 
 // Initialize Twilio SMS service config
 function getTwilioSMSConfig() {
@@ -11,6 +13,47 @@ function getTwilioSMSConfig() {
     // Use dedicated SMS number or fall back to WhatsApp number
     phoneNumber: process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER || "",
   };
+}
+
+/**
+ * Convert an interactive bot response (with buttons) to plain SMS text
+ */
+function formatResponseForSMS(response: InteractiveContent | { body: string }): string {
+  // Simple text response
+  if (!("type" in response)) {
+    return response.body;
+  }
+
+  // Interactive response - convert to numbered text
+  let message = "";
+
+  if (response.header?.text) {
+    message += `${response.header.text}\n\n`;
+  }
+
+  message += response.body.text;
+
+  // Convert buttons to numbered options
+  const action = response.action as {
+    buttons?: Array<{ reply: { id: string; title: string } }>;
+  } | undefined;
+
+  if (action?.buttons && action.buttons.length > 0) {
+    message += "\n\n";
+    action.buttons.forEach((btn, index) => {
+      message += `${index + 1}. ${btn.reply.title}\n`;
+    });
+    message += "\nReply with the number of your choice.";
+  }
+
+  if (response.footer?.text) {
+    message += `\n\n${response.footer.text}`;
+  }
+
+  // Strip WhatsApp markdown (*bold*) for SMS
+  message = message.replace(/\*/g, "");
+
+  return message;
 }
 
 // Twilio sends webhooks as form-urlencoded
@@ -50,7 +93,6 @@ export async function POST(request: NextRequest) {
     console.log(`SMS message from ${from}: ${messageBody}`);
 
     // Create incoming message format (same as WhatsApp)
-    // The bot handler is channel-agnostic
     const incomingMessage: IncomingMessage = {
       from,
       id: messageSid,
@@ -60,39 +102,30 @@ export async function POST(request: NextRequest) {
     };
 
     // Get establishment ID from phone number mapping
-    const establishmentId = await getEstablishmentByPhone(body.To?.replace("+", "") || "");
+    const toNumber = body.To?.replace("+", "") || "";
+    const establishmentId = await getEstablishmentByPhone(toNumber);
 
     if (!establishmentId) {
-      console.error("No establishment found for SMS phone number");
-      return NextResponse.json({ error: "Establishment not found" }, { status: 404 });
+      console.error(`No establishment found for SMS number: ${toNumber}`);
+      // Return TwiML so Twilio doesn't retry
+      return new NextResponse(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { status: 200, headers: { "Content-Type": "text/xml" } }
+      );
     }
 
-    // Initialize bot handler (reuses WhatsApp bot logic)
-    const botHandler = new WhatsAppBotHandler(establishmentId, "pro");
+    // Initialize bot handler with SMS channel
+    const botHandler = new WhatsAppBotHandler(establishmentId, "pro", "sms");
 
-    // Process message - same logic as WhatsApp
+    // Process message through bot
     const response = await botHandler.handleMessage(incomingMessage);
 
     // Send response via Twilio SMS
     const twilioConfig = getTwilioSMSConfig();
     if (twilioConfig.accountSid && twilioConfig.authToken && twilioConfig.phoneNumber) {
       const smsService = initializeSMSService(twilioConfig);
-
-      if ("type" in response && response.type === "button") {
-        // Convert button response to SMS format
-        const header = response.header?.text;
-        const bodyText = response.body.text;
-        const action = response.action as { buttons?: Array<{ reply: { id: string; title: string } }> } | undefined;
-        const options = action?.buttons?.map((btn) => ({
-          id: btn.reply.id,
-          title: btn.reply.title,
-        })) || [];
-        const footer = response.footer?.text;
-
-        await smsService.sendInteractiveMessage(from, header, bodyText, options, footer);
-      } else if ("body" in response && typeof response.body === "string") {
-        await smsService.sendTextMessage(from, response.body);
-      }
+      const smsText = formatResponseForSMS(response);
+      await smsService.sendTextMessage(from, smsText);
     }
 
     // Return TwiML empty response (Twilio expects this)
@@ -105,17 +138,53 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("SMS webhook error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    // Always return TwiML to prevent Twilio retries
+    return new NextResponse(
+      '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+      { status: 200, headers: { "Content-Type": "text/xml" } }
+    );
   }
 }
 
-// Helper function to get establishment by Twilio phone number
+/**
+ * Look up establishment by the Twilio phone number receiving the SMS.
+ * Checks establishment_whatsapp_credentials (which also stores SMS/Twilio config)
+ * and falls back to TWILIO_SMS_NUMBER env match → first active establishment.
+ */
 async function getEstablishmentByPhone(phoneNumber: string): Promise<string | null> {
-  // In production, query database
-  // SELECT establishment_id FROM sms_configs WHERE twilio_number = ?
+  const db = await getDatabase();
+  const normalized = phoneNumber.replace(/\D/g, "");
 
-  // Mock: return default establishment
-  return "default-establishment";
+  // 1. Check whatsapp credentials collection (also stores Twilio phone numbers)
+  const credential = await db
+    .collection<EstablishmentWhatsAppCredentials>("establishment_whatsapp_credentials")
+    .findOne({
+      $or: [
+        { phoneNumber: normalized },
+        { phoneNumber: `+${normalized}` },
+        { twilioPhoneNumber: `+${normalized}` },
+        { twilioPhoneNumber: normalized },
+      ],
+      isConnected: true,
+    });
+
+  if (credential) {
+    return credential.establishmentId;
+  }
+
+  // 2. If the incoming number matches our env config, use the first active establishment
+  const envNumber = (process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER || "")
+    .replace(/\D/g, "");
+
+  if (envNumber && normalized === envNumber) {
+    const establishment = await db.collection("establishments").findOne(
+      { status: { $ne: "inactive" } },
+      { projection: { _id: 1 } }
+    );
+    return establishment?._id?.toString() || null;
+  }
+
+  return null;
 }
 
 // Health check endpoint

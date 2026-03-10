@@ -362,7 +362,7 @@ function generateProgrammaticClients(count: number) {
 const teacherDefs = [
   {
     userId: ids.teacher1User, staffId: ids.staff1,
-    name: "Emily Johnson", email: "emily@flexiwell.com", phone: usPhone(1001),
+    name: "Emily Ferreira", email: "emily@flexiwell.com", phone: usPhone(1001),
     avatar: "women/32.jpg",
     bio: "Certified Pilates and Yoga instructor with over 10 years of experience. Specialized in rehabilitation and postural strengthening.",
     specialties: ["Pilates", "Yoga", "Stretching", "Meditation"],
@@ -672,19 +672,19 @@ interface GeneratedReview {
 // Class templates across both locations
 const classTemplates = [
   // Downtown (unit1) classes
-  { title: "Morning Yoga", type: "yoga", desc: "Start your day with an invigorating Hatha Yoga practice.", sid: ids.staff1, sname: "Emily Johnson", start: "07:00", end: "08:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 1 },
-  { title: "Pilates Reformer", type: "pilates", desc: "Pilates class on Reformer machines. Focus on strength and posture.", sid: ids.staff1, sname: "Emily Johnson", start: "09:00", end: "10:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 1 },
+  { title: "Morning Yoga", type: "yoga", desc: "Start your day with an invigorating Hatha Yoga practice.", sid: ids.staff1, sname: "Emily Ferreira", start: "07:00", end: "08:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 1 },
+  { title: "Pilates Reformer", type: "pilates", desc: "Pilates class on Reformer machines. Focus on strength and posture.", sid: ids.staff1, sname: "Emily Ferreira", start: "09:00", end: "10:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 1 },
   { title: "Functional Training", type: "functional", desc: "Intense functional strength training. All levels welcome.", sid: ids.staff2, sname: "James Cooper", start: "18:00", end: "19:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 1 },
   { title: "Lunchtime Pilates", type: "pilates", desc: "Quick and effective mat pilates for your lunch break.", sid: ids.staff4, sname: "Carlos Reyes", start: "12:30", end: "13:15", dur: 45, cap: 12, loc: "Studio B", eid: ids.unit1, dow: 1 },
   { title: "Early HIIT", type: "functional", desc: "High-intensity interval training to start your day strong.", sid: ids.staff6, sname: "Alex Rivera", start: "06:30", end: "07:15", dur: 45, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 1 },
   { title: "Core Power", type: "functional", desc: "Focus on core strengthening and stabilization.", sid: ids.staff2, sname: "James Cooper", start: "07:00", end: "08:00", dur: 60, cap: 12, loc: "Studio B", eid: ids.unit1, dow: 2 },
   { title: "Reformer Intermediate", type: "pilates", desc: "Intermediate level Reformer class.", sid: ids.staff4, sname: "Carlos Reyes", start: "14:00", end: "15:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 2 },
-  { title: "Mat Pilates", type: "pilates", desc: "Mat Pilates focusing on stretching and strengthening.", sid: ids.staff1, sname: "Emily Johnson", start: "10:00", end: "11:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 3 },
+  { title: "Mat Pilates", type: "pilates", desc: "Mat Pilates focusing on stretching and strengthening.", sid: ids.staff1, sname: "Emily Ferreira", start: "10:00", end: "11:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 3 },
   { title: "HIIT Express", type: "functional", desc: "High-intensity interval training. 45 minutes.", sid: ids.staff2, sname: "James Cooper", start: "19:00", end: "19:45", dur: 45, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 3 },
   { title: "Reformer Flow", type: "pilates", desc: "Flowing reformer sequences for all levels.", sid: ids.staff4, sname: "Carlos Reyes", start: "08:00", end: "09:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 3 },
-  { title: "Deep Stretch", type: "stretching", desc: "Session focused on flexibility and muscle relaxation.", sid: ids.staff1, sname: "Emily Johnson", start: "17:00", end: "18:00", dur: 60, cap: 15, loc: "Studio B", eid: ids.unit1, dow: 4 },
+  { title: "Deep Stretch", type: "stretching", desc: "Session focused on flexibility and muscle relaxation.", sid: ids.staff1, sname: "Emily Ferreira", start: "17:00", end: "18:00", dur: 60, cap: 15, loc: "Studio B", eid: ids.unit1, dow: 4 },
   { title: "Strength & Conditioning", type: "functional", desc: "Full-body strength workout with conditioning elements.", sid: ids.staff6, sname: "Alex Rivera", start: "18:30", end: "19:30", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 4 },
-  { title: "Intermediate Pilates Reformer", type: "pilates", desc: "Intermediate level Reformer class.", sid: ids.staff1, sname: "Emily Johnson", start: "08:00", end: "09:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 5 },
+  { title: "Intermediate Pilates Reformer", type: "pilates", desc: "Intermediate level Reformer class.", sid: ids.staff1, sname: "Emily Ferreira", start: "08:00", end: "09:00", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 5 },
   { title: "Power Hour", type: "functional", desc: "Full-body functional workout.", sid: ids.staff6, sname: "Alex Rivera", start: "17:30", end: "18:30", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 5 },
   { title: "Saturday Functional", type: "functional", desc: "Functional training to start your weekend right.", sid: ids.staff2, sname: "James Cooper", start: "09:00", end: "10:00", dur: 60, cap: 15, loc: "Studio A", eid: ids.unit1, dow: 6 },
   { title: "Saturday Reformer", type: "pilates", desc: "Weekend reformer class for all levels.", sid: ids.staff4, sname: "Carlos Reyes", start: "10:30", end: "11:30", dur: 60, cap: 8, loc: "Reformer Room", eid: ids.unit1, dow: 6 },
@@ -1345,7 +1345,8 @@ async function seed(profile: SeedProfile = "full") {
     const collections = [
       "users", "staff", "clients", "classes", "bookings", "units",
       "rooms", "payments", "reviews", "waitlist", "notification_logs", "activities",
-      "studio_settings", "requests", "conversations", "support_tickets"
+      "studio_settings", "requests", "conversations", "support_tickets",
+      "integration_credentials", "sms_bot_config"
     ];
 
     for (const collection of collections) {
@@ -1411,7 +1412,68 @@ async function seed(profile: SeedProfile = "full") {
       updatedAt: new Date(),
     }));
 
-    const allUsers = [adminUser, ...teacherUsers, ...heroUsers, ...programmaticUsers];
+    // Empty accounts for testing empty-state dashboards
+    // They have a unique establishmentId so all queries return zero data
+    const emptyAdminStaffId = new ObjectId();
+    const emptyTeacherStaffId = new ObjectId();
+    const emptyEstablishmentId = new ObjectId().toString();
+
+    const emptyAdminUser = {
+      _id: new ObjectId(),
+      email: "newadmin@flexiwell.com",
+      name: "New Admin",
+      role: "admin",
+      phone: usPhone(2000),
+      staffId: emptyAdminStaffId.toString(),
+      establishmentId: emptyEstablishmentId,
+      isActive: true,
+      lastLoginAt: new Date(),
+      subscriptionStatus: "active",
+      planTier: "business",
+      trialStatus: "converted",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const emptyTeacherUser = {
+      _id: new ObjectId(),
+      email: "newteacher@flexiwell.com",
+      name: "New Teacher",
+      role: "teacher",
+      phone: usPhone(2001),
+      staffId: emptyTeacherStaffId.toString(),
+      establishmentId: emptyEstablishmentId,
+      isActive: true,
+      lastLoginAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const emptyStaff = [
+      {
+        _id: emptyAdminStaffId,
+        name: "New Admin",
+        email: "newadmin@flexiwell.com",
+        phone: usPhone(2000),
+        role: "admin",
+        status: "active",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: emptyTeacherStaffId,
+        name: "New Teacher",
+        email: "newteacher@flexiwell.com",
+        phone: usPhone(2001),
+        role: "teacher",
+        specialties: ["Yoga"],
+        status: "active",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    const allUsers = [adminUser, emptyAdminUser, emptyTeacherUser, ...teacherUsers, ...heroUsers, ...programmaticUsers];
 
     console.log("Creating users...");
     const usersWithPasswords = await Promise.all(
@@ -1421,18 +1483,48 @@ async function seed(profile: SeedProfile = "full") {
       }))
     );
     await db.collection("users").insertMany(usersWithPasswords);
-    console.log(`   Created ${usersWithPasswords.length} users (1 admin, 6 teachers, ${heroUsers.length + programmaticUsers.length} clients)`);
+    console.log(`   Created ${usersWithPasswords.length} users (2 admins, 7 teachers, ${heroUsers.length + programmaticUsers.length} clients)`);
 
     // Insert staff
     console.log("Creating staff...");
     const staffData = buildStaff();
-    await db.collection("staff").insertMany(staffData);
-    console.log(`   Created ${staffData.length} staff members`);
+    await db.collection("staff").insertMany([...staffData, ...emptyStaff]);
+    console.log(`   Created ${staffData.length + emptyStaff.length} staff members (${emptyStaff.length} empty)`);
 
     // Insert studio settings
     console.log("Creating studio settings...");
     await db.collection("studio_settings").insertOne(seedData.studioSettings);
     console.log("   Studio settings configured (SMS as primary messaging)");
+
+    // Insert Twilio SMS credentials (Sara's account has SMS active)
+    console.log("Creating SMS integration...");
+    await db.collection("integration_credentials").insertOne({
+      establishmentId: ids.adminUser.toString(),
+      provider: "twilio_sms",
+      accountSid: "AC_demo_xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      authToken: "encrypted_demo_token",
+      phoneNumber: "+12125550100",
+      botEnabled: true,
+      isConnected: true,
+      createdAt: daysAgo(90),
+      updatedAt: new Date(),
+    });
+
+    // Insert SMS bot menu config
+    await db.collection("sms_bot_config").insertOne({
+      establishmentId: ids.adminUser.toString(),
+      commands: [
+        { id: "1", trigger: "1", label: "My Classes", action: "MY_BOOKINGS", enabled: true, order: 1 },
+        { id: "2", trigger: "2", label: "Book Class", action: "BOOK_CLASS", enabled: true, order: 2 },
+        { id: "3", trigger: "3", label: "Cancel", action: "CANCEL_BOOKING", enabled: true, order: 3 },
+        { id: "4", trigger: "4", label: "Credits", action: "REMAINING_CREDITS", enabled: true, order: 4 },
+        { id: "5", trigger: "5", label: "Support", action: "CONTACT_SUPPORT", enabled: true, order: 5 },
+      ],
+      welcomeMessage: "Hi {name}! Welcome to FlexiWell Studio. How can I help you today?",
+      createdAt: daysAgo(90),
+      updatedAt: new Date(),
+    });
+    console.log("   SMS bot configured (Twilio active, 5 menu commands)");
 
     // --- Conditionally created based on profile ---
 
@@ -1575,6 +1667,10 @@ async function seed(profile: SeedProfile = "full") {
     console.log("   | Email: admin@flexiwell.com                      |");
     console.log("   | Password: password123                           |");
     console.log("   +-------------------------------------------------+");
+    console.log("   | ADMIN (empty dashboard)                         |");
+    console.log("   | Email: newadmin@flexiwell.com                   |");
+    console.log("   | Password: password123                           |");
+    console.log("   +-------------------------------------------------+");
     console.log("   | TEACHERS                                        |");
     console.log("   | Email: emily@flexiwell.com                      |");
     console.log("   | Email: james@flexiwell.com                      |");
@@ -1582,6 +1678,10 @@ async function seed(profile: SeedProfile = "full") {
     console.log("   | Email: carlos@flexiwell.com                     |");
     console.log("   | Email: mia@flexiwell.com                        |");
     console.log("   | Email: alex@flexiwell.com                       |");
+    console.log("   | Password: password123                           |");
+    console.log("   +-------------------------------------------------+");
+    console.log("   | TEACHER (empty dashboard)                       |");
+    console.log("   | Email: newteacher@flexiwell.com                 |");
     console.log("   | Password: password123                           |");
     console.log("   +-------------------------------------------------+");
     console.log("   | CLIENTS                                         |");

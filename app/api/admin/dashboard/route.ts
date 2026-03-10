@@ -12,17 +12,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "month"; // week, month, year
     const yearParam = searchParams.get("year");
-    const establishmentId = searchParams.get("establishmentId");
+    const monthParam = searchParams.get("month"); // 0-indexed month
+    const weekRefParam = searchParams.get("weekRef"); // ISO date for week reference
+    const establishmentId = searchParams.get("establishmentId") || user?.establishmentId;
 
     const db = await getDatabase();
 
-    // Build establishment filter for queries
     const establishmentFilter = establishmentId ? { establishmentId } : {};
 
-    // Calculate date ranges based on selected year
     const now = new Date();
     const selectedYear = yearParam ? parseInt(yearParam) : now.getFullYear();
+    const selectedMonth = monthParam !== null ? parseInt(monthParam) : now.getMonth();
     const isCurrentYear = selectedYear === now.getFullYear();
+    const isCurrentMonth = isCurrentYear && selectedMonth === now.getMonth();
 
     let startDate: Date;
     let previousStartDate: Date;
@@ -30,34 +32,31 @@ export async function GET(request: NextRequest) {
     let endDate: Date;
 
     if (period === "week") {
-      // For week, use current week if current year, otherwise last week of selected year
-      if (isCurrentYear) {
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        endDate = now;
-      } else {
-        endDate = new Date(selectedYear, 11, 31);
-        startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      }
-      previousEndDate = startDate;
-      previousStartDate = new Date(startDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // Use weekRef to determine which week to show
+      const ref = weekRefParam ? new Date(weekRefParam) : now;
+      const dayOfWeek = ref.getDay();
+      const monday = new Date(ref);
+      monday.setDate(ref.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 7);
+
+      const isCurrentWeek = now >= monday && now < sunday;
+      startDate = monday;
+      endDate = isCurrentWeek ? now : sunday;
+      previousEndDate = monday;
+      previousStartDate = new Date(monday.getTime() - 7 * 24 * 60 * 60 * 1000);
     } else if (period === "year") {
       startDate = new Date(selectedYear, 0, 1);
-      endDate = isCurrentYear ? now : new Date(selectedYear, 11, 31);
+      endDate = isCurrentYear ? now : new Date(selectedYear + 1, 0, 1);
       previousEndDate = startDate;
       previousStartDate = new Date(selectedYear - 1, 0, 1);
     } else {
-      // month - use current month if current year, otherwise December of selected year
-      if (isCurrentYear) {
-        startDate = new Date(selectedYear, now.getMonth(), 1);
-        endDate = now;
-        previousEndDate = startDate;
-        previousStartDate = new Date(selectedYear, now.getMonth() - 1, 1);
-      } else {
-        startDate = new Date(selectedYear, 11, 1); // December of selected year
-        endDate = new Date(selectedYear, 11, 31);
-        previousEndDate = startDate;
-        previousStartDate = new Date(selectedYear, 10, 1); // November
-      }
+      // month - use the specific month passed from the frontend
+      startDate = new Date(selectedYear, selectedMonth, 1);
+      endDate = isCurrentMonth ? now : new Date(selectedYear, selectedMonth + 1, 1);
+      previousEndDate = startDate;
+      previousStartDate = new Date(selectedYear, selectedMonth - 1, 1);
     }
 
     // Run all queries in parallel
@@ -196,7 +195,7 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Build trend data (last 6 periods)
+    // Build trend data (last 6 periods relative to selected period)
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const trendPromises = [];
     for (let i = 5; i >= 0; i--) {
@@ -205,16 +204,16 @@ export async function GET(request: NextRequest) {
       let label: string;
 
       if (period === "week") {
-        trendStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
-        trendEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        trendStart = new Date(endDate.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+        trendEnd = new Date(endDate.getTime() - i * 7 * 24 * 60 * 60 * 1000);
         label = `W-${i}`;
       } else if (period === "year") {
-        const y = now.getFullYear() - i;
+        const y = selectedYear - i;
         trendStart = new Date(y, 0, 1);
         trendEnd = new Date(y + 1, 0, 1);
         label = `${y}`;
       } else {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const d = new Date(selectedYear, selectedMonth - i, 1);
         trendStart = d;
         trendEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1);
         label = monthNames[d.getMonth()];

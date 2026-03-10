@@ -40,15 +40,19 @@ const DEFAULT_BOT_COMMANDS: BotMenuCommand[] = [
   { id: "4", trigger: "4", label: "💬 Support", action: "CONTACT_SUPPORT", enabled: true, order: 4 },
 ];
 
+export type BotChannel = "whatsapp" | "sms";
+
 export class WhatsAppBotHandler {
   private establishmentId: string;
   private planFeatures: WhatsAppPlanFeatures;
   private customCommands: BotMenuCommand[] | null = null;
   private welcomeMessage: string | null = null;
+  private channel: BotChannel;
 
-  constructor(establishmentId: string, plan: string = "pro") {
+  constructor(establishmentId: string, plan: string = "pro", channel: BotChannel = "whatsapp") {
     this.establishmentId = establishmentId;
     this.planFeatures = WHATSAPP_PLANS[plan] || WHATSAPP_PLANS.starter;
+    this.channel = channel;
   }
 
   // Load custom bot configuration for this establishment
@@ -56,6 +60,24 @@ export class WhatsAppBotHandler {
     if (this.customCommands !== null) return; // Already loaded
 
     const db = await getDatabase();
+
+    // SMS channel: load from sms_bot_config collection
+    if (this.channel === "sms") {
+      const smsConfig = await db.collection("sms_bot_config").findOne({
+        establishmentId: this.establishmentId,
+      });
+
+      if (smsConfig?.commands && smsConfig.commands.length > 0) {
+        this.customCommands = smsConfig.commands;
+      } else {
+        this.customCommands = DEFAULT_BOT_COMMANDS;
+      }
+
+      this.welcomeMessage = smsConfig?.welcomeMessage || null;
+      return;
+    }
+
+    // WhatsApp channel: load from establishment_whatsapp_credentials
     const credentials = await db.collection<EstablishmentWhatsAppCredentials>(
       "establishment_whatsapp_credentials"
     ).findOne({ establishmentId: this.establishmentId });
@@ -539,7 +561,7 @@ export class WhatsAppBotHandler {
     // Get flow data with available class IDs
     const session = await db.collection<BotSession>("bot_sessions").findOne({
       platformUserId: state.phoneNumber,
-      platform: "whatsapp",
+      platform: this.channel,
     });
 
     const classIds = session?.flowData?.availableClassIds as string[] | undefined;
@@ -752,7 +774,7 @@ export class WhatsAppBotHandler {
       startTime: classInfo.startTime,
       endTime: classInfo.endTime,
       status: "confirmed",
-      source: "bot",
+      source: this.channel === "sms" ? "sms" : "bot",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -895,7 +917,7 @@ export class WhatsAppBotHandler {
     const db = await getDatabase();
     const session = await db.collection<BotSession>("bot_sessions").findOne({
       platformUserId: phoneNumber,
-      platform: "whatsapp",
+      platform: this.channel,
       expiresAt: { $gt: new Date() },
     });
 
@@ -916,7 +938,7 @@ export class WhatsAppBotHandler {
 
     const session: BotSession = {
       platformUserId: phoneNumber,
-      platform: "whatsapp",
+      platform: this.channel,
       clientId,
       isAuthenticated: true,
       currentFlow: "main_menu",
@@ -971,7 +993,7 @@ export class WhatsAppBotHandler {
   private async flagForHumanHandoff(phoneNumber: string): Promise<void> {
     const db = await getDatabase();
     await db.collection("conversations").updateOne(
-      { platformUserId: phoneNumber, platform: "whatsapp", status: "active" },
+      { platformUserId: phoneNumber, platform: this.channel, status: "active" },
       {
         $set: {
           "context.awaitingHumanResponse": true,

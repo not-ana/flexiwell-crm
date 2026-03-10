@@ -91,10 +91,21 @@ export async function POST(request: NextRequest) {
 
     await db.collection<RefreshToken>("refresh_tokens").insertOne(newRefreshTokenDoc);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       tokens,
     });
+
+    // Update auth cookie with new access token
+    response.cookies.set("auth_token", tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60,
+    });
+
+    return response;
   } catch (error) {
     console.error("Error refreshing token:", error);
     return NextResponse.json(

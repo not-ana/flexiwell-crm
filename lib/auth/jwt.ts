@@ -18,6 +18,7 @@ export interface JWTPayload {
   email: string;
   role: User["role"];
   name: string;
+  establishmentId?: string;
 }
 
 export interface TokenPair {

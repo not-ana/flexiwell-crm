@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAuthFromCookie } from "@/lib/auth/middleware";
+import { resolveStaffId } from "@/lib/auth/resolve-staff";
 import type { Class, Booking, Establishment } from "@/lib/db/schemas";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = user.userId;
+    const teacherId = await resolveStaffId(user.userId);
 
     // Get query params
     const { searchParams } = new URL(request.url);
@@ -167,6 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase();
+    const staffId = await resolveStaffId(user.userId);
 
     // Get teacher's name
     const teacher = await db.collection("users").findOne({ _id: new ObjectId(user.userId) });
@@ -181,7 +183,7 @@ export async function POST(request: NextRequest) {
       title,
       description: description || "",
       type: type.toLowerCase(),
-      instructorId: user.userId,
+      instructorId: staffId,
       instructorName: teacherName,
       scheduledDate: new Date(scheduledDate),
       startTime,
@@ -234,11 +236,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const db = await getDatabase();
+    const staffId = await resolveStaffId(user.userId);
 
     // Verify teacher owns this class
     const existingClass = await db.collection<Class>("classes").findOne({
       _id: new ObjectId(classId),
-      instructorId: user.userId
+      instructorId: staffId
     });
 
     if (!existingClass) {

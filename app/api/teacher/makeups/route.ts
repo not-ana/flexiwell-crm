@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAuthFromCookie } from "@/lib/auth/middleware";
+import { resolveStaffId } from "@/lib/auth/resolve-staff";
 import type { Class, Booking } from "@/lib/db/schemas";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = user.userId;
+    const teacherId = await resolveStaffId(user.userId);
 
     // Get query params
     const { searchParams } = new URL(request.url);

@@ -75,8 +75,8 @@ const defaultInstructor: Instructor = {
   nextAvailable: "Contact support",
 };
 
-// Avatar component
-function Avatar({ name, avatar, initials, size = "md" }: { name: string; avatar?: string; initials?: string; size?: "sm" | "md" | "lg" | "xl" }) {
+// Avatar component (initials only)
+function Avatar({ name, initials, size = "md" }: { name: string; initials?: string; size?: "sm" | "md" | "lg" | "xl" }) {
   const sizeClasses = {
     sm: "w-8 h-8 text-xs",
     md: "w-10 h-10 text-sm",
@@ -87,9 +87,7 @@ function Avatar({ name, avatar, initials, size = "md" }: { name: string; avatar?
   const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
-  return avatar ? (
-    <img src={avatar} alt={name} className={`${sizeClasses[size]} rounded-full object-cover`} />
-  ) : (
+  return (
     <div className={`${sizeClasses[size]} ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-medium`}>
       {displayInitials}
     </div>
@@ -562,7 +560,7 @@ export default function ProfilePage() {
       <div className="p-8 max-w-5xl">
         {/* Header with Avatar and Name */}
         <div className="flex items-center gap-4 mb-8">
-          <Avatar name={userData.name} avatar={userData.avatar} initials={userData.initials} size="xl" />
+          <Avatar name={userData.name} initials={userData.initials} size="xl" />
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{userData.name}</h1>
             <span className="inline-block mt-1 px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, memo, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { SearchIcon, UploadIcon } from "@/components/icons";
 import { useClients } from "@/hooks/useData";
 import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
 import { StatCard } from "@/components/ui/StatCard";
 import type { Client, ClientLifecycleStage } from "@/lib/api/client";
+import type { IntakeStatus } from "@/lib/db/schemas";
+import { authFetch } from "@/lib/api/auth-fetch";
 import { clientsApi } from "@/lib/api/client";
 import { formatCurrency, getInitials } from "@/lib/utils/formatters";
 import { INITIAL_PLANS } from "@/components/settings/PlansSettings";
@@ -96,6 +99,26 @@ const StatusBadge = memo(function StatusBadge({ status }: { status: ClientStatus
 });
 
 // ============================================
+// Intake Pipeline Badge
+// ============================================
+const intakeStyles: Record<IntakeStatus, { bg: string; text: string; ring: string; label: string; icon: string }> = {
+  not_sent: { bg: "bg-gray-50", text: "text-gray-500", ring: "ring-gray-300/50", label: "Intake not sent", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+  sent: { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-600/10", label: "Intake sent", icon: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8" },
+  opened: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Intake opened", icon: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" },
+  completed: { bg: "bg-green-50", text: "text-green-600", ring: "ring-green-600/10", label: "Intake completed", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+};
+
+function IntakePipelineBadge({ status, compact }: { status: IntakeStatus; compact?: boolean }) {
+  const style = intakeStyles[status];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${style.bg} ${style.text} ring-1 ring-inset ${style.ring}`} title={style.label}>
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={style.icon} /></svg>
+      {!compact && style.label}
+    </span>
+  );
+}
+
+// ============================================
 // Upgrade Suggestion Chip
 // ============================================
 function UpgradeChip({ client }: { client: Client }) {
@@ -131,10 +154,9 @@ function UpgradeChip({ client }: { client: Client }) {
 // ============================================
 // Client Row (Desktop Table) - Redesigned
 // ============================================
-const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit, onDelete, onWinBack }: {
+const ClientRow = memo(function ClientRow({ client, onSendIntake, onEdit, onDelete, onWinBack }: {
   client: Client;
-  onApprove?: () => void;
-  onReject?: () => void;
+  onSendIntake?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onWinBack?: () => void;
@@ -151,7 +173,10 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
   const ltv = client.totalLifetimeRevenue || client.revenue || 0;
 
   return (
-    <tr className={`hover:bg-gray-50/80 transition-colors group ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}>
+    <tr
+      className={`hover:bg-gray-50/80 transition-colors group cursor-pointer ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}
+      onClick={() => window.location.href = `/admin/clients/${client._id}`}
+    >
       {/* Client info + health score */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
@@ -164,7 +189,7 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <a href={`/admin/clients/${client._id}`} className="font-medium text-gray-900 truncate hover:text-primary-600 transition-colors">{client.name}</a>
+              <span className="font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">{client.name}</span>
               <StreakBadge streak={client.currentStreak || 0} />
             </div>
             <p className="text-xs text-gray-500 truncate">{client.email}</p>
@@ -175,12 +200,9 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
       <td className="px-4 py-3">
         <div className="flex flex-col gap-1">
           <LifecycleBadge stage={lifecycle} />
-          {status !== "active" && <StatusBadge status={status} />}
-          {status === "pending" && !client.onboarding?.healthAssessmentCompleted && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600">
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              Intake pending
-            </span>
+          {status !== "active" && status !== "pending" && <StatusBadge status={status} />}
+          {!client.onboarding?.healthAssessmentCompleted && (
+            <IntakePipelineBadge status={(client.onboarding?.intakeStatus as IntakeStatus) || "not_sent"} />
           )}
         </div>
       </td>
@@ -220,28 +242,17 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
         </p>
       </td>
       {/* Actions */}
-      <td className="px-4 py-3">
-        {status === "pending" ? (
-          <div className="flex items-center gap-2">
-            <button onClick={onApprove} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
-              Approve
-            </button>
-            <button onClick={onReject} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-              Reject
-            </button>
-          </div>
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        {!client.onboarding?.healthAssessmentCompleted && client.onboarding?.intakeStatus !== "completed" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            {client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? "Resend" : "Send intake"}
+          </button>
         ) : lifecycle === "churned" ? (
-          <div className="flex items-center gap-1">
-            <button onClick={onWinBack} className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-              Win Back
-            </button>
-            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-            </button>
-          </div>
+          <button onClick={onWinBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors shadow-xs">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
+            Win Back
+          </button>
         ) : (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
@@ -266,10 +277,9 @@ const ClientRow = memo(function ClientRow({ client, onApprove, onReject, onEdit,
 // ============================================
 // Client Card (Mobile) - Redesigned
 // ============================================
-function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }: {
+function ClientCard({ client, onSendIntake, onEdit, onDelete, onWinBack }: {
   client: Client;
-  onApprove?: () => void;
-  onReject?: () => void;
+  onSendIntake?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onWinBack?: () => void;
@@ -286,7 +296,10 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
   const ltv = client.totalLifetimeRevenue || client.revenue || 0;
 
   return (
-    <div className={`p-4 border-b border-gray-100 last:border-b-0 ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}>
+    <div
+      className={`p-4 border-b border-gray-100 last:border-b-0 cursor-pointer active:bg-gray-50 ${lifecycle === "at_risk" ? "bg-orange-50/30" : lifecycle === "churned" ? "bg-red-50/20" : ""}`}
+      onClick={() => window.location.href = `/admin/clients/${client._id}`}
+    >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-3 min-w-0">
           {healthScore !== null ? (
@@ -298,7 +311,7 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <a href={`/admin/clients/${client._id}`} className="font-medium text-gray-900 truncate hover:text-primary-600 transition-colors">{client.name}</a>
+              <span className="font-medium text-gray-900 truncate">{client.name}</span>
               <StreakBadge streak={client.currentStreak || 0} />
             </div>
             <p className="text-xs text-gray-500 truncate">{client.email}</p>
@@ -306,10 +319,8 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
         </div>
         <div className="flex flex-col items-end gap-1">
           <LifecycleBadge stage={lifecycle} />
-          {status === "pending" && !client.onboarding?.healthAssessmentCompleted && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600">
-              Intake pending
-            </span>
+          {!client.onboarding?.healthAssessmentCompleted && (
+            <IntakePipelineBadge status={(client.onboarding?.intakeStatus as IntakeStatus) || "not_sent"} compact />
           )}
         </div>
       </div>
@@ -343,19 +354,17 @@ function ClientCard({ client, onApprove, onReject, onEdit, onDelete, onWinBack }
       </div>
 
       {/* Actions */}
-      <div className="mt-3 ml-[52px]">
-        {status === "pending" ? (
-          <div className="flex items-center gap-2">
-            <button onClick={onApprove} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
-              Approve
-            </button>
-            <button onClick={onReject} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-              Reject
-            </button>
-          </div>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <div className="mt-3 ml-[52px]" onClick={(e) => e.stopPropagation()}>
+        {!client.onboarding?.healthAssessmentCompleted && client.onboarding?.intakeStatus !== "completed" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            {client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? "Resend" : "Send intake"}
+          </button>
         ) : lifecycle === "churned" ? (
-          <button onClick={onWinBack} className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-            Send Win-Back Offer
+          <button onClick={onWinBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors shadow-xs">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
+            Win Back
           </button>
         ) : (
           <div className="flex items-center gap-1">
@@ -390,7 +399,7 @@ function AddClientModal({
   isOpen, onClose, onSubmit, isSubmitting, apiError,
 }: {
   isOpen: boolean; onClose: () => void;
-  onSubmit: (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string }) => Promise<void>;
+  onSubmit: (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string; _intakeStatus?: string }) => Promise<void>;
   isSubmitting: boolean;
   apiError?: string;
 }) {
@@ -428,15 +437,16 @@ function AddClientModal({
       setFormError("Phone number is required for WhatsApp/SMS");
       return;
     }
-    const clientData: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string } = {
+    const clientData: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string; _intakeStatus?: string } = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       plan: selectedPlan.name,
       unit: formData.unit,
-      status: sendIntakeForm ? "pending" : "active",
+      status: "active",
       _sendIntake: sendIntakeForm,
       _intakeChannel: intakeChannel,
+      _intakeStatus: sendIntakeForm ? "sent" : "not_sent",
     };
     if (formData.hasDiscount) {
       (clientData as Record<string, unknown>)._discount = {
@@ -830,7 +840,7 @@ export default function AdminClientsPage() {
   });
 
   const [addClientError, setAddClientError] = useState("");
-  const handleAddClient = async (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string }) => {
+  const handleAddClient = async (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string; _intakeStatus?: string }) => {
     setIsSubmitting(true);
     setAddClientError("");
     try {
@@ -856,7 +866,7 @@ export default function AdminClientsPage() {
       }
 
       if (data._sendIntake) {
-        const response = await fetch("/api/clients/send-intake", {
+        const response = await authFetch("/api/clients/send-intake", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -886,16 +896,26 @@ export default function AdminClientsPage() {
     } finally { setIsSubmitting(false); }
   };
 
-  const handleApprove = async (id: string) => {
-    const result = await updateClient(id, { status: "active" });
-    if (!result.success) alert(result.error || "Failed to approve client");
-  };
-
-  const handleReject = async (id: string) => {
-    if (confirm("Are you sure you want to reject this client?")) {
-      const result = await deleteClient(id);
-      if (!result.success) alert(result.error || "Failed to reject client");
-    }
+  const handleSendIntake = async (client: Client) => {
+    try {
+      const response = await authFetch("/api/clients/send-intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: client._id,
+          name: client.name,
+          email: client.email,
+          phone: client.phone,
+          channel: client.onboarding?.intakeSentVia || "email",
+        }),
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        alert(result.error || "Failed to send intake");
+      } else {
+        refetch();
+      }
+    } catch { alert("Failed to send intake form"); }
   };
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -973,8 +993,7 @@ export default function AdminClientsPage() {
     const active = all.filter(c => (c.lifecycleStage || "active") === "active").length;
     const healthScores = all.filter(c => c.healthScore?.overall != null).map(c => c.healthScore!.overall);
     const avgHealth = healthScores.length > 0 ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length) : 0;
-    const pending = all.filter(c => c.status === "pending").length;
-    return { total: all.length, totalRevenue, atRisk, active, avgHealth, pending };
+    return { total: all.length, totalRevenue, atRisk, active, avgHealth };
   }, [clients]);
 
   // Lifecycle counts for filter tabs
@@ -1040,7 +1059,6 @@ export default function AdminClientsPage() {
             <option value="active">Active</option>
             <option value="paused">Paused</option>
             <option value="expired">Expired</option>
-            <option value="pending">Pending</option>
           </select>
         </div>
 
@@ -1101,8 +1119,7 @@ export default function AdminClientsPage() {
                     <ClientRow
                       key={client._id}
                       client={client}
-                      onApprove={() => handleApprove(client._id)}
-                      onReject={() => handleReject(client._id)}
+                      onSendIntake={() => handleSendIntake(client)}
                       onEdit={() => setEditingClient(client)}
                       onDelete={() => handleDeleteClick(client)}
                       onWinBack={() => handleWinBack(client._id)}
@@ -1117,8 +1134,7 @@ export default function AdminClientsPage() {
                 <ClientCard
                   key={client._id}
                   client={client}
-                  onApprove={() => handleApprove(client._id)}
-                  onReject={() => handleReject(client._id)}
+                  onSendIntake={() => handleSendIntake(client)}
                   onEdit={() => setEditingClient(client)}
                   onDelete={() => handleDeleteClick(client)}
                   onWinBack={() => handleWinBack(client._id)}
@@ -1297,8 +1313,7 @@ function EditClientModal({
                 <option value="active">Active</option>
                 <option value="paused">Paused</option>
                 <option value="expired">Expired</option>
-                <option value="pending">Pending</option>
-              </select>
+                  </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Lifecycle Stage</label>

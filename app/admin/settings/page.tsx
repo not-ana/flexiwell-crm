@@ -8,13 +8,15 @@ import { NotificationsSettings } from "@/components/settings/NotificationsSettin
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
 import { IntakeFormSettings } from "@/components/settings/IntakeFormSettings";
+import { SMSBotSettings } from "@/components/settings/SMSBotSettings";
 
-type AdminSettingsTab = "general" | "plans" | "notifications" | "waitlist" | "intake" | "team" | "integrations";
+type AdminSettingsTab = "general" | "plans" | "notifications" | "sms-bot" | "waitlist" | "intake" | "team" | "integrations";
 
 const tabs: { id: AdminSettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "plans", label: "Plans" },
   { id: "notifications", label: "Notifications" },
+  { id: "sms-bot", label: "SMS Bot" },
   { id: "waitlist", label: "Waitlist" },
   { id: "intake", label: "Intake Form" },
   { id: "team", label: "Staff" },
@@ -32,6 +34,8 @@ export default function AdminSettingsPage() {
         return <PlansSettings />;
       case "notifications":
         return <NotificationsSettings />;
+      case "sms-bot":
+        return <SMSBotSettings />;
       case "waitlist":
         return <WaitlistSettings />;
       case "intake":

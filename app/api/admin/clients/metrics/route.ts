@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = await getDatabase();
+    const establishmentFilter = user?.establishmentId ? { establishmentId: user.establishmentId } : {};
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -29,22 +30,23 @@ export async function GET(request: NextRequest) {
       activeClientsTwoMonthsAgo,
     ] = await Promise.all([
       // Total clients ever
-      db.collection("clients").countDocuments({}),
+      db.collection("clients").countDocuments({ ...establishmentFilter }),
       // Currently active clients
-      db.collection("clients").countDocuments({ status: "active" }),
+      db.collection("clients").countDocuments({ status: "active", ...establishmentFilter }),
       // Active clients 30 days ago (for churn calc)
       db.collection("clients").countDocuments({
         status: "active",
         createdAt: { $lt: thirtyDaysAgo },
+        ...establishmentFilter,
       }),
       // Total lifetime revenue
       db.collection("payments").aggregate([
-        { $match: { status: "completed" } },
+        { $match: { status: "completed", ...establishmentFilter } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
       // Average client lifespan (months between first and last booking)
       db.collection("bookings").aggregate([
-        { $match: { status: { $in: ["completed", "confirmed"] } } },
+        { $match: { status: { $in: ["completed", "confirmed"] }, ...establishmentFilter } },
         {
           $group: {
             _id: "$clientId",
@@ -71,6 +73,7 @@ export async function GET(request: NextRequest) {
           $match: {
             status: "completed",
             createdAt: { $gte: thirtyDaysAgo },
+            ...establishmentFilter,
           },
         },
         { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -78,6 +81,7 @@ export async function GET(request: NextRequest) {
       // At-risk clients (no activity in 14-30 days)
       db.collection("clients").countDocuments({
         status: "active",
+        ...establishmentFilter,
         $or: [
           { lifecycleStage: "at_risk" },
           { "healthScore.overall": { $lt: 40 } },
@@ -88,24 +92,29 @@ export async function GET(request: NextRequest) {
       db.collection("clients").countDocuments({
         status: "inactive",
         updatedAt: { $gte: thirtyDaysAgo },
+        ...establishmentFilter,
       }),
       // Plan upgrades this month
       db.collection("clients").countDocuments({
         "upgradeHistory.date": { $gte: thirtyDaysAgo },
+        ...establishmentFilter,
       }),
       // Total clients who have had a plan change
       db.collection("clients").countDocuments({
         upgradeHistory: { $exists: true, $not: { $size: 0 } },
+        ...establishmentFilter,
       }),
       // Previous period churned (60-90 days ago) for churn comparison
       db.collection("clients").countDocuments({
         status: "inactive",
         updatedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+        ...establishmentFilter,
       }),
       // Active clients 60 days ago (for previous churn calc)
       db.collection("clients").countDocuments({
         status: "active",
         createdAt: { $lt: sixtyDaysAgo },
+        ...establishmentFilter,
       }),
     ]);
 

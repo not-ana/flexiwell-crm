@@ -59,11 +59,7 @@ function StaffRow({ staff }: {
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-            {staff.avatar ? (
-              <img src={staff.avatar} alt={staff.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
-            )}
+            <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
           </div>
           <div>
             <p className="font-medium text-gray-900">{staff.name}</p>
@@ -105,11 +101,7 @@ function StaffCard({ staff }: {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-            {staff.avatar ? (
-              <img src={staff.avatar} alt={staff.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
-            )}
+            <span className="text-xs font-semibold text-primary-700">{getInitials(staff.name)}</span>
           </div>
           <div>
             <p className="font-medium text-gray-900">{staff.name}</p>

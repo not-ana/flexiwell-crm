@@ -259,6 +259,14 @@ export interface Client {
   onboarding?: {
     welcomeEmailSent: boolean;
     healthAssessmentCompleted: boolean;
+    // Intake pipeline tracking
+    intakeStatus?: "not_sent" | "sent" | "opened" | "completed";
+    intakeSentAt?: Date;
+    intakeSentVia?: "email" | "sms" | "whatsapp";
+    intakeOpenedAt?: Date;
+    intakeCompletedAt?: Date;
+    intakeReminderCount?: number;
+    intakeLastReminderAt?: Date;
     firstClassBooked: boolean;
     firstClassCompleted: boolean;
     weekOneCheckInSent: boolean;

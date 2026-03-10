@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers as getHeaders } from "next/headers";
 import { verifyAccessToken, extractTokenFromHeader, JWTPayload } from "./jwt";
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -94,22 +94,35 @@ export function requireRole(
 }
 
 /**
- * Get authenticated user from cookie
- * Use this for routes that use cookie-based authentication
+ * Get authenticated user from cookie, with fallback to Authorization header.
+ * This allows routes to work both with httpOnly cookies and with
+ * client-side fetch calls that send the token via localStorage/header.
  */
 export async function getAuthUserFromCookie(): Promise<JWTPayload | null> {
+  // Try cookie first
   const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const cookieToken = cookieStore.get("auth_token")?.value;
 
-  if (!token) {
-    return null;
+  if (cookieToken) {
+    const user = verifyAccessToken(cookieToken);
+    if (user) return user;
   }
 
-  return verifyAccessToken(token);
+  // Fallback: try Authorization header (from localStorage-based auth)
+  try {
+    const headerStore = await getHeaders();
+    const authHeader = headerStore.get("authorization");
+    const headerToken = extractTokenFromHeader(authHeader);
+    if (headerToken) return verifyAccessToken(headerToken);
+  } catch {
+    // headers() not available
+  }
+
+  return null;
 }
 
 /**
- * Require authentication from cookie
+ * Require authentication from cookie or Authorization header
  * Returns user or error response
  */
 export async function requireAuthFromCookie(): Promise<{

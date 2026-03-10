@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: user.role,
       name: user.name,
+      establishmentId: user.establishmentId,
     });
 
     await db.collection<RefreshToken>("refresh_tokens").deleteMany({ userId });
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       { $set: { lastLoginAt: new Date(), updatedAt: new Date() } }
     );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: userId,
@@ -102,6 +103,17 @@ export async function POST(request: NextRequest) {
       },
       tokens,
     });
+
+    // Set auth cookie so server-side cookie auth works
+    response.cookies.set("auth_token", tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60, // 15 minutes (matches access token expiry)
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error occurred");
     return NextResponse.json({ error: "Failed to login" }, { status: 500 });

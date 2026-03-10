@@ -28,7 +28,7 @@ interface WaitlistEntry {
 
 // GET /api/waitlist - List waitlist entries
 export async function GET(request: NextRequest) {
-  const { error } = requireRole(request, ["admin", "teacher", "client"]);
+  const { user, error } = requireRole(request, ["admin", "teacher", "client"]);
   if (error) return error;
 
   try {
@@ -40,6 +40,10 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
     const filter: Record<string, unknown> = {};
+
+    if (user?.establishmentId) {
+      filter.establishmentId = user.establishmentId;
+    }
 
     // If client is requesting their own waitlist
     if (clientIdParam === "me") {
@@ -79,9 +83,11 @@ export async function GET(request: NextRequest) {
     }));
 
     // Stats for admin
+    const establishmentFilter = user?.establishmentId ? { establishmentId: user.establishmentId } : {};
     const stats = await db
       .collection<WaitlistEntry>("waitlist")
       .aggregate([
+        { $match: establishmentFilter },
         { $group: { _id: "$status", count: { $sum: 1 } } },
       ])
       .toArray();
@@ -92,13 +98,13 @@ export async function GET(request: NextRequest) {
     );
 
     // Calculate "protected revenue" - direct clients served before aggregators
-    const protectedRevenue = await calculateProtectedRevenue(db);
+    const protectedRevenue = await calculateProtectedRevenue(db, establishmentFilter);
 
     // Waitlist counts per class (for social proof and demand visibility)
     const classWaitlistCounts = await db
       .collection<WaitlistEntry>("waitlist")
       .aggregate<{ _id: string; className: string; count: number }>([
-        { $match: { status: { $in: ["waiting", "notified"] } } },
+        { $match: { ...establishmentFilter, status: { $in: ["waiting", "notified"] } } },
         { $group: { _id: "$classId", className: { $first: "$className" }, count: { $sum: 1 } } },
       ])
       .toArray();
@@ -263,7 +269,7 @@ function getClientSource(client: Client | null): ClientSource {
 }
 
 // Helper: Calculate "protected revenue" metric for admin dashboard
-async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDatabase>>): Promise<{
+async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDatabase>>, establishmentFilter: Record<string, unknown> = {}): Promise<{
   thisMonth: number;
   directClientsServed: number;
   aggregatorsWaiting: number;
@@ -274,6 +280,7 @@ async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDataba
 
   // Count direct clients confirmed this month
   const directConfirmed = await db.collection<WaitlistEntry>("waitlist").countDocuments({
+    ...establishmentFilter,
     status: "confirmed",
     clientSource: { $in: ["direct", "package"] },
     confirmedAt: { $gte: startOfMonth },
@@ -281,6 +288,7 @@ async function calculateProtectedRevenue(db: Awaited<ReturnType<typeof getDataba
 
   // Count aggregators still waiting
   const aggregatorsWaiting = await db.collection<WaitlistEntry>("waitlist").countDocuments({
+    ...establishmentFilter,
     status: "waiting",
     clientSource: { $in: ["gympass", "classpass"] },
   });

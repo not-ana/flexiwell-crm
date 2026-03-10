@@ -76,9 +76,48 @@ function computeHealthLevel(stats: DashboardStats, cm: ClientMetrics | null): "g
   return ratio >= 0.65 ? "good" : ratio >= 0.35 ? "warning" : "critical";
 }
 
+// Format the period label for the navigation display
+function getPeriodLabel(period: TimePeriod, refDate: Date): string {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  if (period === "year") return `${refDate.getFullYear()}`;
+  if (period === "month") return `${monthNames[refDate.getMonth()]} ${refDate.getFullYear()}`;
+  // week: show range
+  const weekStart = new Date(refDate);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const startStr = `${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}`;
+  const endStr = weekEnd.getMonth() !== weekStart.getMonth()
+    ? `${monthNames[weekEnd.getMonth()]} ${weekEnd.getDate()}`
+    : `${weekEnd.getDate()}`;
+  return `${startStr}–${endStr}, ${weekStart.getFullYear()}`;
+}
+
+// Check if the reference date is the current period (can't go forward)
+function isCurrentPeriod(period: TimePeriod, refDate: Date): boolean {
+  const now = new Date();
+  if (period === "year") return refDate.getFullYear() === now.getFullYear();
+  if (period === "month") return refDate.getFullYear() === now.getFullYear() && refDate.getMonth() === now.getMonth();
+  // week
+  const getWeekStart = (d: Date) => { const s = new Date(d); s.setDate(s.getDate() - s.getDay() + 1); s.setHours(0,0,0,0); return s; };
+  return getWeekStart(refDate).getTime() === getWeekStart(now).getTime();
+}
+
+// Navigate to previous/next period
+function shiftPeriod(period: TimePeriod, refDate: Date, direction: -1 | 1): Date {
+  const d = new Date(refDate);
+  if (period === "year") d.setFullYear(d.getFullYear() + direction);
+  else if (period === "month") d.setMonth(d.getMonth() + direction);
+  else d.setDate(d.getDate() + direction * 7);
+  return d;
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("month");
+  const [refTimestamp, setRefTimestamp] = useState<number>(Date.now());
+  const referenceDate = new Date(refTimestamp);
+  const setReferenceDate = (d: Date) => setRefTimestamp(d.getTime());
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [clientMetrics, setClientMetrics] = useState<ClientMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,21 +148,44 @@ export default function AdminDashboard() {
 
   const { formatCurrency } = useCurrency();
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Reset reference date to now when switching period type
+  const handlePeriodChange = (period: TimePeriod) => {
+    setSelectedPeriod(period);
+    setRefTimestamp(Date.now());
+  };
+
+  const canGoForward = !isCurrentPeriod(selectedPeriod, referenceDate);
+
   // Fetch dashboard data
   useEffect(() => {
     async function fetchDashboardData() {
-      setLoading(true);
+      if (!dashboardData) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       try {
-        const response = await api.get<DashboardData>(`/api/admin/dashboard?period=${selectedPeriod}`);
+        const params = new URLSearchParams({
+          period: selectedPeriod,
+          year: String(referenceDate.getFullYear()),
+          month: String(referenceDate.getMonth()),
+        });
+        if (selectedPeriod === "week") {
+          params.set("weekRef", referenceDate.toISOString());
+        }
+        const response = await api.get<DashboardData>(`/api/admin/dashboard?${params}`);
         if (response.data) setDashboardData(response.data);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     }
     fetchDashboardData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, refTimestamp]);
 
   // Fetch client metrics
   useEffect(() => {
@@ -222,15 +284,38 @@ export default function AdminDashboard() {
               </h1>
               <p className="text-sm text-gray-500 mt-1">Your studio overview</p>
             </div>
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto">
-              {(["week", "month", "year"] as TimePeriod[]).map((period) => (
-                <button key={period} onClick={() => setSelectedPeriod(period)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    selectedPeriod === period ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                  }`}>
-                  {period === "week" ? "Week" : period === "month" ? "Month" : "Year"}
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              {/* Time navigation */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setReferenceDate(shiftPeriod(selectedPeriod, referenceDate, -1))}
+                  disabled={refreshing}
+                  className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 </button>
-              ))}
+                <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+                  {getPeriodLabel(selectedPeriod, referenceDate)}
+                </span>
+                <button
+                  onClick={() => canGoForward && setReferenceDate(shiftPeriod(selectedPeriod, referenceDate, 1))}
+                  disabled={refreshing || !canGoForward}
+                  className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-30"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+              {/* Period type selector */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                {(["week", "month", "year"] as TimePeriod[]).map((period) => (
+                  <button key={period} onClick={() => handlePeriodChange(period)} disabled={refreshing}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      selectedPeriod === period ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    } ${refreshing ? "cursor-wait" : ""}`}>
+                    {period === "week" ? "Week" : period === "month" ? "Month" : "Year"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -289,7 +374,7 @@ export default function AdminDashboard() {
 
             {/* AI Studio Health Summary */}
             {(stats.clients > 0 || stats.classes > 0) && (
-              <div data-onboarding="admin-metrics" className={`mb-6 ${healthConfig.bg} border ${healthConfig.border} rounded-2xl p-5`}>
+              <div data-onboarding="admin-metrics" className={`mb-6 ${healthConfig.bg} border ${healthConfig.border} rounded-2xl p-5 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     healthLevel === "good" ? "bg-green-100" : healthLevel === "warning" ? "bg-amber-100" : "bg-red-100"
@@ -318,7 +403,7 @@ export default function AdminDashboard() {
             )}
 
             {/* 4 Key Metric Cards */}
-            <div data-onboarding="admin-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div data-onboarding="admin-charts" className={`grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
               <StatCard
                 label="Revenue"
                 value={formatCurrency(stats.revenue)}
@@ -377,12 +462,12 @@ export default function AdminDashboard() {
 
             {/* Revenue Trend Chart */}
             {trend.length > 0 && trend.some(t => t.revenue > 0) && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6">
+              <div className={`bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-semibold text-gray-900">Revenue Trend</h2>
                     <p className="text-sm text-gray-500">
-                      {selectedPeriod === "week" ? "Last 6 weeks" : selectedPeriod === "year" ? "Last 6 years" : "Last 6 months"}
+                      {selectedPeriod === "week" ? "6 weeks ending" : selectedPeriod === "year" ? "6 years ending" : "6 months ending"} {getPeriodLabel(selectedPeriod, referenceDate)}
                     </p>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAuthFromCookie } from "@/lib/auth/middleware";
+import { resolveStaffId } from "@/lib/auth/resolve-staff";
 import type { Booking, Client } from "@/lib/db/schemas";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = user.userId;
+    const teacherId = await resolveStaffId(user.userId);
 
     // Get all bookings for this teacher's classes
     const bookings = await db.collection<Booking>("bookings")
@@ -141,14 +142,16 @@ export async function GET(request: NextRequest) {
         status = "expired";
       }
 
-      // Calculate last active
+      // Calculate last active and days since last class
       let lastActive = "Never";
+      let daysSinceLastClass: number | undefined;
       if (stats.lastClass) {
         const diff = Math.floor((now.getTime() - stats.lastClass.getTime()) / (1000 * 60 * 60));
+        daysSinceLastClass = Math.floor(diff / 24);
         if (diff < 1) lastActive = "Just now";
         else if (diff < 24) lastActive = `${diff} hours ago`;
         else if (diff < 48) lastActive = "Yesterday";
-        else lastActive = `${Math.floor(diff / 24)} days ago`;
+        else lastActive = `${daysSinceLastClass} days ago`;
       }
 
       // Plan type
@@ -173,7 +176,8 @@ export async function GET(request: NextRequest) {
         joinedDate: client.createdAt
           ? new Date(client.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
           : "Unknown",
-        lastActive
+        lastActive,
+        daysSinceLastClass
       };
 
       // Add to appropriate unit (for now, add to first or default)

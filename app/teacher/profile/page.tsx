@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui";
 import { useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 interface TeacherUser {
   name: string;
@@ -57,8 +58,8 @@ const defaultStats: TeacherStats = {
   yearsExperience: 0,
 };
 
-// Avatar component
-function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; size?: "sm" | "md" | "lg" | "xl" }) {
+// Avatar component (initials only)
+function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" | "xl" }) {
   const sizeClasses = {
     sm: "w-8 h-8 text-xs",
     md: "w-10 h-10 text-sm",
@@ -67,9 +68,7 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
   };
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
-  return avatar ? (
-    <img src={avatar} alt={name} className={`${sizeClasses[size]} rounded-full object-cover`} />
-  ) : (
+  return (
     <div className={`${sizeClasses[size]} bg-green-500 rounded-full flex items-center justify-center text-white font-medium`}>
       {initials}
     </div>
@@ -124,7 +123,7 @@ export default function TeacherProfilePage() {
   // Fetch profile data
   const fetchProfileData = useCallback(async () => {
     try {
-      const response = await fetch("/api/teacher/profile");
+      const response = await authFetch("/api/teacher/profile");
       if (response.ok) {
         const data = await response.json();
         setTeacherUser(data.user);
@@ -172,7 +171,7 @@ export default function TeacherProfilePage() {
       <div className="p-8 max-w-5xl">
         {/* Header with Avatar and Name */}
         <div className="flex items-center gap-4 mb-8">
-          <Avatar name={teacherUser.name} avatar={teacherUser.avatar} size="xl" />
+          <Avatar name={teacherUser.name} size="xl" />
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{teacherUser.name}</h1>
             <span className="inline-block mt-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">

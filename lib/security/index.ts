@@ -87,7 +87,7 @@ export function getClientIp(request: Request): string {
 // Rate limit configs for different endpoints
 export const RATE_LIMITS = {
   // Auth endpoints - stricter limits
-  login: { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 per 15 min
+  login: { windowMs: 15 * 60 * 1000, maxRequests: 20 }, // 20 per 15 min
   register: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 per hour
   passwordReset: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 per hour
 

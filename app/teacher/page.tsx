@@ -7,6 +7,7 @@ import { ChevronIcon } from "@/components/icons";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/Badge";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 // Toast notification helper
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -152,7 +153,7 @@ export default function TeacherDashboard() {
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     try {
-      const response = await fetch("/api/teacher/dashboard");
+      const response = await authFetch("/api/teacher/dashboard");
       if (response.ok) {
         const data: DashboardData = await response.json();
         setStats(data.stats);
@@ -178,7 +179,7 @@ export default function TeacherDashboard() {
 
     setIsSubmittingWalkIn(true);
     try {
-      const response = await fetch("/api/teacher/walk-in", {
+      const response = await authFetch("/api/teacher/walk-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(walkInData),
@@ -259,24 +260,16 @@ export default function TeacherDashboard() {
             <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">
               {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}, {user?.name?.split(" ")[0] || "there"}
             </h1>
-            <div className="flex items-center gap-2 lg:gap-3">
-              <button
-                onClick={() => setShowWalkInModal(true)}
-                className="flex-1 lg:flex-none px-3 lg:px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span className="hidden lg:inline">Add Walk-in</span>
-                <span className="lg:hidden">Walk-in</span>
-              </button>
-              <Link
-                href="/teacher/settings"
-                className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Settings
-              </Link>
-            </div>
+            <button
+              onClick={() => setShowWalkInModal(true)}
+              className="px-3 lg:px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span className="hidden lg:inline">Add Walk-in</span>
+              <span className="lg:hidden">Walk-in</span>
+            </button>
           </div>
 
           {/* Stats Cards Row - hidden when no data */}
@@ -749,7 +742,7 @@ export default function TeacherDashboard() {
           }}
           onSchedule={async (classId) => {
             try {
-              const response = await fetch("/api/teacher/makeup", {
+              const response = await authFetch("/api/teacher/makeup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

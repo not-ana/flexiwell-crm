@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
 import { Badge } from "@/components/ui/Badge";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 interface Student {
   id: string;
@@ -18,7 +20,7 @@ interface Student {
   status: "active" | "paused" | "expired";
   joinedDate: string;
   lastActive?: string;
-  // Hormozi retention fields
+  // Attendance tracking fields
   currentStreak?: number;
   healthScore?: number;
   daysSinceLastClass?: number;
@@ -69,7 +71,7 @@ function StatusBadge({ status }: { status: Student["status"] }) {
   return <Badge style={style} />;
 }
 
-// Hormozi: Streak badge for attendance consistency
+// Streak badge for attendance consistency
 function StreakBadge({ streak }: { streak?: number }) {
   if (!streak || streak === 0) return null;
   return (
@@ -82,8 +84,8 @@ function StreakBadge({ streak }: { streak?: number }) {
   );
 }
 
-// Hormozi: At-risk indicator for teachers to act on
-function AtRiskIndicator({ daysSinceLastClass, healthScore }: { daysSinceLastClass?: number; healthScore?: number }) {
+// Indicator for students who haven't attended recently
+function InactiveIndicator({ daysSinceLastClass, healthScore }: { daysSinceLastClass?: number; healthScore?: number }) {
   const isAtRisk = (daysSinceLastClass && daysSinceLastClass > 10) || (healthScore !== undefined && healthScore < 40);
   if (!isAtRisk) return null;
 
@@ -93,7 +95,7 @@ function AtRiskIndicator({ daysSinceLastClass, healthScore }: { daysSinceLastCla
   return (
     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold ${
       severity === "critical" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
-    }`} title={daysSinceLastClass ? `Last class ${daysSinceLastClass} days ago` : `Health score: ${healthScore}`}>
+    }`} title={daysSinceLastClass ? `Last class ${daysSinceLastClass} days ago` : `Engagement score: ${healthScore}`}>
       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
@@ -115,17 +117,13 @@ function StudentRow({ student, onViewProfile, onSendMessage }: {
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-            {student.avatar ? (
-              <img src={student.avatar} alt={student.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
-            )}
+            <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="font-medium text-gray-900">{student.name}</p>
               <StreakBadge streak={student.currentStreak} />
-              <AtRiskIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
+              <InactiveIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
             </div>
             <p className="text-sm text-gray-500">{student.email}</p>
           </div>
@@ -186,17 +184,13 @@ function StudentCard({ student, onViewProfile, onSendMessage }: {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center flex-shrink-0">
-            {student.avatar ? (
-              <img src={student.avatar} alt={student.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
-            )}
+            <span className="text-xs font-semibold text-primary-700">{student.initials}</span>
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-medium text-gray-900">{student.name}</p>
               <StreakBadge streak={student.currentStreak} />
-              <AtRiskIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
+              <InactiveIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
             </div>
             <p className="text-xs text-gray-500">{student.email}</p>
           </div>
@@ -262,7 +256,7 @@ function UnitSection({ unit, isExpanded, onToggle, onViewProfile, onSendMessage 
             <div className="flex items-center gap-2 justify-end">
               <p className="text-xs text-gray-500">{activeCount} active</p>
               {atRiskCount > 0 && (
-                <span className="text-xs font-semibold text-orange-600">{atRiskCount} at-risk</span>
+                <span className="text-xs font-semibold text-orange-600">{atRiskCount} inactive</span>
               )}
             </div>
           </div>
@@ -304,7 +298,7 @@ function UnitSection({ unit, isExpanded, onToggle, onViewProfile, onSendMessage 
   );
 }
 
-// Student Profile Modal with Hormozi retention data
+// Student Profile Modal
 function StudentProfileModal({ student, isOpen, onClose }: { student: Student | null; isOpen: boolean; onClose: () => void }) {
   if (!isOpen || !student) return null;
 
@@ -325,7 +319,7 @@ function StudentProfileModal({ student, isOpen, onClose }: { student: Student | 
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <StatusBadge status={student.status} />
-                <AtRiskIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
+                <InactiveIndicator daysSinceLastClass={student.daysSinceLastClass} healthScore={student.healthScore} />
               </div>
             </div>
           </div>
@@ -340,11 +334,10 @@ function StudentProfileModal({ student, isOpen, onClose }: { student: Student | 
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-orange-900">At risk of churning</p>
+                  <p className="text-sm font-medium text-orange-900">Haven't seen them in a while</p>
                   <p className="text-xs text-orange-700">
                     {student.daysSinceLastClass ? `Last class was ${student.daysSinceLastClass} days ago.` : ""}
-                    {student.healthScore !== undefined ? ` Health score: ${student.healthScore}/100.` : ""}
-                    Consider reaching out.
+                    {" "}A quick check-in could help.
                   </p>
                 </div>
               </div>
@@ -474,7 +467,7 @@ function StudentProfileModal({ student, isOpen, onClose }: { student: Student | 
   );
 }
 
-// Send Message Modal with retention-focused quick messages
+// Send Message Modal with quick message templates
 function SendMessageModal({ student, isOpen, onClose }: { student: Student | null; isOpen: boolean; onClose: () => void }) {
   const [message, setMessage] = useState("");
   const [channel, setChannel] = useState<"whatsapp" | "email" | "sms">("sms");
@@ -490,7 +483,6 @@ function SendMessageModal({ student, isOpen, onClose }: { student: Student | nul
     setMessage(""); onClose();
   };
 
-  // Hormozi: retention-focused quick messages
   const quickMessages = isAtRisk
     ? [
         `Hey ${student.name.split(" ")[0]}! We miss you in class. Your spot is always reserved.`,
@@ -533,7 +525,7 @@ function SendMessageModal({ student, isOpen, onClose }: { student: Student | nul
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 mb-2">{isAtRisk ? "Retention messages:" : "Quick messages:"}</p>
+            <p className="text-sm text-gray-500 mb-2">{isAtRisk ? "Suggested messages:" : "Quick messages:"}</p>
             <div className="flex flex-col gap-2">
               {quickMessages.map((quick) => (
                 <button key={quick} onClick={() => setMessage(quick)}
@@ -553,10 +545,8 @@ function SendMessageModal({ student, isOpen, onClose }: { student: Student | nul
   );
 }
 
-// ============================================
-// Hormozi: At-Risk Students Alert Banner for Teachers
-// ============================================
-function AtRiskAlertBanner({ students, onSendMessage }: { students: Student[]; onSendMessage: (student: Student) => void }) {
+// Inactive Students Alert Banner
+function InactiveAlertBanner({ students, onSendMessage }: { students: Student[]; onSendMessage: (student: Student) => void }) {
   const atRiskStudents = students.filter(s =>
     (s.daysSinceLastClass && s.daysSinceLastClass > 10) || (s.healthScore !== undefined && s.healthScore < 40)
   );
@@ -572,8 +562,8 @@ function AtRiskAlertBanner({ students, onSendMessage }: { students: Student[]; o
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-orange-900">{atRiskStudents.length} student{atRiskStudents.length !== 1 ? "s" : ""} may be losing motivation</p>
-          <p className="text-sm text-orange-700">A quick message can make all the difference</p>
+          <p className="font-semibold text-orange-900">{atRiskStudents.length} student{atRiskStudents.length !== 1 ? "s" : ""} haven't attended recently</p>
+          <p className="text-sm text-orange-700">A quick check-in can make all the difference</p>
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -585,7 +575,7 @@ function AtRiskAlertBanner({ students, onSendMessage }: { students: Student[]; o
             </div>
             <div className="text-left">
               <p className="text-sm font-medium text-gray-900">{student.name.split(" ")[0]}</p>
-              <p className="text-xs text-orange-600">{student.daysSinceLastClass ? `${student.daysSinceLastClass}d ago` : "Low engagement"}</p>
+              <p className="text-xs text-orange-600">{student.daysSinceLastClass ? `${student.daysSinceLastClass}d ago` : "Inactive"}</p>
             </div>
             <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -598,10 +588,13 @@ function AtRiskAlertBanner({ students, onSendMessage }: { students: Student[]; o
 }
 
 export default function TeacherStudentsPage() {
+  const searchParams = useSearchParams();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | Student["status"]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "inactive" | Student["status"]>(
+    searchParams.get("filter") === "inactive" ? "inactive" : "all"
+  );
   const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -615,7 +608,7 @@ export default function TeacherStudentsPage() {
     setAddStudentError("");
     try {
       if (data._sendIntake) {
-        const response = await fetch("/api/clients/send-intake", {
+        const response = await authFetch("/api/clients/send-intake", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -634,7 +627,7 @@ export default function TeacherStudentsPage() {
           setAddStudentError(result.error || "Failed to add student");
         }
       } else {
-        const response = await fetch("/api/clients", {
+        const response = await authFetch("/api/clients", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: data.name, email: data.email, phone: data.phone, plan: data.plan, status: "active" }),
@@ -656,7 +649,7 @@ export default function TeacherStudentsPage() {
 
   const fetchStudents = useCallback(async () => {
     try {
-      const response = await fetch("/api/teacher/students");
+      const response = await authFetch("/api/teacher/students");
       if (response.ok) {
         const data = await response.json();
         setUnits(data.units);
@@ -678,7 +671,8 @@ export default function TeacherStudentsPage() {
     ...unit,
     students: unit.students.filter((student) => {
       const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || student.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "all" || student.status === statusFilter;
+      const matchesStatus = statusFilter === "all"
+        || (statusFilter === "inactive" ? (student.daysSinceLastClass != null && student.daysSinceLastClass > 7) : student.status === statusFilter);
       return matchesSearch && matchesStatus;
     }),
   })).filter((unit) => unit.students.length > 0);
@@ -686,7 +680,7 @@ export default function TeacherStudentsPage() {
   const allStudents = units.flatMap(u => u.students);
   const totalStudents = allStudents.length;
   const activeStudents = allStudents.filter(s => s.status === "active").length;
-  const atRiskStudents = allStudents.filter(s => (s.daysSinceLastClass && s.daysSinceLastClass > 10) || (s.healthScore !== undefined && s.healthScore < 40)).length;
+  const atRiskStudents = allStudents.filter(s => s.daysSinceLastClass != null && s.daysSinceLastClass > 7).length;
 
   if (loading) {
     return <div className="h-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div></div>;
@@ -709,7 +703,7 @@ export default function TeacherStudentsPage() {
         </button>
       </div>
 
-      {/* Stats with at-risk count */}
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Total Students</p>
@@ -719,21 +713,44 @@ export default function TeacherStudentsPage() {
           <p className="text-xs sm:text-sm text-gray-600">Active Students</p>
           <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{activeStudents}</p>
         </div>
-        <div className="bg-white border border-orange-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-orange-600">At Risk</p>
+        <button
+          onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")}
+          className={`bg-white border rounded-xl p-3 sm:p-4 text-left transition-colors ${statusFilter === "inactive" ? "border-orange-400 ring-2 ring-orange-200" : "border-orange-200 hover:border-orange-300"}`}
+        >
+          <p className="text-xs sm:text-sm text-orange-600">Inactive</p>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-lg sm:text-2xl font-bold text-orange-600">{atRiskStudents}</p>
-            {atRiskStudents > 0 && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full animate-pulse">Needs attention</span>}
+            {atRiskStudents > 0 && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">{statusFilter === "inactive" ? "Showing" : "Follow up"}</span>}
           </div>
-        </div>
+        </button>
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Locations</p>
           <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{units.length}</p>
         </div>
       </div>
 
-      {/* At-Risk Alert Banner */}
-      <AtRiskAlertBanner students={allStudents} onSendMessage={handleSendMessage} />
+      {/* At-Risk Alert Banner - only show when not already filtering inactive */}
+      {statusFilter !== "inactive" && (
+        <InactiveAlertBanner students={allStudents} onSendMessage={handleSendMessage} />
+      )}
+
+      {/* Active filter indicator */}
+      {statusFilter === "inactive" && (
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+          <svg className="w-4 h-4 text-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-sm font-medium text-orange-800 flex-1">
+            Showing {filteredUnits.reduce((sum, u) => sum + u.students.length, 0)} inactive students — haven't attended in 10+ days
+          </p>
+          <button
+            onClick={() => setStatusFilter("all")}
+            className="text-xs font-medium text-orange-600 hover:text-orange-800 px-2 py-1 rounded hover:bg-orange-100 transition-colors"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4">
@@ -750,6 +767,7 @@ export default function TeacherStudentsPage() {
               className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
               <option value="all">All statuses</option>
               <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
               <option value="paused">Paused</option>
               <option value="expired">Expired</option>
             </select>

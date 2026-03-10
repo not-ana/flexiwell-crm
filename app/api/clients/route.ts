@@ -23,8 +23,12 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
-    // Build query
+    // Build query - filter by establishment if user has one
     const query: Record<string, unknown> = {};
+
+    if (user?.establishmentId) {
+      query.establishmentId = user.establishmentId;
+    }
 
     if (status && status !== "all") {
       query.status = status;

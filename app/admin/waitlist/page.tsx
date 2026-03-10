@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getStoredTokens } from "@/lib/api/client";
 import { sourcePriorities, type ClientSource } from "@/lib/config/waitlist";
 import { Badge } from "@/components/ui/Badge";
+import { StatCard } from "@/components/ui/StatCard";
 
 function authFetch(url: string, options: RequestInit = {}) {
   const { accessToken } = getStoredTokens();
@@ -153,14 +154,6 @@ function SMSIcon({ className = "size-4" }: { className?: string }) {
   );
 }
 
-function ShieldIcon({ className = "size-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  );
-}
-
 function CheckCircleIcon({ className = "size-5" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -265,14 +258,14 @@ function NotifyToast({ result, onDismiss }: { result: NotifyResult; onDismiss: (
   const isNoChannels = result.noChannelsEnabled;
 
   return (
-    <div className={`p-4 rounded-xl ring-1 ring-inset flex items-start gap-3 ${
+    <div className={`px-4 py-3 rounded-xl ring-1 ring-inset flex items-start gap-3 ${
       isError
         ? "bg-red-50 ring-red-600/10"
         : isNoChannels
         ? "bg-amber-50 ring-amber-600/20"
         : "bg-emerald-50 ring-emerald-600/20"
     }`}>
-      <div className={`size-10 rounded-lg flex items-center justify-center shrink-0 ${
+      <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
         isError
           ? "bg-red-100"
           : isNoChannels
@@ -646,33 +639,18 @@ export default function WaitlistPage() {
 
       {/* Toast */}
       {notifyResult && (
-        <div className="px-6 pt-4">
+        <div className="px-6 pt-3 -mb-2">
           <NotifyToast result={notifyResult} onDismiss={() => setNotifyResult(null)} />
         </div>
       )}
 
       {/* Hero metric + inline stats */}
       <div className="px-6 py-5 border-b border-gray-200 bg-white space-y-4">
-        {/* Inline stats bar */}
-        <div className="flex items-center gap-6 rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200 px-5 py-3">
-          <div className="flex items-center gap-2">
-            <ShieldIcon className="size-4 text-gray-400" />
-            <span className="text-sm text-gray-500">Revenue protected</span>
-            <span className="text-lg font-semibold text-gray-900">{formatCurrency(protectedRevenue.thisMonth)}</span>
-          </div>
-          <div className="w-px h-5 bg-gray-200" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-gray-500">In queue</span>
-            <span className="text-lg font-semibold text-gray-900">{totalWaiting}</span>
-          </div>
-          <div className="w-px h-5 bg-gray-200" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-gray-500">Confirmed</span>
-            <span className="text-lg font-semibold text-gray-900">{stats.confirmed}</span>
-            {conversionRate > 0 && (
-              <span className="text-xs text-gray-400">({conversionRate}%)</span>
-            )}
-          </div>
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <StatCard label="Revenue Protected" value={formatCurrency(protectedRevenue.thisMonth)} />
+          <StatCard label="In Queue" value={totalWaiting} accent={totalWaiting > 0 ? "orange" : "default"} muted={totalWaiting === 0} />
+          <StatCard label="Confirmed" value={stats.confirmed} subtitle={conversionRate > 0 ? `${conversionRate}% conversion` : undefined} accent="emerald" muted={stats.confirmed === 0} />
         </div>
 
         {/* Class demand pills + filter tabs in one row */}

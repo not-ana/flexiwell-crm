@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { storeTokens } from "@/lib/api/client";
 import { getInitials } from "@/lib/utils/formatters";
 import {
   DashboardIcon,
@@ -31,7 +32,6 @@ interface Account {
   name: string;
   email: string;
   initials: string;
-  avatar?: string;
   type: SidebarVariant;
   isActive: boolean;
 }
@@ -80,8 +80,8 @@ const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[]
   teacher: {
     main: [
       { name: "Overview", href: "/teacher", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
-      { name: "My Classes", href: "/teacher/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
-      { name: "My Students", href: "/teacher/students", icon: ClientsIcon },
+      { name: "Schedule", href: "/teacher/classes", icon: ClassesIcon, onboardingId: "sidebar-classes" },
+      { name: "Students", href: "/teacher/students", icon: ClientsIcon },
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
@@ -110,7 +110,7 @@ function AccountTypeBadge({ type }: { type: SidebarVariant }) {
 export default function Sidebar({ variant = "client", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
@@ -137,30 +137,47 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     name: user?.name || "User",
     email: user?.email || "",
     initials: getInitials(user?.name || ""),
-    avatar: user?.avatar,
     type: (user?.role as SidebarVariant) || variant,
     isActive: true,
   };
 
-  // For switch account feature, show demo accounts for other roles (dev only)
+  // Dev-only account switcher: real login to different seed accounts
   const isDev = process.env.NODE_ENV === "development";
-  const currentUserRole = activeAccount.type;
-  const otherAccounts: Account[] = isDev ? ([
-    { id: "demo-admin", name: "Admin Demo", email: "admin@flexiwell.com", initials: "AD", type: "admin" as AccountType, isActive: false },
-    { id: "demo-teacher", name: "Teacher Demo", email: "teacher@flexiwell.com", initials: "TD", type: "teacher" as AccountType, isActive: false },
-  ] as Account[]).filter(a => a.type !== currentUserRole) : [];
+  const demoAccounts: Account[] = isDev ? ([
+    { id: "demo-admin", name: "Sarah Mitchell", email: "admin@flexiwell.com", initials: "SM", type: "admin" as AccountType, isActive: false },
+    { id: "demo-admin-empty", name: "New Admin", email: "newadmin@flexiwell.com", initials: "NA", type: "admin" as AccountType, isActive: false },
+    { id: "demo-teacher", name: "Emily Ferreira", email: "emily@flexiwell.com", initials: "EF", type: "teacher" as AccountType, isActive: false },
+    { id: "demo-teacher-empty", name: "New Teacher", email: "newteacher@flexiwell.com", initials: "NT", type: "teacher" as AccountType, isActive: false },
+  ] as Account[]).filter(a => a.email !== activeAccount.email) : [];
 
-  const accounts: Account[] = [activeAccount, ...otherAccounts];
+  const accounts: Account[] = [activeAccount, ...demoAccounts];
 
-  const handleSwitchAccount = (accountId: string) => {
+  const handleSwitchAccount = async (accountId: string) => {
     const selectedAccount = accounts.find((a) => a.id === accountId);
-    if (!selectedAccount) return;
+    if (!selectedAccount || selectedAccount.email === activeAccount.email) return;
 
     setIsProfileMenuOpen(false);
 
-    // In dev mode, use switchRole to change the user's role in the auth context
-    if (isDev && selectedAccount.id !== activeAccount.id) {
-      switchRole(selectedAccount.type);
+    if (isDev) {
+      // Real login to load the correct account data
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: selectedAccount.email, password: "password123" }),
+        });
+        const data = await res.json();
+        if (res.ok && data.tokens) {
+          storeTokens(data.tokens.accessToken, data.tokens.refreshToken);
+          const redirectPath = selectedAccount.type === "admin" ? "/admin" : selectedAccount.type === "teacher" ? "/teacher" : "/dashboard";
+          window.location.href = redirectPath;
+        } else {
+          console.error("Login failed:", data.error || res.status);
+          alert(data.error || "Failed to switch account");
+        }
+      } catch (error) {
+        console.error("Switch account failed:", error);
+      }
     }
   };
 
@@ -311,15 +328,9 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
           onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          {activeAccount.type !== "admin" && (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center overflow-hidden">
-              {activeAccount.avatar ? (
-                <img src={activeAccount.avatar} alt={activeAccount.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-sm font-semibold text-primary-700">{activeAccount.initials}</span>
-              )}
-            </div>
-          )}
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+            <span className="text-sm font-semibold text-primary-700">{activeAccount.initials}</span>
+          </div>
           <div className="flex-1 text-left">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-gray-900">{activeAccount.name}</p>
@@ -350,14 +361,12 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
                     onClick={() => handleSwitchAccount(account.id)}
                   >
-                    {account.type !== "admin" && (
-                      <div className="relative">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
-                          <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
-                        </div>
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                        <span className="text-xs font-semibold text-primary-700">{account.initials}</span>
                       </div>
-                    )}
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-500 border-2 border-white rounded-full" />
+                    </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-gray-900 truncate">{account.name}</p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Client, Payment } from "@/lib/db/schemas";
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 function getExpectedAmountForPeriod(
   planType: string,
@@ -39,6 +40,8 @@ function getExpectedAmountForPeriod(
 
 // GET /api/payments/expected - Calculate expected revenue from active client plans
 export async function GET(request: NextRequest) {
+  const { user } = await requireAuthFromCookie();
+
   try {
     const { searchParams } = new URL(request.url);
     const dateFrom = searchParams.get("dateFrom");
@@ -56,10 +59,13 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
+    const establishmentFilter = user?.establishmentId ? { establishmentId: user.establishmentId } : {};
+
     // Get active clients with plans that overlap the period
     const clients = await db
       .collection<Client>("clients")
       .find({
+        ...establishmentFilter,
         status: "active",
         "plan.startDate": { $lte: periodEnd },
         "plan.endDate": { $gte: periodStart },
@@ -106,6 +112,7 @@ export async function GET(request: NextRequest) {
     const completedPayments = await db
       .collection<Payment>("payments")
       .find({
+        ...establishmentFilter,
         status: "completed",
         createdAt: { $gte: periodStart, $lte: periodEnd },
       })

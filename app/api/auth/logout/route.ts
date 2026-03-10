@@ -31,10 +31,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "Logged out successfully",
     });
+
+    // Clear auth cookie
+    response.cookies.delete("auth_token");
+
+    return response;
   } catch (error) {
     console.error("Error logging out:", error);
     return NextResponse.json(

@@ -220,13 +220,9 @@ export default function ClientProfilePage() {
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4 flex-1">
-              {client.avatar ? (
-                <img src={client.avatar} alt={client.name} className="w-14 h-14 rounded-full object-cover" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary-700">{initials}</span>
-                </div>
-              )}
+              <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                <span className="text-lg font-semibold text-primary-700">{initials}</span>
+              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-semibold text-gray-900">{client.name}</h1>

@@ -26,13 +26,11 @@ interface Client {
   classes: number;
 }
 
-function Avatar({ name, initials, avatar }: { name: string; initials: string; avatar?: string }) {
+function Avatar({ name, initials }: { name: string; initials: string }) {
   const colors = ["bg-primary-500", "bg-pink-500", "bg-blue-500", "bg-green-500", "bg-orange-500"];
   const colorIndex = name.charCodeAt(0) % colors.length;
 
-  return avatar ? (
-    <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover" />
-  ) : (
+  return (
     <div className={`w-10 h-10 ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-medium text-sm`}>
       {initials}
     </div>
@@ -291,7 +289,7 @@ export default function ClientsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <Avatar name={client.name} initials={client.initials} avatar={client.avatar} />
+                        <Avatar name={client.name} initials={client.initials} />
                         <div>
                           <p className="text-sm font-medium text-gray-900">{client.name}</p>
                           <p className="text-xs text-gray-500">Joined {client.joinDate}</p>

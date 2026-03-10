@@ -49,18 +49,21 @@ export async function GET(request: NextRequest) {
     // Get stats
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const establishmentFilter = user.establishmentId ? { establishmentId: user.establishmentId } : {};
 
     const [totalClients, totalStaff, totalClasses, totalRevenue] = await Promise.all([
-      db.collection("clients").countDocuments(),
-      db.collection("staff").countDocuments(),
+      db.collection("clients").countDocuments({ ...establishmentFilter }),
+      db.collection("staff").countDocuments({ ...establishmentFilter }),
       db.collection("classes").countDocuments({
         scheduledDate: { $gte: thisMonth },
+        ...establishmentFilter,
       }),
       db.collection("payments").aggregate([
         {
           $match: {
             createdAt: { $gte: thisMonth },
             status: "completed",
+            ...establishmentFilter,
           },
         },
         {
@@ -74,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     // Get recent activity
     const recentPayments = await db.collection("payments")
-      .find()
+      .find({ ...establishmentFilter })
       .sort({ createdAt: -1 })
       .limit(3)
       .toArray();

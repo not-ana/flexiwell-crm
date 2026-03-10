@@ -299,27 +299,10 @@ function ProfileSettings() {
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           {/* Avatar Section */}
           <div className="flex items-center gap-4">
-            {avatar ? (
-              <img
-                src={avatar}
-                alt="Profile"
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-lg sm:text-xl font-semibold text-white">
-                  {getInitials(formData.firstName, formData.lastName)}
-                </span>
-              </div>
-            )}
-            <div>
-              <button
-                onClick={handlePhotoChange}
-                className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Change photo
-              </button>
-              <p className="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max 2MB.</p>
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-lg sm:text-xl font-semibold text-white">
+                {getInitials(formData.firstName, formData.lastName)}
+              </span>
             </div>
           </div>
 

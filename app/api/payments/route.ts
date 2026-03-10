@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Payment } from "@/lib/db/schemas";
+import { requireAuthFromCookie } from "@/lib/auth/middleware";
 
 // GET /api/payments - List all payments with filters
 export async function GET(request: NextRequest) {
+  const { user } = await requireAuthFromCookie();
+
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -18,8 +21,12 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
-    // Build filter query
+    // Build filter query - filter by establishment if user has one
     const filter: Record<string, unknown> = {};
+
+    if (user?.establishmentId) {
+      filter.establishmentId = user.establishmentId;
+    }
 
     if (status && status !== "all") {
       filter.status = status;

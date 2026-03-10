@@ -389,19 +389,11 @@ export function AccountSettings({ hideAccountInfo = false }: { hideAccountInfo?:
           </div>
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name || "Profile"}
-                className="w-14 h-14 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-lg font-semibold text-white">
-                  {user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || user?.email?.substring(0, 2).toUpperCase() || "??"}
-                </span>
-              </div>
-            )}
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-lg font-semibold text-white">
+                {user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || user?.email?.substring(0, 2).toUpperCase() || "??"}
+              </span>
+            </div>
             {/* Info */}
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center gap-2">

@@ -53,8 +53,8 @@ const defaultStats: AdminStats = {
   totalRevenue: 0,
 };
 
-// Avatar component
-function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; size?: "sm" | "md" | "lg" | "xl" }) {
+// Avatar component (initials only)
+function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" | "xl" }) {
   const sizeClasses = {
     sm: "w-8 h-8 text-xs",
     md: "w-10 h-10 text-sm",
@@ -63,9 +63,7 @@ function Avatar({ name, avatar, size = "md" }: { name: string; avatar?: string; 
   };
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
-  return avatar ? (
-    <img src={avatar} alt={name} className={`${sizeClasses[size]} rounded-full object-cover`} />
-  ) : (
+  return (
     <div className={`${sizeClasses[size]} bg-primary-500 rounded-full flex items-center justify-center text-white font-medium`}>
       {initials}
     </div>
@@ -175,7 +173,7 @@ export default function AdminProfilePage() {
       <div className="p-8 max-w-5xl">
         {/* Header with Avatar and Name */}
         <div className="flex items-center gap-4 mb-8">
-          <Avatar name={adminUser.name} avatar={adminUser.avatar} size="xl" />
+          <Avatar name={adminUser.name} size="xl" />
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{adminUser.name}</h1>
             <span className="inline-block mt-1 px-3 py-1 bg-primary-100 text-primary-700 text-sm font-medium rounded-full">

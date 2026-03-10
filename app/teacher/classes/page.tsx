@@ -11,6 +11,7 @@ import {
   PlusIcon,
 } from "@/components/icons";
 import { Badge } from "@/components/ui/Badge";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 // Types
 type ViewMode = "day" | "week" | "month";
@@ -652,7 +653,7 @@ function CreateClassModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       // Create classes for each date
       let successCount = 0;
       for (const date of dates) {
-        const response = await fetch("/api/teacher/classes", {
+        const response = await authFetch("/api/teacher/classes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1090,7 +1091,7 @@ function StartClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boolea
     setIsStarting(true);
     setError(null);
     try {
-      const response = await fetch("/api/teacher/classes", {
+      const response = await authFetch("/api/teacher/classes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1276,7 +1277,7 @@ function TakeAttendanceModal({ isOpen, onClose, event, onSave }: { isOpen: boole
 
     try {
       // First, get bookings for this class to get booking IDs
-      const attendanceResponse = await fetch(`/api/teacher/attendance?classId=${event.id}`);
+      const attendanceResponse = await authFetch(`/api/teacher/attendance?classId=${event.id}`);
       if (!attendanceResponse.ok) {
         throw new Error("Failed to fetch attendance data");
       }
@@ -1289,7 +1290,7 @@ function TakeAttendanceModal({ isOpen, onClose, event, onSave }: { isOpen: boole
       }));
 
       // Save attendance
-      const response = await fetch("/api/teacher/attendance", {
+      const response = await authFetch("/api/teacher/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1536,7 +1537,7 @@ function CompleteClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boo
     setIsCompleting(true);
     setError(null);
     try {
-      const response = await fetch("/api/teacher/classes", {
+      const response = await authFetch("/api/teacher/classes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1592,7 +1593,7 @@ function CompleteClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boo
               </div>
             </div>
 
-            {/* No-show follow-up section - Hormozi: immediate follow-up prevents churn */}
+            {/* No-show follow-up section */}
             {absentStudents.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
                 <div className="flex items-center gap-2 mb-3">
@@ -1739,7 +1740,7 @@ function CancelClassModal({ isOpen, onClose, event, onConfirm }: { isOpen: boole
     setIsCancelling(true);
     setError(null);
     try {
-      const response = await fetch("/api/teacher/classes", {
+      const response = await authFetch("/api/teacher/classes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1957,14 +1958,19 @@ function ViewReportModal({ isOpen, onClose, event }: { isOpen: boolean; onClose:
 function ViewStudentsModal({ isOpen, onClose, event }: { isOpen: boolean; onClose: () => void; event: ClassEvent | null }) {
   if (!isOpen || !event) return null;
 
+  const presentCount = event.students.filter(s => s.attended === true).length;
+  const absentCount = event.students.filter(s => s.attended === false).length;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden max-h-[85vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Enrolled Students</h2>
-              <p className="text-sm text-gray-600 mt-1">{event.title} • {event.enrolled}/{event.capacity} students</p>
+              <h2 className="text-lg font-semibold text-gray-900">{event.title}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">{event.enrolled}/{event.capacity} enrolled
+                {event.status === "completed" && ` — ${presentCount} present, ${absentCount} absent`}
+              </p>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <CloseIcon className="w-5 h-5" />
@@ -1972,42 +1978,68 @@ function ViewStudentsModal({ isOpen, onClose, event }: { isOpen: boolean; onClos
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto">
           {event.students.length > 0 ? (
-            <div className="space-y-3">
-              {event.students.map((student) => (
-                <div key={student.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-primary-700">{student.initials}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                    <p className="text-xs text-gray-500">Student ID: {student.id}</p>
-                  </div>
-                  {event.status === "completed" && (
-                    student.attended === true ? (
-                      <div className="flex items-center gap-1 text-green-600">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span className="text-xs font-medium">Present</span>
+            <div className="divide-y divide-gray-100">
+              {event.students.map((student) => {
+                const isInactive = student.daysSinceLastClass != null && student.daysSinceLastClass > 7;
+                return (
+                  <div key={student.id} className={`flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors ${
+                    student.attended === false ? "bg-red-50/50" : ""
+                  }`}>
+                    <div className="relative flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-primary-700">{student.initials}</span>
                       </div>
-                    ) : student.attended === false ? (
-                      <div className="flex items-center gap-1 text-red-600">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                        <span className="text-xs font-medium">Absent</span>
+                      {isInactive && (
+                        <span className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${student.daysSinceLastClass! > 14 ? "bg-red-500" : "bg-orange-500"}`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-gray-900 truncate">{student.name}</span>
+                        {student.currentStreak != null && student.currentStreak >= 2 && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-semibold rounded-full shrink-0">
+                            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 23c-3.6 0-7-2.4-7-7 0-3.1 2.1-5.7 4-7.8l1.5-1.6c.4-.4 1-.4 1.4 0 .2.2.3.4.3.7v4.3l2.6-3.5c.3-.4.9-.5 1.3-.2.2.1.3.3.4.5C18.3 12.6 19 15.1 19 16c0 4.6-3.4 7-7 7z"/></svg>
+                            {student.currentStreak}
+                          </span>
+                        )}
                       </div>
-                    ) : null
-                  )}
-                </div>
-              ))}
+                      {isInactive ? (
+                        <p className={`text-[11px] ${student.daysSinceLastClass! > 14 ? "text-red-600" : "text-orange-600"}`}>
+                          Last class {student.daysSinceLastClass} days ago
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-gray-400">Active student</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {student.attended === true && (
+                        <span className="flex items-center gap-1 text-green-600">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                        </span>
+                      )}
+                      {student.attended === false && (
+                        <span className="flex items-center gap-1 text-red-500">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </span>
+                      )}
+                      <a
+                        href="/teacher/students"
+                        className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                        title="View profile"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserIcon className="w-8 h-8 text-gray-400" />
+            <div className="text-center py-10 px-4">
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <UserIcon className="w-7 h-7 text-gray-400" />
               </div>
               <p className="text-gray-600 mb-1">No students enrolled yet</p>
               <p className="text-sm text-gray-500">Students will appear here once they register for this class.</p>
@@ -2015,11 +2047,8 @@ function ViewStudentsModal({ isOpen, onClose, event }: { isOpen: boolean; onClos
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
+        <div className="p-4 border-t border-gray-200">
+          <button onClick={onClose} className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
             Close
           </button>
         </div>
@@ -2028,8 +2057,30 @@ function ViewStudentsModal({ isOpen, onClose, event }: { isOpen: boolean; onClos
   );
 }
 
-// Metrics Dashboard Sidebar (Hormozi: show what matters - occupancy, revenue, urgency)
+// Metrics Dashboard Sidebar
 function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onCreateClass: () => void }) {
+  const [inactiveStudents, setInactiveStudents] = useState<{ count: number; top: { id: string; name: string; initials: string; daysSinceLastClass?: number }[] }>({ count: 0, top: [] });
+
+  useEffect(() => {
+    async function fetchInactive() {
+      try {
+        const response = await authFetch("/api/teacher/students");
+        if (response.ok) {
+          const data = await response.json();
+          const allStudents = (data.units || []).flatMap((u: { students: Student[] }) => u.students);
+          const inactive = allStudents
+            .filter((s: Student) => s.daysSinceLastClass != null && s.daysSinceLastClass > 7)
+            .sort((a: Student, b: Student) => (b.daysSinceLastClass || 0) - (a.daysSinceLastClass || 0));
+          setInactiveStudents({
+            count: inactive.length,
+            top: inactive.slice(0, 4).map((s: Student) => ({ id: s.id, name: s.name, initials: s.initials, daysSinceLastClass: s.daysSinceLastClass })),
+          });
+        }
+      } catch { /* silent */ }
+    }
+    fetchInactive();
+  }, []);
+
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay());
@@ -2043,16 +2094,7 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
   const occupancyRate = totalCapacity > 0 ? Math.round((totalEnrolled / totalCapacity) * 100) : 0;
   const emptySpots = totalCapacity - totalEnrolled;
 
-  // At-risk students: unique students across all classes with daysSinceLastClass > 7
-  const atRiskStudentsMap = new Map<string, Student>();
-  events.forEach(e => {
-    e.students.forEach(s => {
-      if (s.daysSinceLastClass != null && s.daysSinceLastClass > 7 && !atRiskStudentsMap.has(s.id)) {
-        atRiskStudentsMap.set(s.id, s);
-      }
-    });
-  });
-  const atRiskCount = atRiskStudentsMap.size;
+  const atRiskCount = inactiveStudents.count;
 
   // Upcoming classes with low fill (urgency)
   const upcomingLow = weekEvents
@@ -2091,19 +2133,6 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
           </div>
         </div>
 
-        {/* At-Risk Students - Hormozi: retention awareness */}
-        {atRiskCount > 0 && (
-          <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
-            <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <div>
-              <p className="text-sm font-semibold text-red-700">{atRiskCount} student{atRiskCount !== 1 ? "s" : ""} at risk</p>
-              <p className="text-[10px] text-red-600">No class in 7+ days — at risk of churning</p>
-            </div>
-          </div>
-        )}
-
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -2114,14 +2143,16 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
             <p className="text-xl font-bold text-gray-900">{todayCompleted}/{todayEvents.length}</p>
             <p className="text-xs text-gray-500">Today Done</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-center col-span-2">
-            <p className={`text-xl font-bold ${atRiskCount > 0 ? "text-red-600" : "text-green-600"}`}>{atRiskCount}</p>
-            <p className="text-xs text-gray-500">At-Risk Students</p>
-          </div>
+          {atRiskCount > 0 && (
+            <a href="/teacher/students?filter=inactive" className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-center col-span-2 hover:bg-orange-100 transition-colors">
+              <p className="text-xl font-bold text-orange-600">{atRiskCount}</p>
+              <p className="text-xs text-orange-600">Inactive Students</p>
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Empty Spots Alert - Hormozi: show cost of inaction */}
+      {/* Empty Spots Alert */}
       {emptySpots > 0 && (
         <div className="p-5 border-b border-gray-200">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -2133,14 +2164,14 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
               </div>
               <div>
                 <p className="text-sm font-semibold text-amber-800">{emptySpots} empty spots this week</p>
-                <p className="text-xs text-amber-700 mt-1">Each unfilled spot is revenue left on the table. Share your booking link to fill them.</p>
+                <p className="text-xs text-amber-700 mt-1">Share your booking link to help fill these spots.</p>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Low-Fill Classes - Hormozi: urgency */}
+      {/* Low-Fill Classes */}
       {upcomingLow.length > 0 && (
         <div className="p-5 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -2200,15 +2231,6 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
         </div>
       </div>
 
-      {/* Social Proof Nudge - Hormozi */}
-      <div className="p-5 mt-auto">
-        <div className="bg-primary-50 rounded-xl p-4">
-          <p className="text-xs font-semibold text-primary-700 mb-1">Did you know?</p>
-          <p className="text-xs text-primary-600">
-            Group class members stay 22% longer than non-class members. <span className="opacity-75">— The Retention People / Les Mills study, 601 facilities</span>
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -2242,7 +2264,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
         </div>
         <span className="mt-2"><Badge style={statusStyle} /></span>
 
-        {/* Fill Rate Bar - Hormozi: make occupancy visible */}
+        {/* Fill Rate Bar */}
         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-medium text-gray-600">Fill Rate</span>
@@ -2284,14 +2306,18 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
 
       {event.students.length > 0 && (
         <div className="p-4 border-b border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-3">Enrolled Students</h3>
-          <div className="space-y-2">
-            {event.students.map((student) => (
-              <div
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900">Enrolled ({event.students.length})</h3>
+            <a href="/teacher/students" className="text-xs text-primary-600 hover:text-primary-700 font-medium">View all</a>
+          </div>
+          <div className="space-y-1.5">
+            {event.students.slice(0, 6).map((student) => (
+              <a
                 key={student.id}
-                className={`flex items-center gap-3 p-2 rounded-lg ${
-                  student.attended === true ? "bg-green-50" :
-                  student.attended === false ? "bg-red-50" : "bg-gray-50"
+                href="/teacher/students"
+                className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors cursor-pointer ${
+                  student.attended === true ? "bg-green-50 hover:bg-green-100" :
+                  student.attended === false ? "bg-red-50 hover:bg-red-100" : "bg-gray-50 hover:bg-gray-100"
                 }`}
               >
                 <div className="relative flex-shrink-0">
@@ -2326,8 +2352,11 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 )}
-              </div>
+              </a>
             ))}
+            {event.students.length > 6 && (
+              <p className="text-xs text-gray-500 text-center pt-1">+{event.students.length - 6} more</p>
+            )}
           </div>
         </div>
       )}
@@ -2452,7 +2481,7 @@ export default function TeacherClassesPage() {
   // Fetch classes from API
   const fetchClasses = useCallback(async () => {
     try {
-      const response = await fetch("/api/teacher/classes");
+      const response = await authFetch("/api/teacher/classes");
       if (response.ok) {
         const data = await response.json();
         // Convert ISO strings to Date objects
@@ -2477,9 +2506,6 @@ export default function TeacherClassesPage() {
           status: c.status as ClassStatus,
           students: (c.students || []).map((s: Student) => ({
             ...s,
-            daysSinceLastClass: s.daysSinceLastClass ?? Math.floor(Math.random() * 20),
-            currentStreak: s.currentStreak ?? Math.floor(Math.random() * 8),
-            lifecycleStage: s.lifecycleStage ?? (Math.random() > 0.7 ? "at-risk" : "active"),
           })),
         }));
         setEvents(formattedEvents);
@@ -2564,7 +2590,7 @@ export default function TeacherClassesPage() {
             </button>
           </div>
         </div>
-        {/* Inline week stats bar - Hormozi: always show the score */}
+        {/* Inline week stats bar */}
         {events.length > 0 && (() => {
           const now = new Date();
           const weekStart = new Date(now);
@@ -2633,7 +2659,7 @@ export default function TeacherClassesPage() {
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 bg-white">
-          {/* Hormozi Empty State: cost of inaction + speed to value */}
+          {/* Empty State */}
           {events.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="max-w-md text-center px-4">
@@ -2643,7 +2669,7 @@ export default function TeacherClassesPage() {
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Your calendar is empty</h2>
-                <p className="text-gray-500 mb-6">Every week without classes is a week without revenue. Set up your schedule now and start filling spots.</p>
+                <p className="text-gray-500 mb-6">Set up your schedule to start managing classes and tracking attendance.</p>
 
                 {/* Real industry data */}
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">

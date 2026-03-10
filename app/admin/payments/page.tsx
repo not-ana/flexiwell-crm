@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { SearchIcon } from "@/components/icons";
 import { useCurrency } from "@/hooks/useCurrency";
 import { Badge } from "@/components/ui/Badge";
+import { StatCard } from "@/components/ui/StatCard";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 // Toast notification helper
 function showToast(message: string, type: "success" | "error" = "success") {
@@ -254,8 +257,8 @@ export default function PaymentsPage() {
 
       // Fetch payments and expected revenue in parallel
       const [response, expectedResponse] = await Promise.all([
-        fetch(`/api/payments?${params}`),
-        fetch(`/api/payments/expected?dateFrom=${dateFrom.toISOString()}&dateTo=${dateTo.toISOString()}`),
+        authFetch(`/api/payments?${params}`),
+        authFetch(`/api/payments/expected?dateFrom=${dateFrom.toISOString()}&dateTo=${dateTo.toISOString()}`),
       ]);
 
       if (!response.ok) {
@@ -300,7 +303,7 @@ export default function PaymentsPage() {
     const debounceTimer = setTimeout(async () => {
       setClientSearchLoading(true);
       try {
-        const response = await fetch(`/api/clients?search=${encodeURIComponent(clientSearchQuery)}&limit=10`);
+        const response = await authFetch(`/api/clients?search=${encodeURIComponent(clientSearchQuery)}&limit=10`);
         if (response.ok) {
           const data = await response.json();
           setClientSearchResults(data.clients || []);
@@ -359,7 +362,7 @@ export default function PaymentsPage() {
   const handleQuickReminder = async (payment: DisplayPayment) => {
     setActionLoading(true);
     try {
-      const response = await fetch("/api/payments/reminders", {
+      const response = await authFetch("/api/payments/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -417,7 +420,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch("/api/payments", {
+      const response = await authFetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -464,7 +467,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${markPaidTarget._id}`, {
+      const response = await authFetch(`/api/payments/${markPaidTarget._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -508,7 +511,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${editPaymentTarget._id}`, {
+      const response = await authFetch(`/api/payments/${editPaymentTarget._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -539,7 +542,7 @@ export default function PaymentsPage() {
   const handleRetryPayment = async (payment: DisplayPayment) => {
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${payment._id}`, {
+      const response = await authFetch(`/api/payments/${payment._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "retry" }),
@@ -568,7 +571,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${deleteTarget._id}`, {
+      const response = await authFetch(`/api/payments/${deleteTarget._id}`, {
         method: "DELETE",
       });
 
@@ -591,7 +594,7 @@ export default function PaymentsPage() {
     setShowDeletedHistoryModal(true);
     setLoadingDeleted(true);
     try {
-      const response = await fetch("/api/payments/deleted?limit=50");
+      const response = await authFetch("/api/payments/deleted?limit=50");
       if (response.ok) {
         const data = await response.json();
         const transformed = data.payments.map((p: Payment & { deletedAt: string }) => ({
@@ -610,7 +613,7 @@ export default function PaymentsPage() {
   const handleRestorePayment = async (paymentId: string) => {
     setActionLoading(true);
     try {
-      const response = await fetch("/api/payments/deleted", {
+      const response = await authFetch("/api/payments/deleted", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId }),
@@ -635,7 +638,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${paymentId}?permanent=true`, {
+      const response = await authFetch(`/api/payments/${paymentId}?permanent=true`, {
         method: "DELETE",
       });
 
@@ -664,7 +667,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch("/api/payments/reminders", {
+      const response = await authFetch("/api/payments/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -697,7 +700,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch("/api/payments/reminders", {
+      const response = await authFetch("/api/payments/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -739,7 +742,7 @@ export default function PaymentsPage() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/payments/${payment._id}`, {
+      const response = await authFetch(`/api/payments/${payment._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "refund" }),
@@ -864,42 +867,66 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Revenue collected + unpaid clients */}
+      {/* Stats cards */}
       {!hasNoPayments && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6">
-          <div className="flex items-baseline gap-3">
-            <span className="text-xl font-bold text-gray-900">
-              {formatCurrency(stats.totalRevenue)}
-            </span>
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-              Collected
-            </span>
+        <div className="space-y-3 mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="Collected" value={formatCurrency(stats.totalRevenue)} accent="emerald" />
+            <StatCard label="Pending" value={formatCurrency(stats.pendingAmount)} accent={stats.pendingCount > 0 ? "orange" : "default"} muted={stats.pendingCount === 0} subtitle={stats.pendingCount > 0 ? `${stats.pendingCount} payment${stats.pendingCount !== 1 ? "s" : ""}` : undefined} />
+            <StatCard label="Overdue" value={formatCurrency(stats.overdueAmount)} accent={stats.overdueCount > 0 ? "red" : "default"} muted={stats.overdueCount === 0} subtitle={stats.overdueCount > 0 ? `${stats.overdueCount} payment${stats.overdueCount !== 1 ? "s" : ""}` : undefined} />
+            <StatCard label="Collection Rate" value={collectionRate > 0 ? `${collectionRate}%` : "—"} muted={collectionRate === 0} />
           </div>
 
           {/* Unpaid clients — collapsible */}
           {hasExpectedData && expectedData.unpaidClients.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <button
-                onClick={() => setShowUnpaidClients(prev => !prev)}
-                className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                {expectedData.unpaidClients.length} client{expectedData.unpaidClients.length !== 1 ? "s" : ""} haven&apos;t paid yet
-                {showUnpaidClients ? " ▴" : " ▾"}
-              </button>
+            <div className="rounded-xl ring-1 ring-inset ring-gray-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowUnpaidClients(prev => !prev)}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {expectedData.unpaidClients.length} client{expectedData.unpaidClients.length !== 1 ? "s" : ""} haven&apos;t paid yet
+                  {showUnpaidClients ? " ▴" : " ▾"}
+                </button>
+                <span className="text-xs font-medium text-red-600">
+                  {formatCurrency(expectedData.outstandingRevenue)} outstanding
+                </span>
+              </div>
               {showUnpaidClients && (
-                <div className="space-y-2 mt-2">
-                  {expectedData.unpaidClients.map(client => (
-                    <div key={client.clientId} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
-                          {getInitials(client.clientName)}
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <div className="space-y-1">
+                    {expectedData.unpaidClients.map(client => (
+                      <div key={client.clientId} className="flex items-center justify-between py-1.5 rounded-lg hover:bg-gray-50 px-2 -mx-2 group">
+                        <Link
+                          href={`/admin/clients/${client.clientId}`}
+                          className="flex items-center gap-2 min-w-0"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
+                            {getInitials(client.clientName)}
+                          </div>
+                          <span className="text-sm text-gray-700 group-hover:text-primary-600 transition-colors truncate">{client.clientName}</span>
+                          <span className="text-xs text-gray-400 capitalize shrink-0">{client.planType}</span>
+                        </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-sm font-medium text-gray-700">{formatCurrency(client.expectedAmount)}</span>
+                          <button
+                            onClick={() => {
+                              setRecordPaymentForm(prev => ({
+                                ...prev,
+                                clientId: client.clientId,
+                                clientName: client.clientName,
+                                amount: String(client.expectedAmount),
+                              }));
+                              setShowRecordPaymentModal(true);
+                            }}
+                            className="text-xs font-medium text-primary-600 hover:text-primary-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            Record
+                          </button>
                         </div>
-                        <span className="text-gray-700">{client.clientName}</span>
-                        <span className="text-xs text-gray-400 capitalize">{client.planType}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{formatCurrency(client.expectedAmount)}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1335,7 +1362,7 @@ export default function PaymentsPage() {
                 onClick={async () => {
                   setActionLoading(true);
                   try {
-                    const response = await fetch("/api/payments/reminders", {
+                    const response = await authFetch("/api/payments/reminders", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
@@ -1488,7 +1515,7 @@ export default function PaymentsPage() {
                     }
 
                     // Download CSV
-                    const response = await fetch(`/api/admin/payments/export?${params.toString()}`);
+                    const response = await authFetch(`/api/admin/payments/export?${params.toString()}`);
                     if (response.ok) {
                       const blob = await response.blob();
                       const url = window.URL.createObjectURL(blob);

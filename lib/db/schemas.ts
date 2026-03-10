@@ -15,11 +15,21 @@ export interface ClientHealthScore {
   lastCalculatedAt: Date;
 }
 
+export type IntakeStatus = "not_sent" | "sent" | "opened" | "completed";
+
 export interface ClientOnboarding {
   welcomeEmailSent: boolean;
   welcomeEmailSentAt?: Date;
   healthAssessmentCompleted: boolean;
   healthAssessmentCompletedAt?: Date;
+  // Intake pipeline tracking
+  intakeStatus: IntakeStatus;
+  intakeSentAt?: Date;
+  intakeSentVia?: "email" | "sms" | "whatsapp";
+  intakeOpenedAt?: Date;
+  intakeCompletedAt?: Date;
+  intakeReminderCount?: number;
+  intakeLastReminderAt?: Date;
   firstClassBooked: boolean;
   firstClassBookedAt?: Date;
   firstClassCompleted: boolean;
@@ -219,7 +229,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | "no-show";
-  source: "web" | "bot" | "admin";
+  source: "web" | "bot" | "sms" | "admin";
   // Wellhub integration fields
   wellhubBookingId?: string;
   isWellhubBooking?: boolean;
@@ -452,6 +462,7 @@ export interface User {
   // Link to other entities based on role
   staffId?: string; // For admin/teacher roles
   clientId?: string; // For client role
+  establishmentId?: string; // Scopes data to a specific establishment
   isActive: boolean;
   lastLoginAt?: Date;
   // Linked social accounts
@@ -499,7 +510,7 @@ export interface BotCommand {
 export interface BotSession {
   _id?: ObjectId;
   platformUserId: string;
-  platform: "whatsapp" | "instagram";
+  platform: "whatsapp" | "sms" | "instagram";
   clientId?: string;
   isAuthenticated: boolean;
   currentFlow?: string;
