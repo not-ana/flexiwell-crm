@@ -1389,7 +1389,7 @@ async function seed(profile: SeedProfile = "full") {
       isActive: true,
       lastLoginAt: new Date(),
       subscriptionStatus: "active",
-      planTier: "business",
+      planTier: "retention_pro",
       stripeCustomerId: "cus_demo_admin",
       stripeSubscriptionId: "sub_demo_admin",
       trialStatus: "converted",
@@ -1429,7 +1429,7 @@ async function seed(profile: SeedProfile = "full") {
       isActive: true,
       lastLoginAt: new Date(),
       subscriptionStatus: "active",
-      planTier: "business",
+      planTier: "retention_pro",
       trialStatus: "converted",
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1619,18 +1619,71 @@ async function seed(profile: SeedProfile = "full") {
 
     // Create indexes
     console.log("\nCreating indexes...");
+    // Unique indexes
     await db.collection("users").createIndex({ email: 1 }, { unique: true });
     await db.collection("staff").createIndex({ email: 1 }, { unique: true });
     await db.collection("clients").createIndex({ email: 1 }, { unique: true });
+    // Clients
     await db.collection("clients").createIndex({ status: 1 });
+    await db.collection("clients").createIndex({ establishmentId: 1 });
+    await db.collection("clients").createIndex({ "healthScore.overall": 1 });
+    await db.collection("clients").createIndex({ lifecycleStage: 1 });
+    await db.collection("clients").createIndex({ deletedAt: 1 }, { sparse: true });
+    // Staff
+    await db.collection("staff").createIndex({ establishmentId: 1 });
+    await db.collection("staff").createIndex({ deletedAt: 1 }, { sparse: true });
+    // Classes
     await db.collection("classes").createIndex({ scheduledDate: 1 });
     await db.collection("classes").createIndex({ instructorId: 1 });
+    await db.collection("classes").createIndex({ establishmentId: 1 });
+    await db.collection("classes").createIndex({ status: 1, scheduledDate: 1 });
+    // Bookings
     await db.collection("bookings").createIndex({ clientId: 1 });
     await db.collection("bookings").createIndex({ classId: 1 });
     await db.collection("bookings").createIndex({ scheduledDate: 1 });
+    await db.collection("bookings").createIndex({ status: 1 });
+    await db.collection("bookings").createIndex({ clientId: 1, scheduledDate: -1 });
+    // Payments
     await db.collection("payments").createIndex({ clientId: 1 });
+    await db.collection("payments").createIndex({ status: 1 });
+    // Reviews
     await db.collection("reviews").createIndex({ staffId: 1 });
+    // Activities
     await db.collection("activities").createIndex({ createdAt: -1 });
+    await db.collection("activities").createIndex({ entityId: 1, entityType: 1 });
+    // Users - billing
+    await db.collection("users").createIndex({ stripeCustomerId: 1 }, { sparse: true });
+    await db.collection("users").createIndex({ establishmentId: 1 });
+    await db.collection("users").createIndex({ trialEndDate: 1 }, { sparse: true });
+    // Establishments
+    await db.collection("establishments").createIndex({ ownerId: 1 });
+    // Waitlist
+    await db.collection("waitlist_entries").createIndex({ classId: 1, status: 1 });
+    await db.collection("waitlist_entries").createIndex({ clientId: 1 });
+    // Health assessments
+    await db.collection("health_assessments").createIndex({ clientId: 1 });
+    await db.collection("health_assessments").createIndex({ status: 1 });
+    await db.collection("health_assessment_tokens").createIndex({ token: 1 }, { unique: true });
+    await db.collection("health_assessment_tokens").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    // Usage tracking
+    await db.collection("usage_tracking").createIndex({ userId: 1 }, { unique: true });
+    // Subscription events
+    await db.collection("subscription_events").createIndex({ userId: 1, createdAt: -1 });
+    await db.collection("subscription_events").createIndex({ stripeEventId: 1 }, { unique: true, sparse: true });
+    // Coupons
+    await db.collection("coupons").createIndex({ code: 1 }, { unique: true });
+    await db.collection("coupons").createIndex({ isActive: 1, expiresAt: 1 });
+    // Refund requests
+    await db.collection("refund_requests").createIndex({ userId: 1 });
+    await db.collection("refund_requests").createIndex({ status: 1 });
+    // Pricing audit
+    await db.collection("pricing_audit").createIndex({ userId: 1, createdAt: -1 });
+    // Support tickets
+    await db.collection("support_tickets").createIndex({ status: 1 });
+    await db.collection("support_tickets").createIndex({ clientId: 1 });
+    // Bot sessions
+    await db.collection("bot_sessions").createIndex({ platformUserId: 1, platform: 1 });
+    await db.collection("bot_sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
     console.log("   All indexes created\n");
 
     // Summary

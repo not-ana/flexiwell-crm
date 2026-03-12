@@ -64,23 +64,18 @@ export const enUS: TranslationKeys = {
     plans: {
       starter: {
         name: "Starter",
-        description: "For solo instructors getting started.",
-        tagline: "For solo instructors",
+        description: "Scheduling, payments, and basic studio management.",
+        tagline: "The essentials",
       },
-      growth: {
-        name: "Growth",
-        description: "For growing studios ready to scale.",
-        tagline: "For growing studios",
+      retention_pro: {
+        name: "Retention Pro",
+        description: "The Retention Engine™ — stop losing clients and fill your studio.",
+        tagline: "The Retention Engine™",
       },
-      business: {
-        name: "Business",
-        description: "Maximize revenue with AI-powered waitlist and predictive insights.",
-        tagline: "Revenue optimization",
-      },
-      enterprise: {
-        name: "Enterprise",
-        description: "For studio networks and franchises with maximum control.",
-        tagline: "Custom solution",
+      scale: {
+        name: "Scale",
+        description: "For multi-location studios and franchises with unlimited everything.",
+        tagline: "Multi-location mastery",
       },
     },
 

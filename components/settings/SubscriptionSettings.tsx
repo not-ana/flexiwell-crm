@@ -7,70 +7,23 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 const flexiwellPlans = [
   {
-    id: "starter",
-    name: "Starter",
-    monthlyPrice: 99,
-    yearlyPrice: 79,
-    description: "For solo instructors",
+    id: "retention_pro",
+    name: "Retention Pro",
+    monthlyPrice: 799,
+    yearlyPrice: 549,
+    description: "The Retention Engine™ for established studios",
     limits: {
-      clients: 100,
-      staff: 1,
-      locations: 1,
-      storage: "5GB",
-    },
-    features: [
-      "Up to 100 clients",
-      "1 team account",
-      "1 location",
-      "Online scheduling",
-      "Email reminders",
-      "Basic reports",
-    ],
-    highlight: false,
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    monthlyPrice: 179,
-    yearlyPrice: 143,
-    description: "For growing studios",
-    limits: {
-      clients: 500,
+      clients: 1000,
       staff: "unlimited",
-      locations: 2,
-      storage: "25GB",
-    },
-    features: [
-      "Everything in Starter, plus:",
-      "Up to 500 clients",
-      "Unlimited team accounts",
-      "2 locations",
-      "SMS notifications",
-      "Email notifications",
-      "Smart Waitlist (basic)",
-      "Advanced reports",
-      "Chat support",
-    ],
-    highlight: false,
-  },
-  {
-    id: "business",
-    name: "Business",
-    monthlyPrice: 299,
-    yearlyPrice: 239,
-    description: "For established studios",
-    limits: {
-      clients: 2000,
-      staff: "unlimited",
-      locations: 5,
+      locations: 3,
       storage: "100GB",
     },
     features: [
-      "Everything in Growth, plus:",
-      "Up to 2,000 clients",
-      "5 locations",
-      "Messaging Bot (5,000 msgs/month)",
+      "Up to 1,000 clients",
+      "3 locations",
+      "SMS Bot (5,000 msgs/month)",
       "AI Support Assistant (2,000 chats/mo)",
+      "Client Health Score & churn alerts",
       "AI-powered smart waitlist",
       "White-label branding",
       "Cancellation predictions",
@@ -80,11 +33,11 @@ const flexiwellPlans = [
     badge: "Most Popular",
   },
   {
-    id: "professional",
-    name: "Professional",
-    monthlyPrice: 499,
-    yearlyPrice: 399,
-    description: "For large studios and networks",
+    id: "scale",
+    name: "Scale",
+    monthlyPrice: 0, // Custom pricing — contact sales
+    yearlyPrice: 0,
+    description: "For multi-location studios and franchises",
     limits: {
       clients: "unlimited",
       staff: "unlimited",
@@ -92,13 +45,13 @@ const flexiwellPlans = [
       storage: "500GB",
     },
     features: [
-      "Everything in Business, plus:",
+      "Everything in Retention Pro, plus:",
       "Unlimited clients",
       "Unlimited locations",
-      "Messaging Bot (unlimited)",
+      "SMS Bot (unlimited)",
       "AI Support Assistant (unlimited)",
-      "Custom waitlist rules",
-      "White-label branding",
+      "Custom waitlist & retention rules",
+      "Multi-location analytics",
       "Complete API access",
       "Dedicated account manager",
       "Priority support (12h)",
@@ -199,8 +152,8 @@ function ChangePlanModal({
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto">
-          {/* Responsive grid for 4 plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 gap-y-6 items-stretch">
+          {/* Responsive grid for 2 plans */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 gap-y-6 items-stretch">
             {flexiwellPlans.map((plan) => {
               const price = selectedCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
               const isCurrentPlan = currentPlanId === plan.id;
@@ -247,10 +200,16 @@ function ChangePlanModal({
 
                   {/* Pricing */}
                   <div className="mb-5">
+                    {price === 0 ? (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-bold text-gray-900 tracking-tight">Contact Sales</span>
+                    </div>
+                    ) : (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-4xl font-bold text-gray-900 tracking-tight">{currencySymbol}{price}</span>
                       <span className="text-base text-gray-500">/mo</span>
                     </div>
+                    )}
                     {selectedCycle === "yearly" && (
                       <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-md">
                         <span className="text-xs text-green-700 font-semibold">
@@ -267,7 +226,7 @@ function ChangePlanModal({
                         <span className="text-gray-500">👥</span>
                         <span className="text-gray-600">
                           <span className="font-semibold text-gray-900">
-                            {plan.limits.clients === -1 ? "∞" : plan.limits.clients}
+                            {plan.limits.clients === "unlimited" ? "∞" : plan.limits.clients}
                           </span> clients
                         </span>
                       </div>
@@ -275,7 +234,7 @@ function ChangePlanModal({
                         <span className="text-gray-500">👤</span>
                         <span className="text-gray-600">
                           <span className="font-semibold text-gray-900">
-                            {plan.limits.staff === -1 ? "∞" : plan.limits.staff}
+                            {plan.limits.staff === "unlimited" ? "∞" : plan.limits.staff}
                           </span> team
                         </span>
                       </div>
@@ -575,10 +534,10 @@ export function SubscriptionSettings() {
   const { formatCurrency } = useCurrency();
 
   const currentPlan = {
-    id: "business",
-    name: "Business",
-    monthlyPrice: 299,
-    yearlyPrice: 239,
+    id: "retention_pro",
+    name: "Retention Pro",
+    monthlyPrice: 299, // Founding Member price
+    yearlyPrice: 299,
     billingCycle: "monthly" as "monthly" | "yearly",
     nextBilling: "15 Jan 2025",
     usage: {
@@ -600,10 +559,10 @@ export function SubscriptionSettings() {
   };
 
   const billingHistory = [
-    { id: "1", date: "Dec 1, 2024", description: "Business Plan", amount: "$299.00", status: "Paid" },
-    { id: "2", date: "Nov 1, 2024", description: "Business Plan", amount: "$299.00", status: "Paid" },
-    { id: "3", date: "Oct 1, 2024", description: "Business Plan", amount: "$299.00", status: "Paid" },
-    { id: "4", date: "Sep 1, 2024", description: "Growth Plan", amount: "$179.00", status: "Paid" },
+    { id: "1", date: "Dec 1, 2024", description: "Retention Pro (Founding Member)", amount: "$299.00", status: "Paid" },
+    { id: "2", date: "Nov 1, 2024", description: "Retention Pro (Founding Member)", amount: "$299.00", status: "Paid" },
+    { id: "3", date: "Oct 1, 2024", description: "Retention Pro (Founding Member)", amount: "$299.00", status: "Paid" },
+    { id: "4", date: "Sep 1, 2024", description: "Retention Pro (Founding Member)", amount: "$299.00", status: "Paid" },
   ];
 
   const usagePercentage = (used: number, limit: number | string) => {

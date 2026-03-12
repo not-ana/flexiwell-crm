@@ -26,7 +26,7 @@ export function usePlan(): PlanContextType {
 
   if (!context) {
     // Default to starter plan if no context (for development)
-    const defaultPlanId: PlanType = "business"; // Change based on your default
+    const defaultPlanId: PlanType = "retention_pro"; // Change based on your default
 
     return {
       planId: defaultPlanId,

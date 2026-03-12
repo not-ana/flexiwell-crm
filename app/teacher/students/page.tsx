@@ -810,9 +810,9 @@ export default function TeacherStudentsPage() {
 // Add Student Modal
 // ============================================
 const addStudentPlans = [
-  { id: "starter", name: "Starter", price: 49, classes: 8 },
-  { id: "growth", name: "Growth", price: 79, classes: 16 },
-  { id: "professional", name: "Professional", price: 149, classes: -1 },
+  { id: "retention_pro_basic", name: "Basic", price: 49, classes: 8 },
+  { id: "retention_pro", name: "Retention Pro", price: 99, classes: 16 },
+  { id: "scale", name: "Scale", price: 149, classes: -1 },
 ];
 
 function AddStudentModal({
@@ -823,7 +823,7 @@ function AddStudentModal({
   isSubmitting: boolean;
   apiError?: string;
 }) {
-  const [formData, setFormData] = useState({ name: "", email: "", phone: "", plan: "starter" });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", plan: "retention_pro_basic" });
   const [sendIntakeForm, setSendIntakeForm] = useState(true);
   const [intakeChannel, setIntakeChannel] = useState<"whatsapp" | "email" | "sms">("email");
   const [formError, setFormError] = useState("");

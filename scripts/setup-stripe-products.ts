@@ -16,39 +16,32 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-12-15.clover",
 });
 
-// Definição dos planos (preços em centavos)
-// Starter: $99/mês ou $79/mês (anual = $948/ano)
-// Growth: $179/mês ou $143/mês (anual = $1,716/ano)
-// Business: $299/mês ou $239/mês (anual = $2,868/ano)
-// Professional: $499/mês ou $399/mês (anual = $4,788/ano)
+// Plan definitions (prices in cents)
+// Retention Pro: $799/mo or $549/mo (annual = $6,588/yr)
+// Retention Pro — Founding Member: $299/mo (locked 24 months)
+// Retention Pro — Early Adopter: $499/mo (locked 12 months)
+// Scale: Custom pricing (contact sales)
 const plans = [
   {
-    id: "starter",
-    name: "FlexiWell Starter",
-    description: "For independent instructors. Up to 100 clients, 1 location.",
-    monthlyPrice: 9900, // $99/mês
-    annualPrice: 94800, // $948/ano ($79/mês)
+    id: "retention_pro",
+    name: "FlexiWell Retention Pro",
+    description: "The Retention Engine™ for established studios. Up to 1,000 clients, 3 locations.",
+    monthlyPrice: 79900, // $799/mo
+    annualPrice: 658800, // $6,588/yr ($549/mo)
   },
   {
-    id: "growth",
-    name: "FlexiWell Growth",
-    description: "For growing studios. Up to 500 clients, 2 locations.",
-    monthlyPrice: 17900, // $179/mês
-    annualPrice: 171600, // $1,716/ano ($143/mês)
+    id: "retention_pro_founding",
+    name: "FlexiWell Retention Pro — Founding Member",
+    description: "Founding Member pricing. Full Retention Engine™ locked at $299/mo for 24 months.",
+    monthlyPrice: 29900, // $299/mo (locked 24 months)
+    annualPrice: 0, // monthly only
   },
   {
-    id: "business",
-    name: "FlexiWell Business",
-    description: "For established studios with AI features. Up to 2,000 clients, 5 locations.",
-    monthlyPrice: 29900, // $299/mês
-    annualPrice: 286800, // $2,868/ano ($239/mês)
-  },
-  {
-    id: "enterprise", // ID interno, exibido como "Professional" no site
-    name: "FlexiWell Professional",
-    description: "For multiple locations. Unlimited clients and locations.",
-    monthlyPrice: 49900, // $499/mês
-    annualPrice: 478800, // $4,788/ano ($399/mês)
+    id: "retention_pro_early_adopter",
+    name: "FlexiWell Retention Pro — Early Adopter",
+    description: "Early Adopter pricing. Full Retention Engine™ locked at $499/mo for 12 months.",
+    monthlyPrice: 49900, // $499/mo (locked 12 months)
+    annualPrice: 0, // monthly only
   },
 ];
 

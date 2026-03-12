@@ -86,9 +86,9 @@ const ADDONS: Addon[] = [
       "Respostas automáticas 24/7",
     ],
     active: false,
-    includedInPlans: ["Included in Business & Professional plans"],
-    includedInPlansBrl: ["Incluso nos planos Business e Professional"],
-    requiredPlans: ["business"], // Only available on business plan
+    includedInPlans: ["Included in Retention Pro & Scale plans"],
+    includedInPlansBrl: ["Incluso nos planos Retention Pro e Scale"],
+    requiredPlans: ["retention_pro"], // Only available on retention_pro plan
   },
   {
     id: "sms-bot",
@@ -112,9 +112,9 @@ const ADDONS: Addon[] = [
       "Respostas automáticas 24/7",
     ],
     active: false,
-    includedInPlans: ["Included in Business & Professional plans"],
-    includedInPlansBrl: ["Incluso nos planos Business e Professional"],
-    requiredPlans: ["starter", "growth", "business", "professional"], // Available on all plans
+    includedInPlans: ["Included in Retention Pro & Scale plans"],
+    includedInPlansBrl: ["Incluso nos planos Retention Pro e Scale"],
+    requiredPlans: ["retention_pro", "scale"], // Available on all plans
   },
   {
     id: "extra-storage",
@@ -137,7 +137,7 @@ const ADDONS: Addon[] = [
       "Backups automáticos",
     ],
     active: false,
-    requiredPlans: ["starter", "growth", "business"], // Available on starter, growth, business
+    requiredPlans: ["retention_pro"], // Available on retention_pro
   },
   {
     id: "advanced-reports",
@@ -314,7 +314,7 @@ const TRANSLATIONS = {
   addToPlan: { en: "Add to Plan", pt: "Adicionar ao Plano" },
   processing: { en: "Processing...", pt: "Processando..." },
   upgradeRequired: { en: "Upgrade Required", pt: "Upgrade Necessário" },
-  requiresBusinessPlan: { en: "Requires Business plan", pt: "Requer plano Business" },
+  requiresBusinessPlan: { en: "Requires Retention Pro plan", pt: "Requer plano Retention Pro" },
   customSolutionTitle: { en: "Need a custom solution?", pt: "Precisa de uma solução personalizada?" },
   customSolutionDesc: {
     en: "Contact our team to discuss enterprise features, custom integrations, or volume discounts.",

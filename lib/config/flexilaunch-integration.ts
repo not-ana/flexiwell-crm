@@ -19,7 +19,7 @@ export interface FlexiLaunchPackage {
       features: string[];
     };
     crm: {
-      planTier: "starter" | "growth" | "professional" | "enterprise";
+      planTier: "retention_pro" | "scale";
       freeMonths: number;
       setup: boolean; // white-glove setup
       training: boolean; // staff training
@@ -77,7 +77,7 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
         ],
       },
       crm: {
-        planTier: "starter",
+        planTier: "retention_pro",
         freeMonths: 3,
         setup: true,
         training: true,
@@ -134,7 +134,7 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
         ],
       },
       crm: {
-        planTier: "growth",
+        planTier: "retention_pro",
         freeMonths: 6,
         setup: true,
         training: true,
@@ -195,7 +195,7 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
         ],
       },
       crm: {
-        planTier: "professional",
+        planTier: "scale",
         freeMonths: 12,
         setup: true,
         training: true,
@@ -253,7 +253,7 @@ export const earlyAdopterOfferConfig: Omit<EarlyAdopterOffer, "claimed"> = {
   limited: 10,
   benefits: [
     "30% discount on Growth Accelerator bundle",
-    "6 months FlexiWell Growth plan FREE (value: $1,074)",
+    "6 months FlexiWell Retention Pro FREE (value: $4,494)",
     "Professional photoshoot included (value: $500)",
     "Lifetime 20% discount on CRM renewals",
     "Priority feature requests",
@@ -429,7 +429,7 @@ export const comparisonTable = {
     {
       name: "DIY (Wix + Separate CRM)",
       website: 300,
-      crm: 2148, // $179/mo x 12
+      crm: 4788, // $399/mo x 12
       integration: 0,
       support: 0,
       total: 1488,
@@ -444,7 +444,7 @@ export const comparisonTable = {
     {
       name: "Traditional Agency + Mindbody",
       website: 5000,
-      crm: 5988, // $499/mo x 12
+      crm: 8988, // $749/mo x 12
       integration: 500,
       support: 600,
       total: 8488,
@@ -503,11 +503,11 @@ export function calculateROI(
   };
 }
 
-// Example ROI calculation for Growth bundle
+// Example ROI calculation for Retention Pro bundle
 export const growthBundleROI = calculateROI(
   3999, // bundle price
   6, // free months
-  179, // CRM monthly price
+  799, // CRM monthly price (Retention Pro)
   50, // hours saved
   50 // value per hour
 );

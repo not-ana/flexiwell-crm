@@ -16,7 +16,7 @@ export default function AdminLayout({
   const { user } = useAuth();
 
   // Get plan from user or default to starter
-  const planId: PlanType = (user?.planTier as PlanType) || "starter";
+  const planId: PlanType = (user?.planTier as PlanType) || "retention_pro";
 
   // Fetch real conversation count
   useEffect(() => {

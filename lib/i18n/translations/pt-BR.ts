@@ -62,23 +62,18 @@ export const ptBR = {
     plans: {
       starter: {
         name: "Starter",
-        description: "Para instrutores solo comecando.",
-        tagline: "Para instrutores solo",
+        description: "Agendamento, pagamentos e gestao basica do estudio.",
+        tagline: "O essencial",
       },
-      growth: {
-        name: "Growth",
-        description: "Para estudios em crescimento prontos para escalar.",
-        tagline: "Para estudios em crescimento",
+      retention_pro: {
+        name: "Retention Pro",
+        description: "O Motor de Retencao — pare de perder clientes e lote seu estudio.",
+        tagline: "O Motor de Retencao",
       },
-      business: {
-        name: "Business",
-        description: "Maximize a receita com waitlist inteligente e insights preditivos.",
-        tagline: "Otimizacao de receita",
-      },
-      enterprise: {
-        name: "Enterprise",
-        description: "Para redes de estudios e franquias com controle maximo.",
-        tagline: "Solucao personalizada",
+      scale: {
+        name: "Scale",
+        description: "Para estudios com multiplas unidades e franquias, tudo ilimitado.",
+        tagline: "Multiplas unidades",
       },
     },
 

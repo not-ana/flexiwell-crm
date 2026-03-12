@@ -33,8 +33,8 @@ function PricingContent() {
   const spotsRemaining = foundingMemberOffer.totalSpots - foundingMemberOffer.spotsClaimed;
 
   const handleSubscribe = async (planId: string) => {
-    if (planId === "enterprise") {
-      window.location.href = "/contact?plan=enterprise";
+    if (planId === "scale") {
+      window.location.href = "/contact?plan=scale";
       return;
     }
 
@@ -152,11 +152,11 @@ function PricingContent() {
 
               {/* CTA */}
               <button
-                onClick={() => handleSubscribe("growth")}
+                onClick={() => handleSubscribe("retention_pro")}
                 disabled={loadingPlan !== null}
                 className="w-full py-4 px-6 bg-primary-600 text-white text-lg font-bold rounded-xl hover:bg-primary-700 transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mb-2"
               >
-                {loadingPlan === "growth" ? (
+                {loadingPlan === "retention_pro" ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -238,8 +238,8 @@ function PricingContent() {
                 a: "Export your data (CSV), send it to us, and we import everything — clients, schedules, payment history. Most studios are migrated within 48 hours.",
               },
               {
-                q: "Why so cheap compared to Mindbody?",
-                a: `Founding Member price — locked for ${foundingMemberOffer.lockedMonths} months for the first ${foundingMemberOffer.totalSpots} studios. Regular price will be $${foundingMemberOffer.regularPrice}/mo.`,
+                q: "Why so cheap compared to full price?",
+                a: `Founding Member pricing — locked for ${foundingMemberOffer.lockedMonths} months for the first ${foundingMemberOffer.totalSpots} studios. After that, Early Adopter is $${foundingMemberOffer.earlyAdopterPrice}/mo, then full price $${foundingMemberOffer.regularPrice}/mo.`,
               },
               {
                 q: "Can I cancel anytime?",
@@ -279,11 +279,11 @@ function PricingContent() {
             {foundingMemberOffer.guarantee.days}-day guarantee. Price locked {foundingMemberOffer.lockedMonths} months. Cancel anytime.
           </p>
           <button
-            onClick={() => handleSubscribe("growth")}
+            onClick={() => handleSubscribe("retention_pro")}
             disabled={loadingPlan !== null}
             className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-100 transition-all w-full sm:w-auto disabled:opacity-50"
           >
-            {loadingPlan === "growth" ? "Processing..." : (
+            {loadingPlan === "retention_pro" ? "Processing..." : (
               <>Lock In My ${foundingMemberOffer.foundingPrice}/mo Price &rarr;</>
             )}
           </button>

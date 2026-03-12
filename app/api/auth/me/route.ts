@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       // Plan and subscription info
-      planTier: user.planTier || "starter",
+      planTier: user.planTier || "retention_pro",
       subscriptionStatus: user.subscriptionStatus || "none",
       trialStatus: user.trialStatus,
       trialEndDate: user.trialEndDate?.toISOString(),

@@ -23,8 +23,8 @@ export interface UsageStats {
   storageUsedMB: number;
 }
 
-// Default plan for trial users - Business plan during trial
-const DEFAULT_TRIAL_PLAN: PlanType = "business";
+// Default plan for trial users - Retention Pro plan during trial
+const DEFAULT_TRIAL_PLAN: PlanType = "retention_pro";
 
 /**
  * Get user's current plan from database
@@ -36,15 +36,25 @@ export async function getUserPlan(userId: string): Promise<PlanType> {
   });
 
   if (!user) {
-    return "starter"; // Default fallback
+    return "retention_pro"; // Default fallback
   }
 
   // During trial, give access to business plan features
+  // Must also check trialEndDate to prevent stale flags granting indefinite access
   if (user.trialStatus === "active" || user.subscriptionStatus === "trialing") {
+    const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
+    if (trialEnd && trialEnd < new Date()) {
+      // Trial expired but flag wasn't updated — fix it now
+      await db.collection("users").updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { trialStatus: "expired", subscriptionStatus: "none", updatedAt: new Date() } }
+      );
+      return (user.planTier as PlanType) || "retention_pro";
+    }
     return DEFAULT_TRIAL_PLAN;
   }
 
-  return (user.planTier as PlanType) || "starter";
+  return (user.planTier as PlanType) || "retention_pro";
 }
 
 /**
@@ -139,14 +149,33 @@ export async function checkResourceLimit(
 
 /**
  * Check if user has access to a feature
+ * Checks per-instance featureOverrides first, then falls back to plan defaults
  */
 export async function checkFeatureAccess(
   userId: string,
   feature: keyof PlanFeatures
 ): Promise<PlanCheckResult> {
-  const planId = await getUserPlan(userId);
+  const db = await getDatabase();
+  const user = await db.collection("users").findOne({
+    _id: new ObjectId(userId),
+  });
+
+  const planId = (user?.planTier as PlanType) || "retention_pro";
   const plan = plans[planId];
 
+  // Per-instance override takes priority (set during sales calls)
+  const overrides = user?.featureOverrides as Partial<Record<string, boolean>> | undefined;
+  if (overrides && feature in overrides) {
+    if (overrides[feature]) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: `The ${formatFeatureName(feature)} feature has been disabled for your account. Contact support to enable it.`,
+    };
+  }
+
+  // Fall back to plan defaults
   if (plan.features[feature]) {
     return { allowed: true };
   }
@@ -255,7 +284,7 @@ function findUpgradePlan(
   resource: keyof PlanLimits,
   needed: number
 ): PlanType {
-  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const planOrder: PlanType[] = ["retention_pro", "scale"];
   const currentIndex = planOrder.indexOf(currentPlan);
 
   for (let i = currentIndex + 1; i < planOrder.length; i++) {
@@ -266,11 +295,11 @@ function findUpgradePlan(
     }
   }
 
-  return "professional";
+  return "scale";
 }
 
 function findMinimumPlanForFeature(feature: keyof PlanFeatures): PlanType {
-  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const planOrder: PlanType[] = ["retention_pro", "scale"];
 
   for (const planId of planOrder) {
     if (plans[planId].features[feature]) {
@@ -278,7 +307,7 @@ function findMinimumPlanForFeature(feature: keyof PlanFeatures): PlanType {
     }
   }
 
-  return "professional";
+  return "scale";
 }
 
 function findMinimumPlanForUsage(type: string): PlanType {
@@ -293,11 +322,11 @@ function findMinimumPlanForUsage(type: string): PlanType {
     return findMinimumPlanForFeature(feature);
   }
 
-  return "business";
+  return "retention_pro";
 }
 
 function findUpgradePlanForUsage(currentPlan: PlanType): PlanType {
-  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const planOrder: PlanType[] = ["retention_pro", "scale"];
   const currentIndex = planOrder.indexOf(currentPlan);
 
   // Next plan in order, or professional if at business
@@ -305,7 +334,7 @@ function findUpgradePlanForUsage(currentPlan: PlanType): PlanType {
     return planOrder[currentIndex + 1];
   }
 
-  return "professional";
+  return "scale";
 }
 
 function formatLimit(resource: keyof PlanLimits, limit: number): string {

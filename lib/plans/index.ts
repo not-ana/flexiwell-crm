@@ -1,8 +1,10 @@
 // Plan types and feature flags for FlexiWell CRM
-// 4 plans: Starter, Growth, Business, Professional
-// Updated based on pricing page - January 2026
+// 2 plans: Retention Pro (hero, all features) + Scale (multi-location, talk to sales)
+// Single offer strategy: $799/mo, $549/mo yearly. Everything included.
+// Feature overrides allow per-instance customization (negotiated on sales calls)
+// Aligned with pricing.ts (Hormozi Grand Slam Offer framework)
 
-export type PlanType = "starter" | "growth" | "business" | "professional";
+export type PlanType = "retention_pro" | "scale";
 
 export interface PlanLimits {
   maxClients: number;
@@ -72,183 +74,60 @@ export interface Plan {
   };
 }
 
-// Plan definitions based on pricing page
-// https://flexiwell.net/pricing
+// Plan definitions
+// Single offer: Retention Pro $799/mo ($549/mo yearly) — ALL features included
+// Scale: multi-location, custom pricing via sales
 export const plans: Record<PlanType, Plan> = {
-  starter: {
-    id: "starter",
-    name: "Starter",
-    description: "For independent instructors",
+  retention_pro: {
+    id: "retention_pro",
+    name: "Retention Pro",
+    description: "The Retention Engine™ — everything you need to stop losing clients and fill your studio.",
     price: {
-      monthly: 99,
-      yearly: 79, // ~20% discount
+      monthly: 799,
+      yearly: 549, // ~31% discount
     },
     limits: {
-      maxClients: 100,
-      maxStaff: 1, // 1 team member
+      maxClients: -1, // unlimited
+      maxStaff: -1, // unlimited
       maxLocations: 1,
-      storageMB: 5 * 1024, // 5GB
-    },
-    features: {
-      // Core - All included
-      onlineScheduling: true,
-      clientPortal: true,
-      paymentProcessing: true,
-
-      // Communication - Email only
-      emailReminders: true,
-      smsNotifications: false,
-      whatsappNotifications: false,
-      messagingBot: false,
-
-      // AI Features - None
-      aiSupportAssistant: false,
-
-      // Health Assessment - None
-      healthAssessment: false,
-
-      // Waitlist - Basic
-      smartWaitlist: false,
-      aiWaitlist: false,
-      customWaitlistRules: false,
-
-      // Advanced - None
-      customBranding: false,
-      advancedReports: false,
-      cancellationPredictions: false,
-
-      // Integrations - None
-      apiAccess: false,
-      webhooks: false,
-
-      // Multi-location - No
-      multiLocation: false,
-
-      // Support - Email only
-      emailSupport: true,
-      chatSupport: false,
-      prioritySupport: false,
-      dedicatedManager: false,
-    },
-    usageLimits: {
-      messagingBotMessages: 0,
-      aiChats: 0,
-      apiCalls: 0,
-    },
-  },
-
-  growth: {
-    id: "growth",
-    name: "Growth",
-    description: "For growing studios",
-    price: {
-      monthly: 179,
-      yearly: 143, // ~20% discount
-    },
-    limits: {
-      maxClients: 500,
-      maxStaff: -1, // unlimited
-      maxLocations: 2,
-      storageMB: 25 * 1024, // 25GB
-    },
-    features: {
-      // Core - All included
-      onlineScheduling: true,
-      clientPortal: true,
-      paymentProcessing: true,
-
-      // Communication - SMS + WhatsApp notifications
-      emailReminders: true,
-      smsNotifications: true,
-      whatsappNotifications: true,
-      messagingBot: false,
-
-      // AI Features - None
-      aiSupportAssistant: false,
-
-      // Health Assessment - Yes
-      healthAssessment: true,
-
-      // Waitlist - Smart (basic)
-      smartWaitlist: true,
-      aiWaitlist: false,
-      customWaitlistRules: false,
-
-      // Advanced - Advanced reports
-      customBranding: false,
-      advancedReports: true,
-      cancellationPredictions: false,
-
-      // Integrations - None
-      apiAccess: false,
-      webhooks: false,
-
-      // Multi-location - Yes (2)
-      multiLocation: true,
-
-      // Support - Email + Chat
-      emailSupport: true,
-      chatSupport: true,
-      prioritySupport: false,
-      dedicatedManager: false,
-    },
-    usageLimits: {
-      messagingBotMessages: 0,
-      aiChats: 0,
-      apiCalls: 0,
-    },
-  },
-
-  business: {
-    id: "business",
-    name: "Business",
-    description: "For established studios",
-    price: {
-      monthly: 299,
-      yearly: 239, // ~20% discount
-    },
-    limits: {
-      maxClients: 2000,
-      maxStaff: -1, // unlimited
-      maxLocations: 5,
       storageMB: 100 * 1024, // 100GB
     },
     features: {
-      // Core - All included
+      // Core — All included
       onlineScheduling: true,
       clientPortal: true,
       paymentProcessing: true,
 
-      // Communication - Full including Bot
+      // Communication — Full including Bot
       emailReminders: true,
       smsNotifications: true,
       whatsappNotifications: true,
-      messagingBot: true, // 5,000 msgs/month
+      messagingBot: true,
 
-      // AI Features - AI Support Assistant (2,000 chats/mo)
+      // AI Features — All included
       aiSupportAssistant: true,
 
-      // Health Assessment - Yes
+      // Health Assessment — Yes
       healthAssessment: true,
 
-      // Waitlist - AI-powered smart waitlist
+      // Waitlist — AI-powered smart waitlist
       smartWaitlist: true,
       aiWaitlist: true,
       customWaitlistRules: false,
 
-      // Advanced - Custom branding + Cancellation predictions
+      // Advanced — All included
       customBranding: true,
       advancedReports: true,
       cancellationPredictions: true,
 
-      // Integrations - None
-      apiAccess: false,
-      webhooks: false,
+      // Integrations
+      apiAccess: true,
+      webhooks: true,
 
-      // Multi-location - Yes (5)
-      multiLocation: true,
+      // Multi-location — 1 location (single studio avatar)
+      multiLocation: false,
 
-      // Support - Priority (24h)
+      // Support — Priority + founder access
       emailSupport: true,
       chatSupport: true,
       prioritySupport: true,
@@ -256,19 +135,19 @@ export const plans: Record<PlanType, Plan> = {
     },
     popular: true,
     usageLimits: {
-      messagingBotMessages: 5000,
-      aiChats: 2000,
-      apiCalls: 0,
+      messagingBotMessages: -1, // unlimited
+      aiChats: -1, // unlimited
+      apiCalls: -1, // unlimited
     },
   },
 
-  professional: {
-    id: "professional",
-    name: "Professional",
-    description: "For large studios and networks",
+  scale: {
+    id: "scale",
+    name: "Scale",
+    description: "For multi-location studios and franchises with unlimited everything.",
     price: {
-      monthly: 499,
-      yearly: 399, // ~20% discount
+      monthly: 0, // Custom pricing — contact sales
+      yearly: 0,
     },
     limits: {
       maxClients: -1, // unlimited

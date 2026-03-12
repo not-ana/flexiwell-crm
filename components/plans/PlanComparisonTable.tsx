@@ -11,7 +11,7 @@ interface PlanComparisonTableProps {
 export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanComparisonTableProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
 
-  const planOrder: PlanType[] = ["starter", "growth", "business", "professional"];
+  const planOrder: PlanType[] = ["retention_pro", "scale"];
 
   const categoryLabels: Record<string, string> = {
     core: "Core Features",
@@ -53,7 +53,7 @@ export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanCompariso
       </div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 gap-6 mb-8">
         {planOrder.map((planId) => {
           const plan = plans[planId];
           const price = billingCycle === "yearly" ? plan.price.yearly : plan.price.monthly;
@@ -154,7 +154,7 @@ export function PlanComparisonTable({ currentPlan, onSelectPlan }: PlanCompariso
             {Object.entries(featureCategories).map(([category, features]) => (
               <>
                 <tr key={`category-${category}`} className="bg-gray-50">
-                  <td colSpan={5} className="px-6 py-3 text-sm font-semibold text-gray-700">
+                  <td colSpan={3} className="px-6 py-3 text-sm font-semibold text-gray-700">
                     {categoryLabels[category]}
                   </td>
                 </tr>

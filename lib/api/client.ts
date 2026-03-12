@@ -173,7 +173,7 @@ export interface AuthUser {
   staffId?: string;
   clientId?: string;
   // Subscription and plan info
-  planTier?: "starter" | "growth" | "business" | "professional";
+  planTier?: "retention_pro" | "scale";
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   trialStatus?: "active" | "expired" | "converted";
   trialEndDate?: string;

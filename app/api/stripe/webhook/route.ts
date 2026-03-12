@@ -40,7 +40,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
             $set: {
               stripeCustomerId: customerId,
               stripeSubscriptionId: subscriptionId,
-              planTier: metadata.planTier || "starter",
+              planTier: metadata.planTier || "retention_pro",
               billingPeriod: metadata.billingPeriod || "monthly",
               subscriptionStatus: "active",
               updatedAt: new Date(),
@@ -58,7 +58,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     {
       $set: {
         stripeSubscriptionId: subscriptionId,
-        planTier: metadata.planTier || user.planTier || "starter",
+        planTier: metadata.planTier || user.planTier || "retention_pro",
         billingPeriod: metadata.billingPeriod || "monthly",
         subscriptionStatus: "active",
         updatedAt: new Date(),
@@ -95,7 +95,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     {
       $set: {
         stripeSubscriptionId: subscription.id,
-        planTier: planTier || "starter",
+        planTier: planTier || "retention_pro",
         billingPeriod: billingPeriod || "monthly",
         subscriptionStatus: subscription.status,
         trialEnd: subscription.trial_end

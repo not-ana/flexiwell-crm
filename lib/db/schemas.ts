@@ -142,6 +142,10 @@ export interface Client {
   };
   goals?: string[];
   physicalRestrictions?: string[];
+  // Soft-delete
+  deletedAt?: Date;
+  deletedBy?: string;
+  deleteReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -174,6 +178,10 @@ export interface Staff {
       one: number;
     };
   };
+  // Soft-delete
+  deletedAt?: Date;
+  deletedBy?: string;
+  deleteReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -475,7 +483,13 @@ export interface User {
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  planTier?: "starter" | "growth" | "business" | "professional";
+  planTier?: "retention_pro" | "scale";
+  // Per-instance feature overrides — allows disabling specific features
+  // on a per-client basis (e.g. negotiated on a sales call for a lower price)
+  featureOverrides?: Partial<Record<string, boolean>>;
+  customPrice?: number; // Custom monthly price negotiated on call
+  priceLockUntil?: Date; // Founding member / early adopter price lock expiry
+  pricingPhase?: "founding_member" | "early_adopter" | "full_price";
   // Trial notification tracking
   trialNotifications?: {
     sevenDaysSent?: boolean;
@@ -948,4 +962,198 @@ export interface HealthAssessmentFormConfig {
   termsText: string;
   updatedAt: Date;
   updatedBy: string;
+}
+
+// ============================================
+// Subscription Events — Audit log for billing
+// ============================================
+
+export interface SubscriptionEvent {
+  _id?: ObjectId;
+  userId: string;
+  stripeEventId?: string;
+  type:
+    | "subscription_created"
+    | "subscription_updated"
+    | "subscription_cancelled"
+    | "subscription_reactivated"
+    | "trial_started"
+    | "trial_expired"
+    | "trial_converted"
+    | "plan_upgraded"
+    | "plan_downgraded"
+    | "addon_added"
+    | "addon_removed"
+    | "invoice_paid"
+    | "invoice_failed"
+    | "payment_succeeded"
+    | "payment_failed"
+    | "refund_issued";
+  data: {
+    planTier?: string;
+    previousPlanTier?: string;
+    billingPeriod?: string;
+    amount?: number;
+    currency?: string;
+    addonId?: string;
+    invoiceId?: string;
+    reason?: string;
+  };
+  createdAt: Date;
+}
+
+// ============================================
+// Usage Tracking — Monthly metered features
+// ============================================
+
+export interface UsageTracking {
+  _id?: ObjectId;
+  userId: string;
+  monthly: Record<string, {
+    messagingBotMessages: number;
+    aiChats: number;
+    apiCalls: number;
+  }>;
+  total: {
+    messagingBotMessages: number;
+    aiChats: number;
+    apiCalls: number;
+  };
+  storageUsedMB: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================
+// Coupons / Discount Codes
+// ============================================
+
+export type CouponDiscountType = "percentage" | "fixed_amount";
+
+export interface Coupon {
+  _id?: ObjectId;
+  code: string; // Unique, uppercase, e.g. "LAUNCH20"
+  name: string; // Display name, e.g. "Launch Discount 20%"
+  description?: string;
+  discountType: CouponDiscountType;
+  discountValue: number; // % or fixed amount
+  currency?: string; // For fixed_amount coupons
+  // Scope
+  applicablePlans?: string[]; // Plan tiers this applies to, empty = all
+  applicableAddons?: string[]; // Addon IDs this applies to, empty = all
+  // Limits
+  maxRedemptions?: number; // Total times this coupon can be used, null = unlimited
+  maxRedemptionsPerUser?: number; // Per user limit, default 1
+  currentRedemptions: number;
+  // Validity
+  isActive: boolean;
+  startsAt?: Date;
+  expiresAt?: Date;
+  // Stripe integration
+  stripeCouponId?: string; // If synced to Stripe
+  // Tracking
+  createdBy: string; // Admin userId
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CouponRedemption {
+  _id?: ObjectId;
+  couponId: string;
+  couponCode: string;
+  userId: string;
+  userEmail: string;
+  discountApplied: number; // Actual amount discounted
+  originalAmount: number;
+  finalAmount: number;
+  context: "checkout" | "plan_change" | "addon" | "manual";
+  stripeInvoiceId?: string;
+  redeemedAt: Date;
+}
+
+// ============================================
+// Refund Requests — 60-Day Guarantee workflow
+// ============================================
+
+export type RefundRequestStatus = "pending" | "under_review" | "approved" | "rejected" | "refunded";
+
+export interface RefundRequest {
+  _id?: ObjectId;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  // Guarantee context
+  guaranteeType: "60_day_results" | "other";
+  subscriptionStartDate: Date;
+  requestDate: Date;
+  daysIntoSubscription: number;
+  // Baseline metrics at start
+  baselineMetrics?: {
+    noShowRate?: number;
+    activeClients?: number;
+    retentionRate?: number;
+  };
+  // Current metrics at request time
+  currentMetrics?: {
+    noShowRate?: number;
+    activeClients?: number;
+    retentionRate?: number;
+  };
+  // Request details
+  reason: string;
+  additionalDetails?: string;
+  // Amount
+  totalPaid: number;
+  refundAmount: number;
+  currency: string;
+  // Review
+  status: RefundRequestStatus;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  rejectionReason?: string;
+  // Stripe
+  stripeRefundId?: string;
+  stripeChargeIds?: string[];
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================
+// Pricing Audit Trail
+// ============================================
+
+export interface PricingAudit {
+  _id?: ObjectId;
+  userId: string;
+  userEmail: string;
+  action:
+    | "custom_price_set"
+    | "custom_price_changed"
+    | "custom_price_removed"
+    | "feature_override_set"
+    | "feature_override_removed"
+    | "coupon_applied"
+    | "coupon_removed"
+    | "price_lock_set"
+    | "price_lock_expired"
+    | "plan_changed"
+    | "discount_applied";
+  previousValue?: Record<string, unknown>;
+  newValue?: Record<string, unknown>;
+  reason?: string;
+  performedBy: string; // Admin userId who made the change
+  performedByName?: string;
+  createdAt: Date;
+}
+
+// ============================================
+// Soft-delete mixin — add to Client, Staff, Class
+// ============================================
+
+export interface SoftDeletable {
+  deletedAt?: Date;
+  deletedBy?: string;
+  deleteReason?: string;
 }

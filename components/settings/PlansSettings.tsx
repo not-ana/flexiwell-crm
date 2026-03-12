@@ -62,8 +62,8 @@ const CheckIcon = () => (
 
 export const INITIAL_PLANS: Plan[] = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "retention_pro",
+    name: "Retention Pro",
     price: 49,
     period: "month",
     classes: 8,
@@ -71,8 +71,8 @@ export const INITIAL_PLANS: Plan[] = [
     isActive: true,
   },
   {
-    id: "growth",
-    name: "Growth",
+    id: "plus",
+    name: "Plus",
     price: 79,
     period: "month",
     classes: 16,
@@ -81,8 +81,8 @@ export const INITIAL_PLANS: Plan[] = [
     isActive: true,
   },
   {
-    id: "professional",
-    name: "Professional",
+    id: "premium",
+    name: "Premium",
     price: 149,
     period: "month",
     classes: -1,

@@ -19,47 +19,27 @@ export interface RegionalStripePriceIds {
 
 // Map plan tiers to Stripe Price IDs by currency
 // IMPORTANT: Replace these with your actual Stripe Price IDs after creating products
-// 4 plans: Starter, Growth, Business, Enterprise
+// 2 plans: Retention Pro, Scale
 // USD prices and BRL prices are separate products in Stripe
 export const stripePlanPriceIds: Record<PlanTier, RegionalStripePriceIds> = {
-  starter: {
+  retention_pro: {
     USD: {
-      monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY_USD || "price_starter_monthly_usd",
-      annual: process.env.STRIPE_PRICE_STARTER_ANNUAL_USD || "price_starter_annual_usd",
+      monthly: process.env.STRIPE_PRICE_RETENTION_PRO_MONTHLY_USD || "price_retention_pro_monthly_usd",
+      annual: process.env.STRIPE_PRICE_RETENTION_PRO_ANNUAL_USD || "price_retention_pro_annual_usd",
     },
     BRL: {
-      monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY_BRL || "price_starter_monthly_brl",
-      annual: process.env.STRIPE_PRICE_STARTER_ANNUAL_BRL || "price_starter_annual_brl",
+      monthly: process.env.STRIPE_PRICE_RETENTION_PRO_MONTHLY_BRL || "price_retention_pro_monthly_brl",
+      annual: process.env.STRIPE_PRICE_RETENTION_PRO_ANNUAL_BRL || "price_retention_pro_annual_brl",
     },
   },
-  growth: {
+  scale: {
     USD: {
-      monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY_USD || "price_growth_monthly_usd",
-      annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL_USD || "price_growth_annual_usd",
+      monthly: process.env.STRIPE_PRICE_SCALE_MONTHLY_USD || "price_scale_monthly_usd",
+      annual: process.env.STRIPE_PRICE_SCALE_ANNUAL_USD || "price_scale_annual_usd",
     },
     BRL: {
-      monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY_BRL || "price_growth_monthly_brl",
-      annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL_BRL || "price_growth_annual_brl",
-    },
-  },
-  business: {
-    USD: {
-      monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY_USD || "price_business_monthly_usd",
-      annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL_USD || "price_business_annual_usd",
-    },
-    BRL: {
-      monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY_BRL || "price_business_monthly_brl",
-      annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL_BRL || "price_business_annual_brl",
-    },
-  },
-  enterprise: {
-    USD: {
-      monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY_USD || "price_enterprise_monthly_usd",
-      annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL_USD || "price_enterprise_annual_usd",
-    },
-    BRL: {
-      monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY_BRL || "price_enterprise_monthly_brl",
-      annual: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL_BRL || "price_enterprise_annual_brl",
+      monthly: process.env.STRIPE_PRICE_SCALE_MONTHLY_BRL || "price_scale_monthly_brl",
+      annual: process.env.STRIPE_PRICE_SCALE_ANNUAL_BRL || "price_scale_annual_brl",
     },
   },
 };
@@ -97,12 +77,9 @@ export function getStripeAddOnPriceId(addOnId: string): string | null {
 }
 
 // Plan tier ordering for upgrade/downgrade logic
-// 4 plans only (professional removed)
 export const planTierOrder: PlanTier[] = [
-  "starter",
-  "growth",
-  "business",
-  "enterprise",
+  "retention_pro",
+  "scale",
 ];
 
 // Check if changing from one plan to another is an upgrade

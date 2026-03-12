@@ -1,6 +1,6 @@
 "use client";
 
-import { SupportChat } from "@/components/support/SupportChat";
+import { SupportChat } from "@/components/chat/SupportChat";
 
 export default function SupportPage() {
   return (
