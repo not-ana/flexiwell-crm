@@ -34,6 +34,17 @@ const DEFAULT_SETTINGS: Omit<StudioSettings, "_id"> = {
     notificationWindowMinutes: 60,
     priorityByPlanType: true,
   },
+  trialBooking: {
+    trialEnabled: true,
+    trialPrice: 0,
+    dropInEnabled: true,
+    dropInPrice: 35,
+    acceptedPaymentMethods: ["card", "cash"],
+    requirePaymentUpfront: false,
+    maxTrialsPerClient: 1,
+    postTrialCouponCode: "FIRSTCLASS",
+    postTrialDiscountPercent: 20,
+  },
   integrations: {
     stripeConnected: false,
     whatsappConnected: false,
@@ -95,7 +106,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const validSections = ["general", "branding", "notifications", "waitlist", "integrations"];
+    const validSections = ["general", "branding", "notifications", "waitlist", "trialBooking", "integrations"];
     if (!validSections.includes(section)) {
       return NextResponse.json(
         { error: `Invalid section. Must be one of: ${validSections.join(", ")}` },

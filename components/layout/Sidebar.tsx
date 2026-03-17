@@ -328,7 +328,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
           onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
+          <div className="w-10 h-10 shrink-0 aspect-square rounded-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
             <span className="text-sm font-semibold text-primary-700">{activeAccount.initials}</span>
           </div>
           <div className="flex-1 text-left">

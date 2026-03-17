@@ -17,9 +17,31 @@ export interface ClientHealthScore {
 
 export type IntakeStatus = "not_sent" | "sent" | "opened" | "completed";
 
+// Behavior-based onboarding (Hormozi framework)
+// Each step triggers based on what the client DID, not when they signed up.
+// Flow: welcome → health assessment → first class → post-class feedback → week 1 → goal review
+export type OnboardingPhase =
+  | "welcome"           // Just signed up — send welcome
+  | "health_assessment" // Welcome delivered — get health form
+  | "first_booking"     // Health done (or skipped) — get them to book
+  | "pre_class"         // Booked — prep them for class
+  | "post_class"        // Completed first class — get feedback
+  | "week_one"          // 1+ classes done — check-in
+  | "goal_review"       // 7+ days active — review goals + upsell
+  | "completed";        // Fully onboarded
+
 export interface ClientOnboarding {
+  // Current phase in the behavior-based flow
+  currentPhase: OnboardingPhase;
+
+  // Step 1: Welcome
   welcomeEmailSent: boolean;
   welcomeEmailSentAt?: Date;
+  welcomeEmailOpened?: boolean;
+  welcomeEmailOpenedAt?: Date;
+  welcomeSmsFollowUp?: boolean;  // Sent SMS because email wasn't opened in 4h
+
+  // Step 2: Health assessment
   healthAssessmentCompleted: boolean;
   healthAssessmentCompletedAt?: Date;
   // Intake pipeline tracking
@@ -30,15 +52,37 @@ export interface ClientOnboarding {
   intakeCompletedAt?: Date;
   intakeReminderCount?: number;
   intakeLastReminderAt?: Date;
+
+  // Step 3: First class
   firstClassBooked: boolean;
   firstClassBookedAt?: Date;
+  firstClassNudgeCount?: number;   // How many "book your first class" nudges sent
+  firstClassLastNudgeAt?: Date;
+
+  // Step 4: Post-class
   firstClassCompleted: boolean;
   firstClassCompletedAt?: Date;
+  firstClassFeedbackRating?: number;  // 1-5 rating after first class
+  firstClassFeedbackAt?: Date;
+  firstClassFeedbackSent?: boolean;   // Whether we asked for feedback
+
+  // Step 5: Week 1 check-in
   weekOneCheckInSent: boolean;
   weekOneCheckInSentAt?: Date;
+  weekOneClassCount?: number;         // How many classes in week 1
+
+  // Step 6: Goal review
   weekTwoGoalReviewSent: boolean;
   weekTwoGoalReviewSentAt?: Date;
+
+  // Completion
   onboardingCompletedAt?: Date;
+
+  // Staff alerts — set when client is stuck, cleared when they progress
+  staffAlertActive?: boolean;
+  staffAlertType?: "health_form_stuck" | "no_booking" | "low_rating" | "disengaged";
+  staffAlertCreatedAt?: Date;
+  staffAlertResolvedAt?: Date;
 }
 
 export interface ClientMilestone {
@@ -237,7 +281,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | "no-show";
-  source: "web" | "bot" | "sms" | "admin";
+  source: "web" | "bot" | "sms" | "admin" | "trial" | "direct";
   // Wellhub integration fields
   wellhubBookingId?: string;
   isWellhubBooking?: boolean;
@@ -581,6 +625,18 @@ export interface StudioSettings {
     autoNotify: boolean;
     notificationWindowMinutes: number;
     priorityByPlanType: boolean;
+  };
+  // Trial & drop-in booking configuration
+  trialBooking?: {
+    trialEnabled: boolean;
+    trialPrice: number; // 0 = free
+    dropInEnabled: boolean;
+    dropInPrice: number;
+    acceptedPaymentMethods: ("card" | "cash" | "pix" | "bank_transfer")[];
+    requirePaymentUpfront: boolean; // false = can pay at studio (cash)
+    maxTrialsPerClient: number; // how many free trials per email
+    postTrialCouponCode?: string; // e.g. "FIRSTCLASS"
+    postTrialDiscountPercent?: number; // e.g. 20
   };
   // Integration settings (API keys stored separately for security)
   integrations?: {

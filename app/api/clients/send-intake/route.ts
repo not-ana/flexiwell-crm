@@ -57,8 +57,10 @@ export async function POST(request: NextRequest) {
         phone: phone || undefined,
         status: "pending",
         onboarding: {
+          currentPhase: "health_assessment",
           welcomeEmailSent: false,
           healthAssessmentCompleted: false,
+          intakeStatus: "not_sent",
           firstClassBooked: false,
           firstClassCompleted: false,
           weekOneCheckInSent: false,

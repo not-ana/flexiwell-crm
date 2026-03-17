@@ -257,6 +257,7 @@ export interface Client {
   milestones?: ClientMilestone[];
   churnRiskScore?: number;
   onboarding?: {
+    currentPhase?: "welcome" | "health_assessment" | "first_booking" | "pre_class" | "post_class" | "week_one" | "goal_review" | "completed";
     welcomeEmailSent: boolean;
     healthAssessmentCompleted: boolean;
     // Intake pipeline tracking
@@ -269,9 +270,15 @@ export interface Client {
     intakeLastReminderAt?: Date;
     firstClassBooked: boolean;
     firstClassCompleted: boolean;
+    firstClassFeedbackRating?: number;
     weekOneCheckInSent: boolean;
+    weekOneClassCount?: number;
     weekTwoGoalReviewSent: boolean;
     onboardingCompletedAt?: Date;
+    // Staff alerts
+    staffAlertActive?: boolean;
+    staffAlertType?: "health_form_stuck" | "no_booking" | "low_rating" | "disengaged";
+    staffAlertCreatedAt?: Date;
   };
   preferences?: {
     preferredInstructors?: string[];

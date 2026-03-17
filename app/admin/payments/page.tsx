@@ -793,8 +793,9 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
+      <div className="p-4 sm:p-6 lg:p-8 pb-4 bg-white border-b border-gray-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payments</h1>
@@ -935,7 +936,7 @@ export default function PaymentsPage() {
       )}
 
       {/* Filters — only show when there's data to filter */}
-      {!hasNoPayments && <div className="flex flex-col gap-3 mb-4 sm:mb-6 bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
+      {!hasNoPayments && <div className="flex flex-col gap-3">
         {/* Search */}
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -970,7 +971,10 @@ export default function PaymentsPage() {
           ))}
         </div>
       </div>}
+      </div>
 
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-4 lg:pt-4">
       {/* Payments Table/Cards */}
       <div className="bg-white border border-gray-200 rounded-xl">
         {/* Mobile/Tablet Card View */}
@@ -2338,6 +2342,7 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

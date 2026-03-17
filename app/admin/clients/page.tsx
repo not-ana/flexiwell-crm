@@ -8,7 +8,7 @@ import { LoadingSpinner, LoadingTable } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage, EmptyState } from "@/components/ui/ErrorMessage";
 import { StatCard } from "@/components/ui/StatCard";
 import type { Client, ClientLifecycleStage } from "@/lib/api/client";
-import type { IntakeStatus } from "@/lib/db/schemas";
+import type { IntakeStatus, OnboardingPhase } from "@/lib/db/schemas";
 import { authFetch } from "@/lib/api/auth-fetch";
 import { clientsApi } from "@/lib/api/client";
 import { formatCurrency, getInitials } from "@/lib/utils/formatters";
@@ -119,6 +119,33 @@ function IntakePipelineBadge({ status, compact }: { status: IntakeStatus; compac
 }
 
 // ============================================
+// Onboarding Phase Badge (behavior-based)
+// ============================================
+const onboardingPhaseStyles: Record<OnboardingPhase, { bg: string; text: string; ring: string; label: string }> = {
+  welcome: { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-600/10", label: "Welcome" },
+  health_assessment: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Health form" },
+  first_booking: { bg: "bg-purple-50", text: "text-purple-600", ring: "ring-purple-600/10", label: "Needs booking" },
+  pre_class: { bg: "bg-cyan-50", text: "text-cyan-600", ring: "ring-cyan-600/10", label: "Pre-class" },
+  post_class: { bg: "bg-indigo-50", text: "text-indigo-600", ring: "ring-indigo-600/10", label: "Feedback" },
+  week_one: { bg: "bg-teal-50", text: "text-teal-600", ring: "ring-teal-600/10", label: "Week 1" },
+  goal_review: { bg: "bg-emerald-50", text: "text-emerald-600", ring: "ring-emerald-600/10", label: "Goal review" },
+  completed: { bg: "bg-green-50", text: "text-green-600", ring: "ring-green-600/10", label: "Onboarded" },
+};
+
+function OnboardingBadge({ phase, hasStaffAlert }: { phase?: OnboardingPhase; hasStaffAlert?: boolean }) {
+  if (!phase || phase === "completed") return null;
+  const style = onboardingPhaseStyles[phase];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${style.bg} ${style.text} ring-1 ring-inset ${style.ring}`} title={`Onboarding: ${style.label}`}>
+      {hasStaffAlert && (
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+      )}
+      {style.label}
+    </span>
+  );
+}
+
+// ============================================
 // Upgrade Suggestion Chip
 // ============================================
 function UpgradeChip({ client }: { client: Client }) {
@@ -201,9 +228,10 @@ const ClientRow = memo(function ClientRow({ client, onSendIntake, onEdit, onDele
         <div className="flex flex-col gap-1">
           <LifecycleBadge stage={lifecycle} />
           {status !== "active" && status !== "pending" && <StatusBadge status={status} />}
-          {!client.onboarding?.healthAssessmentCompleted && (
-            <IntakePipelineBadge status={(client.onboarding?.intakeStatus as IntakeStatus) || "not_sent"} />
-          )}
+          <OnboardingBadge
+            phase={client.onboarding?.currentPhase as OnboardingPhase}
+            hasStaffAlert={client.onboarding?.staffAlertActive}
+          />
         </div>
       </td>
       {/* Plan + Classes progress */}
@@ -319,9 +347,10 @@ function ClientCard({ client, onSendIntake, onEdit, onDelete, onWinBack }: {
         </div>
         <div className="flex flex-col items-end gap-1">
           <LifecycleBadge stage={lifecycle} />
-          {!client.onboarding?.healthAssessmentCompleted && (
-            <IntakePipelineBadge status={(client.onboarding?.intakeStatus as IntakeStatus) || "not_sent"} compact />
-          )}
+          <OnboardingBadge
+            phase={client.onboarding?.currentPhase as OnboardingPhase}
+            hasStaffAlert={client.onboarding?.staffAlertActive}
+          />
         </div>
       </div>
 
@@ -1014,7 +1043,7 @@ export default function AdminClientsPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-4 sm:p-6 lg:p-8 pb-0 bg-white border-b border-gray-200">
+      <div className="p-4 sm:p-6 lg:p-8 pb-4 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Clients</h1>
           <div className="flex items-center gap-2">
@@ -1045,8 +1074,8 @@ export default function AdminClientsPage() {
           onViewAtRisk={() => setLifecycleFilter("at_risk")}
         />
 
-        {/* Search + filters in one compact row */}
-        <div className="flex items-center gap-2 mb-4">
+        {/* Search + status filter */}
+        <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1 max-w-sm">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" placeholder="Search clients..." value={searchQuery}
@@ -1063,7 +1092,7 @@ export default function AdminClientsPage() {
         </div>
 
         {/* Lifecycle tabs */}
-        <div className="flex items-center gap-1 -mb-px overflow-x-auto">
+        <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit overflow-x-auto">
           {[
             { value: "all", label: "All" },
             { value: "active", label: "Active" },
@@ -1076,10 +1105,10 @@ export default function AdminClientsPage() {
             <button
               key={tab.value}
               onClick={() => setLifecycleFilter(tab.value as typeof lifecycleFilter)}
-              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${
                 lifecycleFilter === tab.value
-                  ? "border-primary-600 text-primary-700"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "bg-white text-gray-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.label}

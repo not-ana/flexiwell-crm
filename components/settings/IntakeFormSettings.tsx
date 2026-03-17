@@ -16,7 +16,250 @@ import {
   PlusIcon,
   TrashIcon,
   SaveIcon,
+  SmartphoneIcon,
+  XIcon,
+  AlertTriangleIcon,
 } from "lucide-react";
+
+// ── Phone Preview ──────────────────────────────────────────────────────
+
+function PhoneFieldPreview({ field }: { field: FormSectionConfig["fields"][number] }) {
+  switch (field.type) {
+    case "text":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="h-8 rounded-md border border-gray-200 bg-gray-50 px-2 flex items-center">
+            <span className="text-xs text-gray-400">{field.placeholder || field.label}</span>
+          </div>
+        </div>
+      );
+    case "number":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="h-8 rounded-md border border-gray-200 bg-gray-50 px-2 flex items-center">
+            <span className="text-xs text-gray-400">{field.placeholder || "0"}</span>
+          </div>
+        </div>
+      );
+    case "date":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="h-8 rounded-md border border-gray-200 bg-gray-50 px-2 flex items-center justify-between">
+            <span className="text-xs text-gray-400">MM / DD / YYYY</span>
+            <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+          </div>
+        </div>
+      );
+    case "select":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="h-8 rounded-md border border-gray-200 bg-gray-50 px-2 flex items-center justify-between">
+            <span className="text-xs text-gray-400">Select...</span>
+            <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+        </div>
+      );
+    case "textarea":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="h-14 rounded-md border border-gray-200 bg-gray-50 px-2 pt-1.5">
+            <span className="text-xs text-gray-400">{field.placeholder || "Type here..."}</span>
+          </div>
+        </div>
+      );
+    case "checkbox":
+      return (
+        <label className="flex items-start gap-2">
+          <div className="mt-0.5 w-4 h-4 rounded border border-gray-300 bg-white flex-shrink-0" />
+          <span className="text-xs text-gray-700">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </span>
+        </label>
+      );
+    case "checkboxGroup":
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </label>
+          <div className="space-y-1.5">
+            {(field.options || []).map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-gray-300 bg-white flex-shrink-0" />
+                <span className="text-xs text-gray-600">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    default:
+      return (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">{field.label}</label>
+          <div className="h-8 rounded-md border border-gray-200 bg-gray-50" />
+        </div>
+      );
+  }
+}
+
+function IntakeFormPreview({
+  sections,
+  onClose,
+}: {
+  sections: FormSectionConfig[];
+  onClose: () => void;
+}) {
+  const enabledSections = sections.filter((s) => s.enabled);
+  const [expandedSection, setExpandedSection] = useState<string | null>(
+    enabledSections[0]?.id || null
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="relative flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700"
+        >
+          <XIcon className="w-4 h-4" />
+        </button>
+
+        {/* Tablet frame — iPad landscape miniature */}
+        <div className="w-[960px] max-w-[92vw] h-[min(640px,82vh)] bg-white rounded-2xl shadow-2xl border-[6px] border-gray-800 overflow-hidden flex flex-col">
+          {/* Top bar */}
+          <div className="h-6 bg-gray-800 flex items-center justify-center">
+            <div className="w-16 h-2.5 bg-gray-700 rounded-full" />
+          </div>
+
+          {/* Header */}
+          <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center">
+                <FileTextIcon className="w-4 h-4 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Health Assessment</h3>
+                <p className="text-[11px] text-gray-500">
+                  {enabledSections.length} sections to complete
+                </p>
+              </div>
+            </div>
+            {/* Progress */}
+            <div className="flex items-center gap-1.5 w-48">
+              {enabledSections.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`h-1 flex-1 rounded-full ${
+                    i === 0 ? "bg-primary-500" : "bg-gray-200"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Two-column layout */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Section nav (left) */}
+            <div className="w-56 border-r border-gray-100 bg-gray-50/80 overflow-y-auto py-2">
+              {enabledSections.map((section, i) => {
+                const isActive = expandedSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setExpandedSection(section.id)}
+                    className={`w-full text-left px-4 py-2.5 flex items-center gap-2.5 transition-colors ${
+                      isActive
+                        ? "bg-primary-50 border-r-2 border-primary-500"
+                        : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 ${
+                      isActive ? "bg-primary-500 text-white" : "bg-gray-200 text-gray-500"
+                    }`}>
+                      {i + 1}
+                    </span>
+                    <span className={`text-xs truncate ${
+                      isActive ? "font-semibold text-gray-900" : "text-gray-600"
+                    }`}>
+                      {section.title}
+                      {section.required && <span className="text-red-500 ml-0.5">*</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Fields (right) */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {enabledSections
+                .filter((s) => s.id === expandedSection)
+                .map((section) => {
+                  const visibleFields = section.fields.filter((f) => !f.conditionalOn);
+                  return (
+                    <div key={section.id} className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
+                        {section.description && (
+                          <p className="text-xs text-gray-500 mt-0.5">{section.description}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {visibleFields.map((field) => (
+                          <div key={field.id} className={
+                            field.type === "textarea" || field.type === "checkboxGroup"
+                              ? "col-span-2"
+                              : ""
+                          }>
+                            <PhoneFieldPreview field={field} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="px-6 py-2.5 bg-white border-t border-gray-100 flex items-center justify-between">
+            <p className="text-[11px] text-gray-400">Step 1 of {enabledSections.length}</p>
+            <div className="flex gap-2">
+              <div className="h-8 px-4 border border-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-[11px] font-medium text-gray-600">Back</span>
+              </div>
+              <div className="h-8 px-5 bg-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-[11px] font-semibold text-white">Next</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Label */}
+        <p className="mt-3 text-sm text-white/70 text-center">
+          Client view — tablet preview
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────
 
 export function IntakeFormSettings() {
   const [sections, setSections] = useState<FormSectionConfig[]>(defaultSections);
@@ -29,6 +272,8 @@ export function IntakeFormSettings() {
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [previewSection, setPreviewSection] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     async function loadConfig() {
@@ -194,7 +439,16 @@ export function IntakeFormSettings() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={handleResetToDefault}
+            onClick={() => setShowPreview(true)}
+            className="text-gray-600"
+          >
+            <SmartphoneIcon className="w-4 h-4 mr-1.5" />
+            Preview
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowResetConfirm(true)}
             className="text-gray-600"
           >
             <RotateCcwIcon className="w-4 h-4 mr-1.5" />
@@ -424,6 +678,45 @@ export function IntakeFormSettings() {
             <Button size="sm" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Phone Preview Modal */}
+      {showPreview && (
+        <IntakeFormPreview
+          sections={sections}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowResetConfirm(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertTriangleIcon className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Reset to default?</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-5">
+              This will replace all your current sections, fields, and legal texts with the original template. Any custom changes will be lost.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" size="sm" onClick={() => setShowResetConfirm(false)}>
+                Cancel
+              </Button>
+              <button
+                onClick={() => {
+                  handleResetToDefault();
+                  setShowResetConfirm(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
       )}

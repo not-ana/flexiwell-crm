@@ -618,11 +618,11 @@ export default function WaitlistPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Page Header */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white">
+      <div className="p-4 sm:p-6 lg:p-8 pb-4 border-b border-gray-200 bg-white">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold text-gray-900">Smart Waitlist</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Smart Waitlist</h1>
               {totalWaiting > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 ring-1 ring-inset ring-primary-600/20">
                   {totalWaiting} in queue
@@ -635,81 +635,75 @@ export default function WaitlistPage() {
           </div>
 
         </div>
-      </div>
 
-      {/* Toast */}
-      {notifyResult && (
-        <div className="px-6 pt-3 -mb-2">
-          <NotifyToast result={notifyResult} onDismiss={() => setNotifyResult(null)} />
-        </div>
-      )}
+        {/* Toast */}
+        {notifyResult && (
+          <div className="pt-3">
+            <NotifyToast result={notifyResult} onDismiss={() => setNotifyResult(null)} />
+          </div>
+        )}
 
-      {/* Hero metric + inline stats */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white space-y-4">
         {/* Stats cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4 mb-4">
           <StatCard label="Revenue Protected" value={formatCurrency(protectedRevenue.thisMonth)} />
           <StatCard label="In Queue" value={totalWaiting} accent={totalWaiting > 0 ? "orange" : "default"} muted={totalWaiting === 0} />
           <StatCard label="Confirmed" value={stats.confirmed} subtitle={conversionRate > 0 ? `${conversionRate}% conversion` : undefined} accent="emerald" muted={stats.confirmed === 0} />
         </div>
 
-        {/* Class demand pills + filter tabs in one row */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Class demand pills */}
-          {classDemand.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {classDemand.slice(0, 5).map((cls) => (
-                <button
-                  key={cls.classId}
-                  onClick={() => setFilterClassId(filterClassId === cls.classId ? null : cls.classId)}
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors ring-1 ring-inset cursor-pointer ${
-                    filterClassId === cls.classId
-                      ? "bg-primary-50 text-primary-700 ring-primary-600/20"
-                      : cls.count >= 3
-                      ? "bg-amber-50 text-amber-700 ring-amber-600/20 hover:bg-amber-100"
-                      : "bg-gray-50 text-gray-700 ring-gray-500/10 hover:bg-gray-100"
-                  }`}
-                >
-                  {cls.className} ({cls.count})
-                </button>
-              ))}
-              {filterClassId && (
-                <button
-                  onClick={() => setFilterClassId(null)}
-                  className="text-xs font-medium text-gray-500 hover:text-gray-700 underline underline-offset-2"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          )}
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit">
+          {[
+            { value: "all", label: "All" },
+            { value: "waiting", label: "Waiting" },
+            { value: "notified", label: "Notified" },
+            { value: "confirmed", label: "Confirmed" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setFilterStatus(tab.value)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
+                filterStatus === tab.value
+                  ? "bg-white text-gray-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Filter tabs */}
-          <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit">
-            {[
-              { value: "all", label: "All" },
-              { value: "waiting", label: "Waiting" },
-              { value: "notified", label: "Notified" },
-              { value: "confirmed", label: "Confirmed" },
-            ].map((tab) => (
+        {/* Class filter pills */}
+        {classDemand.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            {classDemand.slice(0, 5).map((cls) => (
               <button
-                key={tab.value}
-                onClick={() => setFilterStatus(tab.value)}
-                className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  filterStatus === tab.value
-                    ? "bg-white text-gray-700 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                key={cls.classId}
+                onClick={() => setFilterClassId(filterClassId === cls.classId ? null : cls.classId)}
+                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors ring-1 ring-inset cursor-pointer ${
+                  filterClassId === cls.classId
+                    ? "bg-primary-50 text-primary-700 ring-primary-600/20"
+                    : cls.count >= 3
+                    ? "bg-amber-50 text-amber-700 ring-amber-600/20 hover:bg-amber-100"
+                    : "bg-gray-50 text-gray-700 ring-gray-500/10 hover:bg-gray-100"
                 }`}
               >
-                {tab.label}
+                {cls.className} ({cls.count})
               </button>
             ))}
+            {filterClassId && (
+              <button
+                onClick={() => setFilterClassId(null)}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 underline underline-offset-2"
+              >
+                Clear
+              </button>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Entry List — grouped by urgency */}
-      <div className="flex-1 overflow-auto px-6 py-5">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         {/* Trash banner */}
         {filterStatus === "removed" && filteredEntries.length > 0 && (
           <div className="mb-4 p-3 rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200 flex items-center gap-3">
