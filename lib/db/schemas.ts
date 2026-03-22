@@ -396,7 +396,7 @@ export interface Activity {
 // Waitlist types
 export type WaitlistRequestType = "reschedule" | "extra_class" | "cancelled_by_studio";
 
-export type WaitlistStatus = "waiting" | "notified" | "confirmed" | "expired" | "declined";
+export type WaitlistStatus = "waiting" | "notified" | "confirmed" | "expired" | "declined" | "removed";
 
 export interface WaitlistPriorityConfig {
   _id?: ObjectId;

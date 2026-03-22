@@ -2,6 +2,19 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  User,
+  CreditCard,
+  Tag,
+  Ticket,
+  Bell,
+  MessageSquare,
+  Clock,
+  ClipboardList,
+  Users,
+  Upload,
+} from "lucide-react";
+import { SettingsLayout, type SettingsTab, type SettingsTabGroup } from "@/components/settings/SettingsLayout";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { WaitlistSettings } from "@/components/settings/WaitlistSettings";
 import { NotificationsSettings } from "@/components/settings/NotificationsSettings";
@@ -14,17 +27,36 @@ import { TrialSettings } from "@/components/settings/TrialSettings";
 
 type AdminSettingsTab = "general" | "subscription" | "plans" | "trial" | "notifications" | "sms-bot" | "waitlist" | "intake" | "team" | "integrations";
 
-const tabs: { id: AdminSettingsTab; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "subscription", label: "Subscription" },
-  { id: "plans", label: "Plans" },
-  { id: "trial", label: "Trial & Drop-in" },
-  { id: "notifications", label: "Notifications" },
-  { id: "sms-bot", label: "SMS Bot" },
-  { id: "waitlist", label: "Waitlist" },
-  { id: "intake", label: "Intake Form" },
-  { id: "team", label: "Staff" },
-  { id: "integrations", label: "Import" },
+const tabs: SettingsTab[] = [
+  { id: "general", label: "General", icon: User, description: "Profile & password" },
+  { id: "subscription", label: "Subscription", icon: CreditCard, description: "Billing & plan" },
+  { id: "plans", label: "Plans", icon: Tag, description: "Client pricing" },
+  { id: "trial", label: "Trial & Drop-in", icon: Ticket, description: "Trial classes" },
+  { id: "notifications", label: "Notifications", icon: Bell, description: "Alerts & emails" },
+  { id: "sms-bot", label: "SMS Bot", icon: MessageSquare, description: "Automated messages" },
+  { id: "waitlist", label: "Waitlist", icon: Clock, description: "Queue settings" },
+  { id: "intake", label: "Intake Form", icon: ClipboardList, description: "Health forms" },
+  { id: "team", label: "Staff", icon: Users, description: "Team members" },
+  { id: "integrations", label: "Import", icon: Upload, description: "Data migration" },
+];
+
+const groups: SettingsTabGroup[] = [
+  {
+    label: "Account",
+    tabs: [tabs[0], tabs[1]],
+  },
+  {
+    label: "Business",
+    tabs: [tabs[2], tabs[3], tabs[6]],
+  },
+  {
+    label: "Communication",
+    tabs: [tabs[4], tabs[5]],
+  },
+  {
+    label: "Setup",
+    tabs: [tabs[7], tabs[8], tabs[9]],
+  },
 ];
 
 function SettingsContent() {
@@ -32,7 +64,7 @@ function SettingsContent() {
   const tabParam = searchParams.get("tab") as AdminSettingsTab | null;
   const validTabs = tabs.map((t) => t.id);
   const initialTab = tabParam && validTabs.includes(tabParam) ? tabParam : "general";
-  const [activeTab, setActiveTab] = useState<AdminSettingsTab>(initialTab);
+  const [activeTab, setActiveTab] = useState<AdminSettingsTab>(initialTab as AdminSettingsTab);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -66,36 +98,14 @@ function SettingsContent() {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Settings</h1>
-
-        {/* Tabs Navigation */}
-        <div className="border-b border-gray-200 mb-6 sm:mb-8 overflow-x-auto scrollbar-hide">
-          <nav className="flex gap-1 -mb-px min-w-max">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        <div>
-          {renderTabContent()}
-        </div>
-      </div>
-    </div>
+    <SettingsLayout
+      tabs={tabs}
+      groups={groups}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as AdminSettingsTab)}
+    >
+      {renderTabContent()}
+    </SettingsLayout>
   );
 }
 

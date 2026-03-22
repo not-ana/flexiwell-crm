@@ -440,7 +440,7 @@ export function IntakeFormSettings() {
             variant="secondary"
             size="sm"
             onClick={() => setShowPreview(true)}
-            className="text-gray-600"
+            className="text-gray-600 whitespace-nowrap"
           >
             <SmartphoneIcon className="w-4 h-4 mr-1.5" />
             Preview
@@ -449,7 +449,7 @@ export function IntakeFormSettings() {
             variant="secondary"
             size="sm"
             onClick={() => setShowResetConfirm(true)}
-            className="text-gray-600"
+            className="text-gray-600 whitespace-nowrap"
           >
             <RotateCcwIcon className="w-4 h-4 mr-1.5" />
             Reset to Default

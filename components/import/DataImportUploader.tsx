@@ -100,6 +100,12 @@ function autoMapColumns(csvHeaders: string[], fields: ImportField[]): ColumnMapp
       city: ["cidade", "ciudad"],
       state: ["estado", "provincia", "uf"],
       country: ["pais", "country code"],
+      member_status: ["status", "membership status", "client status", "active status", "situacao", "estado do membro"],
+      pricing_option: ["pricing option", "plan", "plan type", "membership", "membership type", "package", "plan name", "tipo plano", "plano", "pacote"],
+      payment_amount: ["payment amount", "amount", "price", "monthly price", "rate", "valor", "preco", "mensalidade"],
+      join_date: ["join date", "joined", "start date", "signup date", "registration date", "created", "data cadastro", "data inicio"],
+      next_autopay_date: ["next autopay date", "next payment", "next billing", "autopay date", "next charge", "proxima cobranca"],
+      remaining_classes: ["remaining classes", "classes remaining", "classes left", "credits", "remaining", "aulas restantes", "creditos"],
     };
 
     const aliasMatch = Object.entries(aliases).find(([, aliasList]) =>

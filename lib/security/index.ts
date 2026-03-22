@@ -1,27 +1,11 @@
 // Security utilities for the application
 
-/**
- * In-memory rate limiter
- * For production, use Redis or a distributed cache
- */
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-// Clean up expired entries every 5 minutes
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (entry.resetAt < now) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 5 * 60 * 1000);
-}
+// ---------------------------------------------------------------------------
+// Rate Limiting — Upstash Redis in production, in-memory fallback for dev
+// ---------------------------------------------------------------------------
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -34,39 +18,83 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-/**
- * Check rate limit for a given key (e.g., IP address or user ID)
- */
-export function checkRateLimit(
-  key: string,
-  config: RateLimitConfig
-): RateLimitResult {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
+// Build Upstash Redis client if credentials are present
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      })
+    : null;
 
-  // If no entry or expired, create new
+// Cache Ratelimit instances keyed by "window:max" so we don't recreate them
+const limiters = new Map<string, Ratelimit>();
+
+function getUpstashLimiter(config: RateLimitConfig): Ratelimit {
+  const key = `${config.windowMs}:${config.maxRequests}`;
+  let limiter = limiters.get(key);
+  if (!limiter) {
+    const windowSec = Math.ceil(config.windowMs / 1000);
+    limiter = new Ratelimit({
+      redis: redis!,
+      limiter: Ratelimit.fixedWindow(config.maxRequests, `${windowSec} s`),
+      prefix: "rl",
+    });
+    limiters.set(key, limiter);
+  }
+  return limiter;
+}
+
+// In-memory fallback (development / missing Redis config)
+interface MemoryEntry { count: number; resetAt: number }
+const memoryStore = new Map<string, MemoryEntry>();
+
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of memoryStore.entries()) {
+      if (v.resetAt < now) memoryStore.delete(k);
+    }
+  }, 5 * 60 * 1000);
+}
+
+function checkMemoryRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+  const now = Date.now();
+  const entry = memoryStore.get(key);
+
   if (!entry || entry.resetAt < now) {
-    const newEntry: RateLimitEntry = {
-      count: 1,
-      resetAt: now + config.windowMs,
-    };
-    rateLimitStore.set(key, newEntry);
-    return {
-      allowed: true,
-      remaining: config.maxRequests - 1,
-      resetAt: newEntry.resetAt,
-    };
+    memoryStore.set(key, { count: 1, resetAt: now + config.windowMs });
+    return { allowed: true, remaining: config.maxRequests - 1, resetAt: now + config.windowMs };
   }
 
-  // Increment and check
   entry.count++;
-  rateLimitStore.set(key, entry);
-
+  memoryStore.set(key, entry);
   return {
     allowed: entry.count <= config.maxRequests,
     remaining: Math.max(0, config.maxRequests - entry.count),
     resetAt: entry.resetAt,
   };
+}
+
+/**
+ * Check rate limit for a given key (IP, user ID, etc.).
+ * Uses Upstash Redis when configured, otherwise falls back to in-memory.
+ */
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  if (redis) {
+    const limiter = getUpstashLimiter(config);
+    const result = await limiter.limit(key);
+    return {
+      allowed: result.success,
+      remaining: result.remaining,
+      resetAt: result.reset,
+    };
+  }
+
+  return checkMemoryRateLimit(key, config);
 }
 
 /**
@@ -163,18 +191,6 @@ export function validatePassword(password: string): PasswordValidationResult {
 }
 
 /**
- * Sanitize user input to prevent XSS
- */
-export function sanitizeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
  * Generate a cryptographically secure random string
  */
 export function generateSecureToken(length: number = 32): string {
@@ -184,24 +200,3 @@ export function generateSecureToken(length: number = 32): string {
   return Array.from(array, (byte) => chars[byte % chars.length]).join("");
 }
 
-/**
- * CSRF token generation and validation
- */
-const csrfTokens = new Map<string, { token: string; expiresAt: number }>();
-
-export function generateCsrfToken(sessionId: string): string {
-  const token = generateSecureToken(32);
-  const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
-  csrfTokens.set(sessionId, { token, expiresAt });
-  return token;
-}
-
-export function validateCsrfToken(sessionId: string, token: string): boolean {
-  const entry = csrfTokens.get(sessionId);
-  if (!entry) return false;
-  if (entry.expiresAt < Date.now()) {
-    csrfTokens.delete(sessionId);
-    return false;
-  }
-  return entry.token === token;
-}

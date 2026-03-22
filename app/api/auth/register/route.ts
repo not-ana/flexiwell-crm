@@ -7,12 +7,13 @@ import {
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp, RATE_LIMITS, validatePassword } from "@/lib/security";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 // POST /api/auth/register - Register a new user
 export async function POST(request: NextRequest) {
   // Rate limiting - prevent mass account creation
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(`register:${clientIp}`, RATE_LIMITS.register);
+  const rateLimit = await checkRateLimit(`register:${clientIp}`, RATE_LIMITS.register);
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -29,7 +30,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, password, name, role, phone, inviteCode } = body;
+    const { email, password, name, role, phone, inviteCode, turnstileToken } = body;
+
+    // Verify CAPTCHA
+    const captcha = await verifyTurnstileToken(turnstileToken);
+    if (!captcha.success) {
+      return NextResponse.json({ error: captcha.error }, { status: 400 });
+    }
 
     // Validation
     if (!email || !password || !name) {

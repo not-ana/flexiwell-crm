@@ -13,7 +13,7 @@ export async function DELETE(
 
     const { provider } = await params;
 
-    const validProviders = ["wellhub", "stripe", "googleCalendar", "resend", "sendgrid"];
+    const validProviders = ["wellhub", "stripe", "googleCalendar", "resend", "sendgrid", "classpass"];
     if (!validProviders.includes(provider)) {
       return NextResponse.json(
         { error: "Invalid provider" },
@@ -30,6 +30,7 @@ export async function DELETE(
       googleCalendar: "google-calendar",
       resend: "resend",
       sendgrid: "sendgrid",
+      classpass: "classpass",
     };
 
     const dbProvider = providerMap[provider] || provider;
@@ -46,6 +47,7 @@ export async function DELETE(
       googleCalendar: "googleCalendarConnected",
       resend: "resendConnected",
       sendgrid: "sendgridConnected",
+      classpass: "classpassConnected",
     };
 
     const settingsKey = settingsKeyMap[provider];

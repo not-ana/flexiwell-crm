@@ -653,10 +653,10 @@ export default function WaitlistPage() {
         {/* Filter tabs */}
         <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit">
           {[
-            { value: "all", label: "All" },
-            { value: "waiting", label: "Waiting" },
-            { value: "notified", label: "Notified" },
-            { value: "confirmed", label: "Confirmed" },
+            { value: "all", label: "All", count: stats.waiting + stats.notified + stats.confirmed },
+            { value: "waiting", label: "Waiting", count: stats.waiting },
+            { value: "notified", label: "Notified", count: stats.notified },
+            { value: "confirmed", label: "Confirmed", count: stats.confirmed },
           ].map((tab) => (
             <button
               key={tab.value}
@@ -668,6 +668,13 @@ export default function WaitlistPage() {
               }`}
             >
               {tab.label}
+              {tab.count > 0 && (
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                  filterStatus === tab.value ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500"
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>

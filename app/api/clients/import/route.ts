@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
       const row = clientsData[i];
       const rowNum = i + 1;
 
+      // Build name from first_name + last_name if name not provided directly
+      if (!row.name && (row.first_name || row.last_name)) {
+        row.name = [row.first_name, row.last_name].filter(Boolean).join(" ");
+      }
+
       // Validate required fields
       if (!row.name || !row.email) {
         results.failed++;
@@ -74,13 +79,23 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Parse plan type
+      // Parse plan type from planType field or pricing_option (Mindbody)
       let planType: "monthly" | "quarterly" | "annual" | "drop-in" = "monthly";
-      if (row.planType) {
-        const pt = row.planType.toLowerCase().trim();
-        if (["monthly", "quarterly", "annual", "drop-in"].includes(pt)) {
-          planType = pt as typeof planType;
+      const rawPlan = (row.planType || row.pricing_option || "").toLowerCase().trim();
+      if (rawPlan) {
+        // Direct match
+        if (["monthly", "quarterly", "annual", "drop-in"].includes(rawPlan)) {
+          planType = rawPlan as typeof planType;
         }
+        // Fuzzy match from pricing option names (e.g. "Unlimited Monthly", "8-Class Pack")
+        else if (rawPlan.includes("annual") || rawPlan.includes("yearly") || rawPlan.includes("anual")) {
+          planType = "annual";
+        } else if (rawPlan.includes("quarter") || rawPlan.includes("trimest")) {
+          planType = "quarterly";
+        } else if (rawPlan.includes("drop") || rawPlan.includes("single") || rawPlan.includes("avulso")) {
+          planType = "drop-in";
+        }
+        // else stays "monthly" (most common default)
       }
 
       // Default plan settings based on type
@@ -93,6 +108,22 @@ export async function POST(request: NextRequest) {
 
       const planSettings = planDefaults[planType];
 
+      // Parse member status
+      let clientStatus: "active" | "inactive" | "pending" = "pending";
+      const rawStatus = (row.member_status || "").toLowerCase().trim();
+      if (rawStatus === "active" || rawStatus === "ativo") {
+        clientStatus = "active";
+      } else if (rawStatus === "inactive" || rawStatus === "inativo" || rawStatus === "suspended" || rawStatus === "expired") {
+        clientStatus = "inactive";
+      }
+
+      // Parse remaining classes (from CSV or defaults)
+      const remainingClasses = parseInt(row.remaining_classes) || parseInt(row.totalClasses) || planSettings.classes;
+
+      // Parse join date
+      const joinDate = row.join_date ? new Date(row.join_date) : now;
+      const validJoinDate = isNaN(joinDate.getTime()) ? now : joinDate;
+
       // Create client record
       const newClient: Client = {
         name: row.name.trim(),
@@ -102,14 +133,14 @@ export async function POST(request: NextRequest) {
         instagramId: row.instagramId?.trim() || undefined,
         plan: {
           type: planType,
-          totalClasses: parseInt(row.totalClasses) || planSettings.classes,
+          totalClasses: remainingClasses,
           usedClasses: 0,
-          remainingClasses: parseInt(row.totalClasses) || planSettings.classes,
-          startDate: now,
+          remainingClasses,
+          startDate: validJoinDate,
           endDate: new Date(now.getTime() + planSettings.days * 24 * 60 * 60 * 1000),
-          price: parseFloat(row.price) || planSettings.price,
+          price: parseFloat(row.payment_amount) || parseFloat(row.price) || planSettings.price,
         },
-        status: "pending",
+        status: clientStatus,
         preferences: {
           notifications: {
             email: true,

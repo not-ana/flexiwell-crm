@@ -2058,7 +2058,7 @@ function ViewStudentsModal({ isOpen, onClose, event }: { isOpen: boolean; onClos
 }
 
 // Metrics Dashboard Sidebar
-function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onCreateClass: () => void }) {
+function MetricsDashboard({ events, onCreateClass, viewMode, selectedDate }: { events: ClassEvent[]; onCreateClass: () => void; viewMode: ViewMode; selectedDate: Date }) {
   const [inactiveStudents, setInactiveStudents] = useState<{ count: number; top: { id: string; name: string; initials: string; daysSinceLastClass?: number }[] }>({ count: 0, top: [] });
 
   useEffect(() => {
@@ -2082,22 +2082,41 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
   }, []);
 
   const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
 
-  const weekEvents = events.filter(e => e.start >= weekStart && e.start < weekEnd && e.status !== "cancelled");
-  const totalCapacity = weekEvents.reduce((sum, e) => sum + e.capacity, 0);
-  const totalEnrolled = weekEvents.reduce((sum, e) => sum + e.enrolled, 0);
+  // Compute date range based on viewMode
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  let periodLabel: string;
+
+  if (viewMode === "day") {
+    rangeStart = new Date(selectedDate);
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeStart.getDate() + 1);
+    periodLabel = isSameDay(selectedDate, now) ? "Today" : selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  } else if (viewMode === "month") {
+    rangeStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    rangeEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+    periodLabel = selectedDate.toLocaleDateString("en-US", { month: "long" });
+  } else {
+    rangeStart = new Date(selectedDate);
+    rangeStart.setDate(selectedDate.getDate() - selectedDate.getDay());
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeStart.getDate() + 7);
+    periodLabel = "This Week";
+  }
+
+  const periodEvents = events.filter(e => e.start >= rangeStart && e.start < rangeEnd && e.status !== "cancelled");
+  const totalCapacity = periodEvents.reduce((sum, e) => sum + e.capacity, 0);
+  const totalEnrolled = periodEvents.reduce((sum, e) => sum + e.enrolled, 0);
   const occupancyRate = totalCapacity > 0 ? Math.round((totalEnrolled / totalCapacity) * 100) : 0;
   const emptySpots = totalCapacity - totalEnrolled;
 
   const atRiskCount = inactiveStudents.count;
 
   // Upcoming classes with low fill (urgency)
-  const upcomingLow = weekEvents
+  const upcomingLow = periodEvents
     .filter(e => e.status === "scheduled" && e.start > now && e.enrolled < e.capacity * 0.5)
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .slice(0, 3);
@@ -2114,7 +2133,7 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
     <div className="hidden lg:flex w-80 border-l border-gray-200 bg-white flex-col overflow-y-auto">
       {/* Week Overview */}
       <div className="p-5 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">This Week</h3>
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">{periodLabel}</h3>
 
         {/* Occupancy Ring */}
         <div className="flex items-center gap-4 mb-5">
@@ -2136,7 +2155,7 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-xl font-bold text-gray-900">{weekEvents.length}</p>
+            <p className="text-xl font-bold text-gray-900">{periodEvents.length}</p>
             <p className="text-xs text-gray-500">Classes</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -2163,7 +2182,7 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-amber-800">{emptySpots} empty spots this week</p>
+                <p className="text-sm font-semibold text-amber-800">{emptySpots} empty spot{emptySpots !== 1 ? "s" : ""} {viewMode === "day" ? "today" : viewMode === "month" ? "this month" : "this week"}</p>
                 <p className="text-xs text-amber-700 mt-1">Share your booking link to help fill these spots.</p>
               </div>
             </div>
@@ -2236,7 +2255,7 @@ function MetricsDashboard({ events, onCreateClass }: { events: ClassEvent[]; onC
 }
 
 // Event Details Sidebar for Teacher
-function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, onCompleteClass, onCancelClass, onViewReport, onViewStudents }: {
+function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, onCompleteClass, onCancelClass, onViewReport, onViewAllStudents }: {
   event: ClassEvent | null;
   onClose: () => void;
   onStartClass: () => void;
@@ -2244,7 +2263,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
   onCompleteClass: () => void;
   onCancelClass: () => void;
   onViewReport: () => void;
-  onViewStudents: () => void;
+  onViewAllStudents: () => void;
 }) {
   if (!event) return null;
 
@@ -2308,7 +2327,7 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium text-gray-900">Enrolled ({event.students.length})</h3>
-            <a href="/teacher/students" className="text-xs text-primary-600 hover:text-primary-700 font-medium">View all</a>
+            <button onClick={onViewAllStudents} className="text-xs text-primary-600 hover:text-primary-700 font-medium">View all</button>
           </div>
           <div className="space-y-1.5">
             {event.students.slice(0, 6).map((student) => (
@@ -2407,12 +2426,6 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
               <div><p className="font-medium text-gray-900">View Report</p><p className="text-xs text-gray-500">See attendance summary</p></div>
             </button>
           )}
-          <button onClick={onViewStudents} className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-              <UserIcon className="w-4 h-4 text-blue-600" />
-            </div>
-            <div><p className="font-medium text-gray-900">View Students</p><p className="text-xs text-gray-500">See all enrolled students</p></div>
-          </button>
           {/* Copy booking link for this class */}
           {(event.status === "scheduled") && (
             <button
@@ -2598,9 +2611,9 @@ export default function TeacherClassesPage() {
           weekStart.setHours(0, 0, 0, 0);
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 7);
-          const weekEvents = events.filter(e => e.start >= weekStart && e.start < weekEnd && e.status !== "cancelled");
-          const totalCap = weekEvents.reduce((s, e) => s + e.capacity, 0);
-          const totalEnr = weekEvents.reduce((s, e) => s + e.enrolled, 0);
+          const periodEvents = events.filter(e => e.start >= weekStart && e.start < weekEnd && e.status !== "cancelled");
+          const totalCap = periodEvents.reduce((s, e) => s + e.capacity, 0);
+          const totalEnr = periodEvents.reduce((s, e) => s + e.enrolled, 0);
           const occRate = totalCap > 0 ? Math.round((totalEnr / totalCap) * 100) : 0;
           const emptySpots = totalCap - totalEnr;
           const occColor = occRate >= 80 ? "text-green-600 bg-green-50" : occRate >= 50 ? "text-yellow-600 bg-yellow-50" : "text-red-600 bg-red-50";
@@ -2610,7 +2623,7 @@ export default function TeacherClassesPage() {
                 <span className={`w-1.5 h-1.5 rounded-full ${occRate >= 80 ? "bg-green-500" : occRate >= 50 ? "bg-yellow-500" : "bg-red-500"}`} />
                 {occRate}% occupancy
               </span>
-              <span className="text-xs text-gray-500">{weekEvents.length} classes this week</span>
+              <span className="text-xs text-gray-500">{periodEvents.length} classes this week</span>
               <span className="text-xs text-gray-500">{totalEnr} students booked</span>
               {emptySpots > 0 && (
                 <span className="text-xs text-red-500 font-medium">{emptySpots} spots to fill</span>
@@ -2736,11 +2749,11 @@ export default function TeacherClassesPage() {
               onCompleteClass={handleCompleteClass}
               onCancelClass={handleCancelClass}
               onViewReport={handleViewReport}
-              onViewStudents={handleViewStudents}
+              onViewAllStudents={handleViewStudents}
             />
           </div>
         ) : (
-          <MetricsDashboard events={events} onCreateClass={() => setShowCreateModal(true)} />
+          <MetricsDashboard events={events} onCreateClass={() => setShowCreateModal(true)} viewMode={viewMode} selectedDate={selectedDate} />
         )}
       </div>
 

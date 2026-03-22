@@ -306,11 +306,11 @@ export default function AdminDashboard() {
                 </button>
               </div>
               {/* Period type selector */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit">
                 {(["week", "month", "year"] as TimePeriod[]).map((period) => (
                   <button key={period} onClick={() => handlePeriodChange(period)} disabled={refreshing}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      selectedPeriod === period ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                    className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
+                      selectedPeriod === period ? "bg-white text-gray-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
                     } ${refreshing ? "cursor-wait" : ""}`}>
                     {period === "week" ? "Week" : period === "month" ? "Month" : "Year"}
                   </button>

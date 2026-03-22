@@ -204,19 +204,30 @@ export default function ClientsPage() {
         <div className="bg-white border border-gray-200 rounded-xl">
           {/* Filters */}
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex gap-1">
-              {(["all", "active", "inactive", "pending"] as const).map((status) => (
+            <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit">
+              {([
+                { value: "all" as const, label: "All", count: stats.total },
+                { value: "active" as const, label: "Active", count: stats.active },
+                { value: "inactive" as const, label: "Inactive", count: stats.inactive },
+                { value: "pending" as const, label: "Pending", count: stats.pending },
+              ]).map((tab) => (
                 <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    statusFilter === status
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${
+                    statusFilter === tab.value
+                      ? "bg-white text-gray-700 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  {status === "all" ? "All clients" : status.charAt(0).toUpperCase() + status.slice(1)}
-                  {status === "all" && ` (${stats.total})`}
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                      statusFilter === tab.value ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

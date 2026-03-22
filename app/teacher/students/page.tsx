@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { SearchIcon, FilterIcon, ChevronIcon } from "@/components/icons";
 import { Badge } from "@/components/ui/Badge";
@@ -587,7 +587,7 @@ function InactiveAlertBanner({ students, onSendMessage }: { students: Student[];
   );
 }
 
-export default function TeacherStudentsPage() {
+function TeacherStudentsPageContent() {
   const searchParams = useSearchParams();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -957,5 +957,13 @@ function AddStudentModal({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TeacherStudentsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" /></div>}>
+      <TeacherStudentsPageContent />
+    </Suspense>
   );
 }

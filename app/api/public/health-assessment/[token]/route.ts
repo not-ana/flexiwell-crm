@@ -90,7 +90,7 @@ export async function POST(
     const clientIp = getClientIp(request);
 
     // Rate limiting
-    const rateLimitResult = checkRateLimit(`health-assessment-submit:${clientIp}`, PUBLIC_SUBMIT_LIMIT);
+    const rateLimitResult = await checkRateLimit(`health-assessment-submit:${clientIp}`, PUBLIC_SUBMIT_LIMIT);
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: "Too many submissions. Please try again later." },

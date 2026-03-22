@@ -32,17 +32,12 @@ interface CrispMessageEvent {
 const conversations = new Map<string, AIMessage[]>();
 
 // Verify Crisp webhook signature
-function verifySignature(
+async function verifySignature(
   body: string,
   timestamp: string,
   signature: string,
   secret: string
-): boolean {
-  // Temporarily skip signature verification to debug
-  // TODO: Re-enable once we confirm the correct secret
-  console.log("Skipping signature verification for debugging");
-  return true;
-
+): Promise<boolean> {
   if (!secret) {
     console.warn("CRISP_WEBHOOK_SECRET not configured, skipping signature verification");
     return true;
@@ -53,7 +48,13 @@ function verifySignature(
     .update(payload)
     .digest("hex");
 
-  return signature === expectedSignature;
+  // Use timing-safe comparison to prevent timing attacks
+  const sigBuffer = Buffer.from(signature, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  if (sigBuffer.length !== expectedBuffer.length) return false;
+
+  const { timingSafeEqual } = await import("crypto");
+  return timingSafeEqual(sigBuffer, expectedBuffer);
 }
 
 // Send message back to Crisp conversation
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.CRISP_WEBHOOK_SECRET || "";
 
     // Verify signature
-    if (!verifySignature(bodyText, timestamp, signature, webhookSecret)) {
+    if (!(await verifySignature(bodyText, timestamp, signature, webhookSecret))) {
       console.error("Invalid Crisp webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }

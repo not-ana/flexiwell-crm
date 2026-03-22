@@ -8,10 +8,11 @@ import {
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.login);
+  const rateLimit = await checkRateLimit(`login:${clientIp}`, RATE_LIMITS.login);
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -27,7 +28,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, password } = await request.json();
+    const { email, password, turnstileToken } = await request.json();
+
+    // Verify CAPTCHA
+    const captcha = await verifyTurnstileToken(turnstileToken);
+    if (!captcha.success) {
+      return NextResponse.json({ error: captcha.error }, { status: 400 });
+    }
 
     if (!email || !password) {
       return NextResponse.json(

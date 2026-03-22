@@ -796,10 +796,10 @@ export default function PaymentsPage() {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 sm:p-6 lg:p-8 pb-4 bg-white border-b border-gray-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+      <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
+          <p className="text-sm text-gray-500 mt-0.5">
             Collect faster, lose less revenue
           </p>
         </div>
@@ -870,7 +870,7 @@ export default function PaymentsPage() {
 
       {/* Stats cards */}
       {!hasNoPayments && (
-        <div className="space-y-3 mb-4 sm:mb-6">
+        <div className="space-y-3 mb-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard label="Collected" value={formatCurrency(stats.totalRevenue)} accent="emerald" />
             <StatCard label="Pending" value={formatCurrency(stats.pendingAmount)} accent={stats.pendingCount > 0 ? "orange" : "default"} muted={stats.pendingCount === 0} subtitle={stats.pendingCount > 0 ? `${stats.pendingCount} payment${stats.pendingCount !== 1 ? "s" : ""}` : undefined} />
@@ -938,33 +938,42 @@ export default function PaymentsPage() {
       {/* Filters — only show when there's data to filter */}
       {!hasNoPayments && <div className="flex flex-col gap-3">
         {/* Search */}
-        <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div className="relative max-w-sm">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search by client name or transaction ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 placeholder-gray-500"
+            className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 placeholder-gray-400"
           />
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg overflow-x-auto">
-          {(["all", "pending", "overdue", "paid", "failed"] as PaymentFilter[]).map((status) => (
+        <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-inset ring-gray-200 w-fit overflow-x-auto">
+          {([
+            { value: "all" as PaymentFilter, label: "All", count: payments.length },
+            { value: "pending" as PaymentFilter, label: statusConfig.pending.label, count: stats.pendingCount },
+            { value: "overdue" as PaymentFilter, label: statusConfig.overdue.label, count: stats.overdueCount },
+            { value: "paid" as PaymentFilter, label: statusConfig.paid.label, count: stats.paidCount },
+            { value: "failed" as PaymentFilter, label: statusConfig.failed.label, count: stats.failedCount },
+          ]).map((tab) => (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                statusFilter === status
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${
+                statusFilter === tab.value
+                  ? "bg-white text-gray-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {status === "all" ? "All" : statusConfig[status as PaymentStatus].label}
-              {status === "overdue" && stats.overdueCount > 0 && (
-                <span className="ml-1 sm:ml-1.5 px-1 sm:px-1.5 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
-                  {stats.overdueCount}
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                  tab.value === "overdue" ? "bg-red-100 text-red-600" :
+                  statusFilter === tab.value ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-500"
+                }`}>
+                  {tab.count}
                 </span>
               )}
             </button>
@@ -974,11 +983,11 @@ export default function PaymentsPage() {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-4 lg:pt-4">
+      <div className="flex-1 overflow-auto">
       {/* Payments Table/Cards */}
-      <div className="bg-white border border-gray-200 rounded-xl">
-        {/* Mobile/Tablet Card View */}
-        <div className="lg:hidden divide-y divide-gray-100">
+      <div className="bg-white">
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-100">
           {filteredPayments.length === 0 ? (
             <div className="py-12 text-center px-4">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1075,10 +1084,11 @@ export default function PaymentsPage() {
         </div>
 
         {/* Desktop Table View */}
-        <table className="w-full hidden lg:table">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 py-3 text-left">
+        <div className="hidden md:block overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50/50">
+              <th className="px-4 py-2.5 text-left">
                 <input
                   type="checkbox"
                   checked={selectedPayments.length === filteredPayments.length && filteredPayments.length > 0}
@@ -1086,27 +1096,13 @@ export default function PaymentsPage() {
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Plan
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Method
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -1279,6 +1275,7 @@ export default function PaymentsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Reminder Modal */}

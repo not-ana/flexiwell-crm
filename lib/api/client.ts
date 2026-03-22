@@ -152,6 +152,7 @@ export const api = {
 export interface LoginRequest {
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 export interface RegisterRequest {
@@ -161,6 +162,7 @@ export interface RegisterRequest {
   role?: "admin" | "teacher" | "client";
   phone?: string;
   inviteCode?: string; // Codigo de convite para vincular cliente a empresa
+  turnstileToken?: string;
 }
 
 export interface AuthUser {

@@ -15,16 +15,17 @@ import { OrderReviewStep } from "@/components/checkout/steps/OrderReviewStep";
 import { PaymentStep } from "@/components/checkout/steps/PaymentStep";
 import { ProcessingStep } from "@/components/checkout/steps/ProcessingStep";
 import { CheckoutStepIndicator } from "@/components/checkout/CheckoutStepIndicator";
-import { Check, ArrowRight, ArrowLeft, ShieldCheck, BookOpen, Download, Calendar } from "lucide-react";
+import { Check, ArrowRight, ArrowLeft, ShieldCheck, BookOpen, Download, Calendar, User, HeartPulse, Bell, Tag, Receipt } from "lucide-react";
+import { SettingsLayout, type SettingsTab } from "@/components/settings/SettingsLayout";
 
 type ClientSettingsTab = "profile" | "health" | "notifications" | "plans" | "payment-history";
 
-const tabs: { id: ClientSettingsTab; label: string }[] = [
-  { id: "profile", label: "Profile" },
-  { id: "health", label: "Health & Safety" },
-  { id: "notifications", label: "Notifications" },
-  { id: "plans", label: "Plans" },
-  { id: "payment-history", label: "Payment History" },
+const tabs: SettingsTab[] = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "health", label: "Health & Safety", icon: HeartPulse },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "plans", label: "Plans", icon: Tag },
+  { id: "payment-history", label: "Payment History", icon: Receipt },
 ];
 
 // Helper to get initials from name
@@ -1476,35 +1477,12 @@ export default function ClientSettingsPage() {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Settings</h1>
-
-        {/* Tabs Navigation */}
-        <div className="border-b border-gray-200 mb-6 sm:mb-8 overflow-x-auto">
-          <nav className="flex gap-1 -mb-px min-w-max">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        <div>
-          {renderTabContent()}
-        </div>
-      </div>
-    </div>
+    <SettingsLayout
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as ClientSettingsTab)}
+    >
+      {renderTabContent()}
+    </SettingsLayout>
   );
 }

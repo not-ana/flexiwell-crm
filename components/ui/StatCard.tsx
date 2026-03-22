@@ -52,10 +52,12 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className={`text-xl font-semibold ${muted ? "text-gray-400" : styles.value}`}>
-        {value}
-      </p>
-      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+      <div className="flex items-baseline gap-2">
+        <p className={`text-xl font-semibold ${muted ? "text-gray-400" : styles.value}`}>
+          {value}
+        </p>
+        {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+      </div>
       {href && (
         <Link
           href={href}

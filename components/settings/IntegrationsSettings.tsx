@@ -5,6 +5,7 @@ import Image from "next/image";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
 import { WellhubSettings } from "./WellhubSettings";
+import { ClassPassSettings } from "./ClassPassSettings";
 import { api } from "@/lib/api/client";
 import { DataImportUploader } from "@/components/import/DataImportUploader";
 import { platformConfigs } from "@/lib/config/import-platforms";
@@ -66,7 +67,7 @@ export function IntegrationsSettings() {
     }
 
     // For API integrations with dedicated settings pages, navigate to them
-    if (integration.id === "wellhub" || integration.id === "whatsapp" || integration.id === "totalpass") {
+    if (integration.id === "wellhub" || integration.id === "whatsapp" || integration.id === "totalpass" || integration.id === "classpass") {
       setActiveSettingsView(integration.id);
       return;
     }
@@ -130,6 +131,10 @@ export function IntegrationsSettings() {
   // Render full-page settings views
   if (activeSettingsView === "wellhub" || activeSettingsView === "totalpass") {
     return <WellhubSettings onBack={handleBackFromSettings} provider={activeSettingsView} />;
+  }
+
+  if (activeSettingsView === "classpass") {
+    return <ClassPassSettings onBack={handleBackFromSettings} />;
   }
 
   if (activeSettingsView === "whatsapp") {
@@ -217,7 +222,7 @@ export function IntegrationsSettings() {
                     return;
                   }
                   // For API marketplace integrations and WhatsApp, always open full-page settings
-                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp") {
+                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || integration.id === "classpass") {
                     setActiveSettingsView(integration.id);
                     return;
                   }
@@ -227,7 +232,7 @@ export function IntegrationsSettings() {
                   }
                 }}
                 className={`flex items-center gap-4 p-4 ${
-                  (integration.importType === "spreadsheet" || integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
+                  (integration.importType === "spreadsheet" || integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || integration.id === "classpass" || (isConnected && integration.hasSettings))
                     ? "cursor-pointer hover:bg-gray-50"
                     : ""
                 }`}

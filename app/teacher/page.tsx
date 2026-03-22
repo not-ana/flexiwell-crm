@@ -69,6 +69,7 @@ interface DashboardData {
     totalClasses: number;
     studentsServed: number;
     avgAttendance: number;
+    avgAttendanceTrend?: number; // percentage change vs last week (positive = up)
     hoursTeaching: number;
     makeupPending: number;
   };
@@ -84,6 +85,7 @@ const defaultStats = {
   totalClasses: 0,
   studentsServed: 0,
   avgAttendance: 0,
+  avgAttendanceTrend: undefined as number | undefined,
   hoursTeaching: 0,
   makeupPending: 0,
 };
@@ -128,6 +130,7 @@ export default function TeacherDashboard() {
   const router = useRouter();
   const [showAllSchedule, setShowAllSchedule] = useState(false);
   const [activeTab, setActiveTab] = useState<"today" | "makeups">("today");
+  const [showAllStudents, setShowAllStudents] = useState(false);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [isSubmittingWalkIn, setIsSubmittingWalkIn] = useState(false);
   const [showScheduleMakeupModal, setShowScheduleMakeupModal] = useState(false);
@@ -156,7 +159,7 @@ export default function TeacherDashboard() {
       const response = await authFetch("/api/teacher/dashboard");
       if (response.ok) {
         const data: DashboardData = await response.json();
-        setStats(data.stats);
+        setStats({ ...defaultStats, ...data.stats });
         setTodaySchedule(data.todaySchedule);
         setUpcomingClasses(data.upcomingClasses);
         setMakeupRequests(data.makeupRequests);
@@ -287,7 +290,22 @@ export default function TeacherDashboard() {
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 mb-1">Avg. Attendance</p>
-              <p className="text-2xl font-bold text-green-600">{stats.avgAttendance}%</p>
+              <div className="flex items-center gap-2">
+                <p className={`text-2xl font-bold ${
+                  stats.avgAttendance >= 70 ? "text-green-600" :
+                  stats.avgAttendance >= 50 ? "text-yellow-600" : "text-red-600"
+                }`}>{stats.avgAttendance}%</p>
+                {stats.avgAttendanceTrend != null && stats.avgAttendanceTrend !== 0 && (
+                  <span className={`flex items-center gap-0.5 text-xs font-medium ${
+                    stats.avgAttendanceTrend > 0 ? "text-green-600" : "text-red-600"
+                  }`}>
+                    <svg className={`w-3 h-3 ${stats.avgAttendanceTrend < 0 ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                    </svg>
+                    {Math.abs(stats.avgAttendanceTrend)}%
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-600">this week</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
