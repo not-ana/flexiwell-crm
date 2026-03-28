@@ -148,12 +148,24 @@ export async function GET(request: NextRequest) {
           },
         },
       ]).toArray(),
-      // Recent activity (last 5)
-      db.collection("bookings")
-        .find(establishmentFilter)
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .toArray(),
+      // Recent activity: bookings, new clients, payments (last 5 each, merged later)
+      Promise.all([
+        db.collection("bookings")
+          .find(establishmentFilter)
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .toArray(),
+        db.collection("clients")
+          .find(establishmentFilter)
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .toArray(),
+        db.collection("payments")
+          .find(establishmentFilter)
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .toArray(),
+      ]),
       // Upcoming classes (from today onwards)
       db.collection("classes")
         .find({
@@ -252,15 +264,50 @@ export async function GET(request: NextRequest) {
       ? ((completedBookings / totalBookingsInPeriod) * 100).toFixed(1)
       : "0";
 
-    // Format recent activity
-    const formattedActivity = recentActivity.map((booking: any, index: number) => ({
+    // Format recent activity from multiple sources
+    const [recentBookings, recentClients, recentPayments] = recentActivity as [any[], any[], any[]];
+
+    const activityItems: Array<{ action: string; name: string; time: Date; type: string }> = [];
+
+    for (const booking of recentBookings) {
+      activityItems.push({
+        action: booking.status === "completed" ? "Class completed" :
+                booking.status === "cancelled" ? "Booking cancelled" :
+                booking.status === "no-show" ? "No-show" : "New booking",
+        name: booking.className || "Class",
+        time: new Date(booking.createdAt),
+        type: booking.status === "completed" ? "class" :
+              booking.status === "cancelled" || booking.status === "no-show" ? "cancel" : "booking",
+      });
+    }
+
+    for (const client of recentClients) {
+      activityItems.push({
+        action: "New client joined",
+        name: client.name || `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Client",
+        time: new Date(client.createdAt),
+        type: "client",
+      });
+    }
+
+    for (const payment of recentPayments) {
+      activityItems.push({
+        action: payment.status === "failed" ? "Payment failed" :
+                payment.status === "refunded" ? "Payment refunded" : "Payment received",
+        name: payment.clientName || payment.description || "Payment",
+        time: new Date(payment.createdAt),
+        type: "payment",
+      });
+    }
+
+    // Sort by time descending, take top 8
+    activityItems.sort((a, b) => b.time.getTime() - a.time.getTime());
+    const formattedActivity = activityItems.slice(0, 8).map((item, index) => ({
       id: index + 1,
-      action: booking.status === "completed" ? "Class completed" :
-              booking.status === "cancelled" ? "Booking cancelled" : "New booking",
-      name: booking.className || "Class",
-      time: getRelativeTime(booking.createdAt),
-      type: booking.status === "completed" ? "class" :
-            booking.status === "cancelled" ? "cancel" : "booking",
+      action: item.action,
+      name: item.name,
+      time: getRelativeTime(item.time),
+      type: item.type,
     }));
 
     // Format today's classes

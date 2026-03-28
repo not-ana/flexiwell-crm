@@ -21,7 +21,7 @@ import {
   WaitlistIcon,
   UserIcon,
   GoogleIcon,
-  ChatIcon,
+  HeartPulseIcon,
 } from "@/components/icons";
 
 export type SidebarVariant = "client" | "admin" | "teacher";
@@ -71,10 +71,10 @@ const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[]
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
+      { name: "Client Check-up", href: "/admin/client-checkup", icon: HeartPulseIcon, hasBadge: true },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/admin/support", icon: ChatIcon },
     ],
   },
   teacher: {
@@ -85,7 +85,6 @@ const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[]
     ],
     bottom: [
       { name: "Settings", href: "/teacher/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
-      { name: "Support", href: "/teacher/support", icon: ChatIcon },
     ],
   },
 };
@@ -203,9 +202,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     switch (newAccountRole) {
       case "admin":
         router.push("/admin");
-        break;
-      case "teacher":
-        router.push("/teacher");
         break;
       default:
         router.push("/dashboard");
@@ -470,27 +466,6 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
                       </span>
                     </button>
 
-                    {/* Teacher */}
-                    <button
-                      type="button"
-                      onClick={() => setNewAccountRole("teacher")}
-                      className={`w-full flex sm:flex-col items-center gap-3 sm:gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
-                        newAccountRole === "teacher"
-                          ? "border-primary-600 bg-primary-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        newAccountRole === "teacher" ? "bg-primary-100 text-primary-600" : "bg-gray-100 text-gray-500"
-                      }`}>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                      <span className={`text-sm font-medium ${newAccountRole === "teacher" ? "text-primary-700" : "text-gray-700"}`}>
-                        Teacher
-                      </span>
-                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">

@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
 import { WhatsAppSettings } from "./WhatsAppSettings";
-import { WellhubSettings } from "./WellhubSettings";
-import { ClassPassSettings } from "./ClassPassSettings";
 import { api } from "@/lib/api/client";
 import { DataImportUploader } from "@/components/import/DataImportUploader";
-import { platformConfigs } from "@/lib/config/import-platforms";
+import { platformConfigs, classHistoryConfigs } from "@/lib/config/import-platforms";
+import { authFetch } from "@/lib/api/auth-fetch";
 
 interface IntegrationStatus {
   connected: boolean;
@@ -44,7 +43,7 @@ export function IntegrationsSettings() {
   const [loading, setLoading] = useState(true);
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>(null);
   const [activeSettingsView, setActiveSettingsView] = useState<string | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<keyof typeof platformConfigs>("classpass");
+  const [selectedPlatform, setSelectedPlatform] = useState<keyof typeof platformConfigs>("mindbody");
 
   useEffect(() => {
     fetchStatus();
@@ -67,7 +66,7 @@ export function IntegrationsSettings() {
     }
 
     // For API integrations with dedicated settings pages, navigate to them
-    if (integration.id === "wellhub" || integration.id === "whatsapp" || integration.id === "totalpass" || integration.id === "classpass") {
+    if (integration.id === "whatsapp") {
       setActiveSettingsView(integration.id);
       return;
     }
@@ -97,19 +96,34 @@ export function IntegrationsSettings() {
     try {
       const response = await api.post<{
         success: boolean;
-        results: { success: number; failed: number; errors: string[] };
+        results: { success: number; failed: number; errors: { row: number; email: string; error: string }[] };
       }>("/api/clients/import", {
         clientsData: data,
       });
 
       if (response.data?.success) {
-        console.log(`Successfully imported ${response.data.results.success} clients from ${selectedPlatform}`);
-        if (response.data.results.failed > 0) {
-          console.warn(`${response.data.results.failed} records failed to import:`, response.data.results.errors);
-        }
+        return response.data.results as import("@/components/import/DataImportUploader").ImportResult;
       }
     } catch (error) {
       console.error(`Failed to import ${selectedPlatform} data:`, error);
+      throw error;
+    }
+  };
+
+  const classHistoryConfig = classHistoryConfigs[selectedPlatform] || classHistoryConfigs.mindbody;
+
+  const handleClassHistoryImport = async (data: Record<string, string>[]) => {
+    try {
+      const response = await authFetch("/api/bookings/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingsData: data }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Import failed");
+      return result.results as import("@/components/import/DataImportUploader").ImportResult;
+    } catch (error) {
+      console.error(`Failed to import class history:`, error);
       throw error;
     }
   };
@@ -120,23 +134,12 @@ export function IntegrationsSettings() {
         return <WhatsAppSettings />;
       case "stripe":
         return <StripeSettingsInline />;
-      case "wellhub":
-      case "totalpass":
-        return <MarketplaceSettingsInline name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
       default:
         return <GenericIntegrationSettings name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
     }
   };
 
   // Render full-page settings views
-  if (activeSettingsView === "wellhub" || activeSettingsView === "totalpass") {
-    return <WellhubSettings onBack={handleBackFromSettings} provider={activeSettingsView} />;
-  }
-
-  if (activeSettingsView === "classpass") {
-    return <ClassPassSettings onBack={handleBackFromSettings} />;
-  }
-
   if (activeSettingsView === "whatsapp") {
     return <WhatsAppSettings onBack={handleBackFromSettings} />;
   }
@@ -189,14 +192,21 @@ export function IntegrationsSettings() {
                 onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
                 className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="classpass">ClassPass</option>
                 <option value="mindbody">Mindbody</option>
-                <option value="glofox">Glofox</option>
-                <option value="tecnofit">Tecnofit</option>
-                <option value="other">Other Platform / Spreadsheet</option>
               </select>
             </div>
           }
+        />
+      </div>
+
+      {/* Class History Import Section */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+        <DataImportUploader
+          platform={classHistoryConfig.name}
+          description={classHistoryConfig.description}
+          templateUrl={classHistoryConfig.templateUrl}
+          fields={classHistoryConfig.fields}
+          onImport={handleClassHistoryImport}
         />
       </div>
 
@@ -222,7 +232,7 @@ export function IntegrationsSettings() {
                     return;
                   }
                   // For API marketplace integrations and WhatsApp, always open full-page settings
-                  if (integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || integration.id === "classpass") {
+                  if (integration.id === "whatsapp") {
                     setActiveSettingsView(integration.id);
                     return;
                   }
@@ -232,7 +242,7 @@ export function IntegrationsSettings() {
                   }
                 }}
                 className={`flex items-center gap-4 p-4 ${
-                  (integration.importType === "spreadsheet" || integration.id === "wellhub" || integration.id === "totalpass" || integration.id === "whatsapp" || integration.id === "classpass" || (isConnected && integration.hasSettings))
+                  (integration.importType === "spreadsheet" || integration.id === "whatsapp" || (isConnected && integration.hasSettings))
                     ? "cursor-pointer hover:bg-gray-50"
                     : ""
                 }`}
@@ -332,63 +342,6 @@ function StripeSettingsInline() {
   );
 }
 
-function MarketplaceSettingsInline({ name }: { name: string }) {
-  const [autoSync, setAutoSync] = useState(true);
-  const [importClients, setImportClients] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <p className="text-2xl font-bold text-gray-900">24</p>
-          <p className="text-sm text-gray-500">Classes synced</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <p className="text-2xl font-bold text-gray-900">89</p>
-          <p className="text-sm text-gray-500">Bookings</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <p className="text-2xl font-bold text-gray-900">$2,340</p>
-          <p className="text-sm text-gray-500">Revenue</p>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <button
-          onClick={() => setAutoSync(!autoSync)}
-          className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-        >
-          <div className="text-left">
-            <p className="text-sm font-medium text-gray-900">Auto-sync classes</p>
-            <p className="text-xs text-gray-500">Automatically sync class schedules</p>
-          </div>
-          <div className={`w-10 h-6 rounded-full transition-colors ${autoSync ? "bg-primary-600" : "bg-gray-300"}`}>
-            <div className={`w-5 h-5 mt-0.5 bg-white rounded-full shadow transition-transform ${autoSync ? "translate-x-4 ml-0.5" : "translate-x-0.5"}`} />
-          </div>
-        </button>
-
-        <button
-          onClick={() => setImportClients(!importClients)}
-          className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-        >
-          <div className="text-left">
-            <p className="text-sm font-medium text-gray-900">Import client profiles</p>
-            <p className="text-xs text-gray-500">Sync client data from {name}</p>
-          </div>
-          <div className={`w-10 h-6 rounded-full transition-colors ${importClients ? "bg-primary-600" : "bg-gray-300"}`}>
-            <div className={`w-5 h-5 mt-0.5 bg-white rounded-full shadow transition-transform ${importClients ? "translate-x-4 ml-0.5" : "translate-x-0.5"}`} />
-          </div>
-        </button>
-      </div>
-
-      <div className="flex items-center justify-end">
-        <button className="text-sm text-red-600 hover:text-red-700 font-medium">
-          Disconnect
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function GenericIntegrationSettings({ name }: { name: string }) {
   return (

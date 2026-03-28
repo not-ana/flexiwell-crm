@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import Papa from "papaparse";
 import { CheckCircleIcon } from "@/components/icons";
 
 export interface ImportField {
@@ -23,6 +24,12 @@ interface ParsedData {
   rows: Record<string, string>[];
 }
 
+export interface ImportResult {
+  success: number;
+  failed: number;
+  errors: { row: number; email: string; error: string }[];
+}
+
 interface ColumnMapping {
   [csvColumn: string]: string; // csvColumn -> our field key
 }
@@ -32,7 +39,7 @@ interface DataImportUploaderProps {
   description: string;
   templateUrl: string;
   fields: ImportField[];
-  onImport: (data: Record<string, string>[]) => Promise<void>;
+  onImport: (data: Record<string, string>[]) => Promise<ImportResult | void>;
   platformSelector?: React.ReactNode;
 }
 
@@ -172,6 +179,8 @@ export function DataImportUploader({
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [step, setStep] = useState<"upload" | "map" | "preview" | "success">("upload");
 
@@ -203,7 +212,7 @@ export function DataImportUploader({
 
   const handleFile = (file: File) => {
     if (!file.name.endsWith(".csv")) {
-      alert("Please upload a CSV file");
+      setImportError("Please upload a CSV file");
       return;
     }
     setFile(file);
@@ -214,28 +223,20 @@ export function DataImportUploader({
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const lines = text.split("\n").filter((line) => line.trim());
 
-      if (lines.length === 0) {
-        alert("File is empty");
+      const result = Papa.parse<Record<string, string>>(text, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h) => h.trim(),
+      });
+
+      if (result.data.length === 0) {
+        setImportError("File is empty");
         return;
       }
 
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-      const rows: Record<string, string>[] = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        // Handle quoted CSV values
-        const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map((v) =>
-          v.trim().replace(/^"|"$/g, "")
-        ) || lines[i].split(",").map((v) => v.trim());
-
-        const row: Record<string, string> = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || "";
-        });
-        rows.push(row);
-      }
+      const headers = result.meta.fields || [];
+      const rows = result.data;
 
       setParsedData({ headers, rows });
 
@@ -291,18 +292,25 @@ export function DataImportUploader({
     });
 
     setImporting(true);
+    setImportError(null);
+    setImportResult(null);
     try {
-      await onImport(transformedData);
+      const result = await onImport(transformedData);
+      if (result) {
+        setImportResult(result);
+      }
       setStep("success");
     } catch (error) {
       console.error("Import error:", error);
-      alert("Import failed. Please try again.");
+      const message = error instanceof Error ? error.message : "Import failed. Please try again.";
+      setImportError(message);
     } finally {
       setImporting(false);
     }
   };
 
   const reset = () => {
+    setImportError(null);
     setFile(null);
     setParsedData(null);
     setColumnMapping({});
@@ -468,15 +476,8 @@ export function DataImportUploader({
           </div>
         )}
 
-        {/* Mapping table */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
-          <div className="grid grid-cols-[1fr,auto,1fr,1fr] gap-0 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">
-            <div className="px-4 py-3">Your CSV Column</div>
-            <div className="px-2 py-3"></div>
-            <div className="px-4 py-3">Maps To</div>
-            <div className="px-4 py-3">Sample Data</div>
-          </div>
-
+        {/* Mapping cards */}
+        <div className="space-y-2 mb-6">
           {parsedData.headers.map((header) => {
             const mappedTo = columnMapping[header] || "";
             const sampleValues = parsedData.rows
@@ -487,27 +488,39 @@ export function DataImportUploader({
             return (
               <div
                 key={header}
-                className="grid grid-cols-[1fr,auto,1fr,1fr] gap-0 items-center border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50"
+                className={`border rounded-xl px-5 py-4 transition-colors ${
+                  mappedTo
+                    ? "border-primary-200 bg-primary-50/30"
+                    : "border-gray-200 bg-white"
+                }`}
               >
-                <div className="px-4 py-3">
-                  <span className="text-sm font-medium text-gray-900">{header}</span>
-                </div>
-                <div className="px-2 py-3">
-                  <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-semibold text-gray-900">{header}</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {sampleValues.map((v, i) => (
+                        <span key={i} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-[180px]">
+                          {v}
+                        </span>
+                      ))}
+                      {sampleValues.length === 0 && (
+                        <span className="text-xs text-gray-300 italic">no data</span>
+                      )}
+                    </div>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
-                </div>
-                <div className="px-4 py-3">
                   <select
                     value={mappedTo}
                     onChange={(e) => handleMappingChange(header, e.target.value)}
-                    className={`w-full text-sm px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    className={`w-56 flex-shrink-0 text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                       mappedTo
-                        ? "border-primary-200 bg-primary-50/50 text-primary-800"
-                        : "border-gray-200 text-gray-500"
+                        ? "border-primary-300 bg-white text-primary-800 font-medium"
+                        : "border-gray-200 text-gray-400"
                     }`}
                   >
-                    <option value="">— Skip this column —</option>
+                    <option value="">— Skip —</option>
                     {fields.map((f) => {
                       const alreadyMapped = mappedFieldKeys.has(f.key) && columnMapping[header] !== f.key;
                       return (
@@ -517,18 +530,6 @@ export function DataImportUploader({
                       );
                     })}
                   </select>
-                </div>
-                <div className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {sampleValues.map((v, i) => (
-                      <span key={i} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-[140px]">
-                        {v}
-                      </span>
-                    ))}
-                    {sampleValues.length === 0 && (
-                      <span className="text-xs text-gray-300 italic">empty</span>
-                    )}
-                  </div>
                 </div>
               </div>
             );
@@ -684,6 +685,23 @@ export function DataImportUploader({
           </div>
         </div>
 
+        {/* Import error */}
+        {importError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">{importError}</p>
+            </div>
+            <button onClick={() => setImportError(null)} className="text-red-400 hover:text-red-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <button
@@ -721,6 +739,10 @@ export function DataImportUploader({
 
   // Step 4: Success
   if (step === "success" && parsedData) {
+    const imported = importResult?.success ?? parsedData.rows.length;
+    const skipped = importResult?.failed ?? 0;
+    const skippedErrors = importResult?.errors ?? [];
+
     return (
       <div className="w-full max-w-lg mx-auto py-12">
         <div className="text-center">
@@ -728,10 +750,25 @@ export function DataImportUploader({
             <CheckCircleIcon className="w-9 h-9 text-green-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Import Complete!</h2>
-          <p className="text-sm text-gray-600 mb-8">
-            {parsedData.rows.length} records imported from {platform}
+          <p className="text-sm text-gray-600 mb-1">
+            {imported} record{imported !== 1 ? "s" : ""} imported from {platform}
           </p>
-          <div className="flex items-center justify-center gap-3">
+          {skipped > 0 && (
+            <p className="text-sm text-amber-600 mb-1">
+              {skipped} skipped (already exist)
+            </p>
+          )}
+          {skippedErrors.length > 0 && (
+            <div className="mt-4 mb-4 text-left max-h-40 overflow-y-auto bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs font-medium text-amber-800 mb-2">Skipped records:</p>
+              {skippedErrors.map((err, i) => (
+                <p key={i} className="text-xs text-amber-700">
+                  Row {err.row}: {err.email} — {err.error}
+                </p>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={reset}
               className="px-5 py-2.5 text-sm text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 font-medium transition-colors"

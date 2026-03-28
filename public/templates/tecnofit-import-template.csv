@@ -1,3 +1,0 @@
-first_name,last_name,email,phone,tax_id,birth_date,gender,member_status,pricing_option,payment_amount,join_date,remaining_classes,address_line1,neighborhood,city,state,postal_code,country
-João,Silva,joao@example.com.br,+5511987654321,12345678900,1990-03-15,M,Active,Plano Mensal,199.00,2024-01-15,,Av. Paulista 1000,Bela Vista,São Paulo,SP,01310-100,BR
-Maria,Santos,maria@example.com.br,+5521987654321,98765432100,1985-07-22,F,Active,Pacote 8 Aulas,149.00,2024-06-01,3,Rua das Flores 250,Copacabana,Rio de Janeiro,RJ,22070-010,BR

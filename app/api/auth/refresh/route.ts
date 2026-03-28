@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: user.role,
       name: user.name,
+      establishmentId: user.establishmentId,
     });
 
     // Delete old refresh token

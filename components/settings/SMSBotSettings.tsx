@@ -214,6 +214,7 @@ function TwilioConfigModal({
 
 export function SMSBotSettings({ onBack }: SMSBotSettingsProps) {
   const [isEnabled, setIsEnabled] = useState(false);
+  const [stats, setStats] = useState({ messages: 0, responseRate: 0, bookings: 0 });
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
@@ -244,6 +245,7 @@ export function SMSBotSettings({ onBack }: SMSBotSettingsProps) {
         if (statusRes.ok) {
           const data = await statusRes.json();
           if (data.connected) setIsEnabled(true);
+          if (data.stats) setStats(data.stats);
         }
         if (commandsRes.ok) {
           const data = await commandsRes.json();
@@ -320,33 +322,30 @@ export function SMSBotSettings({ onBack }: SMSBotSettingsProps) {
             <div className="flex items-center gap-3">
               <div className={`w-2.5 h-2.5 rounded-full ${isEnabled ? "bg-emerald-500" : "bg-gray-300"}`} />
               <div>
-                <p className="text-sm font-medium text-gray-900">Twilio SMS</p>
+                <p className="text-sm font-medium text-gray-900">SMS</p>
                 <p className="text-sm text-gray-600 mt-0.5">
-                  {isEnabled ? t("twilioConfigured") : t("notConfigured")}
+                  {isEnabled ? "Connected and ready to send messages" : "SMS will be activated when your account is set up by FlexiWell"}
                 </p>
               </div>
             </div>
-            <Button
-              variant={isEnabled ? "secondary" : "primary"}
-              onClick={() => setShowConfigModal(true)}
-            >
-              {isEnabled ? t("configure") : t("enableSmsBot")}
-            </Button>
+            {isEnabled && (
+              <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+            )}
           </div>
 
           {isEnabled && (
             <div className="border-t border-gray-200 px-6 py-4">
               <div className="grid grid-cols-3 gap-6">
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">324</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.messages}</p>
                   <p className="text-sm text-gray-500 mt-1">{t("messagesThisMonth")}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">92%</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.responseRate}%</p>
                   <p className="text-sm text-gray-500 mt-1">{t("responseRate")}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">47</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.bookings}</p>
                   <p className="text-sm text-gray-500 mt-1">{t("botBookings")}</p>
                 </div>
               </div>
@@ -552,10 +551,6 @@ export function SMSBotSettings({ onBack }: SMSBotSettingsProps) {
         </>
       )}
 
-      {/* Twilio Config Modal */}
-      <TwilioConfigModal isOpen={showConfigModal} onClose={() => setShowConfigModal(false)}
-        onSave={handleSaveConfig} config={twilioConfig} onConfigChange={setTwilioConfig}
-        saving={saving} t={t} />
     </div>
   );
 }

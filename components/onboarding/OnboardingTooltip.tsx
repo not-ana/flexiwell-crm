@@ -332,16 +332,117 @@ function Tooltip({
   );
 }
 
-// Welcome Modal
+export type OnboardingPath = "tour" | "import" | "fresh";
+
+// Welcome Modal with branching paths
 function WelcomeModal({
   config,
   onStart,
   onSkip,
+  onChoosePath,
+  role,
 }: {
   config: OnboardingConfig;
   onStart: () => void;
   onSkip: () => void;
+  onChoosePath?: (path: OnboardingPath) => void;
+  role: UserRole;
 }) {
+  // Admin gets the branching "how are you getting started?" flow
+  if (role === "admin" && onChoosePath) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+          <div className="p-8">
+            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <Image
+                src="/flexiwell-logo.svg"
+                alt="FlexiWell"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+              {config.welcomeTitle}
+            </h2>
+            <p className="text-gray-500 mb-8 text-center">
+              How would you like to get started?
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => onChoosePath("import")}
+                className="w-full flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50/50 transition-colors text-left group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-primary-700">
+                    I&apos;m switching from another platform
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Import your clients, classes, and memberships from Mindbody, Glofox, or CSV
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onChoosePath("fresh")}
+                className="w-full flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50/50 transition-colors text-left group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-primary-700">
+                    I&apos;m starting fresh
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Add your first client and set up classes from scratch
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={onStart}
+                className="w-full flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50/50 transition-colors text-left group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-primary-700">
+                    Just exploring
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Take a quick tour of the platform
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={onSkip}
+              className="w-full mt-4 py-2 text-sm text-gray-400 font-medium hover:text-gray-600 transition-colors"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Teacher and client get the original simple welcome
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
@@ -385,10 +486,12 @@ export function InteractiveOnboarding({
   role,
   isOpen,
   onComplete,
+  onChoosePath,
 }: {
   role: UserRole;
   isOpen: boolean;
   onComplete: () => void;
+  onChoosePath?: (path: OnboardingPath) => void;
 }) {
   const [showWelcome, setShowWelcome] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -483,7 +586,7 @@ export function InteractiveOnboarding({
   return createPortal(
     <>
       {showWelcome ? (
-        <WelcomeModal config={config} onStart={handleStart} onSkip={handleSkip} />
+        <WelcomeModal config={config} onStart={handleStart} onSkip={handleSkip} onChoosePath={onChoosePath} role={role} />
       ) : (
         <>
           <SpotlightOverlay

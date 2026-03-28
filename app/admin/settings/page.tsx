@@ -6,7 +6,6 @@ import {
   User,
   CreditCard,
   Tag,
-  Ticket,
   Bell,
   MessageSquare,
   Clock,
@@ -23,15 +22,12 @@ import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings
 import { IntakeFormSettings } from "@/components/settings/IntakeFormSettings";
 import { SMSBotSettings } from "@/components/settings/SMSBotSettings";
 import { PlansSettings } from "@/components/settings/PlansSettings";
-import { TrialSettings } from "@/components/settings/TrialSettings";
-
-type AdminSettingsTab = "general" | "subscription" | "plans" | "trial" | "notifications" | "sms-bot" | "waitlist" | "intake" | "team" | "integrations";
+type AdminSettingsTab = "general" | "subscription" | "plans" | "notifications" | "sms-bot" | "waitlist" | "intake" | "team" | "integrations";
 
 const tabs: SettingsTab[] = [
   { id: "general", label: "General", icon: User, description: "Profile & password" },
   { id: "subscription", label: "Subscription", icon: CreditCard, description: "Billing & plan" },
   { id: "plans", label: "Plans", icon: Tag, description: "Client pricing" },
-  { id: "trial", label: "Trial & Drop-in", icon: Ticket, description: "Trial classes" },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Alerts & emails" },
   { id: "sms-bot", label: "SMS Bot", icon: MessageSquare, description: "Automated messages" },
   { id: "waitlist", label: "Waitlist", icon: Clock, description: "Queue settings" },
@@ -47,15 +43,15 @@ const groups: SettingsTabGroup[] = [
   },
   {
     label: "Business",
-    tabs: [tabs[2], tabs[3], tabs[6]],
+    tabs: [tabs[2], tabs[5]],
   },
   {
     label: "Communication",
-    tabs: [tabs[4], tabs[5]],
+    tabs: [tabs[3], tabs[4]],
   },
   {
     label: "Setup",
-    tabs: [tabs[7], tabs[8], tabs[9]],
+    tabs: [tabs[6], tabs[7], tabs[8]],
   },
 ];
 
@@ -78,8 +74,6 @@ function SettingsContent() {
         );
       case "plans":
         return <PlansSettings />;
-      case "trial":
-        return <TrialSettings />;
       case "notifications":
         return <NotificationsSettings />;
       case "sms-bot":

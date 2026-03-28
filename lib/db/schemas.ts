@@ -139,6 +139,8 @@ export interface Client {
       sms: boolean; // SMS for US market
     };
   };
+  // Mindbody integration fields
+  mindbodyClientId?: string; // Client ID from Mindbody for sync/export
   // Wellhub integration fields
   wellhubId?: string; // unique_token from Wellhub
   wellhubGympassId?: string; // 13-digit gympass_id
@@ -281,7 +283,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed" | "no-show";
-  source: "web" | "bot" | "sms" | "admin" | "trial" | "direct";
+  source: "web" | "bot" | "sms" | "admin" | "trial" | "direct" | "mindbody-import";
   // Wellhub integration fields
   wellhubBookingId?: string;
   isWellhubBooking?: boolean;

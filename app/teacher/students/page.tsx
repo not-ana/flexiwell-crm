@@ -919,8 +919,8 @@ function AddStudentModal({
                 className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <span className="text-sm font-medium text-gray-900">Send intake form</span>
-                <p className="text-xs text-gray-500">Student receives a health assessment link</p>
+                <span className="text-sm font-medium text-gray-900">Send assessment form</span>
+                <p className="text-xs text-gray-500">Client receives a health assessment link</p>
               </div>
             </label>
 

@@ -15,6 +15,8 @@ import { formatCurrency, getInitials } from "@/lib/utils/formatters";
 import { INITIAL_PLANS } from "@/components/settings/PlansSettings";
 import type { Plan } from "@/components/settings/PlansSettings";
 import { Badge } from "@/components/ui/Badge";
+import { DataImportUploader } from "@/components/import/DataImportUploader";
+import { platformConfigs } from "@/lib/config/import-platforms";
 
 type ClientStatus = "active" | "paused" | "expired" | "pending";
 
@@ -102,10 +104,10 @@ const StatusBadge = memo(function StatusBadge({ status }: { status: ClientStatus
 // Intake Pipeline Badge
 // ============================================
 const intakeStyles: Record<IntakeStatus, { bg: string; text: string; ring: string; label: string; icon: string }> = {
-  not_sent: { bg: "bg-gray-50", text: "text-gray-500", ring: "ring-gray-300/50", label: "Intake not sent", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
-  sent: { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-600/10", label: "Intake sent", icon: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8" },
-  opened: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Intake opened", icon: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" },
-  completed: { bg: "bg-green-50", text: "text-green-600", ring: "ring-green-600/10", label: "Intake completed", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+  not_sent: { bg: "bg-gray-50", text: "text-gray-500", ring: "ring-gray-300/50", label: "Not sent", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+  sent: { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-600/10", label: "Form sent", icon: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8" },
+  opened: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Form opened", icon: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" },
+  completed: { bg: "bg-green-50", text: "text-green-600", ring: "ring-green-600/10", label: "Assessment done", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
 };
 
 function IntakePipelineBadge({ status, compact }: { status: IntakeStatus; compact?: boolean }) {
@@ -123,7 +125,7 @@ function IntakePipelineBadge({ status, compact }: { status: IntakeStatus; compac
 // ============================================
 const onboardingPhaseStyles: Record<OnboardingPhase, { bg: string; text: string; ring: string; label: string }> = {
   welcome: { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-600/10", label: "Welcome" },
-  health_assessment: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Health form" },
+  health_assessment: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-600/10", label: "Assessment" },
   first_booking: { bg: "bg-purple-50", text: "text-purple-600", ring: "ring-purple-600/10", label: "Needs booking" },
   pre_class: { bg: "bg-cyan-50", text: "text-cyan-600", ring: "ring-cyan-600/10", label: "Pre-class" },
   post_class: { bg: "bg-indigo-50", text: "text-indigo-600", ring: "ring-indigo-600/10", label: "Feedback" },
@@ -271,15 +273,25 @@ const ClientRow = memo(function ClientRow({ client, onSendIntake, onEdit, onDele
       </td>
       {/* Actions */}
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        {!client.onboarding?.healthAssessmentCompleted && client.onboarding?.intakeStatus !== "completed" ? (
-          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+        {client.onboarding?.intakeStatus === "completed" || client.onboarding?.healthAssessmentCompleted ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg ring-1 ring-inset ring-green-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            Completed
+          </span>
+        ) : client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors ring-1 ring-inset ring-amber-600/10">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-            {client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? "Resend" : "Send intake"}
+            Resend
           </button>
         ) : lifecycle === "churned" ? (
           <button onClick={onWinBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors shadow-xs">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
             Win Back
+          </button>
+        ) : !client.onboarding?.intakeStatus || client.onboarding?.intakeStatus === "not_sent" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            Assessment
           </button>
         ) : (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -385,15 +397,25 @@ function ClientCard({ client, onSendIntake, onEdit, onDelete, onWinBack }: {
       {/* Actions */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className="mt-3 ml-[52px]" onClick={(e) => e.stopPropagation()}>
-        {!client.onboarding?.healthAssessmentCompleted && client.onboarding?.intakeStatus !== "completed" ? (
-          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+        {client.onboarding?.intakeStatus === "completed" || client.onboarding?.healthAssessmentCompleted ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-lg ring-1 ring-inset ring-green-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            Completed
+          </span>
+        ) : client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors ring-1 ring-inset ring-amber-600/10">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-            {client.onboarding?.intakeStatus === "sent" || client.onboarding?.intakeStatus === "opened" ? "Resend" : "Send intake"}
+            Resend
           </button>
         ) : lifecycle === "churned" ? (
           <button onClick={onWinBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors shadow-xs">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
             Win Back
+          </button>
+        ) : !client.onboarding?.intakeStatus || client.onboarding?.intakeStatus === "not_sent" ? (
+          <button onClick={onSendIntake} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ring-1 ring-inset ring-blue-600/10">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            Assessment
           </button>
         ) : (
           <div className="flex items-center gap-1">
@@ -443,7 +465,7 @@ function AddClientModal({
     discountReason: "",
   });
   const [sendIntakeForm, setSendIntakeForm] = useState(true);
-  const [intakeChannel, setIntakeChannel] = useState<"whatsapp" | "email" | "sms">("whatsapp");
+  const [intakeChannel, setIntakeChannel] = useState<"sms" | "email">("sms");
   const [formError, setFormError] = useState("");
 
   const selectedPlan = activePlans.find((p) => p.id === formData.plan) || activePlans[0];
@@ -462,7 +484,7 @@ function AddClientModal({
       setFormError("Please fill in name and email");
       return;
     }
-    if (sendIntakeForm && (intakeChannel === "whatsapp" || intakeChannel === "sms") && !formData.phone) {
+    if (sendIntakeForm && intakeChannel === "sms" && !formData.phone) {
       setFormError("Phone number is required for WhatsApp/SMS");
       return;
     }
@@ -493,9 +515,8 @@ function AddClientModal({
   if (!isOpen) return null;
 
   const channelOptions = [
-    { value: "whatsapp" as const, label: "WhatsApp", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> },
-    { value: "email" as const, label: "Email", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
     { value: "sms" as const, label: "SMS", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+    { value: "email" as const, label: "Email", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
   ];
 
   return (
@@ -649,7 +670,7 @@ function AddClientModal({
                 className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <span className="text-sm font-medium text-gray-900">Send intake form (health assessment)</span>
+                <span className="text-sm font-medium text-gray-900">Send assessment form</span>
                 <p className="text-xs text-gray-500">Client will receive a link to complete their health assessment</p>
               </div>
             </label>
@@ -695,123 +716,58 @@ function AddClientModal({
 // Import Modal
 // ============================================
 function ImportModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) {
-  const [dragActive, setDragActive] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors?: { row: number; email: string; error: string }[] } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setDragActive(e.type === "dragenter" || e.type === "dragover"); };
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]); };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files?.[0]) setFile(e.target.files[0]); };
-
-  const parseCSV = (content: string): Record<string, string>[] => {
-    const lines = content.trim().split("\n");
-    if (lines.length < 2) return [];
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-    return lines.slice(1).map(line => {
-      const values = line.split(",").map(v => v.trim());
-      const row: Record<string, string> = {};
-      headers.forEach((h, i) => { row[h] = values[i] || ""; });
-      return { name: row.name || "", email: row.email || "", phone: row.phone || "", planType: row.plan?.includes("quarterly") ? "quarterly" : row.plan?.includes("annual") ? "annual" : "monthly" };
-    });
-  };
-
-  const handleImport = async () => {
-    if (!file) return;
-    setImporting(true);
-    try {
-      const content = await file.text();
-      const clientsData = parseCSV(content);
-      if (clientsData.length === 0) { setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "No valid data found" }] }); setImporting(false); return; }
-      const response = await fetch("/api/clients/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientsData }) });
-      const result = await response.json();
-      if (response.ok) { setImportResult({ success: result.results.success, failed: result.results.failed, errors: result.results.errors }); if (result.results.success > 0 && onSuccess) onSuccess(); }
-      else { setImportResult({ success: 0, failed: clientsData.length, errors: [{ row: 0, email: "", error: result.error || "Import failed" }] }); }
-    } catch { setImportResult({ success: 0, failed: 0, errors: [{ row: 0, email: "", error: "Failed to process import" }] }); }
-    finally { setImporting(false); }
-  };
-
-  const resetModal = () => { setFile(null); setImportResult(null); onClose(); };
-  const downloadTemplate = () => {
-    const blob = new Blob(["Name,Email,Phone,Plan\nJohn Smith,john@email.com,(555) 123-4567,Monthly - 8 classes\nJane Doe,jane@email.com,(555) 234-5678,Quarterly - 24 classes"], { type: "text/csv" });
-    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "client_import_template.csv"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  };
+  const [selectedPlatform, setSelectedPlatform] = useState<keyof typeof platformConfigs>("mindbody");
 
   if (!isOpen) return null;
 
+  const config = platformConfigs[selectedPlatform];
+
+  const handleImport = async (data: Record<string, string>[]) => {
+    const response = await authFetch("/api/clients/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientsData: data }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Import failed");
+    if (result.results?.success > 0 && onSuccess) onSuccess();
+    return result.results as import("@/components/import/DataImportUploader").ImportResult;
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Import Clients</h2>
-            <button onClick={resetModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </div>
         </div>
         <div className="p-4 sm:p-6">
-          {!importResult ? (
-            <>
-              <div onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragActive ? "border-primary-500 bg-primary-50" : "border-gray-300 hover:border-gray-400"}`}>
-                <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileSelect} className="hidden" />
-                {file ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center"><svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg></div>
-                    <div className="text-left"><p className="font-medium text-gray-900">{file.name}</p><p className="text-sm text-gray-500">{(file.size / 1024).toFixed(1)} KB</p></div>
-                    <button onClick={() => setFile(null)} className="p-1 text-gray-400 hover:text-red-500"><svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4"><UploadIcon className="w-6 h-6 text-gray-400" /></div>
-                    <p className="text-gray-600 mb-2"><button onClick={() => fileInputRef.current?.click()} className="text-primary-600 font-medium hover:text-primary-700">Click to upload</button> or drag and drop</p>
-                    <p className="text-sm text-gray-500">CSV or Excel file (max 10MB)</p>
-                  </>
-                )}
+          <DataImportUploader
+            platform={config.name}
+            description={config.description}
+            templateUrl={config.templateUrl}
+            fields={config.fields}
+            onImport={handleImport}
+            platformSelector={
+              <div>
+                <label htmlFor="modal-platform-select" className="block text-sm font-medium text-gray-900 mb-2">
+                  Where is your data coming from?
+                </label>
+                <select
+                  id="modal-platform-select"
+                  value={selectedPlatform}
+                  onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
+                  className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="mindbody">Mindbody</option>
+                </select>
               </div>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center"><svg className="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg></div>
-                    <div><p className="text-sm font-medium text-gray-900">Download template</p><p className="text-xs text-gray-500">Use our template for best results</p></div>
-                  </div>
-                  <button onClick={downloadTemplate} className="text-sm text-primary-600 font-medium hover:text-primary-700">Download</button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="py-4 text-center">
-              <div className={`w-16 h-16 ${importResult.success > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                {importResult.success > 0 ? <svg className="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> : <svg className="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{importResult.success > 0 ? "Import Complete!" : "Import Failed"}</h3>
-              <div className="flex items-center justify-center gap-6 mb-4">
-                {importResult.success > 0 && <div><p className="text-2xl font-bold text-green-600">{importResult.success}</p><p className="text-sm text-gray-500">Imported</p></div>}
-                {importResult.failed > 0 && <div><p className="text-2xl font-bold text-red-600">{importResult.failed}</p><p className="text-sm text-gray-500">Failed</p></div>}
-              </div>
-              {importResult.errors && importResult.errors.length > 0 && (
-                <div className="mt-4 max-h-32 overflow-y-auto text-left">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Errors:</p>
-                  {importResult.errors.slice(0, 5).map((err, idx) => (
-                    <p key={idx} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded mb-1">{err.row > 0 ? `Row ${err.row}` : ""}{err.email ? ` (${err.email})` : ""}: {err.error}</p>
-                  ))}
-                  {importResult.errors.length > 5 && <p className="text-xs text-gray-500">...and {importResult.errors.length - 5} more</p>}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="p-4 sm:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 sticky bottom-0 bg-white">
-          <button onClick={resetModal} className="flex-1 px-4 py-2.5 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50">{importResult ? "Close" : "Cancel"}</button>
-          {!importResult && (
-            <button onClick={handleImport} disabled={!file || importing}
-              className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 flex items-center justify-center gap-2">
-              {importing ? <LoadingSpinner size="sm" className="text-white" /> : null}
-              {importing ? "Importing..." : "Import Clients"}
-            </button>
-          )}
+            }
+          />
         </div>
       </div>
     </div>
@@ -869,6 +825,7 @@ export default function AdminClientsPage() {
   });
 
   const [addClientError, setAddClientError] = useState("");
+  const [channelWarning, setChannelWarning] = useState("");
   const handleAddClient = async (data: Partial<Client> & { _sendIntake?: boolean; _intakeChannel?: string; _intakeStatus?: string }) => {
     setIsSubmitting(true);
     setAddClientError("");
@@ -904,7 +861,7 @@ export default function AdminClientsPage() {
             phone: data.phone,
             plan: planPayload,
             unit: data.unit,
-            channel: data._intakeChannel || "whatsapp",
+            channel: data._intakeChannel || "sms",
           }),
         });
         const result = await response.json();
@@ -913,6 +870,9 @@ export default function AdminClientsPage() {
         } else {
           setShowAddClientModal(false);
           refetch();
+          if (result.warning) {
+            setChannelWarning(result.warning);
+          }
         }
       } else {
         const result = await createClient({ name: data.name, email: data.email, phone: data.phone, plan: planPayload as unknown as Client["plan"], unit: data.unit, status: data.status });
@@ -925,7 +885,9 @@ export default function AdminClientsPage() {
     } finally { setIsSubmitting(false); }
   };
 
+  const [intakeSending, setIntakeSending] = useState<string | null>(null);
   const handleSendIntake = async (client: Client) => {
+    setIntakeSending(client._id);
     try {
       const response = await authFetch("/api/clients/send-intake", {
         method: "POST",
@@ -938,13 +900,18 @@ export default function AdminClientsPage() {
           channel: client.onboarding?.intakeSentVia || "email",
         }),
       });
+      const result = await response.json();
       if (!response.ok) {
-        const result = await response.json();
-        alert(result.error || "Failed to send intake");
-      } else {
-        refetch();
+        setChannelWarning(result.error || "Failed to send assessment");
+      } else if (result.warning) {
+        setChannelWarning(result.warning);
       }
-    } catch { alert("Failed to send intake form"); }
+      refetch();
+    } catch {
+      setChannelWarning("Failed to send assessment form");
+    } finally {
+      setIntakeSending(null);
+    }
   };
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -1073,6 +1040,26 @@ export default function AdminClientsPage() {
           clients={clients || []}
           onViewAtRisk={() => setLifecycleFilter("at_risk")}
         />
+
+        {/* Channel warning banner */}
+        {channelWarning && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-sm text-amber-800">{channelWarning}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <a href="/admin/settings?tab=sms-bot" className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
+                Go to Settings
+              </a>
+              <button onClick={() => setChannelWarning("")} className="p-1 text-amber-400 hover:text-amber-600">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Search + status filter */}
         <div className="flex items-center gap-2 mb-3">

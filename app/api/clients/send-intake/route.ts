@@ -92,28 +92,67 @@ export async function POST(request: NextRequest) {
 
     await db.collection<HealthAssessmentToken>("health_assessment_tokens").insertOne(tokenDoc);
 
+    // Update client intake status
+    const { ObjectId } = await import("mongodb");
+    await db.collection<Client>("clients").updateOne(
+      { _id: new ObjectId(clientId) },
+      {
+        $set: {
+          "onboarding.intakeStatus": "sent",
+          "onboarding.intakeSentAt": now,
+          "onboarding.intakeSentVia": channel,
+          "onboarding.currentPhase": "health_assessment",
+          updatedAt: now,
+        },
+      }
+    );
+
     // Build public URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const formUrl = `${baseUrl}/health-assessment/${token}`;
 
     // Send notification
-    const notifResult = await notificationService.sendIntakeFormLink(
-      clientId,
-      formUrl,
-      channel as NotificationChannel,
-      expiresInDays
-    );
+    let notifResult: { success: boolean; error?: string } = { success: false };
+    try {
+      notifResult = await notificationService.sendIntakeFormLink(
+        clientId,
+        formUrl,
+        channel as NotificationChannel,
+        expiresInDays
+      );
+    } catch (notifError: any) {
+      console.error(`Failed to send intake form via ${channel}:`, notifError);
+      const channelLabel = channel === "sms" ? "SMS (Twilio)" : "Email (SMTP)";
+      return NextResponse.json({
+        success: true,
+        clientId,
+        formUrl,
+        notificationSent: false,
+        warning: `Client created, but ${channelLabel} is not configured. Go to Settings to set it up, then resend the assessment form.`,
+      }, { status: 201 });
+    }
+
+    if (!notifResult.success) {
+      const channelLabel = channel === "sms" ? "SMS (Twilio)" : "Email (SMTP)";
+      return NextResponse.json({
+        success: true,
+        clientId,
+        formUrl,
+        notificationSent: false,
+        warning: `Client created, but failed to send via ${channelLabel}. Check your ${channelLabel} configuration in Settings.`,
+      }, { status: 201 });
+    }
 
     return NextResponse.json({
       success: true,
       clientId,
       formUrl,
-      notificationSent: notifResult.success,
+      notificationSent: true,
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating client with intake form:", error);
     return NextResponse.json(
-      { error: "Failed to create client and send intake form" },
+      { error: error?.message || "Failed to create client and send intake form" },
       { status: 500 }
     );
   }

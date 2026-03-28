@@ -28,25 +28,17 @@ const commonClientFields: ImportField[] = [
   { key: "emergency_contact_phone", label: "Emergency Phone", required: false, type: "phone", example: "+12125555678" },
 ];
 
-const bookingFields: ImportField[] = [
-  { key: "client_name", label: "Client Name", required: true, type: "text", example: "John Smith" },
-  { key: "email", label: "Email", required: true, type: "email", example: "john@example.com" },
-  { key: "phone", label: "Phone", required: false, type: "phone", example: "+12125551234", description: "International format with +" },
-  { key: "class_title", label: "Class Title", required: true, type: "text", example: "Yoga Flow" },
-  { key: "date", label: "Date", required: true, type: "date", example: "2026-02-15" },
-  { key: "time", label: "Time", required: true, type: "time", example: "09:00", description: "24-hour format HH:MM" },
-  { key: "instructor", label: "Instructor", required: false, type: "text", example: "Jane Doe" },
-  { key: "status", label: "Status", required: true, type: "text", example: "confirmed", description: "confirmed, cancelled, completed, no-show" },
-  { key: "external_id", label: "External ID", required: false, type: "text", example: "EXT123456" },
+const classHistoryFields: ImportField[] = [
+  { key: "client_email", label: "Client Email", required: true, type: "email", example: "john@example.com", description: "Must match an existing client" },
+  { key: "class_title", label: "Class Name", required: true, type: "text", example: "Reformer Pilates" },
+  { key: "date", label: "Class Date", required: true, type: "date", example: "2025-11-15" },
+  { key: "time", label: "Class Time", required: false, type: "time", example: "09:00" },
+  { key: "end_time", label: "End Time", required: false, type: "time", example: "10:00" },
+  { key: "instructor", label: "Instructor", required: false, type: "text", example: "Maria" },
+  { key: "status", label: "Status", required: false, type: "text", example: "Completed", description: "Completed, Cancelled, Late Cancel, No Show" },
 ];
 
 export const platformConfigs: Record<string, PlatformConfig> = {
-  classpass: {
-    name: "ClassPass",
-    description: "Import booking history and client data from ClassPass.",
-    templateUrl: "/templates/classpass-import-template.csv",
-    fields: bookingFields,
-  },
   mindbody: {
     name: "Mindbody",
     description: "Import client data and memberships from Mindbody. Export via Reports > Mailing Lists.",
@@ -56,27 +48,13 @@ export const platformConfigs: Record<string, PlatformConfig> = {
       { key: "next_autopay_date", label: "Next Autopay Date", required: false, type: "date", example: "2026-04-15", description: "Next billing date from Mindbody" },
     ],
   },
-  glofox: {
-    name: "Glofox",
-    description: "Import member data, class schedules, and memberships from Glofox.",
-    templateUrl: "/templates/glofox-import-template.csv",
-    fields: commonClientFields,
-  },
-  tecnofit: {
-    name: "Tecnofit",
-    description: "Import student data, training plans, and memberships from Tecnofit.",
-    templateUrl: "/templates/tecnofit-import-template.csv",
-    fields: [
-      ...commonClientFields,
-      { key: "tax_id", label: "CPF", required: false, type: "text", example: "12345678900", description: "Numbers only, no dots or dashes" },
-      { key: "neighborhood", label: "Neighborhood", required: false, type: "text", example: "Bela Vista" },
-    ],
-  },
-  other: {
-    name: "Other Platform",
-    description: "Import from any platform — just upload your CSV and map the columns.",
-    templateUrl: "/templates/generic-import-template.csv",
+};
 
-    fields: commonClientFields,
+export const classHistoryConfigs: Record<string, PlatformConfig> = {
+  mindbody: {
+    name: "Mindbody",
+    description: "Import class visit history from Mindbody. Export via Reports > Client Visit History.",
+    templateUrl: "/templates/mindbody-class-history-template.csv",
+    fields: classHistoryFields,
   },
 };

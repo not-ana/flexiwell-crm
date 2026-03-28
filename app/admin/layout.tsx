@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ResponsiveLayout } from "@/components/layout";
-import { TrialBanner } from "@/components/trial/TrialBanner";
 import { PlanProvider } from "@/lib/plans/PlanProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlanType } from "@/lib/plans";
@@ -40,7 +39,6 @@ export default function AdminLayout({
 
   return (
     <PlanProvider planId={planId}>
-      <TrialBanner />
       <ResponsiveLayout variant="admin" notificationCount={conversationCount}>
         {children}
       </ResponsiveLayout>

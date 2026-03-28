@@ -1,2 +1,1 @@
-export { default as CrispChat } from "./CrispChat";
-export { SupportChat } from "./SupportChat";
+// Chat components - support removed for now

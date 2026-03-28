@@ -91,12 +91,6 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Calculate trial dates for admin users (30 days free trial)
-    const trialDays = 30;
-    const trialStartDate = new Date();
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + trialDays);
-
     // Create user
     const newUser: Omit<User, "_id"> = {
       email: email.toLowerCase(),
@@ -105,19 +99,7 @@ export async function POST(request: NextRequest) {
       role: userRole,
       phone: phone || undefined,
       isActive: true,
-      // Start trial for admin users (studio owners)
-      ...(userRole === "admin" && {
-        trialStartDate,
-        trialEndDate,
-        trialStatus: "active" as const,
-        subscriptionStatus: "trialing" as const,
-        trialNotifications: {
-          sevenDaysSent: false,
-          threeDaysSent: false,
-          oneDaySent: false,
-          expiredSent: false,
-        },
-      }),
+      subscriptionStatus: userRole === "admin" ? "active" as const : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -131,6 +113,7 @@ export async function POST(request: NextRequest) {
       email: newUser.email,
       role: newUser.role,
       name: newUser.name,
+      establishmentId: newUser.establishmentId,
     });
 
     // Store refresh token
@@ -199,13 +182,6 @@ export async function POST(request: NextRequest) {
           name: newUser.name,
           role: newUser.role,
           phone: newUser.phone,
-          // Include trial info for admin users
-          ...(userRole === "admin" && {
-            trialStartDate,
-            trialEndDate,
-            trialStatus: "active",
-            subscriptionStatus: "trialing",
-          }),
         },
         tokens,
         companyLinked,

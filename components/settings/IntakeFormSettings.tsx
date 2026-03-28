@@ -472,7 +472,7 @@ export function IntakeFormSettings() {
         <p className="text-sm text-blue-800">
           This is the default template based on what Pilates studios in the US typically ask new clients.
           Toggle sections on/off, reorder them, or edit labels to match your studio&apos;s needs.
-          When you add a new client and check &quot;Send intake form&quot;, they&apos;ll receive this form via email or SMS.
+          When you add a new client and check &quot;Send assessment form&quot;, they&apos;ll receive this form via email or SMS.
         </p>
       </div>
 

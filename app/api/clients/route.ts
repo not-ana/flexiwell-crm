@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const rawSearch = searchParams.get("search");
     const search = rawSearch ? sanitizeSearchInput(rawSearch) : null;
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = parseInt(searchParams.get("limit") || "200");
     const skip = parseInt(searchParams.get("skip") || "0");
 
     const db = await getDatabase();

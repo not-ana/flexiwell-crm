@@ -3,7 +3,6 @@ import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/db/mongodb";
 import { notificationService } from "@/lib/services/notification.service";
 import { syncBookingToCalendar, removeBookingFromCalendar, getBookingEventData } from "@/lib/google-calendar/events";
-import { updateClassAvailability } from "@/lib/wellhub/classes";
 import type { Booking, Class, Client } from "@/lib/db/schemas";
 
 export interface CreateBookingParams {
@@ -614,11 +613,8 @@ export class BookingService {
       return; // Class not synced to Wellhub
     }
 
-    // Update availability (fire-and-forget)
-    updateClassAvailability(classId).catch((err) => {
-      console.error("Failed to update Wellhub availability:", err);
-    });
   }
+
 }
 
 export const bookingService = new BookingService();

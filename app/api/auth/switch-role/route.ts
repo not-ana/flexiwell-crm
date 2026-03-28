@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: role, // New role in token
       name: user.name,
+      establishmentId: user.establishmentId,
     });
 
     // Store new refresh token

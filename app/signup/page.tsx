@@ -296,11 +296,11 @@ function SignUpContent() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          {step === "email" ? "Start your free trial" : "Complete your profile"}
+          {step === "email" ? "Create your account" : "Complete your profile"}
         </h1>
         <p className="text-sm text-gray-500 mb-6">
           {step === "email"
-            ? "30-day free trial. No credit card required."
+            ? "Set up your studio in minutes."
             : `Step 2 of 2 ${email ? `for ${email}` : ""}`}
         </p>
 
@@ -322,7 +322,7 @@ function SignUpContent() {
             />
 
             <Button type="submit" fullWidth size="lg">
-              Start My Free Trial
+              Continue
             </Button>
 
             <div className="flex items-center gap-3">

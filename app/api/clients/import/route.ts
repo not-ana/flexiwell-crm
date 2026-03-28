@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Client } from "@/lib/db/schemas";
+import { requireRole } from "@/lib/auth";
 
 // POST /api/clients/import - Import multiple clients from CSV data
 export async function POST(request: NextRequest) {
+  const { user, error: authError } = requireRole(request, ["admin"]);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { clientsData } = body;
@@ -23,10 +27,14 @@ export async function POST(request: NextRequest) {
       imported: [] as string[],
     };
 
-    // Get existing emails to check for duplicates
+    // Get existing emails to check for duplicates (scoped to establishment)
+    const emailQuery: Record<string, unknown> = {};
+    if (user?.establishmentId) {
+      emailQuery.establishmentId = user.establishmentId;
+    }
     const existingEmails = new Set(
       (await db.collection<Client>("clients")
-        .find({}, { projection: { email: 1 } })
+        .find(emailQuery, { projection: { email: 1 } })
         .toArray()
       ).map(c => c.email.toLowerCase())
     );
@@ -126,6 +134,7 @@ export async function POST(request: NextRequest) {
 
       // Create client record
       const newClient: Client = {
+        ...(user?.establishmentId ? { establishmentId: user.establishmentId } : {}),
         name: row.name.trim(),
         email,
         phone: row.phone?.trim() || "",
@@ -171,8 +180,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error importing clients:", error);
+    const message = error instanceof Error ? error.message : "Failed to import clients";
     return NextResponse.json(
-      { error: "Failed to import clients" },
+      { error: message },
       { status: 500 }
     );
   }

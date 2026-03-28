@@ -1,3 +1,0 @@
-first_name,last_name,email,phone,birth_date,gender,member_status,pricing_option,payment_amount,join_date,remaining_classes,address_line1,city,postal_code,country,emergency_contact_name,emergency_contact_phone
-Aoife,O'Brien,aoife@example.ie,+353851234567,1995-06-20,F,Active,Unlimited Monthly,89.00,2024-03-10,,15 Grafton Street,Dublin,D02,IE,Cian O'Brien,+353861234567
-Liam,Murphy,liam@example.ie,+353879876543,1988-03-12,M,Active,10-Class Pack,120.00,2024-09-01,4,42 O'Connell Street,Cork,T12,IE,Emma Murphy,+353867654321

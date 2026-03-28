@@ -36,12 +36,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", "/bundle", "/auth/callback"];
+const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", "/auth/callback"];
 
 // Role-based route prefixes
 const roleRoutes: Record<string, string[]> = {
   admin: ["/admin"],
-  teacher: ["/teacher"],
+  teacher: ["/dashboard"],
   client: ["/dashboard"],
 };
 
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user.role === "admin"
             ? "/admin"
             : user.role === "teacher"
-            ? "/teacher"
+            ? "/dashboard"
             : "/dashboard";
         router.push(defaultRoute);
       }
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV === "development") {
         const updatedUser = { ...user, role };
         setUser(updatedUser);
-        const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
+        const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/dashboard" : "/dashboard";
         router.push(redirectPath);
         return { success: true };
       }
@@ -249,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
 
       // Navigate to appropriate dashboard
-      const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/teacher" : "/dashboard";
+      const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/dashboard" : "/dashboard";
       router.push(redirectPath);
 
       return { success: true };
@@ -318,7 +318,7 @@ export function withAuth<P extends object>(
           user.role === "admin"
             ? "/admin"
             : user.role === "teacher"
-            ? "/teacher"
+            ? "/dashboard"
             : "/dashboard";
         router.push(defaultRoute);
       }

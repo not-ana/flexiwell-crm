@@ -15,40 +15,10 @@ export async function GET(request: NextRequest) {
     const globalCreds = credentials.find(c => !c.provider); // Legacy format without provider field
 
     const integrationStatus: Record<string, { connected: boolean; lastSync?: string }> = {
-      wellhub: { connected: false },
-      totalpass: { connected: false },
-      classpass: { connected: false },
       stripe: { connected: false },
       whatsapp: { connected: false },
       googleCalendar: { connected: false },
     };
-
-    // Check Wellhub
-    const wellhubCreds = credentials.find(c => c.provider === "wellhub");
-    if ((wellhubCreds && (wellhubCreds.apiKey || wellhubCreds.bearerToken)) || globalCreds?.wellhub?.bearerToken) {
-      integrationStatus.wellhub = {
-        connected: true,
-        lastSync: wellhubCreds?.lastSyncAt?.toISOString() || wellhubCreds?.updatedAt?.toISOString(),
-      };
-    }
-
-    // Check TotalPass
-    const totalpassCreds = credentials.find(c => c.provider === "totalpass");
-    if ((totalpassCreds && totalpassCreds.apiKey) || globalCreds?.totalpass?.apiKey) {
-      integrationStatus.totalpass = {
-        connected: true,
-        lastSync: totalpassCreds?.updatedAt?.toISOString(),
-      };
-    }
-
-    // Check ClassPass
-    const classpassCreds = credentials.find(c => c.provider === "classpass");
-    if ((classpassCreds && classpassCreds.apiKey) || globalCreds?.classpass?.apiKey) {
-      integrationStatus.classpass = {
-        connected: true,
-        lastSync: classpassCreds?.updatedAt?.toISOString(),
-      };
-    }
 
     // Check Stripe
     const stripeCreds = credentials.find(c => c.provider === "stripe");

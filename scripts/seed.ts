@@ -129,26 +129,29 @@ const ids = {
 // ============================================
 
 const heroClientDefs = [
-  { name: "Olivia Rhye", email: "olivia@email.com", avatar: "women/1.jpg", planType: "monthly" as const, price: 299, total: 8, used: 3, status: "active" as const, daysAgoCreated: 120, pref: ["pilates", "yoga"] },
-  { name: "Phoenix Baker", email: "phoenix@email.com", avatar: "men/2.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 6, status: "active" as const, daysAgoCreated: 200, pref: ["functional"] },
-  { name: "Lana Steiner", email: "lana@email.com", avatar: "women/3.jpg", planType: "monthly" as const, price: 299, total: 8, used: 8, status: "inactive" as const, daysAgoCreated: 90, pref: ["yoga", "stretching"] },
-  { name: "Demi Wilkinson", email: "demi@email.com", avatar: "women/4.jpg", planType: "monthly" as const, price: 399, total: 12, used: 0, status: "pending" as const, daysAgoCreated: 5, pref: ["pilates"] },
-  { name: "Candice Wu", email: "candice@email.com", avatar: "women/5.jpg", planType: "annual" as const, price: 2499, total: 96, used: 32, status: "active" as const, daysAgoCreated: 180, pref: ["yoga", "meditation", "pilates"] },
-  { name: "Natali Craig", email: "natali@email.com", avatar: "women/6.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 18, status: "active" as const, daysAgoCreated: 150, pref: ["functional", "pilates"] },
-  { name: "Drew Cano", email: "drew@email.com", avatar: "men/7.jpg", planType: "monthly" as const, price: 299, total: 8, used: 5, status: "active" as const, daysAgoCreated: 100, pref: ["functional", "stretching"] },
-  { name: "Orlando Diggs", email: "orlando@email.com", avatar: "men/8.jpg", planType: "drop-in" as const, price: 175, total: 5, used: 3, status: "active" as const, daysAgoCreated: 60, pref: ["pilates"] },
-  { name: "Andi Lane", email: "andi@email.com", avatar: "women/9.jpg", planType: "monthly" as const, price: 399, total: 12, used: 4, status: "active" as const, daysAgoCreated: 45, pref: ["yoga", "meditation"] },
-  { name: "Kate Morrison", email: "kate@email.com", avatar: "women/10.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 2, status: "active" as const, daysAgoCreated: 30, pref: ["pilates", "stretching"] },
-  { name: "Koray Okumus", email: "koray@email.com", avatar: "men/11.jpg", planType: "monthly" as const, price: 299, total: 8, used: 2, status: "active" as const, daysAgoCreated: 20, pref: ["functional"] },
-  { name: "Marcus Chen", email: "marcus@email.com", avatar: "men/12.jpg", planType: "annual" as const, price: 2699, total: 120, used: 40, status: "active" as const, daysAgoCreated: 240, pref: ["pilates", "functional"] },
-  { name: "Sofia Rodriguez", email: "sofia@email.com", avatar: "women/13.jpg", planType: "quarterly" as const, price: 899, total: 36, used: 12, status: "active" as const, daysAgoCreated: 110, pref: ["yoga", "pilates"] },
-  { name: "Taylor Brooks", email: "taylor@email.com", avatar: "women/14.jpg", planType: "monthly" as const, price: 349, total: 10, used: 6, status: "active" as const, daysAgoCreated: 85, pref: ["pilates", "barre"] },
-  { name: "Jordan Hayes", email: "jordan@email.com", avatar: "men/15.jpg", planType: "monthly" as const, price: 399, total: 12, used: 8, status: "active" as const, daysAgoCreated: 160, pref: ["functional", "pilates"] },
-  { name: "Emma Thompson", email: "emma.t@email.com", avatar: "women/16.jpg", planType: "annual" as const, price: 2199, total: 96, used: 55, status: "active" as const, daysAgoCreated: 280, pref: ["yoga", "meditation"] },
-  { name: "Ryan Patel", email: "ryan.p@email.com", avatar: "men/17.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 10, status: "active" as const, daysAgoCreated: 70, pref: ["functional", "stretching"] },
-  { name: "Madison Clark", email: "madison@email.com", avatar: "women/18.jpg", planType: "monthly" as const, price: 249, total: 8, used: 1, status: "pending" as const, daysAgoCreated: 3, pref: ["pilates"] },
-  { name: "Derek Washington", email: "derek@email.com", avatar: "men/19.jpg", planType: "monthly" as const, price: 299, total: 8, used: 8, status: "inactive" as const, daysAgoCreated: 130, pref: ["functional"] },
-  { name: "Jasmine Lee", email: "jasmine@email.com", avatar: "women/20.jpg", planType: "quarterly" as const, price: 899, total: 36, used: 20, status: "inactive" as const, daysAgoCreated: 200, pref: ["yoga", "pilates"] },
+  // --- At-risk clients (will trigger churn signals) ---
+  { name: "Olivia Rhye", email: "olivia@email.com", avatar: "women/1.jpg", planType: "monthly" as const, price: 299, total: 8, used: 3, status: "active" as const, daysAgoCreated: 120, pref: ["pilates", "yoga"], lastClassDaysAgo: 18, currentStreak: 0, longestStreak: 8 },
+  { name: "Phoenix Baker", email: "phoenix@email.com", avatar: "men/2.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 6, status: "active" as const, daysAgoCreated: 200, pref: ["functional"], lastClassDaysAgo: 25, currentStreak: 0, longestStreak: 12 },
+  { name: "Candice Wu", email: "candice@email.com", avatar: "women/5.jpg", planType: "annual" as const, price: 2499, total: 96, used: 32, status: "active" as const, daysAgoCreated: 180, pref: ["yoga", "meditation", "pilates"], lastClassDaysAgo: 12, currentStreak: 0, longestStreak: 6 },
+  { name: "Drew Cano", email: "drew@email.com", avatar: "men/7.jpg", planType: "monthly" as const, price: 299, total: 8, used: 5, status: "active" as const, daysAgoCreated: 100, pref: ["functional", "stretching"], lastClassDaysAgo: 14, currentStreak: 0, longestStreak: 5 },
+  { name: "Andi Lane", email: "andi@email.com", avatar: "women/9.jpg", planType: "monthly" as const, price: 399, total: 12, used: 4, status: "active" as const, daysAgoCreated: 45, pref: ["yoga", "meditation"], lastClassDaysAgo: 11, currentStreak: 0, longestStreak: 3 },
+  { name: "Kate Morrison", email: "kate@email.com", avatar: "women/10.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 2, status: "active" as const, daysAgoCreated: 30, pref: ["pilates", "stretching"], lastClassDaysAgo: 16, currentStreak: 0, longestStreak: 0 },
+  { name: "Koray Okumus", email: "koray@email.com", avatar: "men/11.jpg", planType: "monthly" as const, price: 299, total: 8, used: 2, status: "active" as const, daysAgoCreated: 20, pref: ["functional"], lastClassDaysAgo: 15, currentStreak: 0, longestStreak: 0 },
+  { name: "Ryan Patel", email: "ryan.p@email.com", avatar: "men/17.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 10, status: "active" as const, daysAgoCreated: 70, pref: ["functional", "stretching"], lastClassDaysAgo: 22, currentStreak: 0, longestStreak: 4 },
+  // --- Healthy active clients ---
+  { name: "Natali Craig", email: "natali@email.com", avatar: "women/6.jpg", planType: "quarterly" as const, price: 799, total: 24, used: 18, status: "active" as const, daysAgoCreated: 150, pref: ["functional", "pilates"], lastClassDaysAgo: 1, currentStreak: 10, longestStreak: 10 },
+  { name: "Orlando Diggs", email: "orlando@email.com", avatar: "men/8.jpg", planType: "drop-in" as const, price: 175, total: 5, used: 3, status: "active" as const, daysAgoCreated: 60, pref: ["pilates"], lastClassDaysAgo: 3, currentStreak: 4, longestStreak: 4 },
+  { name: "Marcus Chen", email: "marcus@email.com", avatar: "men/12.jpg", planType: "annual" as const, price: 2699, total: 120, used: 40, status: "active" as const, daysAgoCreated: 240, pref: ["pilates", "functional"], lastClassDaysAgo: 2, currentStreak: 15, longestStreak: 15 },
+  { name: "Sofia Rodriguez", email: "sofia@email.com", avatar: "women/13.jpg", planType: "quarterly" as const, price: 899, total: 36, used: 12, status: "active" as const, daysAgoCreated: 110, pref: ["yoga", "pilates"], lastClassDaysAgo: 1, currentStreak: 8, longestStreak: 8 },
+  { name: "Taylor Brooks", email: "taylor@email.com", avatar: "women/14.jpg", planType: "monthly" as const, price: 349, total: 10, used: 6, status: "active" as const, daysAgoCreated: 85, pref: ["pilates", "barre"], lastClassDaysAgo: 2, currentStreak: 6, longestStreak: 6 },
+  { name: "Jordan Hayes", email: "jordan@email.com", avatar: "men/15.jpg", planType: "monthly" as const, price: 399, total: 12, used: 8, status: "active" as const, daysAgoCreated: 160, pref: ["functional", "pilates"], lastClassDaysAgo: 3, currentStreak: 12, longestStreak: 12 },
+  { name: "Emma Thompson", email: "emma.t@email.com", avatar: "women/16.jpg", planType: "annual" as const, price: 2199, total: 96, used: 55, status: "active" as const, daysAgoCreated: 280, pref: ["yoga", "meditation"], lastClassDaysAgo: 1, currentStreak: 20, longestStreak: 20 },
+  // --- Non-active ---
+  { name: "Lana Steiner", email: "lana@email.com", avatar: "women/3.jpg", planType: "monthly" as const, price: 299, total: 8, used: 8, status: "inactive" as const, daysAgoCreated: 90, pref: ["yoga", "stretching"], lastClassDaysAgo: 45, currentStreak: 0, longestStreak: 3 },
+  { name: "Demi Wilkinson", email: "demi@email.com", avatar: "women/4.jpg", planType: "monthly" as const, price: 399, total: 12, used: 0, status: "pending" as const, daysAgoCreated: 5, pref: ["pilates"], lastClassDaysAgo: null, currentStreak: 0, longestStreak: 0 },
+  { name: "Madison Clark", email: "madison@email.com", avatar: "women/18.jpg", planType: "monthly" as const, price: 249, total: 8, used: 1, status: "pending" as const, daysAgoCreated: 3, pref: ["pilates"], lastClassDaysAgo: null, currentStreak: 0, longestStreak: 0 },
+  { name: "Derek Washington", email: "derek@email.com", avatar: "men/19.jpg", planType: "monthly" as const, price: 299, total: 8, used: 8, status: "inactive" as const, daysAgoCreated: 130, pref: ["functional"], lastClassDaysAgo: 50, currentStreak: 0, longestStreak: 5 },
+  { name: "Jasmine Lee", email: "jasmine@email.com", avatar: "women/20.jpg", planType: "quarterly" as const, price: 899, total: 36, used: 20, status: "inactive" as const, daysAgoCreated: 200, pref: ["yoga", "pilates"], lastClassDaysAgo: 60, currentStreak: 0, longestStreak: 7 },
 ];
 
 // Build hero client objects
@@ -163,6 +166,7 @@ function buildHeroClients() {
                     def.planType === "quarterly" ? 60 : 15;
     return {
       _id: heroClientIds[i],
+      establishmentId: ids.unit1.toString(),
       name: def.name,
       email: def.email,
       phone: usPhone(i + 1),
@@ -177,6 +181,9 @@ function buildHeroClients() {
         price: def.price,
       },
       status: def.status,
+      lastClassDate: def.lastClassDaysAgo != null ? daysAgo(def.lastClassDaysAgo) : undefined,
+      currentStreak: def.currentStreak,
+      longestStreak: def.longestStreak,
       preferences: {
         preferredClassTypes: def.pref,
         notifications: { email: true, whatsapp: false, instagram: false, sms: true },
@@ -282,11 +289,15 @@ const programmaticClientIds: ObjectId[] = [];
 const programmaticUserIds: ObjectId[] = [];
 const programmaticClientData: Array<{
   _id: ObjectId;
+  establishmentId: string;
   name: string;
   email: string;
   phone: string;
   plan: { type: string; totalClasses: number; usedClasses: number; remainingClasses: number; startDate: Date; endDate: Date; price: number };
   status: string;
+  lastClassDate: Date;
+  currentStreak: number;
+  longestStreak: number;
   preferences: { preferredClassTypes: string[]; notifications: { email: boolean; whatsapp: boolean; instagram: boolean; sms: boolean } };
   createdAt: Date;
   updatedAt: Date;
@@ -330,8 +341,17 @@ function generateProgrammaticClients(count: number) {
 
     const startDate = daysAgo(Math.floor(Math.random() * plan.durationDays * 0.5));
 
+    // Generate realistic activity data
+    const isAtRisk = status === "active" && Math.random() < 0.15; // ~15% of active clients at risk
+    const lastClassDaysAgo = status === "inactive" ? 45 + Math.floor(Math.random() * 30)
+      : isAtRisk ? 10 + Math.floor(Math.random() * 20)
+      : Math.floor(Math.random() * 5);
+    const longestStreak = Math.floor(Math.random() * 16);
+    const currentStreak = isAtRisk ? 0 : Math.min(longestStreak, 1 + Math.floor(Math.random() * 10));
+
     programmaticClientData.push({
       _id: clientId,
+      establishmentId: ids.unit1.toString(),
       name,
       email: name.toLowerCase().replace(/ /g, ".") + "@email.com",
       phone: usPhone(100 + i),
@@ -345,6 +365,9 @@ function generateProgrammaticClients(count: number) {
         price: plan.price,
       },
       status,
+      lastClassDate: daysAgo(lastClassDaysAgo),
+      currentStreak,
+      longestStreak,
       preferences: {
         preferredClassTypes: pickN(CLASS_TYPES, 1 + Math.floor(Math.random() * 3)),
         notifications: { email: true, whatsapp: false, instagram: false, sms: true },
@@ -1343,7 +1366,7 @@ async function seed(profile: SeedProfile = "full") {
     // Clear existing data
     console.log("Clearing existing data...");
     const collections = [
-      "users", "staff", "clients", "classes", "bookings", "units",
+      "users", "staff", "clients", "classes", "bookings", "units", "establishments",
       "rooms", "payments", "reviews", "waitlist", "notification_logs", "activities",
       "studio_settings", "requests", "conversations", "support_tickets",
       "integration_credentials", "sms_bot_config"
@@ -1386,6 +1409,7 @@ async function seed(profile: SeedProfile = "full") {
       phone: usPhone(1000),
       avatar: "https://randomuser.me/api/portraits/women/44.jpg",
       staffId: ids.adminStaff.toString(),
+      establishmentId: ids.unit1.toString(),
       isActive: true,
       lastLoginAt: new Date(),
       subscriptionStatus: "active",
@@ -1543,6 +1567,37 @@ async function seed(profile: SeedProfile = "full") {
       await db.collection("units").insertMany(seedData.units);
       console.log(`   Created ${seedData.units.length} establishments`);
 
+      // Insert establishment documents (single location per admin)
+      await db.collection("establishments").insertMany([
+        {
+          _id: ids.unit1,
+          name: "FlexiWell Downtown",
+          ownerId: ids.adminUser.toString(),
+          address: "123 Broadway, Downtown, New York - NY, 10001",
+          phone: "(212) 555-1111",
+          timezone: "America/New_York",
+          currency: "USD",
+          locale: "en-US",
+          isActive: true,
+          createdAt: daysAgo(365),
+          updatedAt: new Date(),
+        },
+        {
+          _id: new ObjectId(emptyEstablishmentId),
+          name: "New Studio",
+          ownerId: emptyAdminUser._id.toString(),
+          address: "",
+          phone: "(232) 555-3000",
+          timezone: "America/New_York",
+          currency: "USD",
+          locale: "en-US",
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+      console.log("   Created 2 establishment documents");
+
       // Insert rooms
       console.log("Creating rooms...");
       await db.collection("rooms").insertMany(seedData.rooms);
@@ -1684,6 +1739,11 @@ async function seed(profile: SeedProfile = "full") {
     // Bot sessions
     await db.collection("bot_sessions").createIndex({ platformUserId: 1, platform: 1 });
     await db.collection("bot_sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    // Churn checkup
+    await db.collection("churn_checkup_snapshots").createIndex({ establishmentId: 1, generatedAt: -1 });
+    await db.collection("churn_checkup_reports").createIndex({ establishmentId: 1, generatedAt: -1 });
+    await db.collection("churn_interventions").createIndex({ clientId: 1, createdAt: -1 });
+    await db.collection("churn_interventions").createIndex({ establishmentId: 1, createdAt: -1 });
     console.log("   All indexes created\n");
 
     // Summary

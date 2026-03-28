@@ -4,11 +4,29 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
+import type { OnboardingPath } from "@/components/onboarding";
 import { useCurrency } from "@/hooks/useCurrency";
 import { StatCard } from "@/components/ui/StatCard";
 import { api, clientsApi } from "@/lib/api/client";
 import type { ClientMetrics } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+interface CheckupSummary {
+  totalAtRisk: number;
+  critical: number;
+  high: number;
+  newlyAtRisk: number;
+  improved: number;
+}
+
+interface CheckupPreview {
+  summary: CheckupSummary;
+  topInsight: string;
+  clients: Array<{
+    clientName: string;
+    primaryIntervention: { severity: string; reason: string; action: string };
+  }>;
+}
 
 interface DashboardStats {
   revenue: number;
@@ -123,18 +141,41 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [checkup, setCheckup] = useState<CheckupPreview | null>(null);
 
   // Onboarding
   const { shouldShow: showOnboardingRaw, markComplete } = useInteractiveOnboarding("admin");
-  const hasData = !loading && !!dashboardData && (dashboardData.stats.clients > 0 || dashboardData.stats.classes > 0);
-  const showOnboarding = showOnboardingRaw && hasData;
+  const showOnboarding = showOnboardingRaw;
+
+  const handleOnboardingPath = (path: OnboardingPath) => {
+    if (path === "import") {
+      markComplete();
+      selectStudioOrigin("migrating");
+      window.location.href = "/admin/settings?tab=integrations";
+    } else if (path === "fresh") {
+      markComplete();
+      selectStudioOrigin("fresh");
+    }
+    // "tour" — do nothing here, the WelcomeModal's onStart handles it
+    // by closing the welcome and starting the spotlight steps
+  };
 
   // Setup checklist
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [studioOrigin, setStudioOrigin] = useState<"fresh" | "migrating" | null>(null);
   useEffect(() => {
     const saved = localStorage.getItem("admin_setup_completed_steps");
     if (saved) setCompletedSteps(new Set(JSON.parse(saved)));
+    const origin = localStorage.getItem("admin_studio_origin");
+    if (origin === "fresh" || origin === "migrating") setStudioOrigin(origin);
   }, []);
+  const selectStudioOrigin = (origin: "fresh" | "migrating") => {
+    setStudioOrigin(origin);
+    localStorage.setItem("admin_studio_origin", origin);
+    // Reset completed steps when switching origin
+    setCompletedSteps(new Set());
+    localStorage.setItem("admin_setup_completed_steps", "[]");
+  };
   const toggleStepComplete = (index: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -145,6 +186,24 @@ export default function AdminDashboard() {
       return next;
     });
   };
+
+  const freshSteps = [
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: "Create your first class", desc: "Schedule, capacity and instructor", href: "/admin/classes", cta: "Create" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>, title: "Add your first client", desc: "Name, email and phone", href: "/admin/clients", cta: "Add" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, title: "Set up plans", desc: "Price your client subscriptions", href: "/admin/settings?tab=plans", cta: "Set up" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, title: "Set up SMS bot", desc: "Automated check-ins and churn alerts", href: "/admin/settings?tab=sms-bot", cta: "Set up" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "Enable waitlist", desc: "Fill cancelled spots automatically", href: "/admin/waitlist", cta: "Enable" },
+  ];
+
+  const migratingSteps = [
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, title: "Import your clients", desc: "From Mindbody, GloFox, Tecnofit or CSV", href: "/admin/settings?tab=integrations", cta: "Import" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: "Import your schedule", desc: "Recreate your classes and instructors", href: "/admin/classes", cta: "Set up" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, title: "Set up plans", desc: "Recreate or update your pricing", href: "/admin/settings?tab=plans", cta: "Set up" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, title: "Set up SMS bot", desc: "Automated check-ins and churn alerts", href: "/admin/settings?tab=sms-bot", cta: "Set up" },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "Enable waitlist", desc: "Fill cancelled spots automatically", href: "/admin/waitlist", cta: "Enable" },
+  ];
+
+  const setupSteps = studioOrigin === "migrating" ? migratingSteps : freshSteps;
 
   const { formatCurrency } = useCurrency();
 
@@ -196,6 +255,17 @@ export default function AdminDashboard() {
       } catch { /* ignore */ }
     }
     fetchClientMetrics();
+  }, []);
+
+  // Fetch client checkup
+  useEffect(() => {
+    async function fetchCheckup() {
+      try {
+        const response = await api.get<CheckupPreview>("/api/admin/churn-checkup");
+        if (response.data) setCheckup(response.data);
+      } catch { /* ignore */ }
+    }
+    fetchCheckup();
   }, []);
 
   // Fetch AI summary when data changes
@@ -273,7 +343,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
-      <InteractiveOnboarding role="admin" isOpen={showOnboarding} onComplete={markComplete} />
+      <InteractiveOnboarding role="admin" isOpen={showOnboarding} onComplete={markComplete} onChoosePath={handleOnboardingPath} />
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
@@ -329,26 +399,60 @@ export default function AdminDashboard() {
 
         {!loading && (
           <>
+            {/* Onboarding Origin Modal */}
+            {stats.clients === 0 && stats.classes === 0 && !studioOrigin && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-8 text-white text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21" /></svg>
+                    </div>
+                    <h2 className="text-xl font-bold">Welcome to FlexiWell</h2>
+                    <p className="text-sm text-white/80 mt-2">How is your studio set up today?</p>
+                  </div>
+                  <div className="p-6 space-y-3">
+                    <button onClick={() => selectStudioOrigin("fresh")}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:bg-primary-50/50 transition-all text-left group">
+                      <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0 group-hover:bg-primary-100">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Starting fresh</p>
+                        <p className="text-sm text-gray-500 mt-0.5">No existing software — we'll help you build from scratch</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-300 group-hover:text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <button onClick={() => selectStudioOrigin("migrating")}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all text-left group">
+                      <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Switching from another platform</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Import from Mindbody, GloFox, Tecnofit or CSV</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-300 group-hover:text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Setup Checklist */}
-            {stats.clients === 0 && stats.classes === 0 && (
+            {stats.clients === 0 && stats.classes === 0 && studioOrigin && (
               <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-5 sm:px-6 py-5 text-white">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-semibold">Set up your studio</h2>
-                    <span className="text-sm text-white/80">{completedSteps.size}/4</span>
+                    <span className="text-sm text-white/80">{completedSteps.size}/{setupSteps.length}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white rounded-full transition-all duration-300" style={{ width: `${(completedSteps.size / 4) * 100}%` }} />
+                  <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all duration-300" style={{ width: `${(completedSteps.size / setupSteps.length) * 100}%` }} />
                   </div>
-                  <p className="text-sm text-white/80 mt-2">Studios recover $2,300+/month in lost revenue with FlexiWell.</p>
+                  <p className="text-sm text-white mt-2">Studios recover $2,300+/month in lost revenue with FlexiWell.</p>
                 </div>
                 <div className="divide-y divide-gray-100">
-                  {[
-                    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, title: "Import your clients", desc: "CSV or manual", href: "/admin/settings", cta: "Import" },
-                    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: "Create your first class", desc: "Schedule, capacity and instructor", href: "/admin/classes", cta: "Create" },
-                    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, title: "Set up plans", desc: "Price your client subscriptions", href: "/admin/settings?tab=plans", cta: "Set up" },
-                    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "Enable waitlist", desc: "Fill cancelled spots", href: "/admin/waitlist", cta: "Enable" },
-                  ].map((step, i) => (
+                  {setupSteps.map((step, i) => (
                     <div key={i} className="flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50 transition-colors group">
                       <button onClick={(e) => toggleStepComplete(i, e)}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${completedSteps.has(i) ? "bg-green-100 text-green-600" : "bg-primary-50 text-primary-600 group-hover:bg-primary-100"}`}>
@@ -368,6 +472,13 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   ))}
+                  {/* Switch link */}
+                  <div className="px-5 sm:px-6 py-3 flex justify-end">
+                    <button onClick={() => selectStudioOrigin(studioOrigin === "fresh" ? "migrating" : "fresh")}
+                      className="text-sm text-gray-600 hover:text-primary-600 font-medium transition-colors">
+                      {studioOrigin === "fresh" ? "Switching from another platform?" : "Starting from scratch instead?"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -461,7 +572,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Revenue Trend Chart */}
-            {trend.length > 0 && trend.some(t => t.revenue > 0) && (
+            {trend.length > 0 && (
               <div className={`bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -499,6 +610,56 @@ export default function AdminDashboard() {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Client Check-up Card */}
+            {checkup && checkup.summary.totalAtRisk > 0 && (
+              <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-gray-900">Client Check-up</h2>
+                      {checkup.summary.critical > 0 && (
+                        <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                          {checkup.summary.critical} critical
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-0.5">{checkup.topInsight}</p>
+                  </div>
+                  <Link href="/admin/client-checkup" className="text-sm text-primary-600 hover:text-primary-700 font-medium shrink-0">
+                    View all →
+                  </Link>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {checkup.clients.slice(0, 3).map((client) => {
+                    const severity = client.primaryIntervention.severity;
+                    const dotColor = severity === "critical" ? "bg-red-500" : severity === "high" ? "bg-orange-500" : severity === "medium" ? "bg-amber-500" : "bg-gray-400";
+                    return (
+                      <div key={client.clientName} className="px-5 sm:px-6 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{client.clientName}</p>
+                          <p className="text-xs text-gray-500 truncate">{client.primaryIntervention.reason}</p>
+                        </div>
+                        <Link
+                          href="/admin/client-checkup"
+                          className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors shrink-0"
+                        >
+                          Take action
+                        </Link>
+                      </div>
+                    );
+                  })}
+                  {checkup.summary.totalAtRisk > 3 && (
+                    <div className="px-5 sm:px-6 py-3 text-center">
+                      <Link href="/admin/client-checkup" className="text-sm text-gray-500 hover:text-primary-600 font-medium">
+                        +{checkup.summary.totalAtRisk - 3} more clients need attention
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

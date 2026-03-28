@@ -13,54 +13,53 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const establishmentId = searchParams.get("establishmentId") || user.userId;
 
-    const db = await getDatabase();
-
-    // Check integration_credentials for SMS/Twilio config
-    const smsCredential = await db.collection("integration_credentials").findOne({
-      establishmentId,
-      provider: "twilio_sms",
-    });
-
-    if (smsCredential) {
-      return NextResponse.json({
-        connected: true,
-        phoneNumber: smsCredential.phoneNumber || "",
-        botEnabled: smsCredential.botEnabled ?? true,
-        configuredAt: smsCredential.createdAt,
-      });
-    }
-
-    // Also check establishment_whatsapp_credentials for Twilio provider (shared setup)
-    const whatsappCred = await db.collection("establishment_whatsapp_credentials").findOne({
-      establishmentId,
-      provider: "twilio",
-      isConnected: true,
-    });
-
-    if (whatsappCred?.twilioPhoneNumber) {
-      return NextResponse.json({
-        connected: true,
-        phoneNumber: whatsappCred.twilioPhoneNumber,
-        botEnabled: whatsappCred.botEnabled ?? true,
-        sharedWithWhatsApp: true,
-        configuredAt: whatsappCred.createdAt,
-      });
-    }
-
-    // Check if env vars are configured (fallback for single-tenant setups)
+    // SMS is managed at the platform level via env vars
     const envConfigured = !!(
       process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_AUTH_TOKEN &&
       (process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER)
     );
 
+    // Check if this studio has actually enabled SMS
+    const db = await getDatabase();
+    const smsConfig = await db.collection("sms_config").findOne({ establishmentId });
+    const studioEnabled = !!smsConfig?.enabled;
+    const connected = envConfigured && studioEnabled;
+
+    // Fetch real stats for this month
+    let stats = { messages: 0, responseRate: 0, bookings: 0 };
+    if (connected) {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const messagesCol = db.collection("sms_messages");
+      const totalMessages = await messagesCol.countDocuments({
+        establishmentId,
+        createdAt: { $gte: monthStart },
+      });
+      const responded = await messagesCol.countDocuments({
+        establishmentId,
+        createdAt: { $gte: monthStart },
+        responded: true,
+      });
+      const bookings = await messagesCol.countDocuments({
+        establishmentId,
+        createdAt: { $gte: monthStart },
+        action: "BOOK_CLASS",
+      });
+      stats = {
+        messages: totalMessages,
+        responseRate: totalMessages > 0 ? Math.round((responded / totalMessages) * 100) : 0,
+        bookings,
+      };
+    }
+
     return NextResponse.json({
-      connected: envConfigured,
+      connected,
       phoneNumber: envConfigured
         ? (process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER || "")
         : "",
-      botEnabled: envConfigured,
-      source: envConfigured ? "env" : null,
+      botEnabled: connected,
+      stats,
     });
   } catch (error) {
     console.error("Error checking SMS status:", error);

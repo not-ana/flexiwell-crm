@@ -114,8 +114,8 @@ describe('AuthContext - Route Protection', () => {
     })
   })
 
-  it('should redirect admin user away from /teacher to /admin', async () => {
-    mockPathname = '/teacher'
+  it('should redirect admin user away from /dashboard to /admin', async () => {
+    mockPathname = '/dashboard'
     mockGetStoredTokens.mockReturnValue({ accessToken: 'token', refreshToken: 'refresh' })
     mockAuthApi.me.mockResolvedValue({
       data: { user: { id: '1', name: 'Admin', email: 'admin@test.com', role: 'admin' } },
@@ -164,7 +164,7 @@ describe('AuthContext - Route Protection', () => {
     )
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/teacher')
+      expect(mockPush).toHaveBeenCalledWith('/dashboard')
     })
   })
 

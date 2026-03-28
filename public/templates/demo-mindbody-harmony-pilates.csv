@@ -1,0 +1,54 @@
+first_name,last_name,email,phone,birth_date,gender,member_status,pricing_option,payment_amount,join_date,next_autopay_date,remaining_classes,address_line1,city,state,postal_code,emergency_contact_name,emergency_contact_phone
+Sarah,Jennings,sarah.jennings@gmail.com,+15125551001,1985-03-14,F,Active,Annual Unlimited,2399.00,2025-01-24,,38,410 S Congress Ave,Austin,TX,78704,Tom Jennings,+15125559001
+Michael,Torres,mtorres@outlook.com,+15125551002,1978-07-22,M,Active,Annual Unlimited,2399.00,2025-04-24,,52,1802 S 1st St,Austin,TX,78704,Elena Torres,+15125559002
+Rachel,Kim,rachel.k@icloud.com,+15125551003,1990-11-05,F,Active,Quarterly Premium,749.00,2025-06-24,2026-06-24,4,920 E 5th St,Austin,TX,78702,David Kim,+15125559003
+David,Chen,dchen.atx@gmail.com,+15125551004,1982-01-30,M,Active,Quarterly Premium,749.00,2025-07-24,2026-05-24,6,3401 Guadalupe St,Austin,TX,78705,Lisa Chen,+15125559004
+Ashley,Williams,ashley.w.pilates@gmail.com,+15125551005,1992-06-18,F,Active,Annual Unlimited,2399.00,2025-02-24,,44,1100 S Lamar Blvd,Austin,TX,78704,Mark Williams,+15125559005
+James,O'Brien,jobrien512@gmail.com,+15125551006,1975-09-12,M,Active,Quarterly Premium,749.00,2025-08-24,2026-05-24,2,505 W Oltorf St,Austin,TX,78704,Mary O'Brien,+15125559006
+Maria,Gonzalez,maria.g.atx@yahoo.com,+15125551007,1988-04-25,F,Active,Monthly 8-Class,249.00,2025-05-24,2026-04-10,2,2200 S Pleasant Valley Rd,Austin,TX,78741,Jose Gonzalez,+15125559007
+Brandon,Lee,brandonlee@proton.me,+15125551008,1995-12-03,M,Active,Monthly 8-Class,249.00,2025-10-24,2026-04-05,1,1601 E Riverside Dr,Austin,TX,78741,Susan Lee,+15125559008
+Nicole,Patel,nicole.patel@gmail.com,+15125551009,1991-08-17,F,Active,Monthly 12-Class,319.00,2025-09-24,2026-04-08,2,4500 Duval St,Austin,TX,78751,Raj Patel,+15125559009
+Chris,Henderson,chenderson@gmail.com,+15125551010,1987-02-14,M,Active,Monthly 8-Class,249.00,2025-11-24,2026-04-12,3,2400 E Cesar Chavez St,Austin,TX,78702,Amy Henderson,+15125559010
+Stephanie,Morris,steph.morris@outlook.com,+15125551011,1983-10-09,F,Active,Quarterly Premium,749.00,2025-07-24,2026-05-24,8,3200 Duval St,Austin,TX,78705,Steve Morris,+15125559011
+Kevin,Nguyen,knguyen.fit@gmail.com,+15125551012,1993-05-28,M,Active,Monthly 8-Class,249.00,2025-12-24,2026-04-06,2,800 W 5th St,Austin,TX,78703,Tina Nguyen,+15125559012
+Amanda,Foster,afoster.yoga@gmail.com,+15125551013,1989-01-11,F,Active,Monthly 12-Class,319.00,2025-08-24,2026-04-09,3,1200 Barton Springs Rd,Austin,TX,78704,Greg Foster,+15125559013
+Daniel,Wright,dwright.atx@gmail.com,+15125551014,1980-07-19,M,Active,Monthly 8-Class,249.00,2025-10-24,2026-04-11,1,901 W Riverside Dr,Austin,TX,78704,Karen Wright,+15125559014
+Lisa,Chang,lisa.chang512@gmail.com,+15125551015,1986-12-01,F,Active,Quarterly Premium,749.00,2025-09-24,2026-06-24,10,4700 Burnet Rd,Austin,TX,78756,Henry Chang,+15125559015
+Ryan,Cooper,rcooper@icloud.com,+15125551016,1994-03-07,M,Active,Monthly 8-Class,249.00,2025-11-24,2026-04-14,2,600 Congress Ave,Austin,TX,78701,Diane Cooper,+15125559016
+Emily,Rodriguez,emily.rod.atx@gmail.com,+15125551017,1996-09-23,F,Active,Monthly 12-Class,319.00,2025-10-24,2026-04-07,4,2600 S Lamar Blvd,Austin,TX,78704,Carlos Rodriguez,+15125559017
+Thomas,Jackson,tjackson.512@outlook.com,+15125551018,1979-11-30,M,Active,Monthly 8-Class,249.00,2025-12-24,2026-04-13,3,1500 E 7th St,Austin,TX,78702,Debra Jackson,+15125559018
+Jasmine,Washington,jas.wash@gmail.com,+15125551019,1990-04-14,F,Active,Quarterly Premium,749.00,2025-10-24,2026-05-24,12,3800 S Lamar Blvd,Austin,TX,78704,Robert Washington,+15125559019
+Andrew,Martinez,andymartinez@gmail.com,+15125551020,1984-08-06,M,Active,Monthly 8-Class,249.00,2026-01-24,2026-04-15,1,2100 Burton Dr,Austin,TX,78741,Sandra Martinez,+15125559020
+Olivia,Barnes,olivia.barnes@gmail.com,+15125551021,1997-02-19,F,Active,Monthly 8-Class,249.00,2026-01-24,2026-04-10,4,700 E Dean Keeton St,Austin,TX,78705,Paul Barnes,+15125559021
+Ethan,Brooks,ethan.b.brooks@gmail.com,+15125551022,1991-06-11,M,Active,Monthly 8-Class,249.00,2026-02-24,2026-04-20,5,1900 E MLK Jr Blvd,Austin,TX,78702,Janet Brooks,+15125559022
+Maya,Singh,mayasingh.yoga@gmail.com,+15125551023,1993-10-08,F,Active,Monthly 12-Class,319.00,2026-01-24,2026-04-08,7,4200 Medical Pkwy,Austin,TX,78756,Vikram Singh,+15125559023
+Jason,Clark,jclark.austin@gmail.com,+15125551024,1986-04-22,M,Active,Monthly 8-Class,249.00,2026-01-24,2026-04-11,4,3000 Guadalupe St,Austin,TX,78705,Linda Clark,+15125559024
+Sophia,Anderson,sophia.a.atx@icloud.com,+15125551025,1998-01-15,F,Active,Monthly 8-Class,249.00,2025-12-24,2026-04-06,3,2800 Rio Grande St,Austin,TX,78705,James Anderson,+15125559025
+Nathan,Rivera,nrivera512@gmail.com,+15125551026,1990-12-05,M,Active,Monthly 8-Class,249.00,2026-02-24,2026-04-18,5,1300 S Pleasant Valley Rd,Austin,TX,78741,Rosa Rivera,+15125559026
+Hannah,Scott,hannah.scott.yoga@gmail.com,+15125551027,1994-07-30,F,Active,Monthly 12-Class,319.00,2026-01-24,2026-04-09,6,5000 Burnet Rd,Austin,TX,78756,Brian Scott,+15125559027
+Tyler,Mitchell,tyler.m.atx@outlook.com,+15125551028,1988-03-18,M,Active,Monthly 8-Class,249.00,2026-02-24,2026-04-22,6,400 W 2nd St,Austin,TX,78701,Christine Mitchell,+15125559028
+Rebecca,Hughes,rebecca.h@gmail.com,+15125551029,1985-09-27,F,Active,Drop-In 5-Pack,175.00,2025-11-24,,2,1700 Toomey Rd,Austin,TX,78704,John Hughes,+15125559029
+Lucas,White,lucas.white.atx@gmail.com,+15125551030,1976-05-14,M,Active,Drop-In 5-Pack,175.00,2025-12-24,,3,3300 Bee Caves Rd,Austin,TX,78746,Carol White,+15125559030
+Grace,Yang,grace.yang512@gmail.com,+15125551031,1992-11-22,F,Active,Drop-In 5-Pack,175.00,2025-10-24,,1,2500 Lake Austin Blvd,Austin,TX,78703,Peter Yang,+15125559031
+Jennifer,Cooper,jcooper.pilates@gmail.com,+15125551032,1981-08-03,F,Active,Monthly 8-Class,249.00,2025-09-24,2026-04-01,6,1400 S Congress Ave,Austin,TX,78704,Kevin Cooper,+15125559032
+Mark,Phillips,markp.atx@gmail.com,+15125551033,1977-03-16,M,Active,Monthly 8-Class,249.00,2025-11-24,2026-04-03,7,4100 Guadalupe St,Austin,TX,78751,Angela Phillips,+15125559033
+Alicia,Young,alicia.young@yahoo.com,+15125551034,1993-06-29,F,Active,Quarterly Premium,749.00,2025-10-24,2026-04-24,18,2000 S Lamar Blvd,Austin,TX,78704,Marcus Young,+15125559034
+Brian,Adams,badams.512@gmail.com,+15125551035,1984-10-11,M,Active,Monthly 8-Class,249.00,2025-12-24,2026-04-05,5,3600 S 1st St,Austin,TX,78704,Debbie Adams,+15125559035
+Megan,Taylor,megan.t.yoga@gmail.com,+15125551036,1989-12-20,F,Active,Monthly 12-Class,319.00,2025-11-24,2026-04-08,8,900 W Oltorf St,Austin,TX,78704,Jeff Taylor,+15125559036
+Carlos,Ramirez,carlos.r.fit@gmail.com,+15125551037,1991-07-08,M,Active,Monthly 8-Class,249.00,2026-01-24,2026-04-12,6,1800 E Riverside Dr,Austin,TX,78741,Maria Ramirez,+15125559037
+Patricia,Dunn,patricia.d@icloud.com,+15125551038,1974-05-02,F,Active,Quarterly Premium,749.00,2025-09-24,2026-04-24,16,5200 Balcones Dr,Austin,TX,78731,Richard Dunn,+15125559038
+Justin,Lee,justinlee.atx@gmail.com,+15125551039,1996-02-14,M,Active,Monthly 8-Class,249.00,2026-01-24,2026-04-20,7,700 E Riverside Dr,Austin,TX,78704,Michelle Lee,+15125559039
+Katherine,Hall,kathy.hall@gmail.com,+15125551040,1980-04-18,F,Inactive,Monthly 8-Class,249.00,2025-07-24,,0,3100 Red River St,Austin,TX,78705,William Hall,+15125559040
+Robert,Martin,rmartin.atx@outlook.com,+15125551041,1972-09-05,M,Inactive,Monthly 8-Class,249.00,2025-08-24,,0,4800 Burnet Rd,Austin,TX,78756,Patricia Martin,+15125559041
+Christine,Wong,c.wong512@gmail.com,+15125551042,1987-01-25,F,Inactive,Quarterly Premium,749.00,2025-06-24,,0,1600 Barton Springs Rd,Austin,TX,78704,Alan Wong,+15125559042
+Steven,Park,steven.park@gmail.com,+15125551043,1995-11-12,M,Inactive,Monthly 8-Class,249.00,2025-10-24,,0,2200 Guadalupe St,Austin,TX,78705,Linda Park,+15125559043
+Diane,Foster,diane.foster.atx@gmail.com,+15125551044,1976-08-30,F,Inactive,Monthly 12-Class,319.00,2025-09-24,,0,3900 S Lamar Blvd,Austin,TX,78704,Ed Foster,+15125559044
+Patrick,Sullivan,psullivan@proton.me,+15125551045,1983-06-17,M,Inactive,Monthly 8-Class,249.00,2025-11-24,,0,1200 W 6th St,Austin,TX,78703,Kelly Sullivan,+15125559045
+Laura,Bennett,laura.bennett@gmail.com,+15125551046,1990-03-09,F,Inactive,Monthly 8-Class,249.00,2025-09-24,,0,2900 S 1st St,Austin,TX,78704,Matt Bennett,+15125559046
+Matthew,Green,matt.green.512@gmail.com,+15125551047,1999-07-21,M,Inactive,Monthly 8-Class,249.00,2025-10-24,,0,500 E 7th St,Austin,TX,78702,Debra Green,+15125559047
+Angela,Cruz,angela.cruz.fit@gmail.com,+15125551048,1988-12-04,F,Inactive,Quarterly Premium,749.00,2025-08-24,,0,4400 Medical Pkwy,Austin,TX,78756,Miguel Cruz,+15125559048
+Eric,Thompson,eric.t.512@outlook.com,+15125551049,1981-02-28,M,Inactive,Monthly 8-Class,249.00,2025-12-24,,0,1700 E 7th St,Austin,TX,78702,Sarah Thompson,+15125559049
+Michelle,Adams,michelle.a.yoga@gmail.com,+15125551050,1992-05-16,F,Inactive,Monthly 12-Class,319.00,2025-11-24,,0,3500 Guadalupe St,Austin,TX,78705,Tony Adams,+15125559050
+Derek,Wilson,derek.w.atx@gmail.com,+15125551051,1978-10-03,M,Inactive,Monthly 8-Class,249.00,2025-10-24,,0,600 W Oltorf St,Austin,TX,78704,Nancy Wilson,+15125559051
+Victoria,Reed,victoria.reed@gmail.com,+15125551052,1994-08-25,F,Active,Monthly 8-Class,249.00,2026-03-20,2026-04-20,8,1900 S 1st St,Austin,TX,78704,George Reed,+15125559052
+Anthony,Kim,anthony.kim.512@gmail.com,+15125551053,1987-11-09,M,Active,Monthly 8-Class,249.00,2026-03-22,2026-04-22,8,2700 Bee Caves Rd,Austin,TX,78746,Grace Kim,+15125559053
