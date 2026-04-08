@@ -17,12 +17,8 @@ export interface TurnstileResult {
 export async function verifyTurnstileToken(token: string | null): Promise<TurnstileResult> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
 
-  // Skip in development if not configured
+  // Skip if not configured (CAPTCHA is optional for now)
   if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("TURNSTILE_SECRET_KEY not configured in production");
-      return { success: false, error: "CAPTCHA not configured" };
-    }
     return { success: true };
   }
 
