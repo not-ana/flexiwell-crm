@@ -511,6 +511,7 @@ export interface User {
   name: string;
   role: "admin" | "teacher" | "client"; // Primary role
   additionalRoles?: ("admin" | "teacher" | "client")[]; // Additional roles user can switch to
+  isOperator?: boolean; // FlexiWell staff — sees full UI (settings, integrations) regardless of role
   avatar?: string;
   phone?: string;
   // Link to other entities based on role
