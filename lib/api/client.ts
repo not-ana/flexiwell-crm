@@ -159,9 +159,8 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  role?: "admin" | "teacher" | "client";
+  role?: "admin" | "teacher";
   phone?: string;
-  inviteCode?: string; // Codigo de convite para vincular cliente a empresa
   turnstileToken?: string;
 }
 
@@ -169,16 +168,20 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "teacher" | "client";
+  role: "admin" | "teacher";
+  isOperator?: boolean;
   phone?: string;
   avatar?: string;
   staffId?: string;
-  clientId?: string;
   // Subscription and plan info
-  planTier?: "retention_pro" | "scale";
+  planTier?: "retention_pro";
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   trialStatus?: "active" | "expired" | "converted";
   trialEndDate?: string;
+  // Operator impersonation state
+  impersonating?: boolean;
+  impersonatingName?: string;
+  impersonatingEstablishmentId?: string;
 }
 
 export interface AuthResponse {

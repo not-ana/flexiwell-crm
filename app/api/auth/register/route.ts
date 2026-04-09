@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { User, RefreshToken, CompanyInvite, CompanyClient } from "@/lib/db/schemas";
+import type { User, RefreshToken, Establishment } from "@/lib/db/schemas";
 import {
   hashPassword,
   generateTokenPair,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp, RATE_LIMITS, validatePassword } from "@/lib/security";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { isOperatorEmail } from "@/lib/auth/operator";
 
 // POST /api/auth/register - Register a new user
 export async function POST(request: NextRequest) {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, password, name, role, phone, inviteCode, turnstileToken } = body;
+    const { email, password, name, role, phone, turnstileToken } = body;
 
     // Verify CAPTCHA
     const captcha = await verifyTurnstileToken(turnstileToken);
@@ -65,8 +66,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ["admin", "teacher", "client"];
-    const userRole = role || "client";
+    const validRoles = ["admin", "teacher"];
+    const userRole = role || "admin";
     if (!validRoles.includes(userRole)) {
       return NextResponse.json(
         { error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
@@ -91,12 +92,16 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user
+    const normalizedEmail = email.toLowerCase();
+    const isOperator = isOperatorEmail(normalizedEmail);
+
+    // Create user (establishmentId set below for studio admins)
     const newUser: Omit<User, "_id"> = {
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
       name,
       role: userRole,
+      isOperator: isOperator || undefined,
       phone: phone || undefined,
       isActive: true,
       subscriptionStatus: userRole === "admin" ? "active" as const : undefined,
@@ -107,6 +112,33 @@ export async function POST(request: NextRequest) {
     const result = await db.collection<User>("users").insertOne(newUser);
     const userId = result.insertedId.toString();
 
+    // For studio admins (and only non-operator accounts), create an
+    // Establishment so the dashboard has data to scope queries against.
+    // Operators are FlexiWell staff — they don't own a studio of their own.
+    let establishmentId: string | undefined;
+    if (userRole === "admin" && !isOperator) {
+      const newEstablishment: Omit<Establishment, "_id"> = {
+        name: `${name}'s Studio`,
+        location: "",
+        assignedTeachers: [],
+        isActive: true,
+        ownerId: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const estResult = await db
+        .collection<Establishment>("establishments")
+        .insertOne(newEstablishment);
+      establishmentId = estResult.insertedId.toString();
+
+      await db.collection<User>("users").updateOne(
+        { _id: result.insertedId },
+        { $set: { establishmentId, updatedAt: new Date() } }
+      );
+      newUser.establishmentId = establishmentId;
+    }
+
     // Generate tokens
     const tokens = generateTokenPair({
       userId,
@@ -114,6 +146,7 @@ export async function POST(request: NextRequest) {
       role: newUser.role,
       name: newUser.name,
       establishmentId: newUser.establishmentId,
+      isOperator,
     });
 
     // Store refresh token
@@ -126,52 +159,6 @@ export async function POST(request: NextRequest) {
 
     await db.collection<RefreshToken>("refresh_tokens").insertOne(refreshTokenDoc);
 
-    // Se for cliente e tiver codigo de convite, vincular a empresa
-    let companyLinked = null;
-    if (userRole === "client" && inviteCode) {
-      const invite = await db.collection<CompanyInvite>("company_invites").findOne({
-        code: inviteCode.toUpperCase(),
-        isActive: true,
-      });
-
-      if (invite) {
-        // Verificar se codigo eh valido
-        const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date();
-        const isLimitReached = invite.maxUses && invite.currentUses >= invite.maxUses;
-
-        if (!isExpired && !isLimitReached) {
-          // Criar vinculo empresa-cliente
-          const companyClient: Omit<CompanyClient, "_id"> = {
-            userId,
-            companyId: invite.companyId,
-            joinedVia: "invite_code",
-            inviteCodeUsed: invite.code,
-            status: "active",
-            role: "client",
-            joinedAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          await db.collection<CompanyClient>("company_clients").insertOne(companyClient);
-
-          // Incrementar uso do codigo
-          await db.collection<CompanyInvite>("company_invites").updateOne(
-            { _id: invite._id },
-            {
-              $inc: { currentUses: 1 },
-              $set: { updatedAt: new Date() },
-            }
-          );
-
-          companyLinked = {
-            companyId: invite.companyId,
-            inviteCode: invite.code,
-          };
-        }
-      }
-    }
-
     // Return user data (without password) and tokens
     return NextResponse.json(
       {
@@ -182,9 +169,9 @@ export async function POST(request: NextRequest) {
           name: newUser.name,
           role: newUser.role,
           phone: newUser.phone,
+          isOperator,
         },
         tokens,
-        companyLinked,
       },
       { status: 201 }
     );

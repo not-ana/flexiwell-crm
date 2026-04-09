@@ -40,10 +40,17 @@ const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", 
 
 // Role-based route prefixes
 const roleRoutes: Record<string, string[]> = {
-  admin: ["/admin"],
-  teacher: ["/dashboard"],
-  client: ["/dashboard"],
+  admin: ["/admin", "/operator"],
+  teacher: ["/teacher"],
 };
+
+// Default landing path for a user. Operators land on /operator unless
+// they're currently impersonating a studio (then they belong in /admin).
+function defaultPathFor(user: { role: string; isOperator?: boolean; impersonating?: boolean }): string {
+  if (user.isOperator && !user.impersonating) return "/operator";
+  if (user.role === "admin") return "/admin";
+  return "/teacher";
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<ExtendedAuthUser | null>(null);
@@ -102,13 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .some((prefix) => pathname.startsWith(prefix));
 
       if (isAccessingProtectedRoute && !isAllowedRoute) {
-        const defaultRoute =
-          user.role === "admin"
-            ? "/admin"
-            : user.role === "teacher"
-            ? "/dashboard"
-            : "/dashboard";
-        router.push(defaultRoute);
+        router.push(defaultPathFor(user));
+        return;
+      }
+
+      // Operators (not currently impersonating) belong in /operator. If they
+      // land on /admin or its subpages, bounce them out — there's nothing
+      // useful for them there until they pick a studio.
+      if (user.isOperator && !user.impersonating && pathname.startsWith("/admin")) {
+        router.push("/operator");
       }
     }
   }, [user, isLoading, pathname, router]);
@@ -127,14 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           storeTokens(tokens.accessToken, tokens.refreshToken);
           setUser(user);
 
-          // Redirect based on role
-          const redirectPath =
-            user.role === "admin"
-              ? "/admin"
-              : user.role === "teacher"
-              ? "/teacher"
-              : "/dashboard";
-          router.push(redirectPath);
+          // Redirect based on role (operators land on /operator)
+          router.push(defaultPathFor(user));
 
           return { success: true };
         }
@@ -164,14 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           storeTokens(tokens.accessToken, tokens.refreshToken);
           setUser(user);
 
-          // Redirect based on role
-          const redirectPath =
-            user.role === "admin"
-              ? "/admin"
-              : user.role === "teacher"
-              ? "/teacher"
-              : "/dashboard";
-          router.push(redirectPath);
+          // Redirect based on role (operators land on /operator)
+          router.push(defaultPathFor(user));
 
           return { success: true };
         }
@@ -217,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV === "development") {
         const updatedUser = { ...user, role };
         setUser(updatedUser);
-        const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/dashboard" : "/dashboard";
+        const redirectPath = role === "admin" ? "/admin" : "/teacher";
         router.push(redirectPath);
         return { success: true };
       }
@@ -249,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
 
       // Navigate to appropriate dashboard
-      const redirectPath = role === "admin" ? "/admin" : role === "teacher" ? "/dashboard" : "/dashboard";
+      const redirectPath = role === "admin" ? "/admin" : "/teacher";
       router.push(redirectPath);
 
       return { success: true };
@@ -314,12 +311,7 @@ export function withAuth<P extends object>(
       }
 
       if (!isLoading && user && allowedRoles && !allowedRoles.includes(user.role)) {
-        const defaultRoute =
-          user.role === "admin"
-            ? "/admin"
-            : user.role === "teacher"
-            ? "/dashboard"
-            : "/dashboard";
+        const defaultRoute = user.role === "admin" ? "/admin" : "/teacher";
         router.push(defaultRoute);
       }
     }, [isLoading, isAuthenticated, user, router]);

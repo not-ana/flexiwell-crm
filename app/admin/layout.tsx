@@ -5,6 +5,7 @@ import { ResponsiveLayout } from "@/components/layout";
 import { PlanProvider } from "@/lib/plans/PlanProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlanType } from "@/lib/plans";
+import { ImpersonationBanner } from "@/components/operator/ImpersonationBanner";
 
 export default function AdminLayout({
   children,
@@ -39,6 +40,7 @@ export default function AdminLayout({
 
   return (
     <PlanProvider planId={planId}>
+      <ImpersonationBanner />
       <ResponsiveLayout variant="admin" notificationCount={conversationCount}>
         {children}
       </ResponsiveLayout>

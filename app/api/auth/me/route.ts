@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { User, Client, Staff } from "@/lib/db/schemas";
+import type { User, Staff } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 import { requireAuth } from "@/lib/auth/middleware";
+import { isOperatorEmail } from "@/lib/auth/operator";
 
 // GET /api/auth/me - Get current user profile
 export async function GET(request: NextRequest) {
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
       email: user.email,
       name: user.name,
       role: user.role,
+      isOperator: user.isOperator || isOperatorEmail(user.email),
       phone: user.phone,
       avatar: user.avatar,
       isActive: user.isActive,
@@ -41,23 +43,13 @@ export async function GET(request: NextRequest) {
       subscriptionStatus: user.subscriptionStatus || "none",
       trialStatus: user.trialStatus,
       trialEndDate: user.trialEndDate?.toISOString(),
+      // Impersonation state — comes from JWT, not DB. When an operator is
+      // acting as a studio, the frontend uses these to render the banner
+      // and route them into /admin instead of /operator.
+      impersonating: authUser!.impersonating || false,
+      impersonatingName: authUser!.impersonatingName,
+      impersonatingEstablishmentId: authUser!.impersonating ? authUser!.establishmentId : undefined,
     };
-
-    // If client, get client data
-    if (user.role === "client" && user.clientId) {
-      const client = await db
-        .collection("clients")
-        .findOne({ _id: new ObjectId(user.clientId) }) as Client | null;
-
-      if (client) {
-        userData.clientProfile = {
-          id: client._id!.toString(),
-          plan: client.plan,
-          status: client.status,
-          preferences: client.preferences,
-        };
-      }
-    }
 
     // If teacher or admin, get staff data
     if ((user.role === "teacher" || user.role === "admin") && user.staffId) {

@@ -19,6 +19,12 @@ export interface JWTPayload {
   role: User["role"];
   name: string;
   establishmentId?: string;
+  isOperator?: boolean;
+  // Impersonation: when an operator "Signs in as" a studio, we issue a fresh
+  // JWT where establishmentId is the target studio's id. userId/email still
+  // refer to the real operator so audit/identity is preserved.
+  impersonating?: boolean;
+  impersonatingName?: string; // target studio name (for banner)
 }
 
 export interface TokenPair {
