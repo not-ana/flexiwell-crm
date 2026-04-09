@@ -168,13 +168,14 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "admin" | "teacher";
+  role: "admin" | "teacher" | "client";
   isOperator?: boolean;
   phone?: string;
   avatar?: string;
   staffId?: string;
+  clientId?: string;
   // Subscription and plan info
-  planTier?: "retention_pro";
+  planTier?: "retention_pro" | "scale";
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   trialStatus?: "active" | "expired" | "converted";
   trialEndDate?: string;
