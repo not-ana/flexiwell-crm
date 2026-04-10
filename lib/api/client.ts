@@ -159,8 +159,9 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  role?: "admin" | "teacher";
+  role?: "admin" | "teacher" | "client";
   phone?: string;
+  inviteCode?: string;
   turnstileToken?: string;
 }
 
