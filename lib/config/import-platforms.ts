@@ -48,6 +48,36 @@ export const platformConfigs: Record<string, PlatformConfig> = {
       { key: "next_autopay_date", label: "Next Autopay Date", required: false, type: "date", example: "2026-04-15", description: "Next billing date from Mindbody" },
     ],
   },
+  vagaro: {
+    name: "Vagaro",
+    description: "Import client data from Vagaro. Export via Customers > Export.",
+    templateUrl: "/templates/mindbody-import-template.csv",
+    fields: commonClientFields,
+  },
+  marianatek: {
+    name: "Mariana Tek",
+    description: "Import client data from Mariana Tek. Export via Reports > Members.",
+    templateUrl: "/templates/mindbody-import-template.csv",
+    fields: commonClientFields,
+  },
+  glofox: {
+    name: "GloFox",
+    description: "Import client data from GloFox. Export via Members > Export.",
+    templateUrl: "/templates/mindbody-import-template.csv",
+    fields: commonClientFields,
+  },
+  tecnofit: {
+    name: "Tecnofit",
+    description: "Importe dados de clientes do Tecnofit. Exporte via Clientes > Exportar.",
+    templateUrl: "/templates/mindbody-import-template.csv",
+    fields: commonClientFields,
+  },
+  other: {
+    name: "Other / CSV",
+    description: "Import from any platform using a CSV file. We'll help you map the columns.",
+    templateUrl: "/templates/mindbody-import-template.csv",
+    fields: commonClientFields,
+  },
 };
 
 export const classHistoryConfigs: Record<string, PlatformConfig> = {

@@ -1,4 +1,8 @@
-// POST /api/admin/churn-checkup/send - Send a churn intervention message to a client
+// POST /api/admin/churn-checkup/send - Log a Retention Copilot intervention.
+//
+// The owner sends the SMS from her own phone (via an `sms:` deep link in the UI).
+// This endpoint just records that the outreach happened so retention metrics
+// and follow-up logic can pick it up. No automated sending, no Twilio.
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
@@ -13,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = await getDatabase();
     const body = await request.json();
-    const { clientId, signal, messageTemplate, templateData, channel = "sms" } = body;
+    const { clientId, signal, messageTemplate, templateData } = body;
 
     if (!clientId || !messageTemplate) {
       return NextResponse.json({ error: "clientId and messageTemplate are required" }, { status: 400 });
@@ -24,14 +28,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
-    // Get establishment for studio name
     const establishment = await db.collection("establishments").findOne({
       _id: new ObjectId(client.establishmentId),
     });
 
-    // Fill template with real data
     const message = fillTemplate(messageTemplate, {
-      clientName: client.name.split(" ")[0], // First name only
+      clientName: client.name.split(" ")[0],
       studioName: establishment?.name || "our studio",
       instructorName: templateData?.instructorName || "your instructor",
       nextClassName: templateData?.nextClassName || "our next class",
@@ -41,85 +43,28 @@ export async function POST(request: NextRequest) {
       ...templateData,
     });
 
-    // Send via the selected channel
-    let sendResult: { success: boolean; error?: string } = { success: false };
-
-    if (channel === "sms") {
-      // Use Twilio SMS directly
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const smsNumber = process.env.TWILIO_SMS_NUMBER || process.env.TWILIO_PHONE_NUMBER;
-
-      if (!accountSid || !authToken || !smsNumber) {
-        return NextResponse.json({ error: "SMS not configured" }, { status: 400 });
-      }
-
-      const cleaned = client.phone.replace(/\D/g, "");
-      let formattedPhone: string;
-      if (cleaned.startsWith("1") && cleaned.length === 11) {
-        formattedPhone = `+${cleaned}`;
-      } else if (cleaned.length === 10) {
-        formattedPhone = `+1${cleaned}`;
-      } else if (cleaned.length >= 12) {
-        formattedPhone = `+${cleaned}`;
-      } else {
-        formattedPhone = `+1${cleaned}`;
-      }
-
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: formattedPhone,
-            From: smsNumber,
-            Body: message,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        sendResult = { success: true };
-      } else {
-        const err = await response.json();
-        sendResult = { success: false, error: err.message || "SMS send failed" };
-      }
-    }
-
-    // Log the intervention
     const now = new Date();
     await db.collection("churn_interventions").insertOne({
       clientId,
       clientName: client.name,
       establishmentId: client.establishmentId,
       signal,
-      channel,
+      channel: "sms",
+      deliveryMode: "owner_sent", // owner sent it from her own phone
       message,
-      sent: sendResult.success,
-      error: sendResult.error,
+      sent: true,
       sentBy: user?.userId,
       createdAt: now,
     });
 
-    // Update client's last churn alert timestamp
-    if (sendResult.success) {
-      await db.collection("clients").updateOne(
-        { _id: client._id },
-        { $set: { lastChurnAlertSentAt: now, updatedAt: now } }
-      );
-    }
+    await db.collection("clients").updateOne(
+      { _id: client._id },
+      { $set: { lastChurnAlertSentAt: now, updatedAt: now } }
+    );
 
-    return NextResponse.json({
-      success: sendResult.success,
-      message: sendResult.success ? message : undefined,
-      error: sendResult.error,
-    });
+    return NextResponse.json({ success: true, message });
   } catch (err) {
-    console.error("Error sending churn intervention:", err);
-    return NextResponse.json({ error: "Failed to send intervention" }, { status: 500 });
+    console.error("Error logging churn intervention:", err);
+    return NextResponse.json({ error: "Failed to log intervention" }, { status: 500 });
   }
 }

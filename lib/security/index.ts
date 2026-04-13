@@ -200,3 +200,203 @@ export function generateSecureToken(length: number = 32): string {
   return Array.from(array, (byte) => chars[byte % chars.length]).join("");
 }
 
+// ---------------------------------------------------------------------------
+// Account Lockout — lock by user email after repeated failed login attempts
+// ---------------------------------------------------------------------------
+
+const LOCKOUT_THRESHOLD = 5; // Lock after 5 failed attempts
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+interface LockoutEntry {
+  failedAttempts: number;
+  lockedUntil: number | null;
+  lastFailedAt: number;
+}
+
+const lockoutStore = new Map<string, LockoutEntry>();
+
+// Clean up expired lockouts periodically
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of lockoutStore.entries()) {
+      if (v.lockedUntil && v.lockedUntil < now) lockoutStore.delete(k);
+    }
+  }, 5 * 60 * 1000);
+}
+
+export interface LockoutResult {
+  locked: boolean;
+  remainingAttempts: number;
+  lockedUntilMs?: number;
+}
+
+/**
+ * Check if an account is locked out.
+ * Call with the user's email (lowercase).
+ */
+export function checkAccountLockout(email: string): LockoutResult {
+  const entry = lockoutStore.get(email);
+  if (!entry) {
+    return { locked: false, remainingAttempts: LOCKOUT_THRESHOLD };
+  }
+
+  // If locked and still within lockout window
+  if (entry.lockedUntil && entry.lockedUntil > Date.now()) {
+    return {
+      locked: true,
+      remainingAttempts: 0,
+      lockedUntilMs: entry.lockedUntil,
+    };
+  }
+
+  // Lockout expired — reset
+  if (entry.lockedUntil && entry.lockedUntil <= Date.now()) {
+    lockoutStore.delete(email);
+    return { locked: false, remainingAttempts: LOCKOUT_THRESHOLD };
+  }
+
+  return {
+    locked: false,
+    remainingAttempts: Math.max(0, LOCKOUT_THRESHOLD - entry.failedAttempts),
+  };
+}
+
+/**
+ * Record a failed login attempt. Returns lockout result after recording.
+ */
+export function recordFailedLogin(email: string): LockoutResult {
+  const entry = lockoutStore.get(email) || {
+    failedAttempts: 0,
+    lockedUntil: null,
+    lastFailedAt: 0,
+  };
+
+  entry.failedAttempts++;
+  entry.lastFailedAt = Date.now();
+
+  if (entry.failedAttempts >= LOCKOUT_THRESHOLD) {
+    entry.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+  }
+
+  lockoutStore.set(email, entry);
+
+  return checkAccountLockout(email);
+}
+
+/**
+ * Clear lockout on successful login.
+ */
+export function clearLockout(email: string): void {
+  lockoutStore.delete(email);
+}
+
+// ---------------------------------------------------------------------------
+// Audit Logging — log security-relevant events
+// ---------------------------------------------------------------------------
+
+export type AuditEventType =
+  | "login_success"
+  | "login_failed"
+  | "login_locked"
+  | "logout"
+  | "register"
+  | "password_reset_request"
+  | "password_reset_complete"
+  | "password_change"
+  | "token_refresh"
+  | "token_reuse_detected"
+  | "role_change"
+  | "account_deactivated"
+  | "account_activated"
+  | "csrf_violation"
+  | "rate_limit_hit";
+
+export interface AuditEvent {
+  type: AuditEventType;
+  userId?: string;
+  email?: string;
+  ip: string;
+  userAgent?: string;
+  metadata?: Record<string, unknown>;
+  timestamp: Date;
+}
+
+/**
+ * Log a security audit event. Writes to console in structured JSON
+ * and optionally to the database if a db handle is provided.
+ */
+export async function logAuditEvent(
+  event: Omit<AuditEvent, "timestamp">,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db?: { collection: (name: string) => { insertOne: (doc: any) => Promise<any> } }
+): Promise<void> {
+  const fullEvent: AuditEvent = { ...event, timestamp: new Date() };
+
+  // Always log to structured console output
+  console.log(JSON.stringify({ audit: fullEvent }));
+
+  // Persist to database if available
+  if (db) {
+    try {
+      await db.collection("audit_logs").insertOne(fullEvent);
+    } catch (err) {
+      console.error("Failed to persist audit event:", err);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CSRF Protection — double-submit cookie pattern
+// ---------------------------------------------------------------------------
+
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "x-csrf-token";
+
+/**
+ * Generate a CSRF token and return it. The caller should set it as a cookie.
+ */
+export function generateCsrfToken(): string {
+  return generateSecureToken(32);
+}
+
+/**
+ * Validate CSRF by comparing the cookie value to the header value.
+ * Returns true if valid.
+ */
+export function validateCsrfToken(request: Request): boolean {
+  // Skip for non-mutation methods
+  const method = request.method.toUpperCase();
+  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
+    return true;
+  }
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  let cookieToken: string | undefined;
+  for (const part of cookieHeader.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const val = part.slice(idx + 1).trim();
+    if (key === CSRF_COOKIE_NAME) {
+      cookieToken = val;
+      break;
+    }
+  }
+  const headerToken = request.headers.get(CSRF_HEADER_NAME);
+
+  if (!cookieToken || !headerToken) {
+    return false;
+  }
+
+  // Constant-time comparison
+  if (cookieToken.length !== headerToken.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < cookieToken.length; i++) {
+    mismatch |= cookieToken.charCodeAt(i) ^ headerToken.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME };
+

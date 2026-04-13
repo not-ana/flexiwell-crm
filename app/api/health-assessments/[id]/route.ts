@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { HealthAssessment, User } from "@/lib/db/schemas";
+import type { HealthAssessment } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
 import { requireRole, getAuthUser } from "@/lib/auth";
-
-// Helper to get client ID from user
-async function getClientIdForUser(userId: string): Promise<string | null> {
-  const db = await getDatabase();
-  const user = await db.collection<User>("users").findOne({ _id: new ObjectId(userId) });
-  return user?.clientId || null;
-}
 
 // GET /api/health-assessments/[id] - Get a single health assessment
 export async function GET(
@@ -35,14 +28,6 @@ export async function GET(
 
     if (!assessment) {
       return NextResponse.json({ error: "Health assessment not found" }, { status: 404 });
-    }
-
-    // Clients can only view their own assessment
-    if (user.role === "client") {
-      const clientId = await getClientIdForUser(user.userId);
-      if (assessment.clientId !== clientId) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
     }
 
     return NextResponse.json({ assessment });
@@ -80,22 +65,6 @@ export async function PUT(
 
     if (!existingAssessment) {
       return NextResponse.json({ error: "Health assessment not found" }, { status: 404 });
-    }
-
-    // Clients can only update their own assessment
-    if (user.role === "client") {
-      const clientId = await getClientIdForUser(user.userId);
-      if (existingAssessment.clientId !== clientId) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
-    }
-
-    // Clients can only update draft or requires_update assessments
-    if (user.role === "client" && !["draft", "requires_update"].includes(existingAssessment.status)) {
-      return NextResponse.json(
-        { error: "Cannot edit a submitted assessment. Request an update from admin." },
-        { status: 403 }
-      );
     }
 
     const now = new Date();

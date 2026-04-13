@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { CheckCircleIcon, ChevronIcon } from "@/components/icons";
-import { WhatsAppSettings } from "./WhatsAppSettings";
 import { api } from "@/lib/api/client";
 import { DataImportUploader } from "@/components/import/DataImportUploader";
+import type { ImportResult } from "@/components/import/DataImportUploader";
 import { platformConfigs, classHistoryConfigs } from "@/lib/config/import-platforms";
+import type { PlatformConfig } from "@/lib/config/import-platforms";
 import { authFetch } from "@/lib/api/auth-fetch";
 
 interface IntegrationStatus {
@@ -38,6 +39,81 @@ const colorClasses: Record<string, string> = {
   orange: "bg-orange-100 text-orange-600",
 };
 
+function ImportTabs({
+  config,
+  classHistoryConfig,
+  selectedPlatform,
+  onPlatformChange,
+  onImport,
+  onClassHistoryImport,
+}: {
+  config: PlatformConfig;
+  classHistoryConfig: PlatformConfig;
+  selectedPlatform: string;
+  onPlatformChange: (platform: string) => void;
+  onImport: (data: Record<string, string>[]) => Promise<ImportResult | void>;
+  onClassHistoryImport: (data: Record<string, string>[]) => Promise<ImportResult | void>;
+}) {
+  const [activeTab, setActiveTab] = useState<"clients" | "class-history">("clients");
+
+  const currentConfig = activeTab === "clients" ? config : classHistoryConfig;
+  const currentHandler = activeTab === "clients" ? onImport : onClassHistoryImport;
+
+  return (
+    <div>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("clients")}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            activeTab === "clients"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Client Data
+        </button>
+        <button
+          onClick={() => setActiveTab("class-history")}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            activeTab === "class-history"
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Class History
+        </button>
+      </div>
+
+      <DataImportUploader
+        key={activeTab}
+        platform={currentConfig.name}
+        description={currentConfig.description}
+        templateUrl={currentConfig.templateUrl}
+        fields={currentConfig.fields}
+        onImport={currentHandler}
+        platformSelector={
+          <div>
+            <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
+              Where is your data coming from?
+            </label>
+            <select
+              id="platform-select"
+              value={selectedPlatform}
+              onChange={(e) => onPlatformChange(e.target.value)}
+              className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              {Object.entries(platformConfigs).map(([key, cfg]) => (
+                <option key={key} value={key}>{cfg.name}</option>
+              ))}
+            </select>
+          </div>
+        }
+      />
+    </div>
+  );
+}
+
 export function IntegrationsSettings() {
   const [integrationStatus, setIntegrationStatus] = useState<Record<string, IntegrationStatus>>({});
   const [loading, setLoading] = useState(true);
@@ -65,11 +141,6 @@ export function IntegrationsSettings() {
       return;
     }
 
-    // For API integrations with dedicated settings pages, navigate to them
-    if (integration.id === "whatsapp") {
-      setActiveSettingsView(integration.id);
-      return;
-    }
     // For other integrations, you could open a modal or redirect
   };
 
@@ -130,19 +201,12 @@ export function IntegrationsSettings() {
 
   const renderIntegrationSettings = (integrationId: string) => {
     switch (integrationId) {
-      case "whatsapp":
-        return <WhatsAppSettings />;
       case "stripe":
         return <StripeSettingsInline />;
       default:
         return <GenericIntegrationSettings name={allIntegrations.find(i => i.id === integrationId)?.name || ""} />;
     }
   };
-
-  // Render full-page settings views
-  if (activeSettingsView === "whatsapp") {
-    return <WhatsAppSettings onBack={handleBackFromSettings} />;
-  }
 
   if (loading) {
     return (
@@ -173,40 +237,15 @@ export function IntegrationsSettings() {
         </p>
       </div>
 
-      {/* Data Import Section */}
+      {/* Import Section — single card with tabs */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <DataImportUploader
-          platform={config.name}
-          description={config.description}
-          templateUrl={config.templateUrl}
-          fields={config.fields}
+        <ImportTabs
+          config={config}
+          classHistoryConfig={classHistoryConfig}
+          selectedPlatform={selectedPlatform}
+          onPlatformChange={(p) => setSelectedPlatform(p as keyof typeof platformConfigs)}
           onImport={handleImport}
-          platformSelector={
-            <div>
-              <label htmlFor="platform-select" className="block text-sm font-medium text-gray-900 mb-2">
-                Where is your data coming from?
-              </label>
-              <select
-                id="platform-select"
-                value={selectedPlatform}
-                onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
-                className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="mindbody">Mindbody</option>
-              </select>
-            </div>
-          }
-        />
-      </div>
-
-      {/* Class History Import Section */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-        <DataImportUploader
-          platform={classHistoryConfig.name}
-          description={classHistoryConfig.description}
-          templateUrl={classHistoryConfig.templateUrl}
-          fields={classHistoryConfig.fields}
-          onImport={handleClassHistoryImport}
+          onClassHistoryImport={handleClassHistoryImport}
         />
       </div>
 

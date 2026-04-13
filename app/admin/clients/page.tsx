@@ -763,7 +763,9 @@ function ImportModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose:
                   onChange={(e) => setSelectedPlatform(e.target.value as keyof typeof platformConfigs)}
                   className="block w-full lg:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="mindbody">Mindbody</option>
+                  {Object.entries(platformConfigs).map(([key, config]) => (
+                    <option key={key} value={key}>{config.name}</option>
+                  ))}
                 </select>
               </div>
             }
@@ -1051,7 +1053,7 @@ export default function AdminClientsPage() {
               <p className="text-sm text-amber-800">{channelWarning}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <a href="/admin/settings?tab=sms-bot" className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
+              <a href="/admin/settings?tab=notifications" className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
                 Go to Settings
               </a>
               <button onClick={() => setChannelWarning("")} className="p-1 text-amber-400 hover:text-amber-600">

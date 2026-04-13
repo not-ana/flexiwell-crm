@@ -17,6 +17,12 @@ function getResend(): Resend {
 // Default from email (should be configured in environment)
 const DEFAULT_FROM = process.env.EMAIL_FROM || "FlexiWell <noreply@flexiwell.com>";
 
+export interface EmailAttachment {
+  filename: string;
+  content: string; // base64-encoded
+  contentType?: string;
+}
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -24,6 +30,7 @@ export interface EmailOptions {
   text?: string;
   from?: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface EmailResult {
@@ -35,7 +42,7 @@ export interface EmailResult {
 // Send a single email
 export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   try {
-    const { to, subject, html, text, from, replyTo } = options;
+    const { to, subject, html, text, from, replyTo, attachments } = options;
 
     const { data, error } = await getResend().emails.send({
       from: from || DEFAULT_FROM,
@@ -44,6 +51,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       html,
       text: text || stripHtml(html),
       replyTo,
+      ...(attachments && attachments.length > 0
+        ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.content })) }
+        : {}),
     });
 
     if (error) {

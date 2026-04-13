@@ -33,7 +33,7 @@ interface ClassEvent {
   type: string;
   start: Date;
   end: Date;
-  color: "purple" | "green" | "blue" | "orange" | "pink";
+  color: string;
   status: ClassStatus;
   room: string;
   unit: string;
@@ -42,13 +42,16 @@ interface ClassEvent {
   students: Student[];
 }
 
-const colorStyles: Record<ClassEvent["color"], { bg: string; border: string; text: string }> = {
+const colorStyles: Record<string, { bg: string; border: string; text: string }> = {
   purple: { bg: "bg-purple-50", border: "border-l-purple-500", text: "text-purple-700" },
   green: { bg: "bg-green-50", border: "border-l-green-500", text: "text-green-700" },
   blue: { bg: "bg-blue-50", border: "border-l-blue-500", text: "text-blue-700" },
   orange: { bg: "bg-orange-50", border: "border-l-orange-500", text: "text-orange-700" },
   pink: { bg: "bg-pink-50", border: "border-l-pink-500", text: "text-pink-700" },
+  gray: { bg: "bg-gray-50", border: "border-l-gray-500", text: "text-gray-700" },
 };
+
+const defaultColorStyle = colorStyles.gray;
 
 const statusStyles: Record<ClassStatus, { bg: string; text: string; label: string }> = {
   scheduled: { bg: "bg-blue-100", text: "text-blue-700", label: "Scheduled" },
@@ -244,7 +247,7 @@ function WeekView({ events, selectedDate, onEventClick, selectedEventId, onDayCl
                   const startHour = event.start.getHours() + event.start.getMinutes() / 60;
                   const endHour = event.end.getHours() + event.end.getMinutes() / 60;
                   const style = { top: `${(startHour - 7) * 48}px`, height: `${Math.max((endHour - startHour) * 48, 24)}px` };
-                  const colors = colorStyles[event.color];
+                  const colors = colorStyles[event.color] || defaultColorStyle;
                   const fillPct = event.capacity > 0 ? (event.enrolled / event.capacity) : 1;
                   const isLowFill = fillPct < 0.5 && event.status === "scheduled";
                   const isFull = event.enrolled >= event.capacity && event.status === "scheduled";
@@ -315,7 +318,7 @@ function WeekView({ events, selectedDate, onEventClick, selectedEventId, onDayCl
           <div className="absolute top-0 left-14 right-0">
             {selectedDayEvents.map((event) => {
               const style = getEventStyleMobile(event);
-              const colors = colorStyles[event.color];
+              const colors = colorStyles[event.color] || defaultColorStyle;
               const fillPct = event.capacity > 0 ? Math.round((event.enrolled / event.capacity) * 100) : 100;
               const isLowFill = fillPct < 50 && event.status === "scheduled";
               const isFull = event.enrolled >= event.capacity && event.status === "scheduled";
@@ -376,7 +379,7 @@ function DayView({ events, selectedDate, onEventClick, selectedEventId }: { even
         <div className="absolute left-16 right-0 top-0">
           {dayEvents.map((event) => {
             const style = getEventStyle(event);
-            const colors = colorStyles[event.color];
+            const colors = colorStyles[event.color] || defaultColorStyle;
             const statusStyle = statusStyles[event.status];
             const isSelected = event.id === selectedEventId;
             const fillPct = event.capacity > 0 ? Math.round((event.enrolled / event.capacity) * 100) : 100;
@@ -454,7 +457,7 @@ function MonthView({ events, selectedDate, onEventClick, selectedEventId, onDayC
                 </div>
                 <div className="space-y-1">
                   {dayEvents.slice(0, 3).map((event) => {
-                    const colors = colorStyles[event.color];
+                    const colors = colorStyles[event.color] || defaultColorStyle;
                     return (
                       <div
                         key={event.id}
@@ -523,7 +526,7 @@ function MonthView({ events, selectedDate, onEventClick, selectedEventId, onDayC
           {selectedDayEvents.length > 0 ? (
             <div className="space-y-2">
               {selectedDayEvents.map((event) => {
-                const colors = colorStyles[event.color];
+                const colors = colorStyles[event.color] || defaultColorStyle;
                 const fillPct = event.capacity > 0 ? Math.round((event.enrolled / event.capacity) * 100) : 100;
                 const isLowFill = fillPct < 50 && event.status === "scheduled";
                 const isFull = event.enrolled >= event.capacity && event.status === "scheduled";

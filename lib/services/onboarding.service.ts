@@ -699,46 +699,284 @@ export async function skipHealthAssessment(clientId: string) {
   return { action: "health_skipped_to_first_booking" };
 }
 
-// ── Win-Back (unchanged) ──────────────────────────────────────────────
+// ── Win-Back Campaign — 5-Step Automated Sequence ─────────────────────
+// Each step fires on a delay from campaign start. Messages are queued and
+// processed by the churn checkup cron. If the client re-books at any step
+// the sequence stops automatically.
+
+export interface WinBackStep {
+  step: number;
+  delayDays: number;
+  channel: "sms" | "email";
+  subject: string;
+  template: { en: string; pt: string };
+}
+
+const WIN_BACK_SEQUENCE: WinBackStep[] = [
+  {
+    step: 1,
+    delayDays: 0,
+    channel: "sms",
+    subject: "We miss you!",
+    template: {
+      en: "Hi {name}! It's been a while since your last class at {studio}. We saved your favorite spot — come back this week?",
+      pt: "Oi {name}! Faz um tempo desde sua última aula no {studio}. Guardamos seu lugar favorito — volta essa semana?",
+    },
+  },
+  {
+    step: 2,
+    delayDays: 3,
+    channel: "email",
+    subject: "Your studio misses you",
+    template: {
+      en: "Hi {name},\n\nWe noticed you haven't been to {studio} in a while. Your instructor {instructor} has some great classes coming up this week that match your usual schedule.\n\nHere's what's available:\n{upcomingClasses}\n\nWe'd love to see you back!",
+      pt: "Oi {name},\n\nNotamos que faz um tempo que você não vem ao {studio}. {instructor} tem ótimas aulas essa semana no seu horário de sempre.\n\nVeja o que está disponível:\n{upcomingClasses}\n\nAdoraríamos te ver de volta!",
+    },
+  },
+  {
+    step: 3,
+    delayDays: 7,
+    channel: "sms",
+    subject: "Special offer inside",
+    template: {
+      en: "Hi {name}, we want you back at {studio}! As a thank you for being part of our community, here's a complimentary class on us. Book anytime this week: {bookingUrl}",
+      pt: "Oi {name}, queremos você de volta no {studio}! Como agradecimento por fazer parte da nossa comunidade, aqui vai uma aula cortesia. Reserve quando quiser essa semana: {bookingUrl}",
+    },
+  },
+  {
+    step: 4,
+    delayDays: 14,
+    channel: "email",
+    subject: "We'd love your feedback",
+    template: {
+      en: "Hi {name},\n\nWe'd genuinely love to hear from you. Is there anything we could do better at {studio}? Your feedback helps us improve for everyone.\n\nIf something changed in your schedule, we have new class times that might work — including early mornings and weekends.\n\nReply to this email anytime. We read every response.\n\n— The {studio} team",
+      pt: "Oi {name},\n\nGostaríamos muito de ouvir você. Tem algo que poderíamos melhorar no {studio}? Seu feedback nos ajuda a melhorar para todos.\n\nSe sua agenda mudou, temos novos horários — incluindo manhãs e fins de semana.\n\nResponda este email quando quiser. Lemos todas as respostas.\n\n— Equipe {studio}",
+    },
+  },
+  {
+    step: 5,
+    delayDays: 21,
+    channel: "sms",
+    subject: "Last check-in",
+    template: {
+      en: "Hi {name}, just a final check-in from {studio}. We'd love to have you back anytime — your spot is always here. If you'd like to pause your plan instead of canceling, just reply PAUSE. 💛",
+      pt: "Oi {name}, último check-in do {studio}. Adoraríamos te ter de volta a qualquer momento — seu lugar está sempre aqui. Se quiser pausar seu plano em vez de cancelar, responda PAUSAR. 💛",
+    },
+  },
+];
 
 export async function sendWinBackCampaign(clientIds: string[]) {
   const db = await getDatabase();
-  const results: { sent: number; failed: number } = { sent: 0, failed: 0 };
+  const results: { sent: number; failed: number; sequencesCreated: number } = {
+    sent: 0, failed: 0, sequencesCreated: 0,
+  };
+
+  const now = new Date();
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   for (const id of clientIds) {
     try {
       const client = await db.collection("clients").findOne({ _id: new ObjectId(id) });
       if (!client) { results.failed++; continue; }
 
+      // Check if there's already an active win-back sequence
+      const existingSequence = await db.collection("win_back_sequences").findOne({
+        clientId: id,
+        status: "active",
+      });
+      if (existingSequence) { continue; } // Don't start a new one
+
+      const studioName = client.unit || "the studio";
+      const bookingUrl = `${baseUrl}/dashboard/classes`;
+
+      // Get their preferred instructor (most booked)
+      const topInstructor = await db.collection("bookings").aggregate([
+        { $match: { clientId: id, status: "completed" } },
+        { $group: { _id: "$instructorName", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ]).toArray();
+      const instructorName = topInstructor[0]?._id || "your instructor";
+
+      // Detect locale from client data
+      const locale = client.locale?.startsWith("pt") ? "pt" : "en";
+
+      // Create the sequence
+      const sequenceId = new ObjectId();
+      const steps = WIN_BACK_SEQUENCE.map((step) => {
+        const sendAt = new Date(now.getTime() + step.delayDays * 24 * 60 * 60 * 1000);
+        const message = step.template[locale as "en" | "pt"]
+          .replace(/\{name\}/g, client.name)
+          .replace(/\{studio\}/g, studioName)
+          .replace(/\{instructor\}/g, instructorName)
+          .replace(/\{bookingUrl\}/g, bookingUrl)
+          .replace(/\{upcomingClasses\}/g, "Check your dashboard for available classes");
+
+        return {
+          step: step.step,
+          channel: step.channel,
+          subject: step.subject,
+          message,
+          scheduledAt: sendAt,
+          status: step.step === 1 ? "sending" : "pending" as "sending" | "pending" | "sent" | "skipped",
+          sentAt: null as Date | null,
+        };
+      });
+
+      await db.collection("win_back_sequences").insertOne({
+        _id: sequenceId,
+        clientId: id,
+        clientName: client.name,
+        clientEmail: client.email,
+        clientPhone: client.phone,
+        status: "active",
+        currentStep: 1,
+        steps,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Send step 1 immediately
+      const firstStep = steps[0];
       await db.collection("client_messages").insertOne({
         clientId: id,
         clientName: client.name,
         type: "win_back",
-        channel: "email",
-        subject: "We miss you at " + (client.unit || "the studio"),
-        message: `Hi ${client.name}, we noticed you haven't been to class in a while. We'd love to have you back! Here's a special offer just for you.`,
+        sequenceId: sequenceId.toString(),
+        step: 1,
+        channel: firstStep.channel,
+        subject: firstStep.subject,
+        message: firstStep.message,
         status: "sent",
-        sentAt: new Date(),
-        createdAt: new Date(),
+        sentAt: now,
+        createdAt: now,
       });
 
-      await db.collection("clients").updateOne(
-        { _id: new ObjectId(id) },
+      // Mark step 1 as sent
+      await db.collection("win_back_sequences").updateOne(
+        { _id: sequenceId },
         {
           $set: {
-            lastChurnAlertSentAt: new Date(),
-            updatedAt: new Date(),
+            "steps.0.status": "sent",
+            "steps.0.sentAt": now,
+            updatedAt: now,
           },
         }
       );
 
+      await db.collection("clients").updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { lastChurnAlertSentAt: now, updatedAt: now } }
+      );
+
       results.sent++;
+      results.sequencesCreated++;
     } catch {
       results.failed++;
     }
   }
 
   return results;
+}
+
+/**
+ * Process pending win-back sequence steps. Call this from a cron job (e.g. daily).
+ * Skips the step if the client has booked a class since the sequence started.
+ */
+export async function processWinBackSequences() {
+  const db = await getDatabase();
+  const now = new Date();
+
+  const activeSequences = await db.collection("win_back_sequences").find({
+    status: "active",
+  }).toArray();
+
+  let processed = 0;
+  let skipped = 0;
+  let completed = 0;
+
+  for (const seq of activeSequences) {
+    // Check if client has re-booked since the sequence started
+    const recentBooking = await db.collection("bookings").findOne({
+      clientId: seq.clientId,
+      status: { $in: ["confirmed", "completed"] },
+      createdAt: { $gte: seq.createdAt },
+    });
+
+    if (recentBooking) {
+      // Client came back! Stop the sequence.
+      await db.collection("win_back_sequences").updateOne(
+        { _id: seq._id },
+        {
+          $set: {
+            status: "completed_success",
+            completedAt: now,
+            completionReason: "client_rebooked",
+            updatedAt: now,
+          },
+        }
+      );
+      completed++;
+      continue;
+    }
+
+    // Find next pending step that's due
+    for (const step of seq.steps) {
+      if (step.status !== "pending") continue;
+      if (new Date(step.scheduledAt) > now) continue;
+
+      // Send this step
+      await db.collection("client_messages").insertOne({
+        clientId: seq.clientId,
+        clientName: seq.clientName,
+        type: "win_back",
+        sequenceId: seq._id.toString(),
+        step: step.step,
+        channel: step.channel,
+        subject: step.subject,
+        message: step.message,
+        status: "sent",
+        sentAt: now,
+        createdAt: now,
+      });
+
+      // Update step status
+      const stepIndex = step.step - 1;
+      await db.collection("win_back_sequences").updateOne(
+        { _id: seq._id },
+        {
+          $set: {
+            [`steps.${stepIndex}.status`]: "sent",
+            [`steps.${stepIndex}.sentAt`]: now,
+            currentStep: step.step,
+            updatedAt: now,
+          },
+        }
+      );
+
+      processed++;
+      break; // Only process one step per run
+    }
+
+    // Check if all steps are sent → mark sequence complete
+    const updatedSeq = await db.collection("win_back_sequences").findOne({ _id: seq._id });
+    if (updatedSeq && updatedSeq.steps.every((s: { status: string }) => s.status === "sent" || s.status === "skipped")) {
+      await db.collection("win_back_sequences").updateOne(
+        { _id: seq._id },
+        {
+          $set: {
+            status: "completed",
+            completedAt: now,
+            completionReason: "all_steps_sent",
+            updatedAt: now,
+          },
+        }
+      );
+      completed++;
+    }
+  }
+
+  return { processed, skipped, completed, total: activeSequences.length };
 }
 
 // ── Milestones (unchanged) ─────────────────────────────────────────────

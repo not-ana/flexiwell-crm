@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRoleFromCookie } from "@/lib/auth/middleware";
 import type { Client, Booking, Class } from "@/lib/db/schemas";
 
 // POST /api/teacher/walk-in - Add a walk-in student to a class
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
+
     const body = await request.json();
     const { name, email, phone, classId } = body;
 

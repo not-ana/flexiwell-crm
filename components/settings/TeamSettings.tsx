@@ -15,7 +15,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "Admin" | "Teacher" | "Receptionist";
+  role: "Admin" | "Instructor" | "Receptionist";
   status: "Active" | "Pending";
 }
 
@@ -32,12 +32,12 @@ interface InviteFormData {
 const INITIAL_FORM_DATA: InviteFormData = {
   name: "",
   email: "",
-  role: "Teacher",
+  role: "Instructor",
 };
 
 const ROLE_OPTIONS = [
   { value: "Admin", label: "Admin" },
-  { value: "Teacher", label: "Teacher" },
+  { value: "Instructor", label: "Instructor" },
   { value: "Receptionist", label: "Receptionist" },
 ];
 
@@ -181,7 +181,7 @@ function getInitials(name: string): string {
 
 const roleBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {
   Admin: { bg: "bg-primary-100", text: "text-primary-700", label: "Admin" },
-  Teacher: { bg: "bg-green-100", text: "text-green-700", label: "Teacher" },
+  Instructor: { bg: "bg-green-100", text: "text-green-700", label: "Instructor" },
 };
 
 const teamStatusBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Client } from "@/lib/db/schemas";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 // GET /api/bot/clients - Get client info by phone/email/platform ID
 export async function GET(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const searchParams = request.nextUrl.searchParams;
     const phone = searchParams.get("phone");
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/bot/clients/link - Link platform ID to existing client
 export async function POST(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const body = await request.json();
     const { phone, email, platform, platformUserId } = body;

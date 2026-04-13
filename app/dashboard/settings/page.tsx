@@ -1426,21 +1426,6 @@ function NotificationSettings() {
           </button>
         </label>
 
-        <label className="flex items-center justify-between py-3">
-          <div>
-            <p className="text-sm font-medium text-gray-900">SMS notifications</p>
-            <p className="text-xs text-gray-500">Text message reminders before your classes</p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={prefs.sms}
-            onClick={() => setPrefs({ ...prefs, sms: !prefs.sms })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${prefs.sms ? "bg-primary-600" : "bg-gray-200"}`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prefs.sms ? "translate-x-6" : "translate-x-1"}`} />
-          </button>
-        </label>
       </div>
 
       <div className="flex justify-end">

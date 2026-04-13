@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/middleware";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { BotMenuCommand } from "@/lib/db/schemas";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 const DEFAULT_COMMANDS: BotMenuCommand[] = [
   { id: "1", trigger: "1", label: "My Classes", action: "MY_BOOKINGS", enabled: true, order: 1 },
@@ -13,6 +14,7 @@ const DEFAULT_COMMANDS: BotMenuCommand[] = [
 
 // GET - Load SMS bot commands
 export async function GET(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const { user, error } = requireAuth(request);
     if (error || !user) {
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest) {
 
 // POST - Save SMS bot commands
 export async function POST(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const { user, error } = requireAuth(request);
     if (error || !user) {

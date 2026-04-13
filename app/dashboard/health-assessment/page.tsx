@@ -129,7 +129,7 @@ export default function HealthAssessmentPage() {
             clientInfo={
               user
                 ? {
-                    clientId: user.clientId || user.id,
+                    clientId: user.id,
                     clientName: user.name,
                     clientEmail: user.email,
                   }
@@ -207,7 +207,7 @@ export default function HealthAssessmentPage() {
           clientInfo={
             user
               ? {
-                  clientId: user.clientId || user.id,
+                  clientId: user.id,
                   clientName: user.name,
                   clientEmail: user.email,
                 }

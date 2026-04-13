@@ -3,7 +3,8 @@ import { vi, afterEach } from 'vitest'
 
 // Mock environment variables
 process.env.MONGODB_URI = 'mongodb://localhost:27017/test'
-process.env.JWT_SECRET = 'test-secret-key'
+process.env.JWT_SECRET = 'test-secret-key-that-is-at-least-32-chars-long'
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-that-is-at-least-32-chars'
 process.env.NEXTAUTH_SECRET = 'test-nextauth-secret'
 
 // Mock Next.js router

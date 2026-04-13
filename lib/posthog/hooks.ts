@@ -47,7 +47,6 @@ export const FeatureFlags = {
   WHATSAPP_BOT: "whatsapp-bot",
   AI_SUPPORT: "ai-support",
   ADVANCED_REPORTS: "advanced-reports",
-  MULTI_LOCATION: "multi-location",
   WAITLIST_INTELLIGENCE: "waitlist-intelligence",
   WHITE_LABEL: "white-label",
 

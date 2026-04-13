@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
-import type { HealthAssessment, User } from "@/lib/db/schemas";
-import { ObjectId } from "mongodb";
+import type { HealthAssessment } from "@/lib/db/schemas";
 import { getAuthUser } from "@/lib/auth";
-
-// Helper to get client ID from user
-async function getClientIdForUser(userId: string): Promise<string | null> {
-  const db = await getDatabase();
-  const user = await db.collection<User>("users").findOne({ _id: new ObjectId(userId) });
-  return user?.clientId || null;
-}
 
 // GET /api/health-assessments/client/[clientId] - Get health assessment by client ID
 export async function GET(
@@ -23,14 +15,6 @@ export async function GET(
 
   try {
     const { clientId } = await params;
-
-    // Clients can only view their own assessment
-    if (user.role === "client") {
-      const userClientId = await getClientIdForUser(user.userId);
-      if (userClientId !== clientId) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
-    }
 
     const db = await getDatabase();
 

@@ -17,7 +17,7 @@ FlexiWell CRM is a comprehensive studio management platform that helps wellness 
 - **Client Management** - Complete client profiles, plans, and activity tracking
 - **Class Scheduling** - Calendar views (day, week, month) with drag-and-drop
 - **Payment Tracking** - Monitor subscriptions, pending payments, and billing history
-- **Staff Management** - Multi-location staff organization with role-based access
+- **Staff Management** - Team organization with role-based access
 - **Waitlist System** - Smart waitlist with priority tiers and auto-enrollment
 - **Integrations** - Connect with Wellhub, ClassPass, Stripe, Google Calendar, and more
 - **WhatsApp Bot** - Automated messaging and client communication
@@ -115,13 +115,6 @@ flexiwell-crm/
 ```
 
 ## Features in Detail
-
-### Multi-Location Support
-Manage multiple studio locations with:
-- Unified admin dashboard
-- Per-location staff assignment
-- Location-specific class schedules
-- Consolidated reporting
 
 ### Pricing Plans
 

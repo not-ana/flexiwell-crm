@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
+    const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
 
     // Get query params
     const { searchParams } = new URL(request.url);
@@ -33,26 +34,31 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .toArray();
 
-    // Get teacher's class IDs
-    const teacherClasses = await db.collection<Class>("classes")
-      .find({ instructorId: teacherId })
-      .project({ _id: 1 })
-      .toArray();
-    const teacherClassIds = teacherClasses.map(c => c._id?.toString());
+    // Admin sees all requests; teacher sees only their classes
+    let teacherRequests;
+    if (isAdmin) {
+      teacherRequests = requests;
+    } else {
+      const teacherClasses = await db.collection<Class>("classes")
+        .find({ instructorId: teacherId! })
+        .project({ _id: 1 })
+        .toArray();
+      const teacherClassIds = teacherClasses.map(c => c._id?.toString());
 
-    // Filter requests for this teacher's classes or with instructorId matching
-    const teacherRequests = requests.filter(r =>
-      teacherClassIds.includes(r.classId) ||
-      r.instructorId === teacherId ||
-      r.preferredInstructorId === teacherId
-    );
+      teacherRequests = requests.filter(r =>
+        teacherClassIds.includes(r.classId) ||
+        r.instructorId === teacherId ||
+        r.preferredInstructorId === teacherId
+      );
+    }
 
     // Also get no-show bookings that need makeup
+    const noShowFilter: Record<string, unknown> = { status: "no-show" };
+    if (!isAdmin && teacherId) {
+      noShowFilter.instructorId = teacherId;
+    }
     const noShowBookings = await db.collection<Booking>("bookings")
-      .find({
-        instructorId: teacherId,
-        status: "no-show"
-      })
+      .find(noShowFilter)
       .sort({ scheduledDate: -1 })
       .limit(20)
       .toArray();

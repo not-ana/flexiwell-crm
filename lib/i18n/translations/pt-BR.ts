@@ -70,11 +70,6 @@ export const ptBR = {
         description: "O Motor de Retencao — pare de perder clientes e lote seu estudio.",
         tagline: "O Motor de Retencao",
       },
-      scale: {
-        name: "Scale",
-        description: "Para estudios com multiplas unidades e franquias, tudo ilimitado.",
-        tagline: "Multiplas unidades",
-      },
     },
 
     // Features
@@ -104,7 +99,6 @@ export const ptBR = {
       revenueAnalyticsTooltip: "Dashboard completo de previsibilidade de fluxo de caixa",
       monthlyRevenueForecast: "Previsao de receita mensal",
       monthlyRevenueForecastTooltip: "Previsoes de receita de 30 dias baseadas em reservas",
-      multiLocationAnalytics: "Analise multi-unidade",
       dataExport: "Exportacao de dados",
       emailSupport: "Suporte por email",
       chatSupport: "Suporte por chat",
@@ -119,7 +113,6 @@ export const ptBR = {
     limits: {
       clients: "alunos",
       teamMembers: "membros da equipe",
-      locations: "unidades",
       storage: "armazenamento",
       unlimited: "ilimitado",
       msgsPerMonth: "msgs/mes",

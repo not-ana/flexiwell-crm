@@ -13,50 +13,23 @@ const flexiwellPlans = [
     yearlyPrice: 549,
     description: "The Retention Engine™ for established studios",
     limits: {
-      clients: 1000,
+      clients: "unlimited",
       staff: "unlimited",
-      locations: 3,
       storage: "100GB",
     },
     features: [
-      "Up to 1,000 clients",
-      "3 locations",
-      "SMS Bot (5,000 msgs/month)",
-      "AI Support Assistant (2,000 chats/mo)",
+      "Unlimited clients",
+      "Unlimited team members",
+      "SMS Bot (unlimited)",
+      "AI Support Assistant (unlimited)",
       "Client Health Score & churn alerts",
       "AI-powered smart waitlist",
       "White-label branding",
       "Cancellation predictions",
-      "Priority support (24h)",
+      "Priority support",
     ],
     highlight: true,
     badge: "Most Popular",
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    monthlyPrice: 0, // Custom pricing — contact sales
-    yearlyPrice: 0,
-    description: "For multi-location studios and franchises",
-    limits: {
-      clients: "unlimited",
-      staff: "unlimited",
-      locations: "unlimited",
-      storage: "500GB",
-    },
-    features: [
-      "Everything in Retention Pro, plus:",
-      "Unlimited clients",
-      "Unlimited locations",
-      "SMS Bot (unlimited)",
-      "AI Support Assistant (unlimited)",
-      "Custom waitlist & retention rules",
-      "Multi-location analytics",
-      "Complete API access",
-      "Dedicated account manager",
-      "Priority support (12h)",
-    ],
-    highlight: false,
   },
 ];
 
@@ -153,7 +126,7 @@ function ChangePlanModal({
 
         <div className="p-4 sm:p-6 overflow-y-auto">
           {/* Responsive grid for 2 plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 gap-y-6 items-stretch">
+          <div className="grid grid-cols-1 gap-5 gap-y-6 items-stretch max-w-md mx-auto">
             {flexiwellPlans.map((plan) => {
               const price = selectedCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
               const isCurrentPlan = currentPlanId === plan.id;
@@ -236,12 +209,6 @@ function ChangePlanModal({
                           <span className="font-semibold text-gray-900">
                             {plan.limits.staff === "unlimited" ? "∞" : plan.limits.staff}
                           </span> team
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500">📍</span>
-                        <span className="text-gray-600">
-                          <span className="font-semibold text-gray-900">{plan.limits.locations}</span> locations
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -545,8 +512,6 @@ export function SubscriptionSettings() {
       clientsLimit: 2000,
       staff: 8,
       staffLimit: "unlimited",
-      locations: 1,
-      locationsLimit: 5,
       storage: "12GB",
       storageLimit: "100GB",
     },
@@ -599,7 +564,7 @@ export function SubscriptionSettings() {
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-500">Clients</span>
@@ -629,20 +594,6 @@ export function SubscriptionSettings() {
               <div
                 className="h-full bg-primary-500 rounded-full"
                 style={{ width: `${usagePercentage(currentPlan.usage.staff, currentPlan.usage.staffLimit)}%` }}
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-500">Locations</span>
-              <span className="text-xs font-medium text-gray-700">
-                {currentPlan.usage.locations}/{currentPlan.usage.locationsLimit}
-              </span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary-500 rounded-full"
-                style={{ width: `${usagePercentage(currentPlan.usage.locations, currentPlan.usage.locationsLimit)}%` }}
               />
             </div>
           </div>

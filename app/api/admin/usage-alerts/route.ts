@@ -2,7 +2,6 @@
 // Returns alerts for messaging bot, AI chats, API calls, storage, and resource counts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDatabase } from "@/lib/db/mongodb";
 import { getUserPlan, getUsageStats } from "@/lib/plans/enforcement";
 import { plans } from "@/lib/plans/index";
 
@@ -45,7 +44,6 @@ export async function GET(request: NextRequest) {
     }> = [
       { type: "clients", label: "Active Clients", current: stats.clients, limitKey: "maxClients" },
       { type: "staff", label: "Team Members", current: stats.staff, limitKey: "maxStaff" },
-      { type: "locations", label: "Locations", current: stats.establishments, limitKey: "maxLocations" },
       { type: "storage", label: "Storage (MB)", current: stats.storageUsedMB, limitKey: "storageMB" },
     ];
 
@@ -117,7 +115,6 @@ export async function GET(request: NextRequest) {
       usage: {
         clients: { current: stats.clients, limit: plan.limits.maxClients === -1 ? "unlimited" : plan.limits.maxClients },
         staff: { current: stats.staff, limit: plan.limits.maxStaff === -1 ? "unlimited" : plan.limits.maxStaff },
-        locations: { current: stats.establishments, limit: plan.limits.maxLocations === -1 ? "unlimited" : plan.limits.maxLocations },
         storage: { current: stats.storageUsedMB, limit: plan.limits.storageMB === -1 ? "unlimited" : plan.limits.storageMB },
         messagingBotMessages: { current: stats.messagingBotMessages, limit: plan.usageLimits?.messagingBotMessages === -1 ? "unlimited" : (plan.usageLimits?.messagingBotMessages ?? 0) },
         aiChats: { current: stats.aiChats, limit: plan.usageLimits?.aiChats === -1 ? "unlimited" : (plan.usageLimits?.aiChats ?? 0) },

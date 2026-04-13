@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
+    const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
+
+    // Build instructor filter — admin sees all, teacher sees own
+    const instructorFilter: Record<string, unknown> = {};
+    if (!isAdmin && teacherId) {
+      instructorFilter.instructorId = teacherId;
+    }
 
     // Get date ranges
     const today = new Date();
@@ -25,10 +32,10 @@ export async function GET(request: NextRequest) {
     weekEnd.setDate(weekEnd.getDate() + 7);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // Get teacher's classes for today
+    // Get classes for today
     const todayClasses = await db.collection<Class>("classes")
       .find({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: today, $lt: tomorrow }
       })
       .sort({ startTime: 1 })
@@ -37,7 +44,7 @@ export async function GET(request: NextRequest) {
     // Get upcoming classes (next 7 days excluding today)
     const upcomingClasses = await db.collection<Class>("classes")
       .find({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: tomorrow, $lt: weekEnd },
         status: "scheduled"
       })
@@ -48,7 +55,7 @@ export async function GET(request: NextRequest) {
     // Get this month's bookings for stats
     const monthBookings = await db.collection<Booking>("bookings")
       .find({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: monthStart }
       })
       .toArray();
@@ -56,14 +63,14 @@ export async function GET(request: NextRequest) {
     // Get completed classes this month
     const completedClasses = await db.collection<Class>("classes")
       .countDocuments({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: monthStart },
         status: "completed"
       });
 
     const totalClassesMonth = await db.collection<Class>("classes")
       .countDocuments({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: monthStart }
       });
 
@@ -81,7 +88,7 @@ export async function GET(request: NextRequest) {
       .aggregate([
         {
           $match: {
-            instructorId: teacherId,
+            ...instructorFilter,
             scheduledDate: { $gte: monthStart },
             status: "completed"
           }
@@ -104,11 +111,13 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
 
-    // Filter makeup requests related to this teacher's classes
-    const teacherClassIds = todayClasses.map(c => c._id?.toString());
-    const pendingMakeups = makeupRequests.filter(r =>
-      teacherClassIds.includes(r.classId) || r.instructorId === teacherId
-    );
+    // Filter makeup requests — admin sees all, teacher sees own classes
+    const pendingMakeups = isAdmin
+      ? makeupRequests
+      : makeupRequests.filter(r => {
+          const teacherClassIds = todayClasses.map(c => c._id?.toString());
+          return teacherClassIds.includes(r.classId) || r.instructorId === teacherId;
+        });
 
     // Get weekly class data
     const weeklyData = [];
@@ -120,7 +129,7 @@ export async function GET(request: NextRequest) {
 
       const dayClasses = await db.collection<Class>("classes")
         .find({
-          instructorId: teacherId,
+          ...instructorFilter,
           scheduledDate: { $gte: dayStart, $lt: dayEnd }
         })
         .toArray();
@@ -139,7 +148,7 @@ export async function GET(request: NextRequest) {
       .aggregate([
         {
           $match: {
-            instructorId: teacherId,
+            ...instructorFilter,
             scheduledDate: { $gte: monthStart }
           }
         },
@@ -170,7 +179,7 @@ export async function GET(request: NextRequest) {
     // Get student attendance data (students from recent classes)
     const recentBookings = await db.collection<Booking>("bookings")
       .find({
-        instructorId: teacherId,
+        ...instructorFilter,
         scheduledDate: { $gte: monthStart }
       })
       .toArray();
@@ -284,20 +293,23 @@ export async function GET(request: NextRequest) {
       status: r.status as "pending" | "scheduled" | "completed"
     }));
 
-    // Get teacher's rating from staff collection
-    const teacher = await db.collection<Staff>("staff").findOne({
-      $or: [
-        { _id: new ObjectId(teacherId) },
-        { email: user.email }
-      ]
-    });
+    // Get teacher's rating from staff collection (skip for admin)
+    const teacher = !isAdmin && teacherId
+      ? await db.collection<Staff>("staff").findOne({
+          $or: [
+            { _id: new ObjectId(teacherId) },
+            { email: user.email }
+          ]
+        })
+      : null;
 
-    // Get recent reviews for this teacher
+    // Get recent reviews (teacher sees own, admin sees all)
+    const reviewFilter: Record<string, unknown> = { status: "approved" };
+    if (!isAdmin && teacherId) {
+      reviewFilter.staffId = teacherId;
+    }
     const recentReviews = await db.collection<Review>("reviews")
-      .find({
-        staffId: teacherId,
-        status: "approved"
-      })
+      .find(reviewFilter)
       .sort({ createdAt: -1 })
       .limit(5)
       .toArray();

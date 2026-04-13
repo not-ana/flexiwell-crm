@@ -19,7 +19,7 @@ export interface RegionalStripePriceIds {
 
 // Map plan tiers to Stripe Price IDs by currency
 // IMPORTANT: Replace these with your actual Stripe Price IDs after creating products
-// 2 plans: Retention Pro, Scale
+// Single plan: Retention Pro
 // USD prices and BRL prices are separate products in Stripe
 export const stripePlanPriceIds: Record<PlanTier, RegionalStripePriceIds> = {
   retention_pro: {
@@ -32,16 +32,6 @@ export const stripePlanPriceIds: Record<PlanTier, RegionalStripePriceIds> = {
       annual: process.env.STRIPE_PRICE_RETENTION_PRO_ANNUAL_BRL || "price_retention_pro_annual_brl",
     },
   },
-  scale: {
-    USD: {
-      monthly: process.env.STRIPE_PRICE_SCALE_MONTHLY_USD || "price_scale_monthly_usd",
-      annual: process.env.STRIPE_PRICE_SCALE_ANNUAL_USD || "price_scale_annual_usd",
-    },
-    BRL: {
-      monthly: process.env.STRIPE_PRICE_SCALE_MONTHLY_BRL || "price_scale_monthly_brl",
-      annual: process.env.STRIPE_PRICE_SCALE_ANNUAL_BRL || "price_scale_annual_brl",
-    },
-  },
 };
 
 // Map add-ons to Stripe Price IDs
@@ -49,7 +39,6 @@ export const stripeAddOnPriceIds: Record<string, string> = {
   extra_whatsapp_msgs: process.env.STRIPE_PRICE_ADDON_WHATSAPP || "price_addon_whatsapp",
   extra_ai_chats: process.env.STRIPE_PRICE_ADDON_AI || "price_addon_ai",
   sms_bundle: process.env.STRIPE_PRICE_ADDON_SMS || "price_addon_sms",
-  additional_location: process.env.STRIPE_PRICE_ADDON_LOCATION || "price_addon_location",
   additional_storage: process.env.STRIPE_PRICE_ADDON_STORAGE || "price_addon_storage",
   migration_service: process.env.STRIPE_PRICE_ADDON_MIGRATION || "price_addon_migration",
 };
@@ -76,24 +65,16 @@ export function getStripeAddOnPriceId(addOnId: string): string | null {
   return stripeAddOnPriceIds[addOnId] || null;
 }
 
-// Plan tier ordering for upgrade/downgrade logic
-export const planTierOrder: PlanTier[] = [
-  "retention_pro",
-  "scale",
-];
+// Plan tier ordering (single plan)
+export const planTierOrder: PlanTier[] = ["retention_pro"];
 
-// Check if changing from one plan to another is an upgrade
-export function isUpgrade(fromTier: PlanTier, toTier: PlanTier): boolean {
-  const fromIndex = planTierOrder.indexOf(fromTier);
-  const toIndex = planTierOrder.indexOf(toTier);
-  return toIndex > fromIndex;
+// Single plan — no upgrade/downgrade transitions
+export function isUpgrade(): boolean {
+  return false;
 }
 
-// Check if changing from one plan to another is a downgrade
-export function isDowngrade(fromTier: PlanTier, toTier: PlanTier): boolean {
-  const fromIndex = planTierOrder.indexOf(fromTier);
-  const toIndex = planTierOrder.indexOf(toTier);
-  return toIndex < fromIndex;
+export function isDowngrade(): boolean {
+  return false;
 }
 
 // Trial configuration for Stripe

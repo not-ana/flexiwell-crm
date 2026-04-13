@@ -12,18 +12,23 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
+    const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
 
     // Get query params
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const status = searchParams.get("status");
+    const instructorFilter = searchParams.get("instructorId");
 
-    // Build filter
-    const filter: Record<string, unknown> = {
-      instructorId: teacherId
-    };
+    // Build filter — admin sees all classes (optionally filtered), teacher sees own
+    const filter: Record<string, unknown> = {};
+    if (isAdmin && instructorFilter) {
+      filter.instructorId = instructorFilter;
+    } else if (!isAdmin && teacherId) {
+      filter.instructorId = teacherId;
+    }
 
     if (startDate && endDate) {
       filter.scheduledDate = {
@@ -157,7 +162,7 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { title, type, scheduledDate, startTime, endTime, maxCapacity, location, description, establishmentId, roomId } = body;
+    const { title, type, scheduledDate, startTime, endTime, maxCapacity, location, description, establishmentId, roomId, instructorId: assignedInstructorId } = body;
 
     // Validate required fields
     if (!title || !type || !scheduledDate || !startTime || !endTime) {
@@ -168,11 +173,21 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDatabase();
-    const staffId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
 
-    // Get teacher's name
-    const teacher = await db.collection("users").findOne({ _id: new ObjectId(user.userId) });
-    const teacherName = teacher?.name || "Unknown Instructor";
+    // Admin can assign a different instructor; teacher creates for themselves
+    let staffId: string;
+    let teacherName: string;
+
+    if (isAdmin && assignedInstructorId) {
+      staffId = assignedInstructorId;
+      const instructor = await db.collection("users").findOne({ staffId: assignedInstructorId });
+      teacherName = instructor?.name || "Unknown Instructor";
+    } else {
+      staffId = await resolveStaffId(user.userId);
+      const teacher = await db.collection("users").findOne({ _id: new ObjectId(user.userId) });
+      teacherName = teacher?.name || "Unknown Instructor";
+    }
 
     // Calculate duration
     const [startH, startM] = startTime.split(":").map(Number);
@@ -236,13 +251,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const db = await getDatabase();
-    const staffId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
 
-    // Verify teacher owns this class
-    const existingClass = await db.collection<Class>("classes").findOne({
-      _id: new ObjectId(classId),
-      instructorId: staffId
-    });
+    // Admin can update any class; teacher must own it
+    const classFilter: Record<string, unknown> = { _id: new ObjectId(classId) };
+    if (!isAdmin) {
+      const staffId = await resolveStaffId(user.userId);
+      classFilter.instructorId = staffId;
+    }
+
+    const existingClass = await db.collection<Class>("classes").findOne(classFilter);
 
     if (!existingClass) {
       return NextResponse.json(

@@ -7,6 +7,8 @@ import {
   generateTokenPair,
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
+import { logAuditEvent, getClientIp } from "@/lib/security";
+import { isOperatorEmail } from "@/lib/auth/operator";
 
 // POST /api/auth/refresh - Refresh access token
 export async function POST(request: NextRequest) {
@@ -43,6 +45,22 @@ export async function POST(request: NextRequest) {
       });
 
     if (!storedToken) {
+      // Possible token reuse attack — the token was valid JWT but not in DB.
+      // Someone may have stolen a previously-rotated token.
+      // Invalidate ALL refresh tokens for this user as a safety measure.
+      await db
+        .collection<RefreshToken>("refresh_tokens")
+        .deleteMany({ userId: decoded.userId });
+
+      const clientIp = getClientIp(request);
+      await logAuditEvent({
+        type: "token_reuse_detected",
+        userId: decoded.userId,
+        ip: clientIp,
+        userAgent: request.headers.get("user-agent") || undefined,
+        metadata: { action: "all_sessions_revoked" },
+      }, db);
+
       return NextResponse.json(
         { error: "Invalid or expired refresh token" },
         { status: 401 }
@@ -75,6 +93,7 @@ export async function POST(request: NextRequest) {
       role: user.role,
       name: user.name,
       establishmentId: user.establishmentId,
+      isOperator: user.isOperator || isOperatorEmail(user.email),
     });
 
     // Delete old refresh token

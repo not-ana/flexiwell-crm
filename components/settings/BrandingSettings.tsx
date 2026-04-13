@@ -5,7 +5,7 @@ import { Button } from "@/components/ui";
 import { getStoredTokens } from "@/lib/api/client";
 import { showToast } from "./shared";
 
-const ALLOWED_PLANS = ["retention_pro", "scale"];
+const ALLOWED_PLANS = ["retention_pro"];
 
 interface BrandingSettingsProps {
   onNavigate?: (tab: string) => void;
@@ -185,7 +185,7 @@ export function BrandingSettings({ onNavigate }: BrandingSettingsProps) {
             <div className="flex-1">
               <h3 className="text-base font-semibold text-gray-900">Upgrade to Retention Pro</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Branding customization is available on Retention Pro and Scale plans. Upgrade to customize your logo, colors, and more.
+                Branding customization is available on the Retention Pro plan. Upgrade to customize your logo, colors, and more.
               </p>
               <button
                 type="button"

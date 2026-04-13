@@ -18,7 +18,7 @@ function MenuIcon({ className }: { className?: string }) {
   );
 }
 
-export default function ResponsiveLayout({ children, variant = "client", notificationCount = 0 }: ResponsiveLayoutProps) {
+export default function ResponsiveLayout({ children, variant = "admin", notificationCount = 0 }: ResponsiveLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (

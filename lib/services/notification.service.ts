@@ -7,6 +7,7 @@ import { formatPhoneForWhatsApp } from "@/lib/utils/phone";
 import { formatDateBR } from "@/lib/utils/date";
 import type { Client, Booking, Class } from "@/lib/db/schemas";
 import { SMS_TEMPLATES } from "@/lib/services/notifications/templates/sms-templates";
+import { buildIcsAttachment } from "@/lib/calendar/ics";
 
 // ============================================
 // Types
@@ -580,11 +581,23 @@ export class NotificationService {
 
       const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
+      // Optional .ics calendar invite — populated by booking_confirmation /
+      // booking_reminder paths via the data payload's `_icsAttachment` field.
+      // This is how we replace SMS reminders: the calendar invite drops the
+      // class onto the client's phone and the phone's own native reminder
+      // fires 24h and 1h before. No SMS, no PWA, no extra infrastructure.
+      const icsAttachment = (data as Record<string, unknown>)._icsAttachment as
+        | { filename: string; content: string }
+        | undefined;
+
       const result = await this.resend.emails.send({
         from: `${this.studioName} <${fromEmail}>`,
         to: email,
         subject,
         html,
+        ...(icsAttachment
+          ? { attachments: [{ filename: icsAttachment.filename, content: icsAttachment.content }] }
+          : {}),
       });
 
       if (result.error) {
@@ -862,6 +875,7 @@ export class NotificationService {
         endTime: classDoc.endTime,
         instructorName: classDoc.instructorName,
         roomName: classDoc.location || "",
+        _icsAttachment: buildBookingIcs(booking, classDoc, this.studioName),
       },
     });
   }
@@ -900,6 +914,7 @@ export class NotificationService {
         endTime: booking.endTime,
         instructorName: booking.instructorName,
         timeUntil,
+        _icsAttachment: buildBookingIcs(booking, null, this.studioName),
       },
     });
   }
@@ -1036,6 +1051,61 @@ export class NotificationService {
       },
       channels,
     });
+  }
+}
+
+// ----------------------------------------------------------------------------
+// .ics calendar invite builder
+// ----------------------------------------------------------------------------
+//
+// Combines a booking + (optional) class document into a calendar event the
+// client can drop straight into Google/Apple/Outlook. The calendar's own
+// native reminders then fire 24h and 1h before — no SMS needed.
+//
+// We accept a nullable Class because the booking_reminder code path doesn't
+// have the full class doc handy and the booking itself carries everything we
+// need (className, instructorName, scheduledDate, startTime, endTime).
+function buildBookingIcs(
+  booking: Booking,
+  classDoc: Class | null,
+  studioName: string,
+): { filename: string; content: string } | undefined {
+  try {
+    const dateSource = classDoc?.scheduledDate || booking.scheduledDate;
+    const startStr = classDoc?.startTime || booking.startTime;
+    const endStr = classDoc?.endTime || booking.endTime;
+    if (!dateSource || !startStr || !endStr) return undefined;
+
+    const [sh, sm] = startStr.split(":").map(Number);
+    const [eh, em] = endStr.split(":").map(Number);
+    if (Number.isNaN(sh) || Number.isNaN(sm) || Number.isNaN(eh) || Number.isNaN(em)) {
+      return undefined;
+    }
+
+    const start = new Date(dateSource);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(dateSource);
+    end.setHours(eh, em, 0, 0);
+
+    const title = classDoc?.title || booking.className || "Class";
+    const instructorName = classDoc?.instructorName || booking.instructorName || "";
+    const location = classDoc?.location || "";
+
+    return buildIcsAttachment(
+      {
+        uid: booking._id?.toString() || `${booking.clientId}-${start.getTime()}`,
+        title: `${title} @ ${studioName}`,
+        description: instructorName ? `With ${instructorName}` : undefined,
+        location: location || undefined,
+        start,
+        end,
+        organizerName: studioName,
+      },
+      "class.ics",
+    );
+  } catch (err) {
+    console.error("[ics] Failed to build booking calendar attachment:", err);
+    return undefined;
   }
 }
 

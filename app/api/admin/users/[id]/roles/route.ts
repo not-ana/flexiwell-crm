@@ -74,9 +74,9 @@ export async function POST(
     const body = await request.json();
     const { role } = body;
 
-    if (!role || !["admin", "teacher", "client"].includes(role)) {
+    if (!role || !["admin", "teacher"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, teacher, or client" },
+        { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
     }
@@ -146,9 +146,9 @@ export async function DELETE(
     const body = await request.json();
     const { role } = body;
 
-    if (!role || !["admin", "teacher", "client"].includes(role)) {
+    if (!role || !["admin", "teacher"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, teacher, or client" },
+        { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
     }

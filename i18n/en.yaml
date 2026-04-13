@@ -232,8 +232,6 @@ feature_ai_support:
   other: "AI Support"
 feature_chats_month:
   other: "chats/month"
-feature_whatsapp_bot:
-  other: "WhatsApp Bot"
 feature_sms_bot:
   other: "SMS Bot"
 feature_msgs_month:
@@ -294,8 +292,6 @@ compare_sms_notifications:
   other: "SMS Notifications"
 compare_whatsapp_notifications:
   other: "WhatsApp Notifications"
-compare_whatsapp_bot:
-  other: "WhatsApp Bot"
 compare_sms_bot:
   other: "SMS Bot"
 compare_ai_features:

@@ -509,14 +509,13 @@ export interface User {
   email: string;
   password: string; // hashed
   name: string;
-  role: "admin" | "teacher" | "client"; // Primary role
-  additionalRoles?: ("admin" | "teacher" | "client")[]; // Additional roles user can switch to
+  role: "admin" | "teacher"; // Primary role
+  additionalRoles?: ("admin" | "teacher")[]; // Additional roles user can switch to
   isOperator?: boolean; // FlexiWell staff — sees full UI (settings, integrations) regardless of role
   avatar?: string;
   phone?: string;
-  // Link to other entities based on role
-  staffId?: string; // For admin/teacher roles
-  clientId?: string; // For client role
+  // Link to staff record (for admin/teacher roles)
+  staffId?: string;
   establishmentId?: string; // Scopes data to a specific establishment
   isActive: boolean;
   lastLoginAt?: Date;
@@ -530,7 +529,7 @@ export interface User {
   subscriptionStatus?: "none" | "trialing" | "active" | "past_due" | "canceled";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  planTier?: "retention_pro" | "scale";
+  planTier?: "retention_pro";
   // Per-instance feature overrides — allows disabling specific features
   // on a per-client basis (e.g. negotiated on a sales call for a lower price)
   featureOverrides?: Partial<Record<string, boolean>>;

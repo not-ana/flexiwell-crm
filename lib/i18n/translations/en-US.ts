@@ -72,11 +72,6 @@ export const enUS: TranslationKeys = {
         description: "The Retention Engine™ — stop losing clients and fill your studio.",
         tagline: "The Retention Engine™",
       },
-      scale: {
-        name: "Scale",
-        description: "For multi-location studios and franchises with unlimited everything.",
-        tagline: "Multi-location mastery",
-      },
     },
 
     // Features
@@ -87,9 +82,8 @@ export const enUS: TranslationKeys = {
       emailReminders: "Email reminders",
       calendarSync: "Calendar sync",
       smsNotifications: "SMS notifications",
-      whatsappNotifications: "WhatsApp notifications",
-      messagingBot: "Messaging Bot",
-      messagingBotTooltip: "WhatsApp/SMS Bot - automated scheduling, confirmations, reminders",
+      retentionCopilot: "Retention Copilot",
+      retentionCopilotTooltip: "Drafts the right SMS for at-risk clients — you send it from your own phone in one tap",
       aiSupportAssistant: "AI Support Assistant",
       smartWaitlist: "Smart Waitlist",
       smartWaitlistTooltip: "AI-powered priority, auto-fill cancellations, reduce no-shows by 40%",
@@ -106,7 +100,6 @@ export const enUS: TranslationKeys = {
       revenueAnalyticsTooltip: "Full cash flow predictability dashboard",
       monthlyRevenueForecast: "Monthly revenue forecast",
       monthlyRevenueForecastTooltip: "30-day revenue predictions based on bookings",
-      multiLocationAnalytics: "Multi-location analytics",
       dataExport: "Data export",
       emailSupport: "Email support",
       chatSupport: "Chat support",
@@ -121,7 +114,6 @@ export const enUS: TranslationKeys = {
     limits: {
       clients: "clients",
       teamMembers: "team members",
-      locations: "locations",
       storage: "storage",
       unlimited: "unlimited",
       msgsPerMonth: "msgs/mo",
@@ -188,11 +180,11 @@ export const enUS: TranslationKeys = {
     },
   },
 
-  // Messaging Bot
+  // Retention Copilot (legacy key kept as `messaging` for backward compatibility)
   messaging: {
-    title: "Messaging Bot",
-    whatsappBot: "WhatsApp Bot",
-    smsBot: "SMS Bot",
+    title: "Retention Copilot",
+    whatsappBot: "Retention Copilot",
+    smsBot: "Retention Copilot",
 
     // Bot responses
     bot: {

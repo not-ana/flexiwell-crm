@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine if upgrade or downgrade
-    const upgrading = isUpgrade(currentPlanTier, newPlanTier);
-    const downgrading = isDowngrade(currentPlanTier, newPlanTier);
+    const upgrading = isUpgrade();
+    const downgrading = isDowngrade();
 
     // Get new price ID
     const newPriceId = getStripePriceId(newPlanTier, newBillingPeriod);

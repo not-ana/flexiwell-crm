@@ -395,9 +395,7 @@ function StudioDetailView({ detail }: { detail: StudioDetail }) {
             <span className={detail.integrations.stripe ? "text-green-700" : "text-gray-400"}>
               {detail.integrations.stripe ? "✓" : "○"} Stripe
             </span>
-            <span className={detail.integrations.smsBot ? "text-green-700" : "text-gray-400"}>
-              {detail.integrations.smsBot ? "✓" : "○"} SMS bot
-            </span>
+            {/* SMS bot hidden for v1 — see lib/features/sms-bot.ts */}
           </div>
         </div>
       </div>

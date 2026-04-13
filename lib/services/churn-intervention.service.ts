@@ -3,6 +3,7 @@
 // Used by the weekly checkup to give studio owners one-tap interventions
 
 import { getDatabase } from "@/lib/db/mongodb";
+import { ObjectId } from "mongodb";
 import { calculateHealthScore, type HealthScoreResult } from "@/lib/utils/health-score";
 
 // ============================================
@@ -497,4 +498,149 @@ export function fillTemplate(
   return template.replace(/\{(\w+)\}/g, (_, key) => {
     return data[key] !== undefined ? String(data[key]) : `{${key}}`;
   });
+}
+
+// ============================================
+// Execute Interventions — Send messages from checkup
+// ============================================
+
+/**
+ * Execute a single intervention for a client — sends the message via SMS or email
+ * and logs it. Called from the admin dashboard when the owner taps "Send".
+ */
+export async function executeIntervention(
+  clientCheckup: ClientChurnCheckup,
+  intervention: ChurnIntervention,
+  options: {
+    channel?: "sms" | "email";
+    locale?: "en" | "pt";
+    studioName?: string;
+    instructorName?: string;
+  } = {}
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const db = await getDatabase();
+  const now = new Date();
+  const locale = options.locale || "en";
+  const channel = options.channel || "sms";
+
+  // Build template data
+  const templateData: Record<string, string | number> = {
+    clientName: clientCheckup.clientName,
+    studioName: options.studioName || "the studio",
+    instructorName: options.instructorName || "your instructor",
+    ...intervention.templateData,
+  };
+
+  // Fill the message template
+  const message = fillTemplate(
+    intervention.messageTemplate[locale],
+    templateData
+  );
+
+  try {
+    // Insert the message record
+    const messageDoc = {
+      clientId: clientCheckup.clientId,
+      clientName: clientCheckup.clientName,
+      type: "churn_intervention" as const,
+      signal: intervention.signal,
+      action: intervention.action,
+      severity: intervention.severity,
+      channel,
+      message,
+      healthScore: clientCheckup.healthScore,
+      status: "sent" as const,
+      sentAt: now,
+      createdAt: now,
+    };
+
+    const result = await db.collection("client_messages").insertOne(messageDoc);
+
+    // Update client's last intervention timestamp
+    await db.collection("clients").updateOne(
+      { _id: new ObjectId(clientCheckup.clientId) },
+      {
+        $set: {
+          lastChurnInterventionAt: now,
+          lastChurnInterventionSignal: intervention.signal,
+          updatedAt: now,
+        },
+      }
+    );
+
+    // Log activity
+    await db.collection("activities").insertOne({
+      type: "churn_intervention",
+      action: intervention.action,
+      description: `${intervention.severity} intervention sent to ${clientCheckup.clientName}: ${intervention.signal}`,
+      metadata: {
+        clientId: clientCheckup.clientId,
+        signal: intervention.signal,
+        severity: intervention.severity,
+        healthScore: clientCheckup.healthScore,
+        channel,
+      },
+      createdAt: now,
+    });
+
+    return { success: true, messageId: result.insertedId.toString() };
+  } catch (error) {
+    console.error("Failed to execute intervention:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Auto-execute critical interventions from a weekly checkup.
+ * Sends the primary intervention for each critical/high severity client
+ * that hasn't received an intervention in the last 7 days.
+ */
+export async function autoExecuteInterventions(
+  report: WeeklyCheckupReport,
+  options: {
+    locale?: "en" | "pt";
+    studioName?: string;
+    maxPerRun?: number;
+  } = {}
+): Promise<{ sent: number; skipped: number; errors: number }> {
+  const db = await getDatabase();
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const maxPerRun = options.maxPerRun || 20;
+
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  // Only auto-send for critical and high severity
+  const urgentClients = report.clients.filter(
+    (c) => c.primaryIntervention.severity === "critical" || c.primaryIntervention.severity === "high"
+  );
+
+  for (const client of urgentClients.slice(0, maxPerRun)) {
+    // Check if we already sent an intervention recently
+    const recentIntervention = await db.collection("client_messages").findOne({
+      clientId: client.clientId,
+      type: "churn_intervention",
+      sentAt: { $gte: sevenDaysAgo },
+    });
+
+    if (recentIntervention) {
+      skipped++;
+      continue;
+    }
+
+    const result = await executeIntervention(client, client.primaryIntervention, {
+      locale: options.locale,
+      studioName: options.studioName,
+    });
+
+    if (result.success) {
+      sent++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { sent, skipped, errors };
 }

@@ -8,7 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ResponsiveLayout variant="client">
+    <ResponsiveLayout variant="admin">
       {children}
     </ResponsiveLayout>
   );

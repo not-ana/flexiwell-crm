@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRoleFromCookie } from "@/lib/auth/middleware";
 import type { Booking, Class, WaitlistEntry } from "@/lib/db/schemas";
 
 // GET /api/teacher/attendance - Get attendance for a class
 export async function GET(request: NextRequest) {
   try {
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const classId = searchParams.get("classId");
 
@@ -67,6 +71,9 @@ export async function GET(request: NextRequest) {
 // POST /api/teacher/attendance - Mark attendance for students
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
+
     const body = await request.json();
     const { classId, attendanceData } = body;
 

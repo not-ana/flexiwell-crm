@@ -19,7 +19,7 @@ export interface FlexiLaunchPackage {
       features: string[];
     };
     crm: {
-      planTier: "retention_pro" | "scale";
+      planTier: "retention_pro";
       freeMonths: number;
       setup: boolean; // white-glove setup
       training: boolean; // staff training
@@ -163,7 +163,7 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
   {
     id: "premium_bundle",
     name: "Premium Studio",
-    description: "Complete digital transformation for multi-location studios",
+    description: "Complete digital transformation for high-end studios",
     price: 9999,
     discountedPrice: 7999,
     badge: "White Label",
@@ -179,7 +179,6 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
         branding: true,
         features: [
           "Custom design system",
-          "Multi-location pages",
           "Advanced class filtering",
           "Instructor booking system",
           "E-commerce for merchandise",
@@ -195,7 +194,7 @@ export const flexiLaunchPackages: FlexiLaunchPackage[] = [
         ],
       },
       crm: {
-        planTier: "scale",
+        planTier: "retention_pro",
         freeMonths: 12,
         setup: true,
         training: true,

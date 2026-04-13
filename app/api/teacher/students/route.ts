@@ -12,11 +12,16 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = await getDatabase();
-    const teacherId = await resolveStaffId(user.userId);
+    const isAdmin = user.role === "admin";
+    const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
 
-    // Get all bookings for this teacher's classes
+    // Admin sees all bookings; teacher sees own classes
+    const bookingFilter: Record<string, unknown> = {};
+    if (!isAdmin && teacherId) {
+      bookingFilter.instructorId = teacherId;
+    }
     const bookings = await db.collection<Booking>("bookings")
-      .find({ instructorId: teacherId })
+      .find(bookingFilter)
       .toArray();
 
     // Get unique client IDs
@@ -68,12 +73,15 @@ export async function GET(request: NextRequest) {
 
     // Get upcoming classes for next class info
     const now = new Date();
+    const upcomingFilter: Record<string, unknown> = {
+      scheduledDate: { $gte: now },
+      status: { $in: ["confirmed", "pending"] }
+    };
+    if (!isAdmin && teacherId) {
+      upcomingFilter.instructorId = teacherId;
+    }
     const upcomingBookings = await db.collection<Booking>("bookings")
-      .find({
-        instructorId: teacherId,
-        scheduledDate: { $gte: now },
-        status: { $in: ["confirmed", "pending"] }
-      })
+      .find(upcomingFilter)
       .sort({ scheduledDate: 1 })
       .toArray();
 

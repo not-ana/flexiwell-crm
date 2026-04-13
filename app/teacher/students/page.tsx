@@ -692,7 +692,7 @@ function TeacherStudentsPageContent() {
       <div className="mb-6 sm:mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Students</h1>
-          <p className="text-sm text-gray-600 mt-1">Manage your students across all locations</p>
+          <p className="text-sm text-gray-600 mt-1">Manage your students</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -704,7 +704,7 @@ function TeacherStudentsPageContent() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Total Students</p>
           <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
@@ -723,10 +723,6 @@ function TeacherStudentsPageContent() {
             {atRiskStudents > 0 && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">{statusFilter === "inactive" ? "Showing" : "Follow up"}</span>}
           </div>
         </button>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-600">Locations</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{units.length}</p>
-        </div>
       </div>
 
       {/* At-Risk Alert Banner - only show when not already filtering inactive */}
@@ -812,7 +808,6 @@ function TeacherStudentsPageContent() {
 const addStudentPlans = [
   { id: "retention_pro_basic", name: "Basic", price: 49, classes: 8 },
   { id: "retention_pro", name: "Retention Pro", price: 99, classes: 16 },
-  { id: "scale", name: "Scale", price: 149, classes: -1 },
 ];
 
 function AddStudentModal({

@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
 import { generateTokenPair, getRefreshTokenExpiry, type JWTPayload } from "./jwt";
+import { isOperatorEmail } from "./operator";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { User, RefreshToken } from "@/lib/db/schemas";
 
@@ -236,18 +237,21 @@ export async function generateOAuthResponse(user: User): Promise<{
     avatar?: string;
     phone?: string;
     staffId?: string;
-    clientId?: string;
+    isOperator?: boolean;
   };
   tokens: { accessToken: string; refreshToken: string };
 }> {
   const db = await getDatabase();
   const userId = user._id!.toString();
 
+  const isOperator = user.isOperator || isOperatorEmail(user.email);
+
   const payload: JWTPayload = {
     userId,
     email: user.email,
     role: user.role,
     name: user.name,
+    isOperator,
   };
 
   const tokens = generateTokenPair(payload);
@@ -277,7 +281,7 @@ export async function generateOAuthResponse(user: User): Promise<{
       avatar: user.avatar,
       phone: user.phone,
       staffId: user.staffId,
-      clientId: user.clientId,
+      isOperator,
     },
     tokens,
   };

@@ -7,8 +7,17 @@ import {
   generateTokenPair,
   getRefreshTokenExpiry,
 } from "@/lib/auth/jwt";
-import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/security";
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  checkAccountLockout,
+  recordFailedLogin,
+  clearLockout,
+  logAuditEvent,
+} from "@/lib/security";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { isOperatorEmail } from "@/lib/auth/operator";
 
 export async function POST(request: NextRequest) {
   const clientIp = getClientIp(request);
@@ -43,13 +52,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
+
+    // Check account lockout before any DB work
+    const lockout = checkAccountLockout(normalizedEmail);
+    if (lockout.locked) {
+      const retryAfter = Math.ceil(((lockout.lockedUntilMs ?? Date.now()) - Date.now()) / 1000);
+      await logAuditEvent({
+        type: "login_locked",
+        email: normalizedEmail,
+        ip: clientIp,
+        userAgent: request.headers.get("user-agent") || undefined,
+      });
+      return NextResponse.json(
+        { error: "Account temporarily locked due to too many failed attempts. Try again later." },
+        { status: 423, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const db = await getDatabase();
 
     const user = await db
       .collection<User>("users")
-      .findOne({ email: email.toLowerCase() });
+      .findOne({ email: normalizedEmail });
 
     if (!user) {
+      recordFailedLogin(normalizedEmail);
+      await logAuditEvent({
+        type: "login_failed",
+        email: normalizedEmail,
+        ip: clientIp,
+        userAgent: request.headers.get("user-agent") || undefined,
+        metadata: { reason: "user_not_found" },
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -66,13 +101,26 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await verifyPassword(password, user.password);
 
     if (!isValidPassword) {
+      const result = recordFailedLogin(normalizedEmail);
+      await logAuditEvent({
+        type: "login_failed",
+        userId: user._id!.toString(),
+        email: normalizedEmail,
+        ip: clientIp,
+        userAgent: request.headers.get("user-agent") || undefined,
+        metadata: { reason: "invalid_password", remainingAttempts: result.remainingAttempts },
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
+    // Successful login — clear lockout
+    clearLockout(normalizedEmail);
+
     const userId = user._id!.toString();
+    const isOperator = user.isOperator || isOperatorEmail(user.email);
 
     const tokens = generateTokenPair({
       userId,
@@ -80,6 +128,7 @@ export async function POST(request: NextRequest) {
       role: user.role,
       name: user.name,
       establishmentId: user.establishmentId,
+      isOperator,
     });
 
     await db.collection<RefreshToken>("refresh_tokens").deleteMany({ userId });
@@ -96,6 +145,14 @@ export async function POST(request: NextRequest) {
       { $set: { lastLoginAt: new Date(), updatedAt: new Date() } }
     );
 
+    await logAuditEvent({
+      type: "login_success",
+      userId,
+      email: normalizedEmail,
+      ip: clientIp,
+      userAgent: request.headers.get("user-agent") || undefined,
+    }, db);
+
     const response = NextResponse.json({
       success: true,
       user: {
@@ -106,7 +163,7 @@ export async function POST(request: NextRequest) {
         phone: user.phone,
         avatar: user.avatar,
         staffId: user.staffId,
-        clientId: user.clientId,
+        isOperator,
       },
       tokens,
     });

@@ -16,7 +16,6 @@ export interface PlanCheckResult {
 export interface UsageStats {
   clients: number;
   staff: number;
-  establishments: number;
   messagingBotMessages: number;
   aiChats: number;
   apiCalls: number;
@@ -63,7 +62,7 @@ export async function getUserPlan(userId: string): Promise<PlanType> {
 export async function getUsageStats(userId: string): Promise<UsageStats> {
   const db = await getDatabase();
 
-  const [clientCount, staffCount, establishmentCount, usageDoc] = await Promise.all([
+  const [clientCount, staffCount, usageDoc] = await Promise.all([
     // Count clients
     db.collection("clients").countDocuments({ adminId: userId }),
     // Count staff
@@ -73,8 +72,6 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
         { establishmentId: { $in: await getEstablishmentIds(db, userId) } },
       ],
     }),
-    // Count establishments
-    db.collection("establishments").countDocuments({ ownerId: userId }),
     // Get usage tracking document
     db.collection("usage_tracking").findOne({ userId }),
   ]);
@@ -84,7 +81,6 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
   return {
     clients: clientCount,
     staff: staffCount,
-    establishments: establishmentCount,
     messagingBotMessages: usageDoc?.monthly?.[currentMonth]?.messagingBotMessages || 0,
     aiChats: usageDoc?.monthly?.[currentMonth]?.aiChats || 0,
     apiCalls: usageDoc?.monthly?.[currentMonth]?.apiCalls || 0,
@@ -93,7 +89,7 @@ export async function getUsageStats(userId: string): Promise<UsageStats> {
 }
 
 /**
- * Check if user can add more of a resource (clients, staff, locations)
+ * Check if user can add more of a resource (clients, staff)
  */
 export async function checkResourceLimit(
   userId: string,
@@ -117,9 +113,6 @@ export async function checkResourceLimit(
     case "maxStaff":
       currentCount = stats.staff;
       break;
-    case "maxLocations":
-      currentCount = stats.establishments;
-      break;
     case "storageMB":
       currentCount = stats.storageUsedMB;
       break;
@@ -128,15 +121,11 @@ export async function checkResourceLimit(
   }
 
   if (currentCount >= limit) {
-    // Find the next plan that would allow this
-    const upgradeRequired = findUpgradePlan(planId, resource, currentCount + 1);
-
     return {
       allowed: false,
-      reason: `You've reached your ${plan.name} plan limit of ${formatLimit(resource, limit)}. Upgrade to add more.`,
+      reason: `You've reached your ${plan.name} plan limit of ${formatLimit(resource, limit)}.`,
       currentCount,
       limit,
-      upgradeRequired,
     };
   }
 
@@ -180,13 +169,9 @@ export async function checkFeatureAccess(
     return { allowed: true };
   }
 
-  // Find the minimum plan that has this feature
-  const upgradeRequired = findMinimumPlanForFeature(feature);
-
   return {
     allowed: false,
-    reason: `The ${formatFeatureName(feature)} feature is not available on your ${plan.name} plan. Upgrade to ${plans[upgradeRequired].name} to access this feature.`,
-    upgradeRequired,
+    reason: `The ${formatFeatureName(feature)} feature is not available on your ${plan.name} plan.`,
   };
 }
 
@@ -236,7 +221,6 @@ export async function checkUsageLimit(
       reason: `This feature is not available on your ${plan.name} plan.`,
       currentCount: 0,
       limit: 0,
-      upgradeRequired: findMinimumPlanForUsage(type),
     };
   }
 
@@ -250,10 +234,9 @@ export async function checkUsageLimit(
   if (currentCount >= limit) {
     return {
       allowed: false,
-      reason: `You've reached your monthly limit of ${limit.toLocaleString()} ${formatUsageType(type)}. Upgrade for more.`,
+      reason: `You've reached your monthly limit of ${limit.toLocaleString()} ${formatUsageType(type)}.`,
       currentCount,
       limit,
-      upgradeRequired: findUpgradePlanForUsage(planId),
     };
   }
 
@@ -279,72 +262,12 @@ async function getEstablishmentIds(
   return establishments.map((e) => e._id.toString());
 }
 
-function findUpgradePlan(
-  currentPlan: PlanType,
-  resource: keyof PlanLimits,
-  needed: number
-): PlanType {
-  const planOrder: PlanType[] = ["retention_pro", "scale"];
-  const currentIndex = planOrder.indexOf(currentPlan);
-
-  for (let i = currentIndex + 1; i < planOrder.length; i++) {
-    const plan = plans[planOrder[i]];
-    const limit = plan.limits[resource];
-    if (limit === -1 || limit >= needed) {
-      return planOrder[i];
-    }
-  }
-
-  return "scale";
-}
-
-function findMinimumPlanForFeature(feature: keyof PlanFeatures): PlanType {
-  const planOrder: PlanType[] = ["retention_pro", "scale"];
-
-  for (const planId of planOrder) {
-    if (plans[planId].features[feature]) {
-      return planId;
-    }
-  }
-
-  return "scale";
-}
-
-function findMinimumPlanForUsage(type: string): PlanType {
-  const featureMap: Record<string, keyof PlanFeatures> = {
-    messagingBotMessages: "messagingBot",
-    aiChats: "aiSupportAssistant",
-    apiCalls: "apiAccess",
-  };
-
-  const feature = featureMap[type];
-  if (feature) {
-    return findMinimumPlanForFeature(feature);
-  }
-
-  return "retention_pro";
-}
-
-function findUpgradePlanForUsage(currentPlan: PlanType): PlanType {
-  const planOrder: PlanType[] = ["retention_pro", "scale"];
-  const currentIndex = planOrder.indexOf(currentPlan);
-
-  // Next plan in order, or professional if at business
-  if (currentIndex < planOrder.length - 1) {
-    return planOrder[currentIndex + 1];
-  }
-
-  return "scale";
-}
-
 function formatLimit(resource: keyof PlanLimits, limit: number): string {
   switch (resource) {
     case "maxClients":
       return `${limit} clients`;
     case "maxStaff":
       return `${limit} team members`;
-    case "maxLocations":
-      return `${limit} location${limit > 1 ? "s" : ""}`;
     case "storageMB":
       return limit >= 1024 ? `${Math.floor(limit / 1024)}GB` : `${limit}MB`;
     default:
@@ -363,7 +286,6 @@ function formatFeatureName(feature: keyof PlanFeatures): string {
     advancedReports: "Advanced Reports",
     cancellationPredictions: "Cancellation Predictions",
     apiAccess: "API Access",
-    multiLocation: "Multi-Location",
   };
 
   return names[feature] || feature;

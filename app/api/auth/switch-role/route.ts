@@ -3,6 +3,7 @@ import { getDatabase } from "@/lib/db/mongodb";
 import { verifyAccessToken, generateTokenPair, getRefreshTokenExpiry } from "@/lib/auth/jwt";
 import type { User, RefreshToken } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
+import { isOperatorEmail } from "@/lib/auth/operator";
 
 // POST /api/auth/switch-role - Switch to a different role
 export async function POST(request: NextRequest) {
@@ -22,9 +23,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { role } = body;
 
-    if (!role || !["admin", "teacher", "client"].includes(role)) {
+    if (!role || !["admin", "teacher"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, teacher, or client" },
+        { error: "Invalid role. Must be admin or teacher" },
         { status: 400 }
       );
     }
@@ -49,6 +50,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isOperator = user.isOperator || isOperatorEmail(user.email);
+
     // Generate new tokens with the new role
     const tokens = generateTokenPair({
       userId: payload.userId,
@@ -56,6 +59,7 @@ export async function POST(request: NextRequest) {
       role: role, // New role in token
       name: user.name,
       establishmentId: user.establishmentId,
+      isOperator,
     });
 
     // Store new refresh token
@@ -80,6 +84,7 @@ export async function POST(request: NextRequest) {
         availableRoles,
         avatar: user.avatar,
         phone: user.phone,
+        isOperator,
       },
       tokens,
     });

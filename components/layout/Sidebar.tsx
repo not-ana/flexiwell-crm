@@ -21,10 +21,9 @@ import {
   WaitlistIcon,
   UserIcon,
   GoogleIcon,
-  HeartPulseIcon,
 } from "@/components/icons";
 
-export type SidebarVariant = "client" | "admin" | "teacher";
+export type SidebarVariant = "admin" | "teacher";
 export type AccountType = "admin" | "teacher";
 
 interface Account {
@@ -61,17 +60,13 @@ export interface SidebarProps {
 
 // Menu configurations per role
 const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[] }> = {
-  client: {
-    main: [],
-    bottom: [],
-  },
   admin: {
     main: [
       { name: "Overview", href: "/admin", icon: DashboardIcon, onboardingId: "sidebar-dashboard" },
+      { name: "Schedule", href: "/admin/schedule", icon: ClassesIcon, onboardingId: "sidebar-schedule" },
       { name: "Clients", href: "/admin/clients", icon: ClientsIcon, onboardingId: "sidebar-clients" },
       { name: "Waitlist", href: "/admin/waitlist", icon: WaitlistIcon, onboardingId: "sidebar-waitlist" },
       { name: "Payments", href: "/admin/payments", icon: PaymentIcon, onboardingId: "sidebar-payments" },
-      { name: "Client Check-up", href: "/admin/client-checkup", icon: HeartPulseIcon, hasBadge: true },
     ],
     bottom: [
       { name: "Settings", href: "/admin/settings", icon: SettingsIcon, onboardingId: "sidebar-settings" },
@@ -92,9 +87,8 @@ const menuConfigs: Record<SidebarVariant, { main: MenuItem[]; bottom: MenuItem[]
 // getInitials moved to @/lib/utils/formatters
 
 const accountTypeStyles: Record<SidebarVariant, { bg: string; text: string; label: string }> = {
-  client: { bg: "bg-primary-50", text: "text-primary-700", label: "Client" },
   admin: { bg: "bg-primary-100", text: "text-primary-700", label: "Admin" },
-  teacher: { bg: "bg-primary-100", text: "text-primary-700", label: "Teacher" },
+  teacher: { bg: "bg-primary-100", text: "text-primary-700", label: "Instructor" },
 };
 
 function AccountTypeBadge({ type }: { type: SidebarVariant }) {
@@ -106,7 +100,7 @@ function AccountTypeBadge({ type }: { type: SidebarVariant }) {
   );
 }
 
-export default function Sidebar({ variant = "client", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
+export default function Sidebar({ variant = "admin", notificationCount = 0, isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -146,7 +140,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
     { id: "demo-admin", name: "Sarah Mitchell", email: "admin@flexiwell.com", initials: "SM", type: "admin" as AccountType, isActive: false },
     { id: "demo-admin-empty", name: "New Admin", email: "newadmin@flexiwell.com", initials: "NA", type: "admin" as AccountType, isActive: false },
     { id: "demo-teacher", name: "Emily Ferreira", email: "emily@flexiwell.com", initials: "EF", type: "teacher" as AccountType, isActive: false },
-    { id: "demo-teacher-empty", name: "New Teacher", email: "newteacher@flexiwell.com", initials: "NT", type: "teacher" as AccountType, isActive: false },
+    { id: "demo-teacher-empty", name: "New Instructor", email: "newteacher@flexiwell.com", initials: "NI", type: "teacher" as AccountType, isActive: false },
   ] as Account[]).filter(a => a.email !== activeAccount.email) : [];
 
   const accounts: Account[] = [activeAccount, ...demoAccounts];
@@ -168,7 +162,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
         const data = await res.json();
         if (res.ok && data.tokens) {
           storeTokens(data.tokens.accessToken, data.tokens.refreshToken);
-          const redirectPath = selectedAccount.type === "admin" ? "/admin" : selectedAccount.type === "teacher" ? "/teacher" : "/dashboard";
+          const redirectPath = selectedAccount.type === "admin" ? "/admin" : "/teacher";
           window.location.href = redirectPath;
         } else {
           console.error("Login failed:", data.error || res.status);
@@ -204,7 +198,7 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
         router.push("/admin");
         break;
       default:
-        router.push("/dashboard");
+        router.push("/teacher");
     }
   };
 
@@ -292,10 +286,13 @@ export default function Sidebar({ variant = "client", notificationCount = 0, isM
         </ul>
       </nav>
 
-      {/* Bottom Menu */}
+      {/* Bottom Menu — Settings is operator-only (FlexiWell staff). Studio owners
+          configure nothing themselves; that's done-for-you. */}
       <div className="px-4 pb-4">
         <ul className="space-y-1">
-          {bottomMenuItems.map((item) => {
+          {bottomMenuItems
+            .filter((item) => user?.isOperator || !item.href.endsWith("/settings"))
+            .map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (

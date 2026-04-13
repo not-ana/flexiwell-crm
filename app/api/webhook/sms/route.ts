@@ -4,6 +4,7 @@ import { TwilioSMSService, initializeSMSService } from "@/lib/sms/twilio-sms-ser
 import { getDatabase } from "@/lib/db/mongodb";
 import type { IncomingMessage, InteractiveContent } from "@/lib/whatsapp/types";
 import type { EstablishmentWhatsAppCredentials } from "@/lib/db/schemas";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 // Initialize Twilio SMS service config
 function getTwilioSMSConfig() {
@@ -58,6 +59,7 @@ function formatResponseForSMS(response: InteractiveContent | { body: string }): 
 
 // Twilio sends webhooks as form-urlencoded
 export async function POST(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const formData = await request.formData();
     const body: Record<string, string> = {};
@@ -189,6 +191,7 @@ async function getEstablishmentByPhone(phoneNumber: string): Promise<string | nu
 
 // Health check endpoint
 export async function GET() {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   return NextResponse.json({
     status: "ok",
     service: "Twilio SMS Webhook",

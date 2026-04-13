@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/middleware";
 import { getDatabase } from "@/lib/db/mongodb";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 // GET - Check SMS bot connection status
 export async function GET(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const { user, error } = requireAuth(request);
     if (error || !user) {

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import type { Class, Booking, Client } from "@/lib/db/schemas";
 import { ObjectId } from "mongodb";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 // GET /api/bot/classes - Get available classes
 export async function GET(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const searchParams = request.nextUrl.searchParams;
     const clientId = searchParams.get("clientId");
@@ -61,6 +63,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/bot/classes/book - Book a class
 export async function POST(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const body = await request.json();
     const { clientId, classId, source = "bot" } = body;
@@ -188,6 +191,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/bot/classes/cancel - Cancel a booking
 export async function DELETE(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const body = await request.json();
     const { clientId, bookingId } = body;

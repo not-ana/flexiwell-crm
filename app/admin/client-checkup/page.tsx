@@ -47,6 +47,17 @@ interface CheckupReport {
   topInsight: string;
 }
 
+interface PendingFollowup {
+  id: string;
+  clientId: string;
+  clientName: string;
+  signal: string;
+  message: string;
+  sentAt: string;
+}
+
+type Outcome = "rebooked" | "in_conversation" | "no_response" | "lost";
+
 // ============================================
 // Helpers
 // ============================================
@@ -111,6 +122,69 @@ function SummaryCards({ summary }: { summary: CheckupReport["summary"] }) {
         <p className="text-sm text-amber-600">Newly at risk</p>
         <p className="text-2xl font-bold text-amber-700 mt-1">{summary.newlyAtRisk}</p>
       </div>
+    </div>
+  );
+}
+
+// Follow-up panel: yesterday (and earlier) the owner sent texts via the Copilot.
+// Today she comes back and tells us what happened with one tap. This is the
+// closed loop that turns the Copilot into a real retention engine.
+function PendingFollowupsPanel({
+  followups,
+  onResolve,
+}: {
+  followups: PendingFollowup[];
+  onResolve: (id: string, outcome: Outcome) => void;
+}) {
+  if (followups.length === 0) return null;
+
+  const outcomes: Array<{ key: Outcome; label: string; emoji: string; tone: string }> = [
+    { key: "rebooked", label: "Rebooked", emoji: "✓", tone: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" },
+    { key: "in_conversation", label: "Still talking", emoji: "💬", tone: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+    { key: "no_response", label: "No reply yet", emoji: "…", tone: "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100" },
+    { key: "lost", label: "Not coming back", emoji: "✕", tone: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" },
+  ];
+
+  return (
+    <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-primary-50 to-white">
+        <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide">Quick check-in</p>
+        <h2 className="text-base font-semibold text-gray-900 mt-0.5">
+          {followups.length === 1 ? "How did your message land?" : `How did your ${followups.length} messages land?`}
+        </h2>
+        <p className="text-xs text-gray-500 mt-1">
+          One tap each — we&apos;ll measure what&apos;s working and stop nudging the ones who are gone.
+        </p>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {followups.map((f) => {
+          const firstName = f.clientName.split(" ")[0] || f.clientName;
+          const sentDays = Math.max(0, Math.floor((Date.now() - new Date(f.sentAt).getTime()) / (1000 * 60 * 60 * 24)));
+          const sentLabel = sentDays === 0 ? "today" : sentDays === 1 ? "yesterday" : `${sentDays} days ago`;
+          return (
+            <li key={f.id} className="px-5 py-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{firstName}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">You texted {sentLabel}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {outcomes.map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => onResolve(f.id, o.key)}
+                    className={`px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${o.tone}`}
+                  >
+                    <span className="mr-1">{o.emoji}</span>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -209,8 +283,10 @@ function SendModal({
   onSent: () => void;
 }) {
   const [message, setMessage] = useState(intervention.messageTemplate.en);
-  const [sending, setSending] = useState(false);
+  const [logging, setLogging] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const smsHref = `sms:${client.phone.replace(/[^0-9+]/g, "")}?&body=${encodeURIComponent(message)}`;
 
   // Simple client-side template fill for preview
   useEffect(() => {
@@ -229,27 +305,25 @@ function SendModal({
     setMessage(filled);
   }, [client, intervention]);
 
-  const handleSend = async () => {
-    setSending(true);
+  const handleMarkContacted = async () => {
+    setLogging(true);
     try {
-      const result = await api.post<{ success: boolean }>("/api/admin/churn-checkup/send", {
+      await api.post<{ success: boolean }>("/api/admin/churn-checkup/send", {
         clientId: client.clientId,
         signal: intervention.signal,
         messageTemplate: message,
         templateData: intervention.templateData,
         channel: "sms",
       });
-      if (result.data?.success) {
-        setSent(true);
-        setTimeout(() => {
-          onSent();
-          onClose();
-        }, 1500);
-      }
+      setSent(true);
+      setTimeout(() => {
+        onSent();
+        onClose();
+      }, 1200);
     } catch {
       // error handled by api client
     } finally {
-      setSending(false);
+      setLogging(false);
     }
   };
 
@@ -260,9 +334,9 @@ function SendModal({
         <div className="px-6 pt-6 pb-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Send message</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Text {client.clientName.split(" ")[0]}</h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                SMS to {client.clientName} · {client.phone}
+                SMS · {client.phone}
               </p>
             </div>
             <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
@@ -279,14 +353,16 @@ function SendModal({
 
         {/* Editable message */}
         <div className="px-6 py-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Suggested message — edit before sending</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
           />
-          <p className="text-xs text-gray-400 mt-1.5">{message.length} characters · Edit before sending</p>
+          <p className="text-xs text-gray-400 mt-1.5">
+            {message.length} characters · Opens your phone&apos;s SMS app — sent from your number, not a bot
+          </p>
         </div>
 
         {/* Footer */}
@@ -297,17 +373,16 @@ function SendModal({
           >
             Cancel
           </button>
-          <button
-            onClick={handleSend}
-            disabled={sending || sent || !message.trim()}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ${
-              sent
-                ? "bg-green-600"
-                : "bg-primary-600 hover:bg-primary-700"
-            } disabled:opacity-50`}
+          <a
+            href={smsHref}
+            onClick={handleMarkContacted}
+            aria-disabled={logging || sent || !message.trim()}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors text-center ${
+              sent ? "bg-green-600" : "bg-primary-600 hover:bg-primary-700"
+            } ${(logging || sent || !message.trim()) ? "opacity-50 pointer-events-none" : ""}`}
           >
-            {sent ? "Sent!" : sending ? "Sending..." : "Send SMS"}
-          </button>
+            {sent ? "Logged" : logging ? "Opening..." : "Open SMS app"}
+          </a>
         </div>
       </div>
     </div>
@@ -325,6 +400,31 @@ export default function ClientCheckupPage() {
   const [sendModal, setSendModal] = useState<{ client: ClientCheckup; intervention: ChurnIntervention } | null>(null);
   const [filter, setFilter] = useState<"all" | "critical" | "high" | "medium" | "low">("all");
   const [sentClientIds, setSentClientIds] = useState<Set<string>>(new Set());
+  const [pendingFollowups, setPendingFollowups] = useState<PendingFollowup[]>([]);
+
+  const fetchPendingFollowups = async () => {
+    try {
+      const result = await api.get<{ interventions: PendingFollowup[] }>(
+        "/api/admin/churn-checkup/outcome",
+      );
+      if (result.data?.interventions) {
+        setPendingFollowups(result.data.interventions);
+      }
+    } catch {
+      // non-fatal — the panel just stays empty
+    }
+  };
+
+  const handleResolveFollowup = async (id: string, outcome: Outcome) => {
+    // Optimistic remove
+    setPendingFollowups((prev) => prev.filter((f) => f.id !== id));
+    try {
+      await api.post("/api/admin/churn-checkup/outcome", { interventionId: id, outcome });
+    } catch {
+      // If it fails, refetch so the user can try again
+      fetchPendingFollowups();
+    }
+  };
 
   const fetchReport = async (force = false) => {
     if (force) setRefreshing(true); else setLoading(true);
@@ -343,7 +443,28 @@ export default function ClientCheckupPage() {
     }
   };
 
-  useEffect(() => { fetchReport(); }, []);
+  useEffect(() => {
+    fetchReport();
+    fetchPendingFollowups();
+  }, []);
+
+  // Deep link from the daily digest email: /admin/client-checkup?client=<id>
+  // auto-opens the SendModal for that specific client. Runs whenever the
+  // report finishes loading so the link works on a fresh page load.
+  useEffect(() => {
+    if (!report) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("client");
+    if (!targetId) return;
+    const target = report.clients.find((c) => c.clientId === targetId);
+    if (target) {
+      setSendModal({ client: target, intervention: target.primaryIntervention });
+      // Clean the query string so a refresh doesn't keep re-opening the modal.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("client");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [report]);
 
   const handleSend = (client: ClientCheckup, intervention: ChurnIntervention) => {
     setSendModal({ client, intervention });
@@ -366,9 +487,9 @@ export default function ClientCheckupPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Client Check-up</h1>
+            <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Retention Copilot</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Clients who need your attention this week
+              Who to text this week, and exactly what to say
             </p>
           </div>
           <button
@@ -388,6 +509,12 @@ export default function ClientCheckupPage() {
 
         {!loading && report && (
           <>
+            {/* Pending follow-ups from yesterday's texts */}
+            <PendingFollowupsPanel
+              followups={pendingFollowups}
+              onResolve={handleResolveFollowup}
+            />
+
             {/* Top insight */}
             {report.topInsight && (
               <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4 sm:p-5">

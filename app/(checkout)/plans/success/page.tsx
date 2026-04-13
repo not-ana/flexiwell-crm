@@ -8,8 +8,6 @@ import { CheckoutStepIndicator } from "@/components/checkout/CheckoutStepIndicat
 import {
   Check,
   Download,
-  Share2,
-  Gift,
   Calendar,
   BookOpen,
   Smartphone,
@@ -103,7 +101,6 @@ function CheckoutSuccessContent() {
       : null
   );
   const [showConfetti, setShowConfetti] = useState(true);
-  const [referralCopied, setReferralCopied] = useState(false);
 
   // Stripe verification flow
   useEffect(() => {
@@ -143,16 +140,6 @@ function CheckoutSuccessContent() {
     }
   };
 
-  const handleCopyReferral = () => {
-    const referralLink = `${window.location.origin}/ref/${Math.random().toString(36).substring(2, 8)}`;
-    navigator.clipboard.writeText(referralLink).then(() => {
-      setReferralCopied(true);
-      setTimeout(() => setReferralCopied(false), 2500);
-    }).catch(() => {
-      setReferralCopied(true);
-      setTimeout(() => setReferralCopied(false), 2500);
-    });
-  };
 
   const handleDownloadReceipt = () => {
     // Simulated download for portfolio demo
@@ -352,30 +339,6 @@ function CheckoutSuccessContent() {
             </div>
           </div>
 
-          {/* Referral Banner */}
-          <div className="bg-gradient-to-r from-amber-50 to-primary-50 border border-amber-100 rounded-xl p-5 mb-6 text-left">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Gift className="w-5 h-5 text-amber-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  Refer a Friend, Get 1 Free Class!
-                </h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Share your referral link and both you and your friend get a
-                  free class when they sign up.
-                </p>
-                <button
-                  onClick={handleCopyReferral}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Share2 className="w-4 h-4" />
-                  {referralCopied ? "Link Copied!" : "Copy Referral Link"}
-                </button>
-              </div>
-            </div>
-          </div>
 
           {/* Create Account CTA - Post-purchase upsell */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 text-left">

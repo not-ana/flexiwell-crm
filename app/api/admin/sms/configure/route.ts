@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/middleware";
 import { getDatabase } from "@/lib/db/mongodb";
+import { SMS_BOT_ENABLED, smsBotDisabledResponse } from "@/lib/features/sms-bot";
 
 // POST - Save Twilio SMS configuration
 export async function POST(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const { user, error } = requireAuth(request);
     if (error || !user) {
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Disconnect SMS
 export async function DELETE(request: NextRequest) {
+  if (!SMS_BOT_ENABLED) return smsBotDisabledResponse();
   try {
     const { user, error } = requireAuth(request);
     if (error || !user) {

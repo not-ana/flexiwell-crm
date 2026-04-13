@@ -2,13 +2,13 @@
 // Grand Slam Offer — Alex Hormozi's $100M Offers framework
 // Niche: Reformer Pilates studios, $20k-$40k/mo revenue, losing 20%+ clients after month 3
 // Positioning: "The Retention Engine™ for Reformer Pilates Studios"
-// 2 plans: Retention Pro ($799/mo, all features) + Scale (multi-location, talk to sales)
+// Single plan: Retention Pro ($799/mo, all features) — single-location studios only
 // Single offer: $799/mo or $549/mo yearly. Everything included. 60-day results guarantee.
 // Pricing phases: Founding Member $499/mo → Early Adopter $649/mo → Full Price $799/mo
 // Per-instance feature overrides allow customization on sales calls
 // Multi-region support: BR (BRL) and US/Global (USD)
 
-export type PlanTier = "retention_pro" | "scale";
+export type PlanTier = "retention_pro";
 export type BillingPeriod = "monthly" | "annual";
 export type Currency = "USD" | "BRL" | "EUR" | "GBP";
 export type Region = "BR" | "US" | "EU" | "GLOBAL";
@@ -74,7 +74,6 @@ export interface PricingPlan {
   limits: {
     clients: number | "unlimited";
     teamMembers: number | "unlimited";
-    locations: number | "unlimited";
     storage: string;
   };
   features: PlanFeature[];
@@ -207,16 +206,9 @@ export const grandSlamOffer: GrandSlamOffer = {
       perceivedValue: 500,
       deliveryMethod: "software",
     },
-    {
-      name: "Referral Engine",
-      description:
-        "Automated referral system — clients refer a friend, the friend gets a trial, the client gets credit. Triggered at the perfect moment (post-class, milestones).",
-      perceivedValue: 997,
-      deliveryMethod: "software",
-    },
   ],
 
-  totalPerceivedValue: 8082,
+  totalPerceivedValue: 7085,
 
   guarantee: {
     type: "conditional",
@@ -242,9 +234,8 @@ export const grandSlamOffer: GrandSlamOffer = {
 };
 
 // ---------------------------------------------------------------------------
-// Pricing Plans — 2 Plans (Hormozi Single Offer Strategy)
+// Pricing Plan — Single Plan (Hormozi Single Offer Strategy)
 // Retention Pro ($799): The one offer — everything included, all features
-// Scale (Custom): Multi-location studios, talk to sales
 // Pricing phases for Retention Pro:
 //   Founding Member: $499/mo locked 24 months
 //   Early Adopter: $649/mo locked 12 months
@@ -260,10 +251,6 @@ export const regionalPricing: Record<PlanTier, RegionalPricing> = {
   retention_pro: {
     USD: { monthly: 799, annual: 549, annualTotal: 6588 },
     BRL: { monthly: 2799, annual: 1929, annualTotal: 23148 },
-  },
-  scale: {
-    USD: { monthly: 0, annual: 0, annualTotal: 0 }, // Custom pricing — contact sales
-    BRL: { monthly: 0, annual: 0, annualTotal: 0 },
   },
 };
 
@@ -288,7 +275,6 @@ export const pricingPlans: PricingPlan[] = [
     limits: {
       clients: "unlimited",
       teamMembers: "unlimited",
-      locations: 1,
       storage: "100GB",
     },
     highlighted: true,
@@ -309,7 +295,6 @@ export const pricingPlans: PricingPlan[] = [
       { name: "Retention dashboard", included: true, tooltip: "See who's at risk, who to save, and who's safe — at a glance" },
       { name: "SMS retention sequences", included: true, tooltip: "12 pre-built templates: welcome series, milestone check-ins, re-engagement" },
       { name: "Win-back campaigns", included: true, tooltip: "5-step SMS sequence targeting clients who left in the last 6 months" },
-      { name: "Referral Engine", included: true, tooltip: "Automated referral program — refer a friend, earn credit" },
       { name: "90-Day Retention Playbook", included: true, tooltip: "Week-by-week automated touchpoints for the critical first 90 days" },
       // Waitlist & AI
       { name: "Smart Waitlist", included: true, tooltip: "AI-powered priority, auto-fill cancellations, reduce no-shows by 40%" },
@@ -335,72 +320,6 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
 
-  // -----------------------------------------------------------------------
-  // SCALE — Custom/Sales Only
-  // For multi-location studios and franchises. No public pricing.
-  // -----------------------------------------------------------------------
-  {
-    id: "scale",
-    name: "Scale",
-    description: "For multi-location studios and franchises with unlimited everything.",
-    tagline: "Multi-location mastery",
-    pricing: {
-      monthly: 0,
-      annual: 0,
-      annualTotal: 0,
-      currency: "USD",
-      customPricing: true,
-    },
-    limits: {
-      clients: "unlimited",
-      teamMembers: "unlimited",
-      locations: "unlimited",
-      storage: "500GB",
-    },
-    features: [
-      // Core
-      { name: "Online scheduling", included: true },
-      { name: "Client portal", included: true },
-      { name: "Payment processing", included: true, tooltip: "Custom rates" },
-      { name: "Email reminders", included: true },
-      { name: "Calendar sync", included: true },
-      // Messaging — unlimited
-      { name: "SMS notifications", included: true },
-      { name: "WhatsApp notifications", included: true },
-      { name: "SMS Bot", included: true, limit: "Unlimited" },
-      // Retention Engine — full + custom rules
-      { name: "Client Health Score", included: true, tooltip: "Custom scoring models per location" },
-      { name: "Churn-risk alerts", included: true },
-      { name: "Retention dashboard", included: true },
-      { name: "SMS retention sequences", included: true },
-      { name: "Win-back campaigns", included: true },
-      { name: "Referral Engine", included: true },
-      { name: "90-Day Retention Playbook", included: true },
-      { name: "Custom retention rules", included: true, tooltip: "Define triggers and automations based on your studio's specific patterns" },
-      // Waitlist & AI — unlimited
-      { name: "Smart Waitlist", included: true, tooltip: "AI-powered priority with custom rules per location" },
-      { name: "Cancellation predictions", included: true },
-      { name: "AI Support Assistant", included: true, limit: "Unlimited" },
-      // Reports — multi-location
-      { name: "Basic reports", included: true },
-      { name: "Advanced reports", included: true },
-      { name: "Revenue analytics", included: true },
-      { name: "Monthly revenue forecast", included: true },
-      { name: "Multi-location analytics", included: true, tooltip: "Cross-location retention, revenue, and performance comparison" },
-      { name: "Data export", included: true },
-      // Integrations
-      { name: "Wellhub/Gympass", included: true },
-      // Support
-      { name: "Email support", included: true },
-      { name: "Chat support", included: true },
-      { name: "Priority support", included: true },
-      { name: "Dedicated account manager", included: true },
-      // Advanced
-      { name: "API access", included: true },
-      { name: "White-label branding", included: true },
-      { name: "Custom integrations", included: true },
-    ],
-  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -408,14 +327,6 @@ export const pricingPlans: PricingPlan[] = [
 // ---------------------------------------------------------------------------
 
 export const addOns: AddOn[] = [
-  {
-    id: "additional_location",
-    name: "Additional Location",
-    description: "Add one more location to your account",
-    price: 49,
-    billingPeriod: "monthly",
-    availableOn: ["retention_pro"],
-  },
   {
     id: "additional_storage",
     name: "Additional Storage (50GB)",
@@ -430,7 +341,7 @@ export const addOns: AddOn[] = [
     description: "We migrate all your data from Mindbody, GloFox, or spreadsheets, configure Health Scores, and launch your automations — within 48 hours.",
     price: 0, // Included free (Grand Slam bonus)
     billingPeriod: "one-time",
-    availableOn: ["retention_pro", "scale"],
+    availableOn: ["retention_pro"],
   },
 ];
 
@@ -440,7 +351,6 @@ export const addOns: AddOn[] = [
 
 export const transactionFees: Record<PlanTier, { percentage: number; fixed: number }> = {
   retention_pro: { percentage: 1.9, fixed: 0.15 },
-  scale: { percentage: 1.9, fixed: 0.15 },
 };
 
 // ---------------------------------------------------------------------------
@@ -449,59 +359,54 @@ export const transactionFees: Record<PlanTier, { percentage: number; fixed: numb
 
 export const featureMatrix: Record<string, Record<PlanTier, boolean | string | number>> = {
   // Limits
-  active_clients: { retention_pro: "unlimited", scale: "unlimited" },
-  team_members: { retention_pro: "unlimited", scale: "unlimited" },
-  locations: { retention_pro: 1, scale: "unlimited" },
-  storage: { retention_pro: "100GB", scale: "500GB" },
+  active_clients: { retention_pro: "unlimited" },
+  team_members: { retention_pro: "unlimited" },
+  storage: { retention_pro: "100GB" },
 
   // Core features
-  online_scheduling: { retention_pro: true, scale: true },
-  client_portal: { retention_pro: true, scale: true },
-  payment_processing: { retention_pro: true, scale: true },
-  email_reminders: { retention_pro: true, scale: true },
-  calendar_sync: { retention_pro: true, scale: true },
+  online_scheduling: { retention_pro: true },
+  client_portal: { retention_pro: true },
+  payment_processing: { retention_pro: true },
+  email_reminders: { retention_pro: true },
+  calendar_sync: { retention_pro: true },
 
   // Messaging
-  sms_notifications: { retention_pro: true, scale: true },
-  whatsapp_notifications: { retention_pro: true, scale: true },
-  sms_bot: { retention_pro: "unlimited", scale: "unlimited" },
+  sms_notifications: { retention_pro: true },
+  whatsapp_notifications: { retention_pro: true },
+  sms_bot: { retention_pro: "unlimited" },
 
   // Retention Engine
-  client_health_score: { retention_pro: true, scale: true },
-  churn_risk_alerts: { retention_pro: true, scale: true },
-  retention_dashboard: { retention_pro: true, scale: true },
-  sms_retention_sequences: { retention_pro: true, scale: true },
-  winback_campaigns: { retention_pro: true, scale: true },
-  referral_engine: { retention_pro: true, scale: true },
-  retention_playbook_90day: { retention_pro: true, scale: true },
-  custom_retention_rules: { retention_pro: false, scale: true },
+  client_health_score: { retention_pro: true },
+  churn_risk_alerts: { retention_pro: true },
+  retention_dashboard: { retention_pro: true },
+  sms_retention_sequences: { retention_pro: true },
+  winback_campaigns: { retention_pro: true },
+  retention_playbook_90day: { retention_pro: true },
 
   // Waitlist & AI
-  smart_waitlist: { retention_pro: true, scale: true },
-  cancellation_predictions: { retention_pro: true, scale: true },
-  ai_support_assistant: { retention_pro: "unlimited", scale: "unlimited" },
+  smart_waitlist: { retention_pro: true },
+  cancellation_predictions: { retention_pro: true },
+  ai_support_assistant: { retention_pro: "unlimited" },
 
   // Integrations
-  wellhub_gympass: { retention_pro: true, scale: true },
+  wellhub_gympass: { retention_pro: true },
 
   // Reports
-  basic_reports: { retention_pro: true, scale: true },
-  advanced_reports: { retention_pro: true, scale: true },
-  revenue_analytics: { retention_pro: true, scale: true },
-  monthly_revenue_forecast: { retention_pro: true, scale: true },
-  multi_location_analytics: { retention_pro: false, scale: true },
-  data_export: { retention_pro: true, scale: true },
+  basic_reports: { retention_pro: true },
+  advanced_reports: { retention_pro: true },
+  revenue_analytics: { retention_pro: true },
+  monthly_revenue_forecast: { retention_pro: true },
+  data_export: { retention_pro: true },
 
   // Support
-  email_support: { retention_pro: true, scale: true },
-  chat_support: { retention_pro: true, scale: true },
-  priority_support: { retention_pro: true, scale: true },
-  dedicated_manager: { retention_pro: false, scale: true },
+  email_support: { retention_pro: true },
+  chat_support: { retention_pro: true },
+  priority_support: { retention_pro: true },
 
   // Advanced
-  api_access: { retention_pro: true, scale: true },
-  white_label: { retention_pro: true, scale: true },
-  custom_integrations: { retention_pro: true, scale: true },
+  api_access: { retention_pro: true },
+  white_label: { retention_pro: true },
+  custom_integrations: { retention_pro: true },
 };
 
 // ---------------------------------------------------------------------------
@@ -615,9 +520,8 @@ export const foundingMemberBenefits = [
   "90-Day Retention Playbook running on autopilot",
   "Done-for-you setup & data migration (48-hour turnaround)",
   "Client Win-Back Campaign — live in your first week",
-  "Referral Engine with automated credit system",
   "Smart Waitlist with AI-powered auto-fill",
-  "Unlimited clients, unlimited staff, 1 location",
+  "Unlimited clients and unlimited staff",
   "Priority support + direct founder access",
   "Price locked for 24 months",
 ];
@@ -740,14 +644,7 @@ export function getPrimaryMessagingChannel(region: Region): "whatsapp" | "sms" {
   return regionConfigs[region].defaultMessagingChannels[0];
 }
 
-export function getPlanRecommendation(
-  clientCount: number,
-  locationCount: number,
-): PlanTier {
-  if (locationCount > 1) {
-    return "scale";
-  }
-
+export function getPlanRecommendation(): PlanTier {
   return "retention_pro";
 }
 

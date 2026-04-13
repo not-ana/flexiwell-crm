@@ -252,10 +252,10 @@ export function AccountSettings({ hideAccountInfo = false }: { hideAccountInfo?:
 
   const googleAccount = linkedAccounts.find((acc) => acc.provider === "google");
 
-  // Fetch linked companies (for clients and teachers)
+  // Fetch linked companies (for teachers)
   useEffect(() => {
     async function fetchCompanies() {
-      if (user?.role !== "client" && user?.role !== "teacher") {
+      if (user?.role !== "teacher") {
         setIsLoading(false);
         return;
       }
@@ -283,8 +283,8 @@ export function AccountSettings({ hideAccountInfo = false }: { hideAccountInfo?:
         <p className="text-sm text-gray-600 mt-1">Manage your account settings.</p>
       </div>
 
-      {/* Linked Companies - For clients and teachers (not admins who own the company) */}
-      {(user?.role === "client" || user?.role === "teacher") && (
+      {/* Linked Companies - For teachers (not admins who own the company) */}
+      {user?.role === "teacher" && (
         <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h3 className="text-sm font-medium text-gray-900 mb-4">Linked companies</h3>
           {isLoading ? (
@@ -381,7 +381,7 @@ export function AccountSettings({ hideAccountInfo = false }: { hideAccountInfo?:
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-900">Account information</h3>
             <Link
-              href={user?.role === "admin" ? "/admin/settings" : user?.role === "teacher" ? "/teacher/settings" : "/dashboard/settings"}
+              href={user?.role === "admin" ? "/admin/settings" : "/teacher/settings"}
               className="text-sm font-medium text-primary-600 hover:text-primary-700"
             >
               Edit profile

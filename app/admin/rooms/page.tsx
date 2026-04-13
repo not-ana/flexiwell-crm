@@ -443,7 +443,7 @@ export default function AdminRoomsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rooms</h1>
-          <p className="text-gray-600 mt-1">Manage rooms and equipment across all locations</p>
+          <p className="text-gray-600 mt-1">Manage rooms and equipment</p>
         </div>
         <button
           onClick={() => {
@@ -461,7 +461,7 @@ export default function AdminRoomsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-600">Total Rooms</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{totalRooms}</p>
@@ -473,10 +473,6 @@ export default function AdminRoomsPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-600">Total Capacity</p>
           <p className="text-2xl font-bold text-primary-600 mt-1">{totalCapacity} people</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-sm text-gray-600">Locations</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{units.length}</p>
         </div>
       </div>
 

@@ -1,15 +1,14 @@
 // Plan types and feature flags for FlexiWell CRM
-// 2 plans: Retention Pro (hero, all features) + Scale (multi-location, talk to sales)
+// Single plan: Retention Pro — everything included.
 // Single offer strategy: $799/mo, $549/mo yearly. Everything included.
 // Feature overrides allow per-instance customization (negotiated on sales calls)
 // Aligned with pricing.ts (Hormozi Grand Slam Offer framework)
 
-export type PlanType = "retention_pro" | "scale";
+export type PlanType = "retention_pro";
 
 export interface PlanLimits {
   maxClients: number;
   maxStaff: number;
-  maxLocations: number;
   storageMB: number;
 }
 
@@ -45,9 +44,6 @@ export interface PlanFeatures {
   apiAccess: boolean;
   webhooks: boolean;
 
-  // Multi-location
-  multiLocation: boolean;
-
   // Support
   emailSupport: boolean;
   chatSupport: boolean;
@@ -76,7 +72,6 @@ export interface Plan {
 
 // Plan definitions
 // Single offer: Retention Pro $799/mo ($549/mo yearly) — ALL features included
-// Scale: multi-location, custom pricing via sales
 export const plans: Record<PlanType, Plan> = {
   retention_pro: {
     id: "retention_pro",
@@ -89,7 +84,6 @@ export const plans: Record<PlanType, Plan> = {
     limits: {
       maxClients: -1, // unlimited
       maxStaff: -1, // unlimited
-      maxLocations: 1,
       storageMB: 100 * 1024, // 100GB
     },
     features: {
@@ -124,9 +118,6 @@ export const plans: Record<PlanType, Plan> = {
       apiAccess: true,
       webhooks: true,
 
-      // Multi-location — 1 location (single studio avatar)
-      multiLocation: false,
-
       // Support — Priority + founder access
       emailSupport: true,
       chatSupport: true,
@@ -134,68 +125,6 @@ export const plans: Record<PlanType, Plan> = {
       dedicatedManager: false,
     },
     popular: true,
-    usageLimits: {
-      messagingBotMessages: -1, // unlimited
-      aiChats: -1, // unlimited
-      apiCalls: -1, // unlimited
-    },
-  },
-
-  scale: {
-    id: "scale",
-    name: "Scale",
-    description: "For multi-location studios and franchises with unlimited everything.",
-    price: {
-      monthly: 0, // Custom pricing — contact sales
-      yearly: 0,
-    },
-    limits: {
-      maxClients: -1, // unlimited
-      maxStaff: -1, // unlimited
-      maxLocations: -1, // unlimited
-      storageMB: 500 * 1024, // 500GB
-    },
-    features: {
-      // Core - All included
-      onlineScheduling: true,
-      clientPortal: true,
-      paymentProcessing: true,
-
-      // Communication - Full including Bot (unlimited)
-      emailReminders: true,
-      smsNotifications: true,
-      whatsappNotifications: true,
-      messagingBot: true, // unlimited
-
-      // AI Features - AI Support Assistant (unlimited)
-      aiSupportAssistant: true,
-
-      // Health Assessment - Yes
-      healthAssessment: true,
-
-      // Waitlist - Full with custom rules
-      smartWaitlist: true,
-      aiWaitlist: true,
-      customWaitlistRules: true,
-
-      // Advanced - All features
-      customBranding: true,
-      advancedReports: true,
-      cancellationPredictions: true,
-
-      // Integrations - Full API access
-      apiAccess: true,
-      webhooks: true,
-
-      // Multi-location - Unlimited
-      multiLocation: true,
-
-      // Support - Priority (12h) + Dedicated manager
-      emailSupport: true,
-      chatSupport: true,
-      prioritySupport: true,
-      dedicatedManager: true,
-    },
     usageLimits: {
       messagingBotMessages: -1, // unlimited
       aiChats: -1, // unlimited
@@ -234,24 +163,6 @@ export function getLimit(planId: PlanType, resource: keyof PlanLimits): number |
 }
 
 /**
- * Get features that would be unlocked by upgrading to a higher plan
- */
-export function getUpgradeFeatures(currentPlan: PlanType, targetPlan: PlanType): (keyof PlanFeatures)[] {
-  const current = plans[currentPlan].features;
-  const target = plans[targetPlan].features;
-
-  const upgrades: (keyof PlanFeatures)[] = [];
-
-  for (const key of Object.keys(target) as (keyof PlanFeatures)[]) {
-    if (!current[key] && target[key]) {
-      upgrades.push(key);
-    }
-  }
-
-  return upgrades;
-}
-
-/**
  * Feature display names for UI
  */
 export const featureDisplayNames: Record<keyof PlanFeatures, string> = {
@@ -272,7 +183,6 @@ export const featureDisplayNames: Record<keyof PlanFeatures, string> = {
   cancellationPredictions: "Cancellation Predictions",
   apiAccess: "API Access",
   webhooks: "Webhooks",
-  multiLocation: "Multi-Location Support",
   emailSupport: "Email Support",
   chatSupport: "Chat Support",
   prioritySupport: "Priority Support",
@@ -290,7 +200,6 @@ export const featureCategories = {
   waitlist: ["smartWaitlist", "aiWaitlist", "customWaitlistRules"] as (keyof PlanFeatures)[],
   advanced: ["customBranding", "advancedReports", "cancellationPredictions"] as (keyof PlanFeatures)[],
   integrations: ["apiAccess", "webhooks"] as (keyof PlanFeatures)[],
-  infrastructure: ["multiLocation"] as (keyof PlanFeatures)[],
   support: ["emailSupport", "chatSupport", "prioritySupport", "dedicatedManager"] as (keyof PlanFeatures)[],
 };
 

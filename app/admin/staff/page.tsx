@@ -20,7 +20,7 @@ interface Unit {
 
 const roleStyles: Record<StaffRole, { bg: string; text: string; label: string }> = {
   admin: { bg: "bg-primary-50", text: "text-primary-700", label: "Admin" },
-  teacher: { bg: "bg-blue-50", text: "text-blue-700", label: "Teacher" },
+  teacher: { bg: "bg-blue-50", text: "text-blue-700", label: "Instructor" },
 };
 
 const statusStyles: Record<StaffStatus, { bg: string; text: string; dot: string; label: string }> = {
@@ -712,7 +712,7 @@ export default function AdminStaffPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff</h1>
           <p className="text-sm text-gray-600 mt-1 hidden lg:block">
-            Manage employees across all locations
+            Manage your team
           </p>
         </div>
         <div className="flex items-center gap-2 lg:gap-3">
@@ -737,7 +737,7 @@ export default function AdminStaffPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Total Staff</p>
           <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{isLoading ? "—" : totalStaff}</p>
@@ -760,10 +760,6 @@ export default function AdminStaffPage() {
               </span>
             )}
           </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs sm:text-sm text-gray-600">Locations</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{isLoading ? "—" : units.length}</p>
         </div>
       </div>
 

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/health-assessments - Create a new health assessment
 export async function POST(request: NextRequest) {
-  const { user, error } = requireRole(request, ["admin", "client"]);
+  const { error } = requireRole(request, ["admin"]);
   if (error) return error;
 
   try {
@@ -111,13 +111,6 @@ export async function POST(request: NextRequest) {
         { error: "Client information is required" },
         { status: 400 }
       );
-    }
-
-    // Clients can only create their own assessment
-    // Note: clientId should be passed from the client-side where it's available
-    if (user?.role === "client") {
-      // For clients, we trust the clientId from the body as it was validated on the frontend
-      // The clientId should match the user's associated client record
     }
 
     const db = await getDatabase();

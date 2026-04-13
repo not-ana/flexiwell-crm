@@ -20,12 +20,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Retention Pro: $799/mo or $549/mo (annual = $6,588/yr)
 // Retention Pro — Founding Member: $299/mo (locked 24 months)
 // Retention Pro — Early Adopter: $499/mo (locked 12 months)
-// Scale: Custom pricing (contact sales)
 const plans = [
   {
     id: "retention_pro",
     name: "FlexiWell Retention Pro",
-    description: "The Retention Engine™ for established studios. Up to 1,000 clients, 3 locations.",
+    description: "The Retention Engine™ for established studios. Unlimited clients and team.",
     monthlyPrice: 79900, // $799/mo
     annualPrice: 658800, // $6,588/yr ($549/mo)
   },
@@ -66,13 +65,6 @@ const addons = [
     name: "SMS Bundle (1000)",
     description: "1000 SMS credits for notifications and reminders",
     price: 2500,
-    recurring: true,
-  },
-  {
-    id: "location",
-    name: "Additional Location",
-    description: "Add one more location to your account",
-    price: 4900,
     recurring: true,
   },
   {

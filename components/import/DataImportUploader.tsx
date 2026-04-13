@@ -19,11 +19,6 @@ interface ValidationError {
   message: string;
 }
 
-interface ParsedData {
-  headers: string[];
-  rows: Record<string, string>[];
-}
-
 export interface ImportResult {
   success: number;
   failed: number;
@@ -55,25 +50,16 @@ function autoMapColumns(csvHeaders: string[], fields: ImportField[]): ColumnMapp
   for (const header of csvHeaders) {
     const normalized = header.toLowerCase().replace(/[_-]/g, " ").trim();
 
-    // Exact key match
     const exactKey = normalizedFields.find(
       (f) => f.key.toLowerCase() === normalized.replace(/ /g, "_")
     );
-    if (exactKey) {
-      mapping[header] = exactKey.key;
-      continue;
-    }
+    if (exactKey) { mapping[header] = exactKey.key; continue; }
 
-    // Exact label match
     const exactLabel = normalizedFields.find(
       (f) => f.labelNormalized === normalized
     );
-    if (exactLabel) {
-      mapping[header] = exactLabel.key;
-      continue;
-    }
+    if (exactLabel) { mapping[header] = exactLabel.key; continue; }
 
-    // Partial match (header contains field name or vice versa)
     const partial = normalizedFields.find(
       (f) =>
         normalized.includes(f.normalized) ||
@@ -81,12 +67,8 @@ function autoMapColumns(csvHeaders: string[], fields: ImportField[]): ColumnMapp
         normalized.includes(f.labelNormalized) ||
         f.labelNormalized.includes(normalized)
     );
-    if (partial) {
-      mapping[header] = partial.key;
-      continue;
-    }
+    if (partial) { mapping[header] = partial.key; continue; }
 
-    // Common aliases
     const aliases: Record<string, string[]> = {
       email: ["e mail", "email address", "correo", "e-mail"],
       first_name: ["nome", "nombre", "first", "given name", "primeiro nome"],
@@ -143,11 +125,7 @@ function validateMappedData(
       const value = csvCol ? rows[i][csvCol]?.trim() : "";
 
       if (field.required && !value) {
-        errors.push({
-          row: i + 1,
-          field: field.label,
-          message: `${field.label} is required`,
-        });
+        errors.push({ row: i + 1, field: field.label, message: `${field.label} is required` });
       }
 
       if (value) {
@@ -182,7 +160,11 @@ export function DataImportUploader({
   const [importError, setImportError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [step, setStep] = useState<"upload" | "map" | "preview" | "success">("upload");
+
+  interface ParsedData {
+    headers: string[];
+    rows: Record<string, string>[];
+  }
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -210,20 +192,21 @@ export function DataImportUploader({
     }
   }, []);
 
-  const handleFile = (file: File) => {
-    if (!file.name.endsWith(".csv")) {
+  const handleFile = (newFile: File) => {
+    if (!newFile.name.endsWith(".csv")) {
       setImportError("Please upload a CSV file");
       return;
     }
-    setFile(file);
-    parseCSV(file);
+    setFile(newFile);
+    setImportError(null);
+    setImportResult(null);
+    parseCSV(newFile);
   };
 
-  const parseCSV = (file: File) => {
+  const parseCSV = (csvFile: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-
       const result = Papa.parse<Record<string, string>>(text, {
         header: true,
         skipEmptyLines: true,
@@ -237,15 +220,11 @@ export function DataImportUploader({
 
       const headers = result.meta.fields || [];
       const rows = result.data;
-
       setParsedData({ headers, rows });
-
-      // Auto-map columns
       const autoMapping = autoMapColumns(headers, fields);
       setColumnMapping(autoMapping);
-      setStep("map");
     };
-    reader.readAsText(file);
+    reader.readAsText(csvFile);
   };
 
   const mappedFieldKeys = useMemo(
@@ -259,9 +238,9 @@ export function DataImportUploader({
   }, [fields, mappedFieldKeys]);
 
   const validationErrors = useMemo(() => {
-    if (!parsedData || step !== "preview") return [];
+    if (!parsedData) return [];
     return validateMappedData(parsedData.rows, columnMapping, fields);
-  }, [parsedData, columnMapping, fields, step]);
+  }, [parsedData, columnMapping, fields]);
 
   const handleMappingChange = (csvColumn: string, fieldKey: string) => {
     setColumnMapping((prev) => {
@@ -269,7 +248,6 @@ export function DataImportUploader({
       if (fieldKey === "") {
         delete updated[csvColumn];
       } else {
-        // Remove any existing mapping to this field
         for (const key in updated) {
           if (updated[key] === fieldKey) delete updated[key];
         }
@@ -282,7 +260,6 @@ export function DataImportUploader({
   const handleImport = async () => {
     if (!parsedData || validationErrors.length > 0) return;
 
-    // Transform data using mapping
     const transformedData = parsedData.rows.map((row) => {
       const mapped: Record<string, string> = {};
       for (const [csvCol, fieldKey] of Object.entries(columnMapping)) {
@@ -296,10 +273,7 @@ export function DataImportUploader({
     setImportResult(null);
     try {
       const result = await onImport(transformedData);
-      if (result) {
-        setImportResult(result);
-      }
-      setStep("success");
+      if (result) setImportResult(result);
     } catch (error) {
       console.error("Import error:", error);
       const message = error instanceof Error ? error.message : "Import failed. Please try again.";
@@ -314,438 +288,28 @@ export function DataImportUploader({
     setFile(null);
     setParsedData(null);
     setColumnMapping({});
-    setStep("upload");
+    setImportResult(null);
   };
 
-  const stepNumber = step === "upload" ? 1 : step === "map" ? 2 : step === "preview" ? 3 : 4;
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
-  // Step indicator
-  const StepIndicator = () => (
-    <div className="flex items-center gap-2 mb-8">
-      {[
-        { num: 1, label: "Upload" },
-        { num: 2, label: "Map Columns" },
-        { num: 3, label: "Review" },
-      ].map((s, i) => (
-        <div key={s.num} className="flex items-center gap-2">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-              stepNumber >= s.num
-                ? "bg-primary-600 text-white"
-                : "bg-gray-100 text-gray-400"
-            }`}
-          >
-            {stepNumber > s.num ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            ) : (
-              s.num
-            )}
-          </div>
-          <span
-            className={`text-sm font-medium ${
-              stepNumber >= s.num ? "text-gray-900" : "text-gray-400"
-            }`}
-          >
-            {s.label}
-          </span>
-          {i < 2 && <div className={`w-12 h-0.5 mx-1 ${stepNumber > s.num ? "bg-primary-600" : "bg-gray-200"}`} />}
-        </div>
-      ))}
-    </div>
-  );
+  // Determine current step for the progress bar
+  const currentStep = !file ? 1 : !importResult ? 2 : 3;
 
-  // Step 1: Upload
-  if (step === "upload") {
-    return (
-      <div className="w-full">
-        {platformSelector && <div className="mb-6">{platformSelector}</div>}
-
-        <StepIndicator />
-
-        {/* Value proposition */}
-        <div className="mb-6 bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100 rounded-xl p-5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                Save hours of manual data entry
-              </p>
-              <p className="text-sm text-gray-600 mt-0.5">
-                {description} We&apos;ll auto-detect your columns and map them for you.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Upload Area - Full width, prominent */}
-        <div
-          className={`relative border-2 border-dashed rounded-xl p-16 text-center transition-all ${
-            dragActive
-              ? "border-primary-500 bg-primary-50 scale-[1.01]"
-              : "border-gray-300 bg-gray-50/50 hover:border-primary-300 hover:bg-primary-50/30"
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <div className="pointer-events-none">
-            <div className="w-16 h-16 mx-auto mb-4 bg-primary-100 rounded-2xl flex items-center justify-center">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">
-              Drop your CSV file here
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              or <span className="text-primary-600 font-medium">click to browse</span>
-            </p>
-            <p className="text-xs text-gray-400">
-              Any CSV file works — we&apos;ll help you map the columns
-            </p>
-          </div>
-        </div>
-
-        {/* Quick help */}
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            Don&apos;t have a CSV?{" "}
-            <a href={templateUrl} download className="text-primary-600 hover:text-primary-700 font-medium">
-              Download our template
-            </a>
-          </p>
-          <p className="text-xs text-gray-400">
-            Supported: .csv files up to 10MB
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Step 2: Column Mapping
-  if (step === "map" && parsedData) {
-    const unmappedRequired = fields
-      .filter((f) => f.required && !mappedFieldKeys.has(f.key));
+  // Success state
+  if (importResult) {
+    const { success: imported, failed: skipped, errors: skippedErrors } = importResult;
 
     return (
       <div className="w-full">
-        <StepIndicator />
+        {/* Progress bar */}
+        <ProgressBar current={4} steps={["Import Leads", "Map Fields", "Review", "Done"]} />
 
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Map Your Columns</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              We auto-matched {Object.keys(columnMapping).length} of {parsedData.headers.length} columns.
-              Adjust any that don&apos;t look right.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">{file?.name}</span>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-500">{parsedData.rows.length} rows</span>
-          </div>
-        </div>
-
-        {/* Unmapped required fields warning */}
-        {unmappedRequired.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-start gap-2.5">
-            <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-amber-800">
-                {unmappedRequired.length} required field{unmappedRequired.length > 1 ? "s" : ""} not mapped yet
-              </p>
-              <p className="text-xs text-amber-600 mt-0.5">
-                {unmappedRequired.map((f) => f.label).join(", ")}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Mapping cards */}
-        <div className="space-y-2 mb-6">
-          {parsedData.headers.map((header) => {
-            const mappedTo = columnMapping[header] || "";
-            const sampleValues = parsedData.rows
-              .slice(0, 3)
-              .map((r) => r[header])
-              .filter(Boolean);
-
-            return (
-              <div
-                key={header}
-                className={`border rounded-xl px-5 py-4 transition-colors ${
-                  mappedTo
-                    ? "border-primary-200 bg-primary-50/30"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-gray-900">{header}</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {sampleValues.map((v, i) => (
-                        <span key={i} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-[180px]">
-                          {v}
-                        </span>
-                      ))}
-                      {sampleValues.length === 0 && (
-                        <span className="text-xs text-gray-300 italic">no data</span>
-                      )}
-                    </div>
-                  </div>
-                  <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                  <select
-                    value={mappedTo}
-                    onChange={(e) => handleMappingChange(header, e.target.value)}
-                    className={`w-56 flex-shrink-0 text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                      mappedTo
-                        ? "border-primary-300 bg-white text-primary-800 font-medium"
-                        : "border-gray-200 text-gray-400"
-                    }`}
-                  >
-                    <option value="">— Skip —</option>
-                    {fields.map((f) => {
-                      const alreadyMapped = mappedFieldKeys.has(f.key) && columnMapping[header] !== f.key;
-                      return (
-                        <option key={f.key} value={f.key} disabled={alreadyMapped}>
-                          {f.label} {f.required ? "*" : ""} {alreadyMapped ? "(mapped)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={reset}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium"
-          >
-            Choose Different File
-          </button>
-          <button
-            onClick={() => setStep("preview")}
-            disabled={!requiredFieldsMapped}
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium text-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            Continue to Review
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Step 3: Preview
-  if (step === "preview" && parsedData) {
-    const hasErrors = validationErrors.length > 0;
-    const errorsByRow = validationErrors.reduce((acc, error) => {
-      if (!acc[error.row]) acc[error.row] = [];
-      acc[error.row].push(error);
-      return acc;
-    }, {} as Record<number, ValidationError[]>);
-
-    // Build preview using mapped columns
-    const mappedHeaders = Object.entries(columnMapping)
-      .map(([csv, fieldKey]) => ({
-        csv,
-        fieldKey,
-        label: fields.find((f) => f.key === fieldKey)?.label || fieldKey,
-      }));
-
-    return (
-      <div className="w-full">
-        <StepIndicator />
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Review & Import</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {parsedData.rows.length} records ready from {file?.name}
-            </p>
-          </div>
-          <button
-            onClick={() => setStep("map")}
-            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            Back to Mapping
-          </button>
-        </div>
-
-        {/* Validation Summary */}
-        {hasErrors ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-red-900">
-                  {validationErrors.length} validation error{validationErrors.length > 1 ? "s" : ""}
-                </p>
-                <p className="text-xs text-red-700 mt-1 mb-3">
-                  Fix the issues below, or go back and adjust the column mapping.
-                </p>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {validationErrors.slice(0, 8).map((error, index) => (
-                    <div key={index} className="text-xs text-red-800 bg-red-100 rounded px-2.5 py-1.5">
-                      <span className="font-semibold">Row {error.row}:</span> {error.field} — {error.message}
-                    </div>
-                  ))}
-                  {validationErrors.length > 8 && (
-                    <p className="text-xs text-red-600 font-medium">
-                      +{validationErrors.length - 8} more errors
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
-            <div className="flex items-center gap-3">
-              <CheckCircleIcon className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-sm font-semibold text-green-900">All validations passed</p>
-                <p className="text-xs text-green-700">
-                  Your data looks good. Review below and click Import.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Data Preview */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
-          <div className="px-5 py-3 border-b border-gray-200 bg-gray-50/50">
-            <p className="text-sm font-medium text-gray-700">
-              Preview — first {Math.min(10, parsedData.rows.length)} of {parsedData.rows.length} rows
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-2 px-4 font-semibold text-gray-500 text-xs border-b">#</th>
-                  {mappedHeaders.map((h) => (
-                    <th key={h.fieldKey} className="text-left py-2 px-4 font-semibold text-gray-500 text-xs border-b">
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {parsedData.rows.slice(0, 10).map((row, index) => {
-                  const rowErrors = errorsByRow[index + 1];
-                  return (
-                    <tr
-                      key={index}
-                      className={rowErrors ? "bg-red-50" : index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
-                    >
-                      <td className="py-2 px-4 border-b text-gray-400 text-xs">{index + 1}</td>
-                      {mappedHeaders.map((h) => {
-                        const hasError = rowErrors?.some((e) => e.field === h.label);
-                        return (
-                          <td
-                            key={h.fieldKey}
-                            className={`py-2 px-4 border-b text-sm ${hasError ? "text-red-600 font-medium" : "text-gray-900"}`}
-                          >
-                            {row[h.csv] || <span className="text-gray-300">—</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Import error */}
-        {importError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">{importError}</p>
-            </div>
-            <button onClick={() => setImportError(null)} className="text-red-400 hover:text-red-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={reset}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleImport}
-            disabled={hasErrors || importing}
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium text-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            {importing ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="currentColor" strokeOpacity="0.25" fill="none" />
-                  <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="2" stroke="currentColor" strokeLinecap="round" fill="none" />
-                </svg>
-                Importing...
-              </>
-            ) : (
-              <>
-                Import {parsedData.rows.length} Records
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Step 4: Success
-  if (step === "success" && parsedData) {
-    const imported = importResult?.success ?? parsedData.rows.length;
-    const skipped = importResult?.failed ?? 0;
-    const skippedErrors = importResult?.errors ?? [];
-
-    return (
-      <div className="w-full max-w-lg mx-auto py-12">
-        <div className="text-center">
+        <div className="max-w-lg mx-auto py-12 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <CheckCircleIcon className="w-9 h-9 text-green-600" />
           </div>
@@ -787,5 +351,352 @@ export function DataImportUploader({
     );
   }
 
-  return null;
+  return (
+    <div className="w-full">
+      {/* Progress bar */}
+      <ProgressBar
+        current={currentStep}
+        steps={["Import Leads", "Map Fields", "Review"]}
+      />
+
+      {/* Section 1: CSV File */}
+      <SectionHeader number={1} title="CSV File" />
+      <div className="mb-8">
+        {!file ? (
+          <>
+            {/* Value proposition */}
+            <div className="mb-4 bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Save hours of manual data entry</p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    {description} We&apos;ll auto-detect your columns and map them for you.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upload area */}
+            <div
+              className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all ${
+                dragActive
+                  ? "border-primary-500 bg-primary-50 scale-[1.01]"
+                  : "border-gray-300 bg-gray-50/50 hover:border-primary-300 hover:bg-primary-50/30"
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="pointer-events-none">
+                <div className="w-14 h-14 mx-auto mb-3 bg-primary-100 rounded-2xl flex items-center justify-center">
+                  <svg className="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Drop your CSV file here</h3>
+                <p className="text-sm text-gray-500">
+                  or <span className="text-primary-600 font-medium">click to browse</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-2">Any CSV file works — we&apos;ll help you map the columns</p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-xs text-gray-400">
+                Don&apos;t have a CSV?{" "}
+                <a href={templateUrl} download className="text-primary-600 hover:text-primary-700 font-medium">
+                  Download our template
+                </a>
+              </p>
+              <p className="text-xs text-gray-400">Supported: .csv files up to 10MB</p>
+            </div>
+          </>
+        ) : (
+          /* File uploaded — show file info */
+          <div className="border border-gray-200 rounded-xl p-4 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{file.name}</p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(file.size)} · {parsedData?.rows.length ?? 0} records
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={reset}
+                className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Remove
+              </button>
+              <label className="text-xs text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors cursor-pointer">
+                Reupload
+                <input type="file" accept=".csv" onChange={handleChange} className="hidden" />
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Section 2: Platform (optional) */}
+      {platformSelector && (
+        <>
+          <SectionHeader number={2} title="Source Platform" subtitle="Optional" />
+          <div className="mb-8">{platformSelector}</div>
+        </>
+      )}
+
+      {/* Section 3: Map Fields */}
+      {parsedData && (
+        <>
+          <SectionHeader
+            number={platformSelector ? 3 : 2}
+            title="Map Fields"
+            subtitle={`Map CSV columns to the variables you want to add on the import`}
+          />
+          <div className="mb-8">
+            {/* Auto-match summary */}
+            <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Auto-matched {Object.keys(columnMapping).length} of {parsedData.headers.length} columns
+            </div>
+
+            {/* Unmapped required fields warning */}
+            {fields.filter((f) => f.required && !mappedFieldKeys.has(f.key)).length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-start gap-2.5">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    Required fields not mapped: {fields.filter((f) => f.required && !mappedFieldKeys.has(f.key)).map((f) => f.label).join(", ")}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Two-column mapping table */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+              {/* Table header */}
+              <div className="grid grid-cols-2 border-b border-gray-200 bg-gray-50">
+                <div className="px-5 py-3 flex items-center gap-2">
+                  <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CSV Column</span>
+                </div>
+                <div className="px-5 py-3 flex items-center gap-2">
+                  <div className="w-6 h-6 bg-primary-100 rounded flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">FlexiWell Field</span>
+                </div>
+              </div>
+
+              {/* Mapping rows */}
+              {parsedData.headers.map((header, index) => {
+                const mappedTo = columnMapping[header] || "";
+                return (
+                  <div
+                    key={header}
+                    className={`grid grid-cols-2 items-center ${
+                      index < parsedData.headers.length - 1 ? "border-b border-gray-100" : ""
+                    } ${mappedTo ? "bg-white" : "bg-gray-50/50"}`}
+                  >
+                    <div className="px-5 py-3.5">
+                      <span className="text-sm font-medium text-gray-900">{header}</span>
+                    </div>
+                    <div className="px-5 py-3.5 flex items-center gap-2">
+                      <select
+                        value={mappedTo}
+                        onChange={(e) => handleMappingChange(header, e.target.value)}
+                        className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                          mappedTo
+                            ? "border-primary-300 bg-white text-gray-900 font-medium"
+                            : "border-gray-200 text-gray-400"
+                        }`}
+                      >
+                        <option value="">— Skip —</option>
+                        {fields.map((f) => {
+                          const alreadyMapped = mappedFieldKeys.has(f.key) && columnMapping[header] !== f.key;
+                          return (
+                            <option key={f.key} value={f.key} disabled={alreadyMapped}>
+                              {f.label} {f.required ? "*" : ""} {alreadyMapped ? "(mapped)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {mappedTo && (
+                        <button
+                          onClick={() => handleMappingChange(header, "")}
+                          className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors flex-shrink-0"
+                          title="Clear mapping"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Validation errors */}
+          {validationErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-900">
+                    {validationErrors.length} validation error{validationErrors.length > 1 ? "s" : ""}
+                  </p>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto mt-2">
+                    {validationErrors.slice(0, 8).map((error, index) => (
+                      <div key={index} className="text-xs text-red-800 bg-red-100 rounded px-2.5 py-1.5">
+                        <span className="font-semibold">Row {error.row}:</span> {error.field} — {error.message}
+                      </div>
+                    ))}
+                    {validationErrors.length > 8 && (
+                      <p className="text-xs text-red-600 font-medium">+{validationErrors.length - 8} more</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Import error */}
+          {importError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-medium text-red-800 flex-1">{importError}</p>
+              <button onClick={() => setImportError(null)} className="text-red-400 hover:text-red-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* Import button — bottom right like SmartLeads */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={handleImport}
+              disabled={!requiredFieldsMapped || validationErrors.length > 0 || importing}
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium text-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {importing ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="currentColor" strokeOpacity="0.25" fill="none" />
+                    <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="2" stroke="currentColor" strokeLinecap="round" fill="none" />
+                  </svg>
+                  Importing...
+                </>
+              ) : (
+                <>
+                  Import {parsedData.rows.length} Records
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Numbered section header like SmartLeads
+function SectionHeader({ number, title, subtitle }: { number: number; title: string; subtitle?: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-7 h-7 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+        {number}
+      </div>
+      <div>
+        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+// Progress bar at top like SmartLeads
+function ProgressBar({ current, steps }: { current: number; steps: string[] }) {
+  return (
+    <div className="flex items-center gap-1 mb-8">
+      {steps.map((label, i) => {
+        const stepNum = i + 1;
+        const isActive = stepNum === current;
+        const isDone = stepNum < current;
+
+        return (
+          <div key={label} className="flex items-center gap-1 flex-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  isDone
+                    ? "bg-primary-600 text-white"
+                    : isActive
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {isDone ? (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  stepNum
+                )}
+              </div>
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${
+                  isDone || isActive ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2 ${isDone ? "bg-primary-600" : "bg-gray-200"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }

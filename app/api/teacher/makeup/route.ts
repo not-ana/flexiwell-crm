@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
+import { requireRoleFromCookie } from "@/lib/auth/middleware";
 import type { WaitlistEntry, Class, Booking, Client } from "@/lib/db/schemas";
 import { EmailService } from "@/lib/email";
 
 // GET /api/teacher/makeup - Get makeup requests for a teacher
 export async function GET(request: NextRequest) {
   try {
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const teacherId = searchParams.get("teacherId");
     const status = searchParams.get("status") || "waiting";
@@ -70,6 +74,9 @@ export async function GET(request: NextRequest) {
 // POST /api/teacher/makeup - Schedule a makeup class
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireRoleFromCookie(["admin", "teacher"]);
+    if (error) return error;
+
     const body = await request.json();
     const { requestId, classId, action } = body;
 

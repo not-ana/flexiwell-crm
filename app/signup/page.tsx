@@ -11,19 +11,9 @@ import PasswordStrength from "@/components/auth/PasswordStrength";
 import { foundingMemberOffer } from "@/lib/config/pricing";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
 
-type UserRole = "client" | "admin" | "teacher";
+type UserRole = "admin" | "teacher";
 
 const roleOptions: { value: UserRole; label: string; desc: string; icon: React.ReactNode }[] = [
-  {
-    value: "client",
-    label: "Client",
-    desc: "Book classes",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
-  },
   {
     value: "admin",
     label: "Owner",
@@ -177,13 +167,8 @@ function SignUpContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [userRole, setUserRole] = useState<UserRole>("admin");
-  const [inviteCode, setInviteCode] = useState("");
-  const [inviteCodeValid, setInviteCodeValid] = useState<boolean | null>(null);
-  const [inviteCompanyName, setInviteCompanyName] = useState("");
-  const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [inviteDebounceTimer, setInviteDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
 
   useEffect(() => {
@@ -199,37 +184,6 @@ function SignUpContent() {
     }
     setError("");
     setStep("details");
-  };
-
-  const validateInviteCode = async (code: string) => {
-    if (!code || code.length < 4) {
-      setInviteCodeValid(null);
-      setInviteCompanyName("");
-      return;
-    }
-    setIsValidatingCode(true);
-    try {
-      const response = await fetch("/api/company/verify-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteCode: code }),
-      });
-      const data = await response.json();
-      if (data.valid) {
-        setInviteCodeValid(true);
-        setInviteCompanyName(data.company?.name || "");
-        setError("");
-      } else {
-        setInviteCodeValid(false);
-        setInviteCompanyName("");
-        setError(data.error || "Invalid invite code");
-      }
-    } catch {
-      setInviteCodeValid(false);
-      setInviteCompanyName("");
-    } finally {
-      setIsValidatingCode(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -248,10 +202,6 @@ function SignUpContent() {
       setError("Passwords do not match");
       return;
     }
-    if (userRole === "client" && !inviteCodeValid) {
-      setError("Please enter a valid invite code");
-      return;
-    }
 
     setIsLoading(true);
     const result = await register({
@@ -260,7 +210,6 @@ function SignUpContent() {
       name,
       role: userRole,
       phone: phone || undefined,
-      inviteCode: userRole === "client" ? inviteCode : undefined,
       turnstileToken,
     });
 
@@ -369,7 +318,7 @@ function SignUpContent() {
             {/* Role Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {roleOptions.map((role) => (
                   <button
                     key={role.value}
@@ -396,58 +345,6 @@ function SignUpContent() {
                 ))}
               </div>
             </div>
-
-            {/* Invite Code — clients only */}
-            {userRole === "client" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Invite code *</label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Ex: FW-ABC123"
-                    value={inviteCode}
-                    onChange={(e) => {
-                      const code = e.target.value.toUpperCase();
-                      setInviteCode(code);
-                      if (inviteDebounceTimer) clearTimeout(inviteDebounceTimer);
-                      setInviteDebounceTimer(setTimeout(() => validateInviteCode(code), 500));
-                    }}
-                    className={`uppercase ${
-                      inviteCodeValid === true ? "border-success-500 focus:border-success-500" :
-                      inviteCodeValid === false ? "border-error-500 focus:border-error-500" : ""
-                    }`}
-                  />
-                  {isValidatingCode && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="animate-spin w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
-                      </svg>
-                    </div>
-                  )}
-                  {!isValidatingCode && inviteCodeValid === true && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="w-5 h-5 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
-                  {!isValidatingCode && inviteCodeValid === false && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="w-5 h-5 text-error-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                {inviteCodeValid && inviteCompanyName && (
-                  <p className="mt-1 text-sm text-success-600">
-                    You&apos;ll be linked to: <span className="font-medium">{inviteCompanyName}</span>
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-gray-400">Ask for the invite code from your studio or gym</p>
-              </div>
-            )}
 
             <Input
               label="Full name"

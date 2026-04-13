@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { InteractiveOnboarding, useInteractiveOnboarding } from "@/components/onboarding";
 import type { OnboardingPath } from "@/components/onboarding";
 import { useCurrency } from "@/hooks/useCurrency";
-import { StatCard } from "@/components/ui/StatCard";
 import { api, clientsApi } from "@/lib/api/client";
 import type { ClientMetrics } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,12 +44,6 @@ interface DashboardStats {
   revenueRecovered: number;
 }
 
-interface TrendPoint {
-  label: string;
-  revenue: number;
-  clients: number;
-}
-
 interface DashboardData {
   stats: DashboardStats;
   recentActivity: Array<{
@@ -69,7 +61,6 @@ interface DashboardData {
     enrolled: number;
     capacity: number;
   }>;
-  trend: TrendPoint[];
 }
 
 type TimePeriod = "week" | "month" | "year";
@@ -142,6 +133,7 @@ export default function AdminDashboard() {
   const [aiSummary, setAiSummary] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
   const [checkup, setCheckup] = useState<CheckupPreview | null>(null);
+  const [retentionRate, setRetentionRate] = useState<{ rate: number; monthLabel: string } | null>(null);
 
   // Onboarding
   const { shouldShow: showOnboardingRaw, markComplete } = useInteractiveOnboarding("admin");
@@ -191,7 +183,6 @@ export default function AdminDashboard() {
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: "Create your first class", desc: "Schedule, capacity and instructor", href: "/admin/classes", cta: "Create" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>, title: "Add your first client", desc: "Name, email and phone", href: "/admin/clients", cta: "Add" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, title: "Set up plans", desc: "Price your client subscriptions", href: "/admin/settings?tab=plans", cta: "Set up" },
-    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, title: "Set up SMS bot", desc: "Automated check-ins and churn alerts", href: "/admin/settings?tab=sms-bot", cta: "Set up" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "Enable waitlist", desc: "Fill cancelled spots automatically", href: "/admin/waitlist", cta: "Enable" },
   ];
 
@@ -199,7 +190,6 @@ export default function AdminDashboard() {
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, title: "Import your clients", desc: "From Mindbody, GloFox, Tecnofit or CSV", href: "/admin/settings?tab=integrations", cta: "Import" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: "Import your schedule", desc: "Recreate your classes and instructors", href: "/admin/classes", cta: "Set up" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>, title: "Set up plans", desc: "Recreate or update your pricing", href: "/admin/settings?tab=plans", cta: "Set up" },
-    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, title: "Set up SMS bot", desc: "Automated check-ins and churn alerts", href: "/admin/settings?tab=sms-bot", cta: "Set up" },
     { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "Enable waitlist", desc: "Fill cancelled spots automatically", href: "/admin/waitlist", cta: "Enable" },
   ];
 
@@ -268,6 +258,20 @@ export default function AdminDashboard() {
     fetchCheckup();
   }, []);
 
+  // Fetch retention rate
+  useEffect(() => {
+    async function fetchRetention() {
+      try {
+        const response = await api.get<{ monthlyRetention: { rate: number; monthLabel: string } }>("/api/admin/retention");
+        if (response.data) {
+          const { rate, monthLabel } = response.data.monthlyRetention;
+          setRetentionRate({ rate, monthLabel });
+        }
+      } catch { /* ignore */ }
+    }
+    fetchRetention();
+  }, []);
+
   // Fetch AI summary when data changes
   useEffect(() => {
     if (!dashboardData || loading) return;
@@ -311,14 +315,13 @@ export default function AdminDashboard() {
 
   const recentActivity = dashboardData?.recentActivity || [];
   const todayClasses = dashboardData?.todayClasses || [];
-  const trend = dashboardData?.trend || [];
 
   // Health level
   const healthLevel = computeHealthLevel(stats, clientMetrics);
   const healthConfig = {
-    good: { bg: "bg-green-50", border: "border-green-200", icon: "text-green-600", label: "Healthy", dot: "bg-green-500" },
-    warning: { bg: "bg-amber-50", border: "border-amber-200", icon: "text-amber-600", label: "Warning", dot: "bg-amber-500" },
-    critical: { bg: "bg-red-50", border: "border-red-200", icon: "text-red-600", label: "Critical", dot: "bg-red-500" },
+    good: { bg: "bg-green-50", border: "border-green-200", label: "Healthy", dot: "bg-green-500", text: "text-green-700" },
+    warning: { bg: "bg-amber-50", border: "border-amber-200", label: "Needs attention", dot: "bg-amber-500", text: "text-amber-700" },
+    critical: { bg: "bg-red-50", border: "border-red-200", label: "Critical", dot: "bg-red-500", text: "text-red-700" },
   }[healthLevel];
 
   // Greeting
@@ -326,20 +329,12 @@ export default function AdminDashboard() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const firstName = user?.name?.split(" ")[0] || "";
 
-  // Change helpers
-  const revChange = parseFloat(stats.revenueChange);
-  const revPositive = !isNaN(revChange) && revChange > 0;
-  const revNegative = !isNaN(revChange) && revChange < 0;
-
-  const att = parseFloat(stats.attendance);
-  const prevAtt = parseFloat(stats.previousAttendance);
-  const attChange = !isNaN(att) && !isNaN(prevAtt) && prevAtt > 0 ? att - prevAtt : null;
-
-  const noShow = parseFloat(stats.noShowRate);
-  const prevNoShow = parseFloat(stats.previousNoShowRate);
-  const noShowChange = !isNaN(noShow) && !isNaN(prevNoShow) && prevNoShow > 0 ? noShow - prevNoShow : null;
-
-  const periodLabel = selectedPeriod === "week" ? "week" : selectedPeriod === "month" ? "month" : "year";
+  // Format month label: "2026-04" → "April 2026"
+  const formatMonth = (label: string) => {
+    const m = label.match(/^(\d{4})-(\d{2})$/);
+    if (!m) return label;
+    return new Date(+m[1], +m[2] - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  };
 
   return (
     <div className="h-full overflow-auto bg-gray-50">
@@ -399,46 +394,7 @@ export default function AdminDashboard() {
 
         {!loading && (
           <>
-            {/* Onboarding Origin Modal */}
-            {stats.clients === 0 && stats.classes === 0 && !studioOrigin && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                  <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-8 text-white text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21" /></svg>
-                    </div>
-                    <h2 className="text-xl font-bold">Welcome to FlexiWell</h2>
-                    <p className="text-sm text-white/80 mt-2">How is your studio set up today?</p>
-                  </div>
-                  <div className="p-6 space-y-3">
-                    <button onClick={() => selectStudioOrigin("fresh")}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-primary-400 hover:bg-primary-50/50 transition-all text-left group">
-                      <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0 group-hover:bg-primary-100">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Starting fresh</p>
-                        <p className="text-sm text-gray-500 mt-0.5">No existing software — we'll help you build from scratch</p>
-                      </div>
-                      <svg className="w-5 h-5 text-gray-300 group-hover:text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    <button onClick={() => selectStudioOrigin("migrating")}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all text-left group">
-                      <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Switching from another platform</p>
-                        <p className="text-sm text-gray-500 mt-0.5">Import from Mindbody, GloFox, Tecnofit or CSV</p>
-                      </div>
-                      <svg className="w-5 h-5 text-gray-300 group-hover:text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Setup Checklist */}
+            {/* Setup Checklist — only for empty studios */}
             {stats.clients === 0 && stats.classes === 0 && studioOrigin && (
               <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-5 sm:px-6 py-5 text-white">
@@ -472,7 +428,6 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   ))}
-                  {/* Switch link */}
                   <div className="px-5 sm:px-6 py-3 flex justify-end">
                     <button onClick={() => selectStudioOrigin(studioOrigin === "fresh" ? "migrating" : "fresh")}
                       className="text-sm text-gray-600 hover:text-primary-600 font-medium transition-colors">
@@ -483,138 +438,60 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* AI Studio Health Summary */}
-            {(stats.clients > 0 || stats.classes > 0) && (
-              <div data-onboarding="admin-metrics" className={`mb-6 ${healthConfig.bg} border ${healthConfig.border} rounded-2xl p-5 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
-                <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    healthLevel === "good" ? "bg-green-100" : healthLevel === "warning" ? "bg-amber-100" : "bg-red-100"
-                  }`}>
-                    {healthLevel === "good" ? (
-                      <svg className={`w-5 h-5 ${healthConfig.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    ) : healthLevel === "warning" ? (
-                      <svg className={`w-5 h-5 ${healthConfig.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-                    ) : (
-                      <svg className={`w-5 h-5 ${healthConfig.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h2 className="text-sm font-semibold text-gray-900">Studio Diagnosis</h2>
-                      <span className={`w-2 h-2 rounded-full ${healthConfig.dot}`} />
-                      <span className="text-xs text-gray-500">{healthConfig.label}</span>
-                      {aiLoading && <span className="text-xs text-gray-400 animate-pulse">analyzing...</span>}
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {aiSummary || (aiLoading ? "Generating analysis..." : "Loading metrics...")}
-                    </p>
-                  </div>
-                </div>
+            {/* ============================================================ */}
+            {/* STATS BAR — one glanceable row                               */}
+            {/* ============================================================ */}
+            <div data-onboarding="admin-metrics" className={`grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
+              {/* Retention */}
+              <div className="rounded-2xl bg-white border border-gray-200 p-5">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Retention</p>
+                <p className="text-3xl font-semibold text-gray-900 tabular-nums leading-none">
+                  {retentionRate ? `${Math.round(retentionRate.rate * 100)}%` : "—"}
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {retentionRate ? formatMonth(retentionRate.monthLabel) : "Loading..."}
+                </p>
               </div>
-            )}
 
-            {/* 4 Key Metric Cards */}
-            <div data-onboarding="admin-charts" className={`grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
-              <StatCard
-                label="Revenue"
-                value={formatCurrency(stats.revenue)}
-                change={
-                  stats.revenueChange !== "+0%" && stats.revenueChange !== "+0.0%"
-                    ? { text: stats.revenueChange, type: revPositive ? "positive" : revNegative ? "negative" : "neutral" }
-                    : undefined
-                }
-                subtitle={
-                  clientMetrics
-                    ? `Avg LTV: ${formatCurrency(clientMetrics.avgLTV)} · ${formatCurrency(clientMetrics.revenuePerClientPerMonth)}/client/month`
-                    : `This ${periodLabel}`
-                }
-                href="/admin/payments"
-                hrefLabel="View Payments"
-              />
-              <StatCard
-                label="Clients"
-                value={`${stats.clients} active`}
-                change={
-                  stats.clientsChange !== "+0"
-                    ? { text: `${stats.clientsChange} new`, type: stats.clientsChange.startsWith("+") ? "positive" : stats.clientsChange.startsWith("-") ? "negative" : "neutral" }
-                    : undefined
-                }
-                subtitle={
-                  clientMetrics && clientMetrics.monthlyChurnRate > 0
-                    ? `Churn: ${clientMetrics.monthlyChurnRate}%${clientMetrics.previousMonthlyChurnRate > 0 ? ` (prev: ${clientMetrics.previousMonthlyChurnRate}%)` : ""} · ${clientMetrics.atRiskCount} at risk`
-                    : `${stats.clientsChange} new this ${periodLabel}`
-                }
-                href="/admin/clients"
-                hrefLabel="View Clients"
-              />
-              <StatCard
-                label="Operations"
-                value={stats.attendance}
-                change={
-                  attChange !== null
-                    ? { text: `${attChange >= 0 ? "+" : ""}${attChange.toFixed(1)}% att`, type: attChange >= 0 ? "positive" : "negative" }
-                    : undefined
-                }
-                subtitle={`No-show: ${stats.noShowRate}${noShowChange !== null ? ` (${noShowChange > 0 ? "+" : ""}${noShowChange.toFixed(1)}%)` : ""} · ${stats.classes} classes`}
-              />
-              <StatCard
-                label="Waitlist"
-                value={`${formatCurrency(stats.revenueRecovered)} recovered`}
-                change={
-                  stats.waitlistFillRate > 0
-                    ? { text: `${stats.waitlistFillRate}% fill`, type: stats.waitlistFillRate >= 50 ? "positive" : stats.waitlistFillRate >= 25 ? "neutral" : "neutral" }
-                    : undefined
-                }
-                subtitle={`${stats.waitlistFills} of ${stats.waitlistSpotsGenerated} spots filled this ${periodLabel}`}
-                href="/admin/waitlist"
-                hrefLabel="View Waitlist"
-              />
+              {/* Studio Health */}
+              <div className={`rounded-2xl ${healthConfig.bg} border ${healthConfig.border} p-5`}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Studio Health</p>
+                  <span className={`w-2 h-2 rounded-full ${healthConfig.dot}`} />
+                </div>
+                <p className={`text-xl font-semibold leading-none ${healthConfig.text}`}>
+                  {healthConfig.label}
+                </p>
+                <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                  {aiSummary || (aiLoading ? "Analyzing..." : "")}
+                </p>
+              </div>
+
+              {/* Clients */}
+              <Link href="/admin/clients" className="rounded-2xl bg-white border border-gray-200 p-5 hover:border-gray-300 transition-colors">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Clients</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-semibold text-gray-900 tabular-nums leading-none">{stats.clients}</p>
+                  <span className="text-sm text-gray-500">active</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">{stats.clientsChange} new this month</p>
+              </Link>
+
+              {/* Waitlist */}
+              <Link href="/admin/waitlist" className="rounded-2xl bg-white border border-gray-200 p-5 hover:border-gray-300 transition-colors">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">Waitlist</p>
+                <p className="text-3xl font-semibold text-gray-900 tabular-nums leading-none">
+                  {formatCurrency(stats.revenueRecovered)}
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {stats.waitlistFills} of {stats.waitlistSpotsGenerated} spots · {stats.waitlistFillRate}% fill
+                </p>
+              </Link>
             </div>
 
-            {/* Revenue Trend Chart */}
-            {trend.length > 0 && (
-              <div className={`bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 mb-6 transition-opacity duration-300 ${refreshing ? "opacity-50" : "opacity-100"}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-base font-semibold text-gray-900">Revenue Trend</h2>
-                    <p className="text-sm text-gray-500">
-                      {selectedPeriod === "week" ? "6 weeks ending" : selectedPeriod === "year" ? "6 years ending" : "6 months ending"} {getPeriodLabel(selectedPeriod, referenceDate)}
-                    </p>
-                  </div>
-                </div>
-                <div className="h-[160px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={trend} margin={{ top: 5, right: 12, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#667085" }} interval={0} />
-                      <YAxis hide domain={[0, "auto"]} />
-                      <Tooltip
-                        cursor={{ stroke: "#7C3AED", strokeWidth: 1, strokeDasharray: "4 4" }}
-                        contentStyle={{ backgroundColor: "#fff", border: "1px solid #EAECF0", borderRadius: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", padding: "8px 12px" }}
-                        labelStyle={{ color: "#101828", fontWeight: 600, marginBottom: "4px" }}
-                        formatter={(value) => [formatCurrency(value as number), "Revenue"]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="#7C3AED"
-                        strokeWidth={2.5}
-                        fill="url(#revenueGradient)"
-                        dot={{ r: 4, fill: "#7C3AED", strokeWidth: 2, stroke: "#fff" }}
-                        activeDot={{ r: 6, fill: "#7C3AED", strokeWidth: 2, stroke: "#fff" }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {/* Client Check-up Card */}
+            {/* ============================================================ */}
+            {/* CLIENT CHECK-UP — the action of the day                      */}
+            {/* ============================================================ */}
             {checkup && checkup.summary.totalAtRisk > 0 && (
               <div className="mb-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -664,7 +541,9 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Upcoming Classes + Recent Activity */}
+            {/* ============================================================ */}
+            {/* CLASSES + ACTIVITY                                           */}
+            {/* ============================================================ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Upcoming Classes */}
               <div data-onboarding="admin-upcoming" className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl">

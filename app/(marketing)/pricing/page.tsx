@@ -33,11 +33,6 @@ function PricingContent() {
   const spotsRemaining = foundingMemberOffer.totalSpots - foundingMemberOffer.spotsClaimed;
 
   const handleSubscribe = async (planId: string) => {
-    if (planId === "scale") {
-      window.location.href = "/contact?plan=scale";
-      return;
-    }
-
     setLoadingPlan(planId);
     setError(null);
 
@@ -197,7 +192,6 @@ function PricingContent() {
                 <div className="space-y-3">
                   {[
                     "Unlimited clients & instructors — no per-head fees",
-                    "Up to 3 locations",
                     "Smart waitlist — recovers ~3 lost clients/month",
                     "Automated SMS reminders — cuts no-shows by 35%",
                     "Online scheduling + payments (Stripe)",
@@ -247,7 +241,7 @@ function PricingContent() {
               },
               {
                 q: "Any limits on clients or instructors?",
-                a: "None. Unlimited clients, unlimited instructors, up to 3 locations.",
+                a: "None. Unlimited clients and unlimited instructors.",
               },
             ].map((faq, i) => (
               <details key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-5 group">

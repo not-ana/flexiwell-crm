@@ -7,7 +7,6 @@ import {
   CreditCard,
   Tag,
   Bell,
-  MessageSquare,
   Clock,
   ClipboardList,
   Users,
@@ -20,16 +19,14 @@ import { NotificationsSettings } from "@/components/settings/NotificationsSettin
 import { TeamSettings } from "@/components/settings/TeamSettings";
 import { IntegrationsSettings } from "@/components/settings/IntegrationsSettings";
 import { IntakeFormSettings } from "@/components/settings/IntakeFormSettings";
-import { SMSBotSettings } from "@/components/settings/SMSBotSettings";
 import { PlansSettings } from "@/components/settings/PlansSettings";
-type AdminSettingsTab = "general" | "subscription" | "plans" | "notifications" | "sms-bot" | "waitlist" | "intake" | "team" | "integrations";
+type AdminSettingsTab = "general" | "subscription" | "plans" | "notifications" | "waitlist" | "intake" | "team" | "integrations";
 
 const tabs: SettingsTab[] = [
   { id: "general", label: "General", icon: User, description: "Profile & password" },
   { id: "subscription", label: "Subscription", icon: CreditCard, description: "Billing & plan" },
   { id: "plans", label: "Plans", icon: Tag, description: "Client pricing" },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Alerts & emails" },
-  { id: "sms-bot", label: "SMS Bot", icon: MessageSquare, description: "Automated messages" },
   { id: "waitlist", label: "Waitlist", icon: Clock, description: "Queue settings" },
   { id: "intake", label: "Intake Form", icon: ClipboardList, description: "Health forms" },
   { id: "team", label: "Staff", icon: Users, description: "Team members" },
@@ -43,15 +40,15 @@ const groups: SettingsTabGroup[] = [
   },
   {
     label: "Business",
-    tabs: [tabs[2], tabs[5]],
+    tabs: [tabs[2], tabs[4]],
   },
   {
     label: "Communication",
-    tabs: [tabs[3], tabs[4]],
+    tabs: [tabs[3]],
   },
   {
     label: "Setup",
-    tabs: [tabs[6], tabs[7], tabs[8]],
+    tabs: [tabs[5], tabs[6], tabs[7]],
   },
 ];
 
@@ -76,8 +73,6 @@ function SettingsContent() {
         return <PlansSettings />;
       case "notifications":
         return <NotificationsSettings />;
-      case "sms-bot":
-        return <SMSBotSettings />;
       case "waitlist":
         return <WaitlistSettings />;
       case "intake":

@@ -28,7 +28,7 @@ interface WaitlistEntry {
 
 // GET /api/waitlist - List waitlist entries
 export async function GET(request: NextRequest) {
-  const { user, error } = requireRole(request, ["admin", "teacher", "client"]);
+  const { user, error } = requireRole(request, ["admin", "teacher"]);
   if (error) return error;
 
   try {
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/waitlist - Join waitlist (simplified - 1 click)
 export async function POST(request: NextRequest) {
-  const { error, user: authUser } = requireRole(request, ["admin", "teacher", "client"]);
+  const { error, user: authUser } = requireRole(request, ["admin", "teacher"]);
   if (error) return error;
 
   try {
