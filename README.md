@@ -27,12 +27,17 @@ FlexiWell CRM is a comprehensive studio management platform that helps wellness 
 
 ### Admin Dashboard
 Multi-unit overview with revenue metrics, class schedules, and staff activity.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/99b6a098-92aa-4737-894f-c5b0f2607c4a" />
 
 ### Client Portal
 Personal dashboard with upcoming classes, billing, and support chat.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7cf0f43a-ac23-4f61-a753-fc9d186ca297" />
+
 
 ### Teacher View
 Daily schedule, attendance tracking, and makeup class management.
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5a06c2f5-069f-48a6-8d3b-d494e294364d" />
+
 
 ## Tech Stack
 
