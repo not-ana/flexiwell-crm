@@ -10,6 +10,7 @@ import {
   CloseIcon,
   PlusIcon,
 } from "@/components/icons";
+import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { authFetch } from "@/lib/api/auth-fetch";
 
@@ -2466,6 +2467,8 @@ function EventDetailsSidebar({ event, onClose, onStartClass, onTakeAttendance, o
 }
 
 export default function TeacherClassesPage() {
+  const pathname = usePathname();
+  const isAdminView = pathname?.startsWith("/admin");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<ClassEvent | null>(null);
   const [events, setEvents] = useState<ClassEvent[]>([]);
@@ -2591,7 +2594,7 @@ export default function TeacherClassesPage() {
       <div className="p-4 sm:p-6 border-b border-gray-200 bg-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">My Classes</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">{isAdminView ? "Schedule" : "My Classes"}</h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1">Fill every spot, track every class</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">

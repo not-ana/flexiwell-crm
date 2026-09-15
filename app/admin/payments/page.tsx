@@ -983,9 +983,9 @@ export default function PaymentsPage() {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-white">
       {/* Payments Table/Cards */}
-      <div className="bg-white">
+      <div>
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-gray-100">
           {filteredPayments.length === 0 ? (

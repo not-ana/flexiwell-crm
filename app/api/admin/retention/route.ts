@@ -17,12 +17,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const establishmentId = searchParams.get("establishmentId") || user?.establishmentId;
 
+    // No establishment = new studio with no data yet — return empty
+    if (!establishmentId) {
+      return NextResponse.json({
+        monthlyRetention: { rate: 0, membersAtStart: 0, membersRetained: 0, monthLabel: "", baselineRate: null },
+        cohorts: [],
+        atRisk: [],
+        revenueRetained: { current: 0, previous: 0, delta: 0 },
+        interventions: { sent: 0, recovered: 0, recoveryRate: 0 },
+      });
+    }
+
     const db = await getDatabase();
     const payload = await getRetentionDashboard(db, { establishmentId });
 
     return NextResponse.json(payload, {
       headers: {
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (err) {

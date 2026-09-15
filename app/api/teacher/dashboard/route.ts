@@ -15,8 +15,11 @@ export async function GET(request: NextRequest) {
     const isAdmin = user.role === "admin";
     const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
 
-    // Build instructor filter — admin sees all, teacher sees own
+    // Build instructor filter — admin sees all in their establishment, teacher sees own
     const instructorFilter: Record<string, unknown> = {};
+    if (user.establishmentId) {
+      instructorFilter.establishmentId = user.establishmentId;
+    }
     if (!isAdmin && teacherId) {
       instructorFilter.instructorId = teacherId;
     }

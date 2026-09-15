@@ -5,7 +5,17 @@
       "Bash(snap install:*)",
       "Bash(dig flexiwell.net +short)",
       "Bash(dig app.flexiwell.net +short)",
-      "Bash(xdg-open \"https://app.flexiwell.net\")"
+      "Bash(xdg-open \"https://app.flexiwell.net\")",
+      "WebFetch(domain:support.mindbodyonline.com)",
+      "WebFetch(domain:ajuda.tecnofit.com.br)",
+      "WebFetch(domain:docs.gymdesk.com)",
+      "WebFetch(domain:help.pike13.com)",
+      "WebFetch(domain:support.marianatek.com)",
+      "WebFetch(domain:help.momence.com)",
+      "WebFetch(domain:classpass.my.site.com)",
+      "WebFetch(domain:helpcenter.gympass.com)",
+      "Bash(find /home/ana -maxdepth 2 -type d -name \"*ai*\" -o -name \"*llm*\" -o -name \"*audit*\" 2>/dev/null | grep -v node_modules | head -15)",
+      "Read(//home/ana/**)"
     ],
     "additionalDirectories": [
       "/home/ana/.local"

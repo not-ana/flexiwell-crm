@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     const filter: Record<string, unknown> = {
       type: { $in: ["reschedule", "makeup", "cancelled_by_client"] }
     };
+    if (user.establishmentId) {
+      filter.establishmentId = user.establishmentId;
+    }
 
     if (status) {
       filter.status = status;

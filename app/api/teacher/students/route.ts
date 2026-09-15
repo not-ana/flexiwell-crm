@@ -15,8 +15,11 @@ export async function GET(request: NextRequest) {
     const isAdmin = user.role === "admin";
     const teacherId = isAdmin ? null : await resolveStaffId(user.userId);
 
-    // Admin sees all bookings; teacher sees own classes
+    // Admin sees all bookings in their establishment; teacher sees own classes
     const bookingFilter: Record<string, unknown> = {};
+    if (user.establishmentId) {
+      bookingFilter.establishmentId = user.establishmentId;
+    }
     if (!isAdmin && teacherId) {
       bookingFilter.instructorId = teacherId;
     }

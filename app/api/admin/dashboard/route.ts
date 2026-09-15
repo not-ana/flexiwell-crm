@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
 
     const db = await getDatabase();
 
-    const establishmentFilter = establishmentId ? { establishmentId } : {};
+    // No establishment = new studio with no data — scope to a non-existent ID
+    // so queries return empty results instead of global data
+    const establishmentFilter = { establishmentId: establishmentId || "__none__" };
 
     const now = new Date();
     const selectedYear = yearParam ? parseInt(yearParam) : now.getFullYear();

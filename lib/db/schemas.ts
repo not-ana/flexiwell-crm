@@ -1215,3 +1215,256 @@ export interface SoftDeletable {
   deletedBy?: string;
   deleteReason?: string;
 }
+
+// ============================================
+// FlexiWell Radar — Audit product
+// One-shot CSV-based revenue intelligence for studios
+// ============================================
+
+export type AuditPlatform =
+  | "mindbody"
+  | "tecnofit"
+  | "glofox"
+  | "pacto"
+  | "w12"
+  | "mariana_tek"
+  | "pike13"
+  | "vagaro"
+  | "wellness_living"
+  | "momence"
+  | "next_fit"
+  | "wellhub"
+  | "totalpass"
+  | "classpass"
+  | "other";
+
+export type AuditStatus = "pending" | "processing" | "ready" | "expired" | "deleted";
+
+export type AuditPricingTier =
+  | "founding_free"
+  | "founding_paid"
+  | "standard"
+  | "top";
+
+// Token grants public access to /audit/[token] — no login.
+// Reuses pattern from HealthAssessmentToken; 90-day default expiry per LGPD retention.
+export interface AuditToken {
+  _id?: ObjectId;
+  token: string; // 32-char secure random
+  studioId: string;
+  studioName: string;
+  studioCity?: string;
+  studioOwnerEmail: string;
+  studioOwnerName?: string;
+  platform: AuditPlatform;
+  status: AuditStatus;
+  // Lifecycle / pricing context
+  isFoundingCohort: boolean;
+  pricingTier?: AuditPricingTier;
+  amountPaid?: number;
+  currency?: string; // "USD" | "BRL"
+  // Latest snapshot
+  latestSnapshotId?: string;
+  // Access tracking
+  createdAt: Date;
+  expiresAt: Date;
+  lastAccessedAt?: Date;
+  accessCount: number;
+}
+
+// Normalized member representation across platforms.
+// Phone is stored for completeness but NOT rendered in the UI (no SMS in product).
+export interface AuditMemberSummary {
+  memberId: string; // synthesized from email if upstream lacks ID
+  name: string;
+  email?: string;
+  phone?: string;
+  signupDate?: Date;
+  lastVisitDate?: Date;
+  status: string; // active | inactive | cancelled (raw)
+  currentPlanName?: string;
+  currentPlanPrice?: number;
+  totalLifetimeSpend?: number;
+  totalVisits?: number;
+  // Computed
+  healthScore?: number; // 0-100
+  riskLevel?: "healthy" | "watch" | "at_risk" | "critical";
+  riskReason?: string;
+  daysSinceLastVisit?: number;
+}
+
+export interface AuditUpsellSignal {
+  upsellSignal: string; // e.g. "high_freq_basic_plan"
+  suggestedOffer: string; // e.g. "Migrar para unlimited"
+}
+
+// All tile data for the dashboard. Computed once per snapshot.
+export interface AuditTilesData {
+  // Hero
+  totalRecoverableMonthly: number;
+  totalRecoverableAnnual: number;
+  currency: string;
+
+  // Top stats
+  activeMembers: number;
+  churnRate90d: number; // percentage
+  revenueAtRiskMonthly: number;
+  revenueAtRiskAnnual: number;
+
+  // Tile 1 — Failed / overdue payments
+  failedPayments: {
+    countOpen: number;
+    totalOverdue: number;
+    estRecoverable: number; // 30-50% of overdue
+    members: AuditMemberSummary[];
+  };
+
+  // Tile 2 — Ghost members (active status, no recent visit)
+  ghostMembers: {
+    count: number;
+    monthlyRevenueAtRisk: number;
+    members: AuditMemberSummary[];
+  };
+
+  // Tile 3 — Recent cancellations recoverable via win-back
+  winBackRecents: {
+    count: number;
+    estRecoverable: number;
+    members: AuditMemberSummary[];
+  };
+
+  // Tile 4 — Unused credits / pacotes vencidos
+  unusedCredits: {
+    count: number;
+    totalValueLocked: number;
+    estRecoverable: number;
+    members: AuditMemberSummary[];
+  };
+
+  // Tile 5 — Hidden Spenders (upsell candidates)
+  hiddenSpenders: {
+    count: number;
+    totalUpsellPotential: number;
+    members: Array<AuditMemberSummary & AuditUpsellSignal>;
+  };
+
+  // Tile 6 — Plan misalignment
+  planMisalignment: {
+    overusersCount: number;
+    underusersCount: number;
+    estLiftMonthly: number;
+    members: AuditMemberSummary[];
+  };
+
+  // Tile 7 — Slot fill / capacity yield
+  slotFill: {
+    avgFillRate: number; // percentage
+    underutilizedSlots: Array<{
+      classType: string;
+      dayOfWeek: string;
+      timeSlot: string;
+      instructor: string;
+      avgFillRate: number;
+      estMonthlyLeak: number;
+    }>;
+  };
+
+  // Tile 8 — Aggregator (ClassPass / Wellhub / TotalPass) net margin
+  aggregator?: {
+    platform: "classpass" | "wellhub" | "totalpass";
+    monthlyVisits: number;
+    grossRevenue: number;
+    estCostPerVisit: number;
+    estNetMargin: number; // negative = losing money
+    cannibalizationCount: number; // members who would otherwise pay direct
+  };
+}
+
+// One snapshot per upload. Multiple snapshots allowed per token (refresh).
+export interface AuditSnapshot {
+  _id?: ObjectId;
+  tokenId: string;
+  studioId: string;
+  capturedAt: Date;
+  platform: AuditPlatform;
+  // Source files metadata
+  sourceFiles: Array<{
+    fileName: string;
+    fileType:
+      | "members"
+      | "attendance"
+      | "transactions"
+      | "plans"
+      | "schedule"
+      | "aggregator"
+      | "other";
+    rowCount: number;
+    parsedAt: Date;
+  }>;
+  // Date range covered by data
+  dataRange: {
+    earliest: Date;
+    latest: Date;
+  };
+  // Computed tiles
+  tiles: AuditTilesData;
+  // Optional: store normalized members for AI analysis + delta diff
+  members?: AuditMemberSummary[];
+  createdAt: Date;
+}
+
+export type AuditInsightCategory =
+  | "pattern"
+  | "anomaly"
+  | "recommendation"
+  | "causal"
+  | "comparison";
+
+export interface AuditInsight {
+  id: string;
+  category: AuditInsightCategory;
+  icon?: string;
+  headline: string; // 1-line narrative
+  detail: string; // 2-3 sentence explanation
+  affectedMemberIds?: string[];
+  estimatedDollarImpact?: number;
+  generatedBy: "ai" | "rule";
+  aiModel?: string; // "groq-llama-3.3-70b" | "gemini-2.5-flash" | "gpt-4o-mini"
+  generatedAt: Date;
+}
+
+export interface AuditInsights {
+  _id?: ObjectId;
+  tokenId: string;
+  snapshotId: string;
+  studioId: string;
+  insights: AuditInsight[];
+  // AI-generated executive summary
+  executiveSummary?: string;
+  topThreeActions?: Array<{
+    action: string;
+    estDollarImpact: number;
+    affectedCount?: number;
+  }>;
+  generatedAt: Date;
+}
+
+// Track owner actions on the dashboard — replaces SMS-sent tracking.
+// No phone numbers, no SMS — just "marked as contacted" / outcome status.
+export type AuditActionType =
+  | "contacted"
+  | "scheduled_call"
+  | "won_back"
+  | "lost"
+  | "no_response"
+  | "marked_done";
+
+export interface AuditActionLog {
+  _id?: ObjectId;
+  tokenId: string;
+  studioId: string;
+  memberId: string; // matches AuditMemberSummary.memberId
+  actionType: AuditActionType;
+  notes?: string;
+  loggedAt: Date;
+}

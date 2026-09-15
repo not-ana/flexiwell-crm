@@ -22,8 +22,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const instructorFilter = searchParams.get("instructorId");
 
-    // Build filter — admin sees all classes (optionally filtered), teacher sees own
+    // Build filter — admin sees all classes in their establishment, teacher sees own
     const filter: Record<string, unknown> = {};
+    if (user.establishmentId) {
+      filter.establishmentId = user.establishmentId;
+    }
     if (isAdmin && instructorFilter) {
       filter.instructorId = instructorFilter;
     } else if (!isAdmin && teacherId) {

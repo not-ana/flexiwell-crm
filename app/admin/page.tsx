@@ -263,7 +263,7 @@ export default function AdminDashboard() {
     async function fetchRetention() {
       try {
         const response = await api.get<{ monthlyRetention: { rate: number; monthLabel: string } }>("/api/admin/retention");
-        if (response.data) {
+        if (response.data?.monthlyRetention?.monthLabel) {
           const { rate, monthLabel } = response.data.monthlyRetention;
           setRetentionRate({ rate, monthLabel });
         }

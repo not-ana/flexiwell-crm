@@ -80,6 +80,8 @@ export const ptBR = {
       emailReminders: "Lembretes por email",
       calendarSync: "Sincronizacao de calendario",
       smsNotifications: "Notificacoes SMS",
+      retentionCopilot: "Copiloto de Retencao",
+      retentionCopilotTooltip: "Rascunha o SMS certo para alunos em risco — voce envia do seu proprio celular em um toque",
       whatsappNotifications: "Notificacoes WhatsApp",
       messagingBot: "Bot de Mensagens",
       messagingBotTooltip: "Bot WhatsApp - agendamento automatizado, confirmacoes, lembretes",

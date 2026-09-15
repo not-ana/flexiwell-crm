@@ -710,7 +710,7 @@ export default function WaitlistPage() {
       </div>
 
       {/* Entry List — grouped by urgency */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 overflow-auto bg-white p-4 sm:p-6 lg:p-8">
         {/* Trash banner */}
         {filterStatus === "removed" && filteredEntries.length > 0 && (
           <div className="mb-4 p-3 rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200 flex items-center gap-3">

@@ -85,6 +85,7 @@ export async function apiRequest<T>(
     let response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      cache: "no-store",
     });
 
     // If unauthorized, try to refresh token
@@ -96,6 +97,7 @@ export async function apiRequest<T>(
         response = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           headers,
+          cache: "no-store",
         });
       }
     }

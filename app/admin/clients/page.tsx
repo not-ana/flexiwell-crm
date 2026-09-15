@@ -1114,7 +1114,7 @@ export default function AdminClientsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-white">
         {isLoading ? (
           <div className="p-4 sm:p-6 lg:p-8"><LoadingTable rows={5} /></div>
         ) : filteredClients.length > 0 ? (

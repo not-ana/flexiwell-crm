@@ -38,6 +38,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Public routes that don't require authentication
 const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/pricing", "/auth/callback"];
 
+// Public route prefixes — token-based pages like /audit/[token] and /health-assessment/[token].
+// Matched by startsWith so any token segment passes.
+const publicRoutePrefixes = ["/audit/", "/health-assessment/", "/reset-password", "/waitlist"];
+
 // Role-based route prefixes
 const roleRoutes: Record<string, string[]> = {
   admin: ["/admin", "/operator"],
@@ -90,9 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const isPublicRoute = publicRoutes.some(
-      (route) => pathname === route || pathname.startsWith("/(marketing)")
-    );
+    const isPublicRoute =
+      publicRoutes.some(
+        (route) => pathname === route || pathname.startsWith("/(marketing)")
+      ) || publicRoutePrefixes.some((prefix) => pathname.startsWith(prefix));
 
     // If not authenticated and trying to access protected route
     if (!user && !isPublicRoute) {
